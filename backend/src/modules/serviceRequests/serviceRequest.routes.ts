@@ -1,0 +1,120 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import { requireAuth } from '../../middleware/auth.js';
+import { requirePermission } from '../../middleware/rbac.js';
+import { prisma } from '../../common/prisma.js';
+import { HttpError } from '../../common/httpError.js';
+
+export const serviceRequestRouter = Router();
+
+serviceRequestRouter.get('/', requireAuth, requirePermission('tickets:read'), async (req, res, next) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const items = await prisma.serviceRequest.findMany({
+      where: status ? { status: status as any } : undefined,
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+});
+
+serviceRequestRouter.get('/:id', requireAuth, requirePermission('tickets:read'), async (req, res, next) => {
+  try {
+    const item = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
+    if (!item) throw new HttpError(404, 'Service request not found');
+    res.json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const createSchema = z.object({
+  title: z.string().min(3),
+  description: z.string().optional(),
+  category: z.string().min(2),
+  subCategory: z.string().optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).default('MEDIUM'),
+  requesterName: z.string().min(2),
+  projectName: z.string().optional()
+});
+
+serviceRequestRouter.post('/', requireAuth, requirePermission('tickets:write'), async (req, res, next) => {
+  try {
+    const payload = createSchema.parse(req.body);
+    const count = await prisma.serviceRequest.count();
+    const item = await prisma.serviceRequest.create({
+      data: {
+        ...payload,
+        ticketNo: `SR-${1001 + count}`
+      }
+    });
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id,
+        actorEmail: req.user?.email,
+        action: 'CREATE',
+        entityType: 'ServiceRequest',
+        entityId: item.id,
+        newValue: item as any,
+        ipAddress: req.ip
+      }
+    });
+    res.status(201).json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const updateSchema = z.object({
+  title: z.string().min(3).optional(),
+  description: z.string().optional(),
+  category: z.string().min(2).optional(),
+  subCategory: z.string().optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  status: z.enum(['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'WAITING_FOR_VENDOR', 'PENDING_APPROVAL', 'RESOLVED', 'CLOSED', 'REOPENED']).optional(),
+  requesterName: z.string().min(2).optional(),
+  assigneeName: z.string().optional(),
+  projectName: z.string().optional(),
+  comment: z.string().optional()
+});
+
+serviceRequestRouter.patch('/:id', requireAuth, requirePermission('tickets:write'), async (req, res, next) => {
+  try {
+    const payload = updateSchema.parse(req.body);
+    const existing = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new HttpError(404, 'Service request not found');
+
+    const { comment, ...updates } = payload;
+    const description = comment?.trim()
+      ? `${existing.description || ''}\n\n[${new Date().toISOString()}] ${req.user?.email || 'user'}: ${comment.trim()}`.trim()
+      : updates.description;
+
+    const item = await prisma.serviceRequest.update({
+      where: { id: req.params.id },
+      data: {
+        ...updates,
+        ...(description !== undefined ? { description } : {})
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id,
+        actorEmail: req.user?.email,
+        action: 'UPDATE',
+        entityType: 'ServiceRequest',
+        entityId: item.id,
+        oldValue: existing as any,
+        newValue: item as any,
+        ipAddress: req.ip
+      }
+    });
+
+    res.json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
