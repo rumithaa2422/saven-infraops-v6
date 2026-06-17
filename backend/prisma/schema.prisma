@@ -43,6 +43,13 @@ enum AssetStatus {
   DISPOSED
 }
 
+enum UserStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  DISABLED
+  LOCKED
+}
+
 enum AccessStatus {
   REQUESTED
   APPROVED
@@ -53,17 +60,29 @@ enum AccessStatus {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  passwordHash String?
-  department   String?
-  isActive     Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  roles        UserRole[]
+  id             String              @id @default(cuid())
+  name           String
+  email          String              @unique
+  phoneNumber    String?
+  passwordHash   String?
+  department     String?
+  status         UserStatus          @default(PENDING_ACTIVATION)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  roles          UserRole[]
+  activationToken UserActivationToken?
   requestedTickets ServiceRequest[] @relation("RequesterTickets")
   assignedTickets  ServiceRequest[] @relation("AssigneeTickets")
+}
+
+model UserActivationToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Role {

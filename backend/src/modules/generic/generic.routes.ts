@@ -97,9 +97,75 @@ const moduleMap: Record<string, ModuleConfig> = {
     permission: 'users:read',
     writePermission: 'users:write',
     entityType: 'User',
-    list: () => prisma.user.findMany({ select: { id: true, name: true, email: true, department: true, isActive: true, createdAt: true, updatedAt: true }, orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload) => prisma.user.create({ data: { name: payload.name, email: payload.email, department: payload.department || null, passwordHash: payload.password ? await bcrypt.hash(payload.password, 12) : null } }),
-    update: (id, payload) => prisma.user.update({ where: { id }, data: { name: payload.name, department: payload.department, isActive: payload.isActive } })
+    list: () => prisma.user.findMany({ 
+      select: { id: true, name: true, email: true, department: true, status: true, phoneNumber: true, createdAt: true, updatedAt: true }, 
+      orderBy: { createdAt: 'desc' }, 
+      take: 100 
+    }),
+    create: async (payload) => {
+      const { sendUserActivationEmail } = await import('../../modules/auth/activation.service.js');
+      
+      // Check for duplicate email
+      const existing = await prisma.user.findUnique({ where: { email: payload.email } });
+      if (existing) {
+        throw new HttpError(400, 'A user with this email already exists');
+      }
+
+      // Create user with PENDING_ACTIVATION status (no password)
+      const user = await prisma.user.create({ 
+        data: { 
+          name: payload.name, 
+          email: payload.email, 
+          phoneNumber: payload.phoneNumber || null,
+          department: payload.department || null,
+          status: 'PENDING_ACTIVATION'
+        } 
+      });
+
+      // Assign role if provided
+      if (payload.roleId) {
+        // roleId might be the role name, so look it up
+        const role = await prisma.role.findFirst({
+          where: {
+            OR: [
+              { id: payload.roleId },
+              { name: payload.roleId }
+            ]
+          }
+        });
+        if (role) {
+          await prisma.userRole.create({
+            data: { userId: user.id, roleId: role.id }
+          });
+        }
+      }
+
+      // Send activation email
+      await sendUserActivationEmail(user.id);
+
+      // Audit log
+      await prisma.auditLog.create({
+        data: { 
+          actorId: 'system', 
+          actorEmail: 'system', 
+          action: 'USER_CREATED', 
+          entityType: 'User', 
+          entityId: user.id,
+          newValue: { email: user.email, status: 'PENDING_ACTIVATION' }
+        }
+      });
+
+      return user;
+    },
+    update: (id, payload) => prisma.user.update({ 
+      where: { id }, 
+      data: { 
+        name: payload.name, 
+        department: payload.department, 
+        status: payload.status,
+        phoneNumber: payload.phoneNumber
+      } 
+    })
   },
   'reports-analytics': {
     permission: 'dashboard:read',
@@ -114,6 +180,16 @@ const moduleMap: Record<string, ModuleConfig> = {
   }
 };
 
+// Roles endpoint for user management
+genericModuleRouter.get('/roles', requireAuth, async (req, res, next) => {
+  try {
+    await new Promise<void>((resolve, reject) => requirePermission('users:read')(req, res, (err) => err ? reject(err) : resolve()));
+    const items = await prisma.role.findMany({ select: { id: true, name: true, description: true }, orderBy: { name: 'asc' } });
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+});
 
 genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
   try {

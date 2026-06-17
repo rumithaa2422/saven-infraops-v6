@@ -220,19 +220,21 @@ const configs: Record<string, ModuleConfig> = {
     referenceKey: 'email',
     titleKey: 'name',
     ownerKey: 'department',
-    statusKey: 'isActive',
+    statusKey: 'status',
     dateKey: 'createdAt',
     fields: [
       { key: 'name', label: 'Name', required: true },
       { key: 'email', label: 'Email', required: true },
-      { key: 'department', label: 'Department' },
-      { key: 'password', label: 'Temporary Password' }
+      { key: 'phoneNumber', label: 'Phone Number' },
+      { key: 'department', label: 'Department', type: 'select', options: ['Engineering', 'Support', 'QA', 'DevOps', 'HR', 'Finance', 'Operations', 'Security', 'InfraOps'], required: true },
+      { key: 'roleId', label: 'Role', type: 'select', options: ['role-placeholder'] }
     ],
     columns: [
       { key: 'name', label: 'Name' },
       { key: 'email', label: 'Email' },
+      { key: 'phoneNumber', label: 'Phone' },
       { key: 'department', label: 'Department' },
-      { key: 'isActive', label: 'Active' }
+      { key: 'status', label: 'Status' }
     ]
   },
   'reports-analytics': {
@@ -299,7 +301,19 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [form, setForm] = useState<Record<string, string>>(() => getInitialForm(config.fields));
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [roles, setRoles] = useState<{id: string; name: string}[]>([]);
   const statusActions = getStatusActions(moduleKey);
+
+  // Fetch roles for users-teams module
+  useEffect(() => {
+    if (moduleKey === 'users-teams') {
+      api.get('/roles').then((res) => {
+        setRoles(res.data.items || []);
+      }).catch(() => {
+        setRoles([]);
+      });
+    }
+  }, [moduleKey]);
 
   const openCount = useMemo(() => items.filter((item) => {
     const value = item[config.statusKey || 'status'];
@@ -415,20 +429,41 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               <h3>Create {title}</h3>
               <button type="button" className="close" onClick={() => setCreateOpen(false)}>Close</button>
             </div>
-            {config.fields.map((field) => (
-              <label key={field.key}>
-                {field.label}{field.required ? ' *' : ''}
-                {field.type === 'textarea' ? (
-                  <textarea value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
-                ) : field.type === 'select' ? (
-                  <select value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required}>
-                    {(field.options || []).map((option) => <option key={option}>{option}</option>)}
-                  </select>
-                ) : (
-                  <input type={field.type || 'text'} value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
-                )}
-              </label>
-            ))}
+            {config.fields.map((field) => {
+              // Special handling for roleId in users-teams
+              if (field.key === 'roleId' && moduleKey === 'users-teams') {
+                return (
+                  <label key={field.key}>
+                    {field.label}{field.required ? ' *' : ''}
+                    <select 
+                      value={form[field.key] || ''} 
+                      onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} 
+                      required={field.required}
+                    >
+                      <option value="">Select Role</option>
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                );
+              }
+              
+              return (
+                <label key={field.key}>
+                  {field.label}{field.required ? ' *' : ''}
+                  {field.type === 'textarea' ? (
+                    <textarea value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
+                  ) : field.type === 'select' ? (
+                    <select value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required}>
+                      {(field.options || []).map((option) => <option key={option}>{option}</option>)}
+                    </select>
+                  ) : (
+                    <input type={field.type || 'text'} value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
+                  )}
+                </label>
+              );
+            })}
             <button className="primary" type="submit">Save</button>
           </form>
         </div>

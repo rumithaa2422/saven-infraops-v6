@@ -18,7 +18,23 @@ export async function loginWithPassword(email: string, password: string) {
     }
   });
 
-  if (!user || !user.passwordHash || !user.isActive) throw new HttpError(401, 'Invalid credentials');
+  if (!user) throw new HttpError(401, 'Invalid credentials');
+  
+  // Check user status
+  if (user.status === 'PENDING_ACTIVATION') {
+    throw new HttpError(403, 'Account pending activation. Please check your email to activate your account.');
+  }
+  
+  if (user.status === 'DISABLED') {
+    throw new HttpError(403, 'Account is disabled. Please contact administrator.');
+  }
+  
+  if (user.status === 'LOCKED') {
+    throw new HttpError(403, 'Account is locked. Please contact administrator.');
+  }
+
+  if (!user.passwordHash) throw new HttpError(401, 'Invalid credentials');
+  
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new HttpError(401, 'Invalid credentials');
 

@@ -5,6 +5,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { ModulePage } from '../pages/ModulePage';
 import { ServiceRequestsPage } from '../pages/ServiceRequestsPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { useAuth } from '../auth/AuthContext';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/activate-account" element={<ActivateAccountPage />} />
       <Route
         path="/"
         element={
