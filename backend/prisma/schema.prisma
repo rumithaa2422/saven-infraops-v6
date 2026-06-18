@@ -60,19 +60,19 @@ enum AccessStatus {
 }
 
 model User {
-  id             String              @id @default(cuid())
-  name           String
-  email          String              @unique
-  phoneNumber    String?
-  passwordHash   String?
-  department     String?
-  status         UserStatus          @default(PENDING_ACTIVATION)
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  roles          UserRole[]
-  activationToken UserActivationToken?
-  requestedTickets ServiceRequest[] @relation("RequesterTickets")
-  assignedTickets  ServiceRequest[] @relation("AssigneeTickets")
+  id               String               @id @default(cuid())
+  name             String
+  email            String               @unique
+  phoneNumber      String?
+  passwordHash     String?
+  department       String?
+  status           UserStatus           @default(PENDING_ACTIVATION)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  roles            UserRole[]
+  activationToken  UserActivationToken?
+  requestedTickets ServiceRequest[]     @relation("RequesterTickets")
+  assignedTickets  ServiceRequest[]     @relation("AssigneeTickets")
 }
 
 model UserActivationToken {
@@ -103,8 +103,9 @@ model Permission {
 model UserRole {
   userId String
   roleId String
-  user   User @relation(fields: [userId], references: [id])
-  role   Role @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
   @@id([userId, roleId])
 }
 
@@ -113,49 +114,50 @@ model RolePermission {
   permissionId String
   role         Role       @relation(fields: [roleId], references: [id])
   permission   Permission @relation(fields: [permissionId], references: [id])
+
   @@id([roleId, permissionId])
 }
 
 model ServiceRequest {
-  id             String         @id @default(cuid())
-  ticketNo       String         @unique
-  title          String
-  description    String?        @db.Text
-  category       String
-  subCategory    String?
-  priority       TicketPriority @default(MEDIUM)
-  status         WorkStatus     @default(OPEN)
-  requesterId    String?
-  assigneeId     String?
-  requesterName  String
-  assigneeName   String?
-  projectName    String?
-  dueAt          DateTime?
-  resolvedAt     DateTime?
-  closedAt       DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  requester      User?          @relation("RequesterTickets", fields: [requesterId], references: [id])
-  assignee       User?          @relation("AssigneeTickets", fields: [assigneeId], references: [id])
+  id            String         @id @default(cuid())
+  ticketNo      String         @unique
+  title         String
+  description   String?        @db.Text
+  category      String
+  subCategory   String?
+  priority      TicketPriority @default(MEDIUM)
+  status        WorkStatus     @default(OPEN)
+  requesterId   String?
+  assigneeId    String?
+  requesterName String
+  assigneeName  String?
+  projectName   String?
+  dueAt         DateTime?
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  requester     User?          @relation("RequesterTickets", fields: [requesterId], references: [id])
+  assignee      User?          @relation("AssigneeTickets", fields: [assigneeId], references: [id])
 }
 
 model Incident {
-  id              String           @id @default(cuid())
-  incidentNo      String           @unique
-  title           String
-  description     String?          @db.Text
-  severity        IncidentSeverity @default(SEV3)
-  status          WorkStatus       @default(OPEN)
-  impactedService String?
-  impactedProject String?
-  startedAt       DateTime?
-  resolvedAt      DateTime?
-  rca             String?          @db.Text
-  correctiveAction String?         @db.Text
-  preventiveAction String?         @db.Text
-  ownerName       String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  incidentNo       String           @unique
+  title            String
+  description      String?          @db.Text
+  severity         IncidentSeverity @default(SEV3)
+  status           WorkStatus       @default(OPEN)
+  impactedService  String?
+  impactedProject  String?
+  startedAt        DateTime?
+  resolvedAt       DateTime?
+  rca              String?          @db.Text
+  correctiveAction String?          @db.Text
+  preventiveAction String?          @db.Text
+  ownerName        String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 model Problem {
@@ -171,17 +173,17 @@ model Problem {
 }
 
 model ChangeRequest {
-  id            String     @id @default(cuid())
-  changeNo      String     @unique
-  title         String
-  description   String?    @db.Text
-  riskLevel     String     @default("MEDIUM")
-  status        WorkStatus @default(PENDING_APPROVAL)
-  changeWindow  DateTime?
-  rollbackPlan  String?    @db.Text
-  ownerName     String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  changeNo     String     @unique
+  title        String
+  description  String?    @db.Text
+  riskLevel    String     @default("MEDIUM")
+  status       WorkStatus @default(PENDING_APPROVAL)
+  changeWindow DateTime?
+  rollbackPlan String?    @db.Text
+  ownerName    String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Asset {
@@ -200,32 +202,32 @@ model Asset {
 }
 
 model AccessRequest {
-  id             String       @id @default(cuid())
-  requestNo      String       @unique
-  requesterName  String
-  accessType     String
-  systemName     String
-  justification  String?      @db.Text
-  status         AccessStatus @default(REQUESTED)
-  expiryAt       DateTime?
-  approverName   String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id            String       @id @default(cuid())
+  requestNo     String       @unique
+  requesterName String
+  accessType    String
+  systemName    String
+  justification String?      @db.Text
+  status        AccessStatus @default(REQUESTED)
+  expiryAt      DateTime?
+  approverName  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model ComplianceControl {
-  id            String     @id @default(cuid())
-  controlNo     String     @unique
-  title         String
-  controlArea   String
-  ownerName     String
-  frequency     String
-  dueAt         DateTime?
-  status        WorkStatus @default(OPEN)
-  evidenceUrl   String?
-  riskRating    String     @default("MEDIUM")
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  controlNo   String     @unique
+  title       String
+  controlArea String
+  ownerName   String
+  frequency   String
+  dueAt       DateTime?
+  status      WorkStatus @default(OPEN)
+  evidenceUrl String?
+  riskRating  String     @default("MEDIUM")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model ProjectEnvironment {
@@ -256,57 +258,57 @@ model VendorLicense {
 }
 
 model KnowledgeBaseArticle {
-  id          String   @id @default(cuid())
-  title       String
-  category    String
-  body        String   @db.Text
-  status      String   @default("DRAFT")
-  authorName  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  category   String
+  body       String   @db.Text
+  status     String   @default("DRAFT")
+  authorName String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model SystemSetting {
-  id          String   @id @default(cuid())
-  group       String
-  key         String   @unique
-  value       String   @db.Text
-  isSecret    Boolean  @default(false)
-  updatedBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  group     String
+  key       String   @unique
+  value     String   @db.Text
+  isSecret  Boolean  @default(false)
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  actorId     String?
-  actorEmail  String?
-  action      String
-  entityType  String
-  entityId    String?
-  oldValue    Json?
-  newValue    Json?
-  ipAddress   String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
 }
 
 model AiConversation {
-  id           String   @id @default(cuid())
-  userId       String?
-  question     String   @db.Text
-  answer       String   @db.Text
-  provider     String
-  sourceJson   Json?
-  createdAt    DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  question   String   @db.Text
+  answer     String   @db.Text
+  provider   String
+  sourceJson Json?
+  createdAt  DateTime @default(now())
 }
 
 model NotificationLog {
-  id          String   @id @default(cuid())
-  channel     String
-  recipient   String?
-  subject     String?
-  body        String   @db.Text
-  status      String
-  error       String?  @db.Text
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  channel   String
+  recipient String?
+  subject   String?
+  body      String   @db.Text
+  status    String
+  error     String?  @db.Text
+  createdAt DateTime @default(now())
 }
