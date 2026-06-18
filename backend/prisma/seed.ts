@@ -27,12 +27,44 @@ async function main() {
     create: { name: 'Super Admin', description: 'Full system access' }
   });
 
+  const adminRole2 = await prisma.role.upsert({
+    where: { name: 'Admin' },
+    update: {},
+    create: { name: 'Admin', description: 'Full system access' }
+  });
+
+  const employeeRole = await prisma.role.upsert({
+    where: { name: 'Employee' },
+    update: {},
+    create: { name: 'Employee', description: 'Full system access' }
+  });
+
   const allPermissions = await prisma.permission.findMany();
+
+  // Assign all permissions to Super Admin
   for (const permission of allPermissions) {
     await prisma.rolePermission.upsert({
       where: { roleId_permissionId: { roleId: adminRole.id, permissionId: permission.id } },
       update: {},
       create: { roleId: adminRole.id, permissionId: permission.id }
+    });
+  }
+
+  // Assign all permissions to Admin
+  for (const permission of allPermissions) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: adminRole2.id, permissionId: permission.id } },
+      update: {},
+      create: { roleId: adminRole2.id, permissionId: permission.id }
+    });
+  }
+
+  // Assign all permissions to Employee
+  for (const permission of allPermissions) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: employeeRole.id, permissionId: permission.id } },
+      update: {},
+      create: { roleId: employeeRole.id, permissionId: permission.id }
     });
   }
 
