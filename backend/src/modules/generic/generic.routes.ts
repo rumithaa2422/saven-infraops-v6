@@ -98,7 +98,7 @@ const moduleMap: Record<string, ModuleConfig> = {
     writePermission: 'users:write',
     entityType: 'User',
     list: () => prisma.user.findMany({ 
-      select: { id: true, name: true, email: true, department: true, createdAt: true, updatedAt: true }, 
+      select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true }, 
       orderBy: { createdAt: 'desc' }, 
       take: 100 
     }),
