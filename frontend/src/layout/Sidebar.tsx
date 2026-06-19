@@ -14,6 +14,7 @@ const menuItems = [
   { label: 'Reports & Analytics', path: '/reports-analytics', icon: 'RA' },
   { label: 'Knowledge Base', path: '/knowledge-base', icon: 'KB' },
   { label: 'Users & Teams', path: '/users-teams', icon: 'UT' },
+  { label: 'Roles & Permissions', path: '/roles-permissions', icon: 'RP' },
   { label: 'Settings', path: '/settings', icon: '⚙' }
 ];
 

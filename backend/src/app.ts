@@ -13,6 +13,7 @@ import { genericModuleRouter } from './modules/generic/generic.routes.js';
 import { settingsRouter } from './modules/settings/settings.routes.js';
 import { aiRouter } from './modules/ai/ai.routes.js';
 import { importRouter } from './modules/import/import.routes.js';
+import { rolesRouter } from './modules/roles/roles.routes.js';
 
 export function createApp() {
   const app = express();
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api/settings', settingsRouter);
   app.use('/api/ai', aiRouter);
   app.use('/api/import', importRouter);
+  app.use('/api/roles', rolesRouter);
   app.use('/api', genericModuleRouter);
 
   app.use(errorHandler);

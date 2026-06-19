@@ -6,6 +6,7 @@ import { ModulePage } from '../pages/ModulePage';
 import { ServiceRequestsPage } from '../pages/ServiceRequestsPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
+import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
 import { useAuth } from '../auth/AuthContext';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,7 @@ export function App() {
         <Route path="reports-analytics" element={<ModulePage moduleKey="reports-analytics" title="Reports & Analytics" />} />
         <Route path="knowledge-base" element={<ModulePage moduleKey="knowledge-base" title="Knowledge Base" />} />
         <Route path="users-teams" element={<ModulePage moduleKey="users-teams" title="Users & Teams" />} />
+		        <Route path="roles-permissions" element={<RolesPermissionsPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
