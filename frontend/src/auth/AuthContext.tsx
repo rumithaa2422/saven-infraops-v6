@@ -6,11 +6,14 @@ type User = {
   name: string;
   email: string;
   roles: string[];
+  permissions: string[];
 };
 
 type AuthContextValue = {
   token: string | null;
   user: User | null;
+  permissions: string[];
+  hasPermission: (permission: string) => boolean;
   isBootstrapping: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -27,6 +30,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isBootstrapping] = useState(false);
 
   if (token) setAuthToken(token);
+
+  const permissions = user?.permissions || [];
+
+  function hasPermission(permission: string): boolean {
+    return permissions.includes(permission);
+  }
 
   async function login(email: string, password: string) {
     const response = await api.post('/auth/login', { email, password });
@@ -47,7 +56,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }
 
-  const value = useMemo(() => ({ token, user, isBootstrapping, login, logout }), [token, user, isBootstrapping]);
+  const value = useMemo(() => ({ 
+    token, 
+    user, 
+    permissions,
+    hasPermission,
+    isBootstrapping, 
+    login, 
+    logout 
+  }), [token, user, permissions, isBootstrapping]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

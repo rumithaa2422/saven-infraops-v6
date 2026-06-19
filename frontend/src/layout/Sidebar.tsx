@@ -1,6 +1,26 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 
-const menuItems = [
+// Permission mapping for menu visibility
+const menuPermissionMap: Record<string, string> = {
+  '/': 'dashboard:read',
+  '/service-requests': 'tickets:read',
+  '/incidents': 'incidents:read',
+  '/problems': 'incidents:read',
+  '/changes': 'changes:read',
+  '/inventory': 'inventory:read',
+  '/access-management': 'access:read',
+  '/compliance': 'compliance:read',
+  '/projects-environments': 'settings:read',
+  '/vendors-licenses': 'settings:read',
+  '/reports-analytics': 'dashboard:read',
+  '/knowledge-base': 'dashboard:read',
+  '/users-teams': 'users:read',
+  '/roles-permissions': 'users:read',
+  '/settings': 'settings:read'
+};
+
+const allMenuItems = [
   { label: 'Dashboard', path: '/', icon: '⌂' },
   { label: 'Service Requests', path: '/service-requests', icon: 'SR' },
   { label: 'Incidents', path: '/incidents', icon: 'IN' },
@@ -24,6 +44,17 @@ type SidebarProps = {
 };
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+  const { hasPermission } = useAuth();
+
+  // Filter menu items based on user permissions
+  const menuItems = allMenuItems.filter(item => {
+    const requiredPermission = menuPermissionMap[item.path];
+    // If no permission required, always show (shouldn't happen in this app)
+    if (!requiredPermission) return true;
+    // Check if user has the required permission
+    return hasPermission(requiredPermission);
+  });
+
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
