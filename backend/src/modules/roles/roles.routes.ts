@@ -268,7 +268,7 @@ rolesRouter.patch('/:id/permissions', requireAuth, async (req, res, next) => {
 // Delete role
 rolesRouter.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    // Check if role exists
+    // Check if role exists and count assigned users
     const role = await prisma.role.findUnique({
       where: { id: req.params.id },
       include: { _count: { select: { users: true } } }
@@ -285,12 +285,20 @@ rolesRouter.delete('/:id', requireAuth, async (req, res, next) => {
 
     // Prevent deletion if users are assigned
     if (role._count.users > 0) {
-      throw new HttpError(400, `Cannot delete role with ${role._count.users} assigned users. Remove users first.`);
+      throw new HttpError(400, 'Cannot delete role because users are assigned to it.');
     }
 
-    // Delete role (cascade will handle RolePermission)
-    await prisma.role.delete({
-      where: { id: req.params.id }
+    // Delete RolePermission records and role in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete all RolePermission records for this role
+      await tx.rolePermission.deleteMany({
+        where: { roleId: req.params.id }
+      });
+      
+      // Delete the role
+      await tx.role.delete({
+        where: { id: req.params.id }
+      });
     });
 
     // Audit log
