@@ -15,45 +15,69 @@ type Permission = {
   description: string | null;
 };
 
-type PermissionGroupType = {
-  label: string;
-  permissions: Permission[];
-};
-
-const permissionGroups: PermissionGroupType[] = [
-  { label: 'Dashboard', permissions: [] },
-  { label: 'Service Requests', permissions: [] },
-  { label: 'Incidents', permissions: [] },
-  { label: 'Changes', permissions: [] },
-  { label: 'Inventory', permissions: [] },
-  { label: 'Access Management', permissions: [] },
-  { label: 'Compliance', permissions: [] },
-  { label: 'Settings', permissions: [] },
-  { label: 'Users & Teams', permissions: [] },
-  { label: 'AI Assistant', permissions: [] }
+// Module configuration with child permissions
+const moduleConfig = [
+  {
+    label: 'Dashboard',
+    permissions: ['dashboard:read']
+  },
+  {
+    label: 'Service Requests',
+    permissions: ['tickets:read', 'tickets:write', 'tickets:assign']
+  },
+  {
+    label: 'Incidents',
+    permissions: ['incidents:read', 'incidents:write']
+  },
+  {
+    label: 'Changes',
+    permissions: ['changes:read', 'changes:approve']
+  },
+  {
+    label: 'Inventory',
+    permissions: ['inventory:read', 'inventory:write']
+  },
+  {
+    label: 'Access Management',
+    permissions: ['access:read', 'access:approve']
+  },
+  {
+    label: 'Compliance',
+    permissions: ['compliance:read', 'compliance:write']
+  },
+  {
+    label: 'Projects & Environments',
+    permissions: ['settings:read']
+  },
+  {
+    label: 'Vendors & Licenses',
+    permissions: ['settings:read']
+  },
+  {
+    label: 'Reports & Analytics',
+    permissions: ['dashboard:read']
+  },
+  {
+    label: 'Knowledge Base',
+    permissions: ['dashboard:read']
+  },
+  {
+    label: 'Users & Teams',
+    permissions: ['users:read', 'users:write']
+  },
+  {
+    label: 'Roles & Permissions',
+    permissions: ['users:read']
+  },
+  {
+    label: 'Settings',
+    permissions: ['settings:read', 'settings:write']
+  },
+  {
+    label: 'AI Assistant',
+    permissions: ['ai:ask']
+  }
 ];
-
-const permissionToGroup: Record<string, string> = {
-  'dashboard:read': 'Dashboard',
-  'tickets:read': 'Service Requests',
-  'tickets:write': 'Service Requests',
-  'tickets:assign': 'Service Requests',
-  'incidents:read': 'Incidents',
-  'incidents:write': 'Incidents',
-  'changes:read': 'Changes',
-  'changes:approve': 'Changes',
-  'inventory:read': 'Inventory',
-  'inventory:write': 'Inventory',
-  'access:read': 'Access Management',
-  'access:approve': 'Access Management',
-  'compliance:read': 'Compliance',
-  'compliance:write': 'Compliance',
-  'settings:read': 'Settings',
-  'settings:write': 'Settings',
-  'users:read': 'Users & Teams',
-  'users:write': 'Users & Teams',
-  'ai:ask': 'AI Assistant'
-};
 
 export function RolesPermissionsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -76,11 +100,52 @@ export function RolesPermissionsPage() {
   const [createPermissions, setCreatePermissions] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
 
-  // Group permissions by category
-  const groupedPermissions = permissionGroups.map(group => ({
-    ...group,
-    permissions: permissions.filter(p => permissionToGroup[p.code] === group.label)
-  }));
+  // Helper: Check if all permissions in a module are selected
+  function isModuleChecked(modulePermissions: string[], selectedPermissions: string[]): boolean {
+    if (modulePermissions.length === 0) return false;
+    return modulePermissions.every(perm => selectedPermissions.includes(perm));
+  }
+
+  // Helper: Check if some permissions in a module are selected (indeterminate state)
+  function isModuleIndeterminate(modulePermissions: string[], selectedPermissions: string[]): boolean {
+    if (modulePermissions.length === 0) return false;
+    const checked = modulePermissions.filter(perm => selectedPermissions.includes(perm)).length;
+    return checked > 0 && checked < modulePermissions.length;
+  }
+
+  // Toggle module: select/deselect all child permissions
+  function toggleModule(modulePermissions: string[], isCreate: boolean) {
+    const allSelected = modulePermissions.every(perm => 
+      isCreate ? createPermissions.includes(perm) : editPermissions.includes(perm)
+    );
+
+    if (isCreate) {
+      if (allSelected) {
+        setCreatePermissions(prev => prev.filter(p => !modulePermissions.includes(p)));
+      } else {
+        setCreatePermissions(prev => [...new Set([...prev, ...modulePermissions])]);
+      }
+    } else {
+      if (allSelected) {
+        setEditPermissions(prev => prev.filter(p => !modulePermissions.includes(p)));
+      } else {
+        setEditPermissions(prev => [...new Set([...prev, ...modulePermissions])]);
+      }
+    }
+  }
+
+  // Toggle single permission
+  function togglePermission(perm: string, isCreate: boolean) {
+    if (isCreate) {
+      setCreatePermissions(prev =>
+        prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
+      );
+    } else {
+      setEditPermissions(prev =>
+        prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
+      );
+    }
+  }
 
   async function loadData() {
     setLoading(true);
@@ -124,17 +189,13 @@ export function RolesPermissionsPage() {
     if (!editingRole) return;
     setSaving(true);
     try {
-      // Update role name/description
       await api.patch(`/roles/${editingRole.id}`, {
         name: editName,
         description: editDescription
       });
-
-      // Update permissions
       await api.patch(`/roles/${editingRole.id}/permissions`, {
         permissions: editPermissions
       });
-
       setEditOpen(false);
       await loadData();
       setMessage('Role updated successfully.');
@@ -184,16 +245,19 @@ export function RolesPermissionsPage() {
     }
   }
 
-  function togglePermission(perm: string, isCreate: boolean) {
-    if (isCreate) {
-      setCreatePermissions(prev =>
-        prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
-      );
-    } else {
-      setEditPermissions(prev =>
-        prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
-      );
-    }
+  function closeCreateModal() {
+    setCreateOpen(false);
+    setCreateName('');
+    setCreateDescription('');
+    setCreatePermissions([]);
+  }
+
+  function closeEditModal() {
+    setEditOpen(false);
+    setEditingRole(null);
+    setEditName('');
+    setEditDescription('');
+    setEditPermissions([]);
   }
 
   return (
@@ -228,8 +292,8 @@ export function RolesPermissionsPage() {
             <div className="stat-label">Total Permissions</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value">{permissionGroups.length}</div>
-            <div className="stat-label">Permission Groups</div>
+            <div className="stat-value">{moduleConfig.length}</div>
+            <div className="stat-label">Modules</div>
           </div>
         </section>
       )}
@@ -283,7 +347,7 @@ export function RolesPermissionsPage() {
           <form className="modal wide" onSubmit={createRole}>
             <div className="page-title-row">
               <h3>Create Role</h3>
-              <button type="button" className="close" onClick={() => setCreateOpen(false)}>Close</button>
+              <button type="button" className="close" onClick={closeCreateModal}>Close</button>
             </div>
 
             <div className="form-row">
@@ -306,31 +370,46 @@ export function RolesPermissionsPage() {
               </label>
             </div>
 
-            <h4>Permissions</h4>
-            <div className="permissions-grid">
-              {groupedPermissions.map(group => (
-                <div key={group.label} className="permission-group">
-                  <h5>{group.label}</h5>
-                  {group.permissions.length === 0 ? (
-                    <p className="no-permissions">No permissions</p>
-                  ) : (
-                    group.permissions.map(perm => (
-                      <label key={perm.id} className="permission-checkbox">
+            <h4>Module Permissions</h4>
+            <p className="hint">Enable a module to grant all its permissions, or select individual permissions below.</p>
+            
+            <div className="module-permissions-grid">
+              {moduleConfig.map(module => {
+                const isChecked = isModuleChecked(module.permissions, createPermissions);
+                const isIndeterminate = isModuleIndeterminate(module.permissions, createPermissions);
+                
+                return (
+                  <div key={module.label} className={`module-card ${isChecked ? 'module-active' : ''}`}>
+                    <div className="module-header">
+                      <label className="module-checkbox">
                         <input
                           type="checkbox"
-                          checked={createPermissions.includes(perm.code)}
-                          onChange={() => togglePermission(perm.code, true)}
+                          checked={isChecked}
+                          ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                          onChange={() => toggleModule(module.permissions, true)}
                         />
-                        <span className="perm-code">{perm.code}</span>
+                        <span className="module-label">{module.label}</span>
                       </label>
-                    ))
-                  )}
-                </div>
-              ))}
+                    </div>
+                    <div className="module-permissions">
+                      {module.permissions.map(perm => (
+                        <label key={perm} className="permission-item">
+                          <input
+                            type="checkbox"
+                            checked={createPermissions.includes(perm)}
+                            onChange={() => togglePermission(perm, true)}
+                          />
+                          <span className="perm-code">{perm}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="form-actions">
-              <button type="button" className="secondary" onClick={() => setCreateOpen(false)}>
+              <button type="button" className="secondary" onClick={closeCreateModal}>
                 Cancel
               </button>
               <button type="submit" className="primary" disabled={creating}>
@@ -347,7 +426,7 @@ export function RolesPermissionsPage() {
           <form className="modal wide" onSubmit={saveEdit}>
             <div className="page-title-row">
               <h3>Edit Role: {editingRole.name}</h3>
-              <button type="button" className="close" onClick={() => setEditOpen(false)}>Close</button>
+              <button type="button" className="close" onClick={closeEditModal}>Close</button>
             </div>
 
             <div className="form-row">
@@ -370,31 +449,46 @@ export function RolesPermissionsPage() {
               </label>
             </div>
 
-            <h4>Permissions</h4>
-            <div className="permissions-grid">
-              {groupedPermissions.map(group => (
-                <div key={group.label} className="permission-group">
-                  <h5>{group.label}</h5>
-                  {group.permissions.length === 0 ? (
-                    <p className="no-permissions">No permissions</p>
-                  ) : (
-                    group.permissions.map(perm => (
-                      <label key={perm.id} className="permission-checkbox">
+            <h4>Module Permissions</h4>
+            <p className="hint">Enable a module to grant all its permissions, or select individual permissions below.</p>
+
+            <div className="module-permissions-grid">
+              {moduleConfig.map(module => {
+                const isChecked = isModuleChecked(module.permissions, editPermissions);
+                const isIndeterminate = isModuleIndeterminate(module.permissions, editPermissions);
+                
+                return (
+                  <div key={module.label} className={`module-card ${isChecked ? 'module-active' : ''}`}>
+                    <div className="module-header">
+                      <label className="module-checkbox">
                         <input
                           type="checkbox"
-                          checked={editPermissions.includes(perm.code)}
-                          onChange={() => togglePermission(perm.code, false)}
+                          checked={isChecked}
+                          ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                          onChange={() => toggleModule(module.permissions, false)}
                         />
-                        <span className="perm-code">{perm.code}</span>
+                        <span className="module-label">{module.label}</span>
                       </label>
-                    ))
-                  )}
-                </div>
-              ))}
+                    </div>
+                    <div className="module-permissions">
+                      {module.permissions.map(perm => (
+                        <label key={perm} className="permission-item">
+                          <input
+                            type="checkbox"
+                            checked={editPermissions.includes(perm)}
+                            onChange={() => togglePermission(perm, false)}
+                          />
+                          <span className="perm-code">{perm}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="form-actions">
-              <button type="button" className="secondary" onClick={() => setEditOpen(false)}>
+              <button type="button" className="secondary" onClick={closeEditModal}>
                 Cancel
               </button>
               <button type="submit" className="primary" disabled={saving}>
