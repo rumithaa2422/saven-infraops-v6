@@ -2,22 +2,23 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 // Permission mapping for menu visibility
+// Phase 3C: Migrated to new RBAC permission namespaces
 const menuPermissionMap: Record<string, string> = {
-  '/': 'dashboard:read',
-  '/service-requests': 'tickets:read',
-  '/incidents': 'incidents:read',
-  '/problems': 'incidents:read',
-  '/changes': 'changes:read',
-  '/inventory': 'inventory:read',
-  '/access-management': 'access:read',
-  '/compliance': 'compliance:read',
-  '/projects-environments': 'settings:read',
-  '/vendors-licenses': 'settings:read',
-  '/reports-analytics': 'dashboard:read',
-  '/knowledge-base': 'dashboard:read',
-  '/users-teams': 'users:read',
-  '/roles-permissions': 'users:read',
-  '/settings': 'settings:read'
+  '/': 'dashboard:view',
+  '/service-requests': 'tickets:view',
+  '/incidents': 'incidents:view',
+  '/problems': 'problems:view',         // NEW: Separated from incidents namespace
+  '/changes': 'changes:view',
+  '/inventory': 'inventory:view',
+  '/access-management': 'access:view',
+  '/compliance': 'compliance:view',
+  '/projects-environments': 'projects:view',  // NEW: Separated from settings namespace
+  '/vendors-licenses': 'vendors:view',       // NEW: Separated from settings namespace
+  '/reports-analytics': 'reports:view',       // NEW: Separated from dashboard namespace
+  '/knowledge-base': 'kb:view',               // NEW: Separated from dashboard namespace
+  '/users-teams': 'users:view',
+  '/roles-permissions': 'roles:view',           // NEW: Separated from users namespace
+  '/settings': 'settings:view'
 };
 
 const allMenuItems = [
