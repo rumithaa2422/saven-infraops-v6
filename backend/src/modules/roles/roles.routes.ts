@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
+import { requirePermission } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
 
 export const rolesRouter = Router();
 
-// Get all permissions
-rolesRouter.get('/permissions', requireAuth, async (_req, res, next) => {
+// Get all permissions - requires users:read
+rolesRouter.get('/permissions', requireAuth, requirePermission('users:read'), async (_req, res, next) => {
   try {
     const permissions = await prisma.permission.findMany({
       orderBy: { code: 'asc' }
@@ -18,8 +19,8 @@ rolesRouter.get('/permissions', requireAuth, async (_req, res, next) => {
   }
 });
 
-// Get all roles with permission count
-rolesRouter.get('/', requireAuth, async (_req, res, next) => {
+// Get all roles with permission count - requires users:read
+rolesRouter.get('/', requireAuth, requirePermission('users:read'), async (_req, res, next) => {
   try {
     const roles = await prisma.role.findMany({
       include: {
@@ -42,8 +43,8 @@ rolesRouter.get('/', requireAuth, async (_req, res, next) => {
   }
 });
 
-// Get single role with permissions
-rolesRouter.get('/:id', requireAuth, async (req, res, next) => {
+// Get single role with permissions - requires users:read
+rolesRouter.get('/:id', requireAuth, requirePermission('users:read'), async (req, res, next) => {
   try {
     const role = await prisma.role.findUnique({
       where: { id: req.params.id },
@@ -70,14 +71,14 @@ rolesRouter.get('/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-// Create role with permissions
+// Create role with permissions - requires users:write
 const createRoleSchema = z.object({
   name: z.string().min(1).max(191),
   description: z.string().optional(),
   permissions: z.array(z.string())
 });
 
-rolesRouter.post('/', requireAuth, async (req, res, next) => {
+rolesRouter.post('/', requireAuth, requirePermission('users:write'), async (req, res, next) => {
   try {
     const payload = createRoleSchema.parse(req.body);
     
@@ -137,13 +138,13 @@ rolesRouter.post('/', requireAuth, async (req, res, next) => {
   }
 });
 
-// Update role name and description
+// Update role name and description - requires users:write
 const updateRoleSchema = z.object({
   name: z.string().min(1).max(191),
   description: z.string().optional()
 });
 
-rolesRouter.patch('/:id', requireAuth, async (req, res, next) => {
+rolesRouter.patch('/:id', requireAuth, requirePermission('users:write'), async (req, res, next) => {
   try {
     const payload = updateRoleSchema.parse(req.body);
 
@@ -192,12 +193,12 @@ rolesRouter.patch('/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-// Update role permissions
+// Update role permissions - requires users:write
 const updatePermissionsSchema = z.object({
   permissions: z.array(z.string())
 });
 
-rolesRouter.patch('/:id/permissions', requireAuth, async (req, res, next) => {
+rolesRouter.patch('/:id/permissions', requireAuth, requirePermission('users:write'), async (req, res, next) => {
   try {
     const payload = updatePermissionsSchema.parse(req.body);
 
@@ -265,8 +266,8 @@ rolesRouter.patch('/:id/permissions', requireAuth, async (req, res, next) => {
   }
 });
 
-// Delete role
-rolesRouter.delete('/:id', requireAuth, async (req, res, next) => {
+// Delete role - requires users:write
+rolesRouter.delete('/:id', requireAuth, requirePermission('users:write'), async (req, res, next) => {
   try {
     // Check if role exists and count assigned users
     const role = await prisma.role.findUnique({
