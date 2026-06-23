@@ -220,32 +220,58 @@ tbody tr:hover { background: #f8faff; }
   margin-bottom: 0;
 }
 
-.link-button.danger {
-  color: #dc3545;
-  margin-left: 0.5rem;
+/* Delete Action Button in Table */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.link-button.danger:hover {
-  color: #a71d2a;
-  text-decoration: underline;
+.btn-delete {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
 }
 
+.btn-delete:hover {
+  background: #b91c1c;
+}
+
+.btn-delete:active {
+  background: #991b1b;
+}
+
+.btn-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Modal danger button */
 button.danger {
-  background: #dc3545;
+  background: #dc2626;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
+  font-weight: 600;
 }
 
 button.danger:hover {
-  background: #c82333;
+  background: #b91c1c;
 }
 
 button.danger:disabled {
   background: #ccc;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .form-group {

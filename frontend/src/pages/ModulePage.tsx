@@ -453,15 +453,17 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               <tr key={String(item.id || index)} onClick={() => setSelected(item)}>
                 {config.columns.map((column) => <td key={column.key}>{formatValue(item[column.key])}</td>)}
                 <td>
-                  <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>
-                  {moduleKey === 'users-teams' && hasPermission('users:delete') && (
-                    <button 
-                      className="link-button danger" 
-                      onClick={(event) => openDeleteDialog(item, event)}
-                    >
-                      Delete
-                    </button>
-                  )}
+                  <div className="action-buttons">
+                    <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>
+                    {moduleKey === 'users-teams' && hasPermission('users:delete') && (
+                      <button 
+                        className="btn-delete" 
+                        onClick={(event) => openDeleteDialog(item, event)}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
