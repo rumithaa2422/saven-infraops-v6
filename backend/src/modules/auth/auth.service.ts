@@ -32,6 +32,10 @@ export async function loginWithPassword(email: string, password: string) {
   if (user.status === 'LOCKED') {
     throw new HttpError(403, 'Account is locked. Please contact administrator.');
   }
+  
+  if (user.status === 'DELETED') {
+    throw new HttpError(403, 'Account has been deleted. Please contact administrator.');
+  }
 
   if (!user.passwordHash) throw new HttpError(401, 'Invalid credentials');
   

@@ -198,3 +198,76 @@ tbody tr:hover { background: #f8faff; }
   color: #555;
   font-family: monospace;
 }
+
+/* Delete Confirmation Modal */
+.warning-box {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.warning-box p {
+  margin: 0.5rem 0;
+}
+
+.warning-box p:first-child {
+  margin-top: 0;
+}
+
+.warning-box p:last-child {
+  margin-bottom: 0;
+}
+
+.link-button.danger {
+  color: #dc3545;
+  margin-left: 0.5rem;
+}
+
+.link-button.danger:hover {
+  color: #a71d2a;
+  text-decoration: underline;
+}
+
+button.danger {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button.danger:hover {
+  background: #c82333;
+}
+
+button.danger:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}

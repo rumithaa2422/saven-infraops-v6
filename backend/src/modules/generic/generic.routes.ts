@@ -10,6 +10,7 @@ export const genericModuleRouter = Router();
 type ModuleConfig = {
   permission: string;
   writePermission?: string;
+  deletePermission?: string;
   entityType: string;
   list: () => Promise<unknown[]>;
   create?: (payload: any) => Promise<unknown>;
@@ -96,8 +97,10 @@ const moduleMap: Record<string, ModuleConfig> = {
   'users-teams': {
     permission: 'users:read',
     writePermission: 'users:write',
+    deletePermission: 'users:delete',
     entityType: 'User',
     list: () => prisma.user.findMany({ 
+      where: { status: { not: 'DELETED' } },
       select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true }, 
       orderBy: { createdAt: 'desc' }, 
       take: 100 
@@ -226,5 +229,67 @@ genericModuleRouter.patch('/:module/:id', requireAuth, async (req, res, next) =>
     res.json({ item });
   } catch (error) {
     next(error instanceof Error ? error : new HttpError(400, 'Update failed'));
+  }
+});
+
+// DELETE endpoint for users-teams (soft delete)
+genericModuleRouter.delete('/:module/:id', requireAuth, async (req, res, next) => {
+  try {
+    const config = moduleMap[req.params.module];
+    
+    // Only allow delete for users-teams module
+    if (req.params.module !== 'users-teams') {
+      return next();
+    }
+    
+    // Check delete permission
+    if (!config?.deletePermission) {
+      throw new HttpError(403, 'Delete permission not configured for this module');
+    }
+    
+    await new Promise<void>((resolve, reject) => requirePermission(config.deletePermission)(req, res, (err) => err ? reject(err) : resolve()));
+    
+    // Find the user
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id }
+    });
+    
+    if (!user) {
+      throw new HttpError(404, 'User not found');
+    }
+    
+    // Prevent self-deletion
+    if (req.user?.id === req.params.id) {
+      throw new HttpError(400, 'Cannot delete your own account');
+    }
+    
+    // Prevent deletion of Super Admin account
+    if (user.email === 'admin@saven.in') {
+      throw new HttpError(400, 'Cannot delete the admin user');
+    }
+    
+    // Soft delete: Set status to DELETED
+    const updatedUser = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { status: 'DELETED' }
+    });
+    
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id,
+        actorEmail: req.user?.email,
+        action: 'USER_DELETED',
+        entityType: 'User',
+        entityId: user.id,
+        oldValue: { email: user.email, status: user.status },
+        newValue: { email: user.email, status: 'DELETED' },
+        ipAddress: req.ip
+      }
+    });
+    
+    res.json({ success: true, item: updatedUser });
+  } catch (error) {
+    next(error instanceof Error ? error : new HttpError(400, 'Delete failed'));
   }
 });

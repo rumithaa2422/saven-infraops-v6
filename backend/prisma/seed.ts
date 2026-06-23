@@ -13,7 +13,7 @@ async function main() {
     'access:read', 'access:approve',
     'compliance:read', 'compliance:write',
     'settings:read', 'settings:write',
-    'users:read', 'users:write',
+    'users:read', 'users:write', 'users:delete',
     'ai:ask'
   ];
 

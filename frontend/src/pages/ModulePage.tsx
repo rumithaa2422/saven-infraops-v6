@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
+import { useAuth } from '../auth/AuthContext';
 
 type ModulePageProps = {
   moduleKey: string;
@@ -295,6 +296,7 @@ function getInitialForm(fields: Field[]) {
 
 export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const config = configs[moduleKey] || configs['reports-analytics'];
+  const { hasPermission } = useAuth();
   const [items, setItems] = useState<RecordItem[]>([]);
   const [selected, setSelected] = useState<RecordItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -303,6 +305,12 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [message, setMessage] = useState('');
   const [roles, setRoles] = useState<{id: string; name: string}[]>([]);
   const statusActions = getStatusActions(moduleKey);
+  
+  // Delete confirmation state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<RecordItem | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch roles for users-teams module
   useEffect(() => {
@@ -378,6 +386,38 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     URL.revokeObjectURL(url);
   }
 
+  // Open delete confirmation dialog
+  function openDeleteDialog(user: RecordItem, event: React.MouseEvent) {
+    event.stopPropagation();
+    setDeletingUser(user);
+    setDeleteConfirmText('');
+    setDeleteOpen(true);
+  }
+
+  // Confirm and execute delete
+  async function confirmDelete() {
+    if (!deletingUser?.id || deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      await api.delete(`/users-teams/${deletingUser.id}`);
+      setDeleteOpen(false);
+      setDeletingUser(null);
+      setMessage('User deleted successfully.');
+      await load();
+    } catch (err: any) {
+      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to delete user.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  // Close delete dialog
+  function closeDeleteDialog() {
+    setDeleteOpen(false);
+    setDeletingUser(null);
+    setDeleteConfirmText('');
+  }
+
   return (
     <div className="page-stack">
       <div className="page-title-row">
@@ -412,7 +452,17 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             {items.map((item, index) => (
               <tr key={String(item.id || index)} onClick={() => setSelected(item)}>
                 {config.columns.map((column) => <td key={column.key}>{formatValue(item[column.key])}</td>)}
-                <td><button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button></td>
+                <td>
+                  <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>
+                  {moduleKey === 'users-teams' && hasPermission('users:delete') && (
+                    <button 
+                      className="link-button danger" 
+                      onClick={(event) => openDeleteDialog(item, event)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {!items.length && (
@@ -486,6 +536,51 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteOpen && deletingUser && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="page-title-row">
+              <h3>Delete User</h3>
+              <button type="button" className="close" onClick={closeDeleteDialog}>Close</button>
+            </div>
+            
+            <div className="warning-box">
+              <p><strong>Warning:</strong> This action cannot be undone.</p>
+              <p>You are about to delete the user: <strong>{String(deletingUser.name || deletingUser.email)}</strong></p>
+              <p>The user will be soft-deleted and will no longer be able to log in.</p>
+            </div>
+            
+            <div className="form-group">
+              <label>
+                Type <strong>DELETE</strong> to confirm:
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  autoFocus
+                />
+              </label>
+            </div>
+            
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={closeDeleteDialog}>
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="danger" 
+                onClick={confirmDelete}
+                disabled={deleteConfirmText !== 'DELETE' || deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
