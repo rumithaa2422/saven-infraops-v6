@@ -1,11 +1,18 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../auth/AuthContext';
 
 export function CommandBar() {
+  const { hasPermission } = useAuth();
   const [command, setCommand] = useState('');
   const [status, setStatus] = useState('');
   const navigate = useNavigate();
+
+  // Hide entire command bar if user lacks AI permission
+  if (!hasPermission('ai:ask')) {
+    return null;
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../auth/AuthContext';
 
 type ServiceRequest = {
   id: string;
@@ -26,12 +27,18 @@ const initialForm = {
 };
 
 export function ServiceRequestsPage() {
+  const { hasPermission } = useAuth();
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [selected, setSelected] = useState<ServiceRequest | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [comment, setComment] = useState('');
   const [message, setMessage] = useState('');
+
+  // Permission checks
+  const canCreate = hasPermission('tickets:write');
+  const canManage = hasPermission('tickets:write');
+  const canAssign = hasPermission('tickets:assign');
 
   async function load() {
     try {
@@ -93,8 +100,8 @@ export function ServiceRequestsPage() {
         </div>
         <div className="action-row">
           <button className="secondary" onClick={load}>Refresh</button>
-          <button className="secondary" onClick={exportCsv}>Export CSV</button>
-          <button className="primary" onClick={() => setCreateOpen(true)}>Create Request</button>
+          {canCreate && <button className="secondary" onClick={exportCsv}>Export CSV</button>}
+          {canCreate && <button className="primary" onClick={() => setCreateOpen(true)}>Create Request</button>}
         </div>
       </div>
 
@@ -168,16 +175,20 @@ export function ServiceRequestsPage() {
           <p>Requester: {selected.requesterName}</p>
           <p>Assignee: {selected.assigneeName || 'Unassigned'}</p>
           <p>Description: {selected.description || '-'}</p>
-          <div className="drawer-actions">
-            <button onClick={() => updateSelected({ status: 'ASSIGNED', assigneeName: selected.assigneeName || 'Infra Team' })}>Assign</button>
-            <button onClick={() => updateSelected({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}>Escalate</button>
-            <button onClick={() => updateSelected({ status: 'WAITING_FOR_USER' })}>Wait for User</button>
-            <button onClick={() => updateSelected({ status: 'CLOSED' })}>Close</button>
-          </div>
-          <div className="comment-box">
-            <label>Add Comment<textarea value={comment} onChange={(e) => setComment(e.target.value)} /></label>
-            <button className="secondary" onClick={() => updateSelected({ comment })} disabled={!comment.trim()}>Save Comment</button>
-          </div>
+          {canManage && (
+            <div className="drawer-actions">
+              {canAssign && <button onClick={() => updateSelected({ status: 'ASSIGNED', assigneeName: selected.assigneeName || 'Infra Team' })}>Assign</button>}
+              <button onClick={() => updateSelected({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}>Escalate</button>
+              <button onClick={() => updateSelected({ status: 'WAITING_FOR_USER' })}>Wait for User</button>
+              <button onClick={() => updateSelected({ status: 'CLOSED' })}>Close</button>
+            </div>
+          )}
+          {canManage && (
+            <div className="comment-box">
+              <label>Add Comment<textarea value={comment} onChange={(e) => setComment(e.target.value)} /></label>
+              <button className="secondary" onClick={() => updateSelected({ comment })} disabled={!comment.trim()}>Save Comment</button>
+            </div>
+          )}
         </div>
       )}
     </div>

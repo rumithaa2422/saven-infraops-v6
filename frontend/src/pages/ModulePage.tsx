@@ -26,6 +26,10 @@ type ModuleConfig = {
   dateKey?: string;
   fields: Field[];
   columns: Field[];
+  permissions: {
+    create?: string;
+    write?: string;
+  };
 };
 
 const configs: Record<string, ModuleConfig> = {
@@ -49,7 +53,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'severity', label: 'Severity' },
       { key: 'status', label: 'Status' },
       { key: 'ownerName', label: 'Owner' }
-    ]
+    ],
+    permissions: { create: 'incidents:write', write: 'incidents:write' }
   },
   problems: {
     referenceKey: 'problemNo',
@@ -68,7 +73,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'title', label: 'Title' },
       { key: 'status', label: 'Status' },
       { key: 'ownerName', label: 'Owner' }
-    ]
+    ],
+    permissions: { create: 'incidents:write', write: 'incidents:write' }
   },
   changes: {
     referenceKey: 'changeNo',
@@ -89,7 +95,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'riskLevel', label: 'Risk' },
       { key: 'status', label: 'Status' },
       { key: 'ownerName', label: 'Owner' }
-    ]
+    ],
+    permissions: { create: 'changes:approve', write: 'changes:approve' }
   },
   inventory: {
     referenceKey: 'assetNo',
@@ -112,7 +119,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'model', label: 'Model' },
       { key: 'status', label: 'Status' },
       { key: 'assignedToName', label: 'Assigned To' }
-    ]
+    ],
+    permissions: { create: 'inventory:write', write: 'inventory:write' }
   },
   'access-management': {
     referenceKey: 'requestNo',
@@ -133,7 +141,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'accessType', label: 'Access Type' },
       { key: 'systemName', label: 'System' },
       { key: 'status', label: 'Status' }
-    ]
+    ],
+    permissions: { create: 'access:approve', write: 'access:approve' }
   },
   compliance: {
     referenceKey: 'controlNo',
@@ -154,7 +163,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'controlArea', label: 'Area' },
       { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' }
-    ]
+    ],
+    permissions: { create: 'compliance:write', write: 'compliance:write' }
   },
   'projects-environments': {
     referenceKey: 'projectName',
@@ -175,7 +185,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'serviceName', label: 'Service' },
       { key: 'serverName', label: 'Server' },
       { key: 'ownerName', label: 'Owner' }
-    ]
+    ],
+    permissions: { create: 'settings:write', write: 'settings:write' }
   },
   'vendors-licenses': {
     referenceKey: 'vendorName',
@@ -196,7 +207,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'licenseCount', label: 'Count' },
       { key: 'assignedCount', label: 'Assigned' },
       { key: 'renewalAt', label: 'Renewal' }
-    ]
+    ],
+    permissions: { create: 'settings:write', write: 'settings:write' }
   },
   'knowledge-base': {
     referenceKey: 'category',
@@ -215,7 +227,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'category', label: 'Category' },
       { key: 'status', label: 'Status' },
       { key: 'authorName', label: 'Author' }
-    ]
+    ],
+    permissions: { create: 'settings:write', write: 'settings:write' }
   },
   'users-teams': {
     referenceKey: 'email',
@@ -236,7 +249,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'phoneNumber', label: 'Phone' },
       { key: 'department', label: 'Department' },
       { key: 'status', label: 'Status' }
-    ]
+    ],
+    permissions: { create: 'users:write', write: 'users:write' }
   },
   'reports-analytics': {
     referenceKey: 'title',
@@ -251,7 +265,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'title', label: 'Report' },
       { key: 'description', label: 'Description' },
       { key: 'owner', label: 'Owner' }
-    ]
+    ],
+    permissions: { create: undefined, write: 'dashboard:read' }
   }
 };
 
@@ -427,8 +442,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
         <div className="action-row">
           <button className="secondary" onClick={load}>{loading ? 'Refreshing...' : 'Refresh'}</button>
-          <button className="secondary" onClick={exportCsv}>Export CSV</button>
-          <button className="primary" onClick={() => setCreateOpen(true)}>Create</button>
+          {(config.permissions.create || config.permissions.write) && <button className="secondary" onClick={exportCsv}>Export CSV</button>}
+          {config.permissions.create && hasPermission(config.permissions.create) && <button className="primary" onClick={() => setCreateOpen(true)}>Create</button>}
         </div>
       </div>
 
@@ -531,7 +546,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               <p key={column.key}><strong>{column.label}:</strong> {formatValue(selected[column.key])}</p>
             ))}
           </div>
-          {config.statusKey && statusActions.length > 0 && (
+          {config.statusKey && statusActions.length > 0 && config.permissions.write && hasPermission(config.permissions.write) && (
             <div className="drawer-actions">
               {statusActions.map((action) => (
                 <button key={action.value} onClick={() => updateStatus(action.value)}>{action.label}</button>

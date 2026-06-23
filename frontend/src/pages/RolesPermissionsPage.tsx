@@ -271,9 +271,11 @@ export function RolesPermissionsPage() {
           <button className="secondary" onClick={loadData}>
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
-          <button className="primary" onClick={() => setCreateOpen(true)}>
-            Create Role
-          </button>
+          {hasPermission('users:write') && (
+            <button className="primary" onClick={() => setCreateOpen(true)}>
+              Create Role
+            </button>
+          )}
         </div>
       </div>
 
@@ -317,18 +319,20 @@ export function RolesPermissionsPage() {
                   <span className="permission-badge">{role.permissionCount} permissions</span>
                 </td>
                 <td>
-                  <div className="action-buttons">
-                    <button className="secondary small" onClick={() => openEdit(role)}>
-                      Edit
-                    </button>
-                    <button
-                      className="secondary small danger"
-                      onClick={() => deleteRole(role)}
-                      disabled={role.name === 'Super Admin'}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  {hasPermission('users:write') && (
+                    <div className="action-buttons">
+                      <button className="secondary small" onClick={() => openEdit(role)}>
+                        Edit
+                      </button>
+                      <button
+                        className="secondary small danger"
+                        onClick={() => deleteRole(role)}
+                        disabled={role.name === 'Super Admin'}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
