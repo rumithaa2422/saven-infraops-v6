@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../auth/AuthContext';
 
 type Role = {
   id: string;
@@ -80,6 +81,7 @@ const moduleConfig = [
 ];
 
 export function RolesPermissionsPage() {
+  const { hasPermission } = useAuth();
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
