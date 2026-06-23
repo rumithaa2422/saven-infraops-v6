@@ -20,59 +20,59 @@ type Permission = {
 const moduleConfig = [
   {
     label: 'Dashboard',
-    permissions: ['dashboard:read']
+    permissions: ['dashboard:view']
   },
   {
     label: 'Service Requests',
-    permissions: ['tickets:read', 'tickets:write', 'tickets:assign']
+    permissions: ['tickets:view', 'tickets:create', 'tickets:manage', 'tickets:assign']
   },
   {
     label: 'Incidents',
-    permissions: ['incidents:read', 'incidents:write']
+    permissions: ['incidents:view', 'incidents:create', 'incidents:manage']
   },
   {
     label: 'Changes',
-    permissions: ['changes:read', 'changes:approve']
+    permissions: ['changes:view', 'changes:create', 'changes:approve', 'changes:manage']
   },
   {
     label: 'Inventory',
-    permissions: ['inventory:read', 'inventory:write']
+    permissions: ['inventory:view', 'inventory:create', 'inventory:manage', 'inventory:delete']
   },
   {
     label: 'Access Management',
-    permissions: ['access:read', 'access:approve']
+    permissions: ['access:view', 'access:request', 'access:approve', 'access:revoke']
   },
   {
     label: 'Compliance',
-    permissions: ['compliance:read', 'compliance:write']
+    permissions: ['compliance:view', 'compliance:create', 'compliance:manage', 'compliance:audit']
   },
   {
     label: 'Projects & Environments',
-    permissions: ['settings:read']
+    permissions: ['projects:view', 'projects:create', 'projects:manage']
   },
   {
     label: 'Vendors & Licenses',
-    permissions: ['settings:read']
+    permissions: ['vendors:view', 'vendors:create', 'vendors:manage']
   },
   {
     label: 'Reports & Analytics',
-    permissions: ['dashboard:read']
+    permissions: ['reports:view']
   },
   {
     label: 'Knowledge Base',
-    permissions: ['dashboard:read']
+    permissions: ['kb:view']
   },
   {
     label: 'Users & Teams',
-    permissions: ['users:read', 'users:write']
+    permissions: ['users:view', 'users:create', 'users:manage', 'users:delete']
   },
   {
     label: 'Roles & Permissions',
-    permissions: ['users:read']
+    permissions: ['roles:view', 'roles:create', 'roles:manage', 'roles:delete']
   },
   {
     label: 'Settings',
-    permissions: ['settings:read', 'settings:write']
+    permissions: ['settings:view', 'settings:manage']
   },
   {
     label: 'AI Assistant',

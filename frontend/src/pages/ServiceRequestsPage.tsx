@@ -36,8 +36,8 @@ export function ServiceRequestsPage() {
   const [message, setMessage] = useState('');
 
   // Permission checks
-  const canCreate = hasPermission('tickets:write');
-  const canManage = hasPermission('tickets:write');
+  const canCreate = hasPermission('tickets:create');
+  const canManage = hasPermission('tickets:manage');
   const canAssign = hasPermission('tickets:assign');
 
   async function load() {
