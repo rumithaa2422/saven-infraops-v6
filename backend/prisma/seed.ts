@@ -217,6 +217,129 @@ async function main() {
   console.log(`  Employee: ${employeePerms} permissions`);
   console.log('[RBAC] Role-permission assignments complete.');
 
+  // ============================================
+  // TEST ROLES FOR USERS & TEAMS RBAC VALIDATION - Phase 4D
+  // ============================================
+
+  // Get specific user permissions for test roles
+  const userPermissions = allPermissions.filter(p => 
+    ['users:read', 'users:write', 'users:delete', 'users:view', 'users:create', 'users:manage', 'users:export'].includes(p.code)
+  );
+
+  // 1. Viewer Role - can view users only
+  const viewerRole = await prisma.role.upsert({
+    where: { name: 'User Viewer' },
+    update: { description: 'Can view user list only - cannot create, edit, or delete users' },
+    create: { name: 'User Viewer', description: 'Can view user list only - cannot create, edit, or delete users' }
+  });
+
+  // 2. User Creator Role - can view and create users
+  const userCreatorRole = await prisma.role.upsert({
+    where: { name: 'User Creator' },
+    update: { description: 'Can view and create users - cannot edit or delete' },
+    create: { name: 'User Creator', description: 'Can view and create users - cannot edit or delete' }
+  });
+
+  // 3. User Manager Role - can view and manage users
+  const userManagerRole = await prisma.role.upsert({
+    where: { name: 'User Manager' },
+    update: { description: 'Can view and manage users - cannot delete' },
+    create: { name: 'User Manager', description: 'Can view and manage users - cannot delete' }
+  });
+
+  // 4. User Admin Role - full user management
+  const userAdminRole = await prisma.role.upsert({
+    where: { name: 'User Admin' },
+    update: { description: 'Full user management - can view, create, edit, delete, and export users' },
+    create: { name: 'User Admin', description: 'Full user management - can view, create, edit, delete, and export users' }
+  });
+
+  console.log('[RBAC] Test roles created.');
+
+  // Assign permissions to test roles
+  console.log('[RBAC] Assigning permissions to test roles...');
+
+  // Viewer: users:view only
+  const viewerPerms = userPermissions.filter(p => ['users:view'].includes(p.code));
+  for (const permission of viewerPerms) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: viewerRole.id, permissionId: permission.id } },
+      update: {},
+      create: { roleId: viewerRole.id, permissionId: permission.id }
+    });
+  }
+  console.log(`[RBAC] Assigned ${viewerPerms.length} permissions to User Viewer`);
+
+  // User Creator: users:view + users:create
+  const creatorPerms = userPermissions.filter(p => ['users:view', 'users:create'].includes(p.code));
+  for (const permission of creatorPerms) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: userCreatorRole.id, permissionId: permission.id } },
+      update: {},
+      create: { roleId: userCreatorRole.id, permissionId: permission.id }
+    });
+  }
+  console.log(`[RBAC] Assigned ${creatorPerms.length} permissions to User Creator`);
+
+  // User Manager: users:view + users:manage
+  const managerPerms = userPermissions.filter(p => ['users:view', 'users:manage'].includes(p.code));
+  for (const permission of managerPerms) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: userManagerRole.id, permissionId: permission.id } },
+      update: {},
+      create: { roleId: userManagerRole.id, permissionId: permission.id }
+    });
+  }
+  console.log(`[RBAC] Assigned ${managerPerms.length} permissions to User Manager`);
+
+  // User Admin: all user permissions
+  const userAdminPerms = userPermissions.filter(p => 
+    ['users:view', 'users:create', 'users:manage', 'users:delete', 'users:export'].includes(p.code)
+  );
+  for (const permission of userAdminPerms) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: userAdminRole.id, permissionId: permission.id } },
+      update: {},
+      create: { roleId: userAdminRole.id, permissionId: permission.id }
+    });
+  }
+  console.log(`[RBAC] Assigned ${userAdminPerms.length} permissions to User Admin`);
+
+  // ============================================
+  // TEST USERS FOR RBAC VALIDATION - Phase 4D
+  // ============================================
+  // Each test user is assigned to a specific test role
+
+  const testUsers = [
+    { email: 'viewer@saven.in', name: 'Test Viewer', role: viewerRole, password: 'Test@12345' },
+    { email: 'creator@saven.in', name: 'Test Creator', role: userCreatorRole, password: 'Test@12345' },
+    { email: 'manager@saven.in', name: 'Test Manager', role: userManagerRole, password: 'Test@12345' },
+    { email: 'useradmin@saven.in', name: 'Test User Admin', role: userAdminRole, password: 'Test@12345' }
+  ];
+
+  for (const userData of testUsers) {
+    const user = await prisma.user.upsert({
+      where: { email: userData.email },
+      update: { name: userData.name },
+      create: {
+        name: userData.name,
+        email: userData.email,
+        department: 'InfraOps',
+        passwordHash: await bcrypt.hash(userData.password, 12)
+      }
+    });
+
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: user.id, roleId: userData.role.id } },
+      update: {},
+      create: { userId: user.id, roleId: userData.role.id }
+    });
+
+    console.log(`[RBAC] Created test user: ${userData.email} (${userData.role.name})`);
+  }
+
+  console.log('[RBAC] Test users created successfully.');
+
   const admin = await prisma.user.upsert({
     where: { email: 'admin@saven.in' },
     update: {},
