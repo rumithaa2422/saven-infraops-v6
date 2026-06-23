@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
-import { requirePermission } from '../../middleware/rbac.js';
+import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
 
 export const rolesRouter = Router();
 
-// Get all permissions - requires users:read
-rolesRouter.get('/permissions', requireAuth, requirePermission('users:read'), async (_req, res, next) => {
+// Get all permissions
+// Supports both legacy (users:read) and new (roles:view) permissions
+rolesRouter.get('/permissions', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (_req, res, next) => {
   try {
     const permissions = await prisma.permission.findMany({
       orderBy: { code: 'asc' }
@@ -19,8 +20,9 @@ rolesRouter.get('/permissions', requireAuth, requirePermission('users:read'), as
   }
 });
 
-// Get all roles with permission count - requires users:read
-rolesRouter.get('/', requireAuth, requirePermission('users:read'), async (_req, res, next) => {
+// Get all roles with permission count
+// Supports both legacy (users:read) and new (roles:view) permissions
+rolesRouter.get('/', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (_req, res, next) => {
   try {
     const roles = await prisma.role.findMany({
       include: {
@@ -43,8 +45,9 @@ rolesRouter.get('/', requireAuth, requirePermission('users:read'), async (_req, 
   }
 });
 
-// Get single role with permissions - requires users:read
-rolesRouter.get('/:id', requireAuth, requirePermission('users:read'), async (req, res, next) => {
+// Get single role with permissions
+// Supports both legacy (users:read) and new (roles:view) permissions
+rolesRouter.get('/:id', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (req, res, next) => {
   try {
     const role = await prisma.role.findUnique({
       where: { id: req.params.id },
@@ -71,14 +74,15 @@ rolesRouter.get('/:id', requireAuth, requirePermission('users:read'), async (req
   }
 });
 
-// Create role with permissions - requires users:write
+// Create role with permissions
+// Supports both legacy (users:write) and new (roles:create, roles:manage) permissions
 const createRoleSchema = z.object({
   name: z.string().min(1).max(191),
   description: z.string().optional(),
   permissions: z.array(z.string())
 });
 
-rolesRouter.post('/', requireAuth, requirePermission('users:write'), async (req, res, next) => {
+rolesRouter.post('/', requireAuth, requirePermissionOr(['users:write', 'roles:create', 'roles:manage']), async (req, res, next) => {
   try {
     const payload = createRoleSchema.parse(req.body);
     
@@ -138,13 +142,14 @@ rolesRouter.post('/', requireAuth, requirePermission('users:write'), async (req,
   }
 });
 
-// Update role name and description - requires users:write
+// Update role name and description
+// Supports both legacy (users:write) and new (roles:manage) permissions
 const updateRoleSchema = z.object({
   name: z.string().min(1).max(191),
   description: z.string().optional()
 });
 
-rolesRouter.patch('/:id', requireAuth, requirePermission('users:write'), async (req, res, next) => {
+rolesRouter.patch('/:id', requireAuth, requirePermissionOr(['users:write', 'roles:manage']), async (req, res, next) => {
   try {
     const payload = updateRoleSchema.parse(req.body);
 
@@ -193,12 +198,13 @@ rolesRouter.patch('/:id', requireAuth, requirePermission('users:write'), async (
   }
 });
 
-// Update role permissions - requires users:write
+// Update role permissions
+// Supports both legacy (users:write) and new (roles:manage) permissions
 const updatePermissionsSchema = z.object({
   permissions: z.array(z.string())
 });
 
-rolesRouter.patch('/:id/permissions', requireAuth, requirePermission('users:write'), async (req, res, next) => {
+rolesRouter.patch('/:id/permissions', requireAuth, requirePermissionOr(['users:write', 'roles:manage']), async (req, res, next) => {
   try {
     const payload = updatePermissionsSchema.parse(req.body);
 
@@ -266,8 +272,9 @@ rolesRouter.patch('/:id/permissions', requireAuth, requirePermission('users:writ
   }
 });
 
-// Delete role - requires users:write
-rolesRouter.delete('/:id', requireAuth, requirePermission('users:write'), async (req, res, next) => {
+// Delete role
+// Supports both legacy (users:write) and new (roles:delete) permissions
+rolesRouter.delete('/:id', requireAuth, requirePermissionOr(['users:write', 'roles:delete']), async (req, res, next) => {
   try {
     // Check if role exists and count assigned users
     const role = await prisma.role.findUnique({

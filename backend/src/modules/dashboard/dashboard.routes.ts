@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
-import { requirePermission } from '../../middleware/rbac.js';
+import { requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 
 export const dashboardRouter = Router();
 
-dashboardRouter.get('/summary', requireAuth, requirePermission('dashboard:read'), async (_req, res, next) => {
+// GET /api/dashboard/summary
+// Supports both legacy (dashboard:read) and new (dashboard:view) permissions
+dashboardRouter.get('/summary', requireAuth, requirePermissionOr(['dashboard:read', 'dashboard:view']), async (_req, res, next) => {
   try {
     const [openServiceRequests, criticalIncidents, slaBreaches, pendingCompliance, availableAssets, pendingApprovals] = await Promise.all([
       prisma.serviceRequest.count({ where: { status: { notIn: ['CLOSED', 'RESOLVED'] } } }),

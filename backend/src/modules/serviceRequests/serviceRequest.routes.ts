@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
-import { requirePermission } from '../../middleware/rbac.js';
+import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
 
 export const serviceRequestRouter = Router();
 
-serviceRequestRouter.get('/', requireAuth, requirePermission('tickets:read'), async (req, res, next) => {
+// GET /service-requests - List all tickets
+// Supports both legacy (tickets:read) and new (tickets:view) permissions
+serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
   try {
     const status = req.query.status as string | undefined;
     const items = await prisma.serviceRequest.findMany({
@@ -21,7 +23,8 @@ serviceRequestRouter.get('/', requireAuth, requirePermission('tickets:read'), as
   }
 });
 
-serviceRequestRouter.get('/:id', requireAuth, requirePermission('tickets:read'), async (req, res, next) => {
+// GET /service-requests/:id - Get single ticket
+serviceRequestRouter.get('/:id', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
   try {
     const item = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
     if (!item) throw new HttpError(404, 'Service request not found');
@@ -41,7 +44,9 @@ const createSchema = z.object({
   projectName: z.string().optional()
 });
 
-serviceRequestRouter.post('/', requireAuth, requirePermission('tickets:write'), async (req, res, next) => {
+// POST /service-requests - Create ticket
+// Supports both legacy (tickets:write) and new (tickets:create) permissions
+serviceRequestRouter.post('/', requireAuth, requirePermissionOr(['tickets:write', 'tickets:create']), async (req, res, next) => {
   try {
     const payload = createSchema.parse(req.body);
     const count = await prisma.serviceRequest.count();
@@ -81,7 +86,9 @@ const updateSchema = z.object({
   comment: z.string().optional()
 });
 
-serviceRequestRouter.patch('/:id', requireAuth, requirePermission('tickets:write'), async (req, res, next) => {
+// PATCH /service-requests/:id - Update ticket
+// Supports both legacy (tickets:write) and new (tickets:manage) permissions
+serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
   try {
     const payload = updateSchema.parse(req.body);
     const existing = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });

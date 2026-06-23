@@ -1,16 +1,27 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { requireAuth } from '../../middleware/auth.js';
-import { requirePermission } from '../../middleware/rbac.js';
+import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
 
 export const genericModuleRouter = Router();
 
+/**
+ * Module configuration with permission support for RBAC migration
+ * Supports both legacy (old) and new permissions for backward compatibility
+ */
 type ModuleConfig = {
+  // Legacy permissions (for backward compatibility)
   permission: string;
   writePermission?: string;
   deletePermission?: string;
+  // New permissions (Phase 3B)
+  viewPermission?: string;
+  createPermission?: string;
+  managePermission?: string;
+  exportPermission?: string;
+  // Entity configuration
   entityType: string;
   list: () => Promise<unknown[]>;
   create?: (payload: any) => Promise<unknown>;
@@ -25,14 +36,22 @@ const moduleMap: Record<string, ModuleConfig> = {
   incidents: {
     permission: 'incidents:read',
     writePermission: 'incidents:write',
+    viewPermission: 'incidents:view',
+    createPermission: 'incidents:create',
+    managePermission: 'incidents:manage',
+    exportPermission: 'incidents:export',
     entityType: 'Incident',
     list: () => prisma.incident.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: async (payload) => prisma.incident.create({ data: { incidentNo: withRef('INC', await prisma.incident.count()), title: payload.title, severity: payload.severity || 'SEV3', impactedService: payload.impactedService || null, impactedProject: payload.impactedProject || null, ownerName: payload.ownerName || null, description: payload.description || null } }),
     update: (id, payload) => prisma.incident.update({ where: { id }, data: payload })
   },
   problems: {
-    permission: 'incidents:read',
-    writePermission: 'incidents:write',
+    permission: 'incidents:read',        // Legacy - problems shared incidents namespace
+    writePermission: 'incidents:write',  // Legacy
+    viewPermission: 'problems:view',     // NEW
+    createPermission: 'problems:create', // NEW
+    managePermission: 'problems:manage',  // NEW
+    exportPermission: 'problems:export',  // NEW
     entityType: 'Problem',
     list: () => prisma.problem.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: async (payload) => prisma.problem.create({ data: { problemNo: withRef('PRB', await prisma.problem.count()), title: payload.title, ownerName: payload.ownerName || null, description: payload.description || null, rootCause: payload.rootCause || null } }),
@@ -41,6 +60,10 @@ const moduleMap: Record<string, ModuleConfig> = {
   changes: {
     permission: 'changes:read',
     writePermission: 'changes:approve',
+    viewPermission: 'changes:view',
+    createPermission: 'changes:create',
+    managePermission: 'changes:manage',
+    exportPermission: 'changes:export',
     entityType: 'ChangeRequest',
     list: () => prisma.changeRequest.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: async (payload) => prisma.changeRequest.create({ data: { changeNo: withRef('CHG', await prisma.changeRequest.count()), title: payload.title, riskLevel: payload.riskLevel || 'MEDIUM', ownerName: payload.ownerName || null, rollbackPlan: payload.rollbackPlan || null, changeWindow: payload.changeWindow ? new Date(payload.changeWindow) : null } }),
@@ -49,6 +72,10 @@ const moduleMap: Record<string, ModuleConfig> = {
   inventory: {
     permission: 'inventory:read',
     writePermission: 'inventory:write',
+    viewPermission: 'inventory:view',
+    createPermission: 'inventory:create',
+    managePermission: 'inventory:manage',
+    exportPermission: 'inventory:export',
     entityType: 'Asset',
     list: () => prisma.asset.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: async (payload) => prisma.asset.create({ data: { assetNo: withRef('AST', await prisma.asset.count()), assetType: payload.assetType, make: payload.make || null, model: payload.model || null, serialNo: payload.serialNo || null, assignedToName: payload.assignedToName || null, location: payload.location || null } }),
@@ -57,6 +84,10 @@ const moduleMap: Record<string, ModuleConfig> = {
   'access-management': {
     permission: 'access:read',
     writePermission: 'access:approve',
+    viewPermission: 'access:view',
+    createPermission: 'access:request',
+    managePermission: 'access:approve',
+    exportPermission: 'access:export',
     entityType: 'AccessRequest',
     list: () => prisma.accessRequest.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: async (payload) => prisma.accessRequest.create({ data: { requestNo: withRef('ACC', await prisma.accessRequest.count()), requesterName: payload.requesterName, accessType: payload.accessType, systemName: payload.systemName, approverName: payload.approverName || null, justification: payload.justification || null } }),
@@ -65,30 +96,46 @@ const moduleMap: Record<string, ModuleConfig> = {
   compliance: {
     permission: 'compliance:read',
     writePermission: 'compliance:write',
+    viewPermission: 'compliance:view',
+    createPermission: 'compliance:create',
+    managePermission: 'compliance:manage',
+    exportPermission: 'compliance:export',
     entityType: 'ComplianceControl',
     list: () => prisma.complianceControl.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: async (payload) => prisma.complianceControl.create({ data: { controlNo: withRef('CMP', await prisma.complianceControl.count()), title: payload.title, controlArea: payload.controlArea, ownerName: payload.ownerName, frequency: payload.frequency || 'Quarterly', riskRating: payload.riskRating || 'MEDIUM' } }),
     update: (id, payload) => prisma.complianceControl.update({ where: { id }, data: payload })
   },
   'projects-environments': {
-    permission: 'dashboard:read',
-    writePermission: 'settings:write',
+    permission: 'dashboard:read',       // Legacy
+    writePermission: 'settings:write',  // Legacy
+    viewPermission: 'projects:view',     // NEW
+    createPermission: 'projects:create', // NEW
+    managePermission: 'projects:manage',  // NEW
+    exportPermission: 'projects:export',  // NEW
     entityType: 'ProjectEnvironment',
     list: () => prisma.projectEnvironment.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: (payload) => prisma.projectEnvironment.create({ data: { projectName: payload.projectName, environmentName: payload.environmentName, serviceName: payload.serviceName || null, serverName: payload.serverName || null, databaseName: payload.databaseName || null, ownerName: payload.ownerName || null } }),
     update: (id, payload) => prisma.projectEnvironment.update({ where: { id }, data: payload })
   },
   'vendors-licenses': {
-    permission: 'dashboard:read',
-    writePermission: 'settings:write',
+    permission: 'dashboard:read',       // Legacy
+    writePermission: 'settings:write',  // Legacy
+    viewPermission: 'vendors:view',     // NEW
+    createPermission: 'vendors:create',  // NEW
+    managePermission: 'vendors:manage',  // NEW
+    exportPermission: 'vendors:export',  // NEW
     entityType: 'VendorLicense',
     list: () => prisma.vendorLicense.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: (payload) => prisma.vendorLicense.create({ data: { vendorName: payload.vendorName, licenseName: payload.licenseName, licenseCount: Number(payload.licenseCount || 0), assignedCount: Number(payload.assignedCount || 0), ownerName: payload.ownerName || null, renewalAt: payload.renewalAt ? new Date(payload.renewalAt) : null } }),
     update: (id, payload) => prisma.vendorLicense.update({ where: { id }, data: payload })
   },
   'knowledge-base': {
-    permission: 'dashboard:read',
-    writePermission: 'settings:write',
+    permission: 'dashboard:read',       // Legacy
+    writePermission: 'settings:write',  // Legacy
+    viewPermission: 'kb:view',          // NEW
+    createPermission: 'kb:create',      // NEW
+    managePermission: 'kb:manage',      // NEW
+    exportPermission: 'kb:export',      // NEW
     entityType: 'KnowledgeBaseArticle',
     list: () => prisma.knowledgeBaseArticle.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     create: (payload) => prisma.knowledgeBaseArticle.create({ data: { title: payload.title, category: payload.category, authorName: payload.authorName || null, body: payload.body || '' } }),
@@ -98,6 +145,10 @@ const moduleMap: Record<string, ModuleConfig> = {
     permission: 'users:read',
     writePermission: 'users:write',
     deletePermission: 'users:delete',
+    viewPermission: 'users:view',
+    createPermission: 'users:create',
+    managePermission: 'users:manage',
+    exportPermission: 'users:export',
     entityType: 'User',
     list: () => prisma.user.findMany({ 
       select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true }, 
@@ -170,8 +221,12 @@ const moduleMap: Record<string, ModuleConfig> = {
     })
   },
   'reports-analytics': {
-    permission: 'dashboard:read',
-    writePermission: 'dashboard:read',
+    permission: 'dashboard:read',       // Legacy
+    writePermission: 'dashboard:read', // Legacy
+    viewPermission: 'reports:view',    // NEW
+    createPermission: 'reports:create', // NEW
+    managePermission: 'reports:create',  // Reports use create for custom reports
+    exportPermission: 'reports:export',  // NEW
     entityType: 'Report',
     list: async () => [
       { id: 'ticket-aging', title: 'Ticket Ageing Report', description: 'Open service requests by priority and owner', owner: 'Admin Team' },
@@ -185,7 +240,10 @@ const moduleMap: Record<string, ModuleConfig> = {
 // Roles endpoint for user management
 genericModuleRouter.get('/roles', requireAuth, async (req, res, next) => {
   try {
-    await new Promise<void>((resolve, reject) => requirePermission('users:read')(req, res, (err) => err ? reject(err) : resolve()));
+    // Support both legacy and new permissions for backward compatibility
+    await new Promise<void>((resolve, reject) => 
+      requirePermissionOr(['users:read', 'roles:view'])(req, res, (err) => err ? reject(err) : resolve())
+    );
     const items = await prisma.role.findMany({ select: { id: true, name: true, description: true }, orderBy: { name: 'asc' } });
     res.json({ items });
   } catch (error) {
@@ -193,11 +251,16 @@ genericModuleRouter.get('/roles', requireAuth, async (req, res, next) => {
   }
 });
 
+// GET - List records (view permission)
 genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
   try {
     const config = moduleMap[req.params.module];
     if (!config) return next();
-    await new Promise<void>((resolve, reject) => requirePermission(config.permission)(req, res, (err) => err ? reject(err) : resolve()));
+    
+    // Support both legacy and new permissions for backward compatibility
+    await new Promise<void>((resolve, reject) => 
+      requirePermissionOr([config.permission, config.viewPermission || config.permission])(req, res, (err) => err ? reject(err) : resolve())
+    );
     const items = await config.list();
     res.json({ items });
   } catch (error) {
@@ -205,11 +268,18 @@ genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
   }
 });
 
+// POST - Create record (create permission)
 genericModuleRouter.post('/:module', requireAuth, async (req, res, next) => {
   try {
     const config = moduleMap[req.params.module];
     if (!config?.create) return next();
-    await new Promise<void>((resolve, reject) => requirePermission(config.writePermission || config.permission)(req, res, (err) => err ? reject(err) : resolve()));
+    
+    // Support both legacy and new permissions for backward compatibility
+    const legacyPerm = config.writePermission || config.permission;
+    const newPerm = config.createPermission || legacyPerm;
+    await new Promise<void>((resolve, reject) => 
+      requirePermissionOr([legacyPerm, newPerm])(req, res, (err) => err ? reject(err) : resolve())
+    );
     const item = await config.create(req.body);
     await prisma.auditLog.create({ data: { actorId: req.user?.id, actorEmail: req.user?.email, action: 'CREATE', entityType: config.entityType, newValue: item as any, ipAddress: req.ip } });
     res.status(201).json({ item });
@@ -218,11 +288,18 @@ genericModuleRouter.post('/:module', requireAuth, async (req, res, next) => {
   }
 });
 
+// PATCH - Update record (manage permission)
 genericModuleRouter.patch('/:module/:id', requireAuth, async (req, res, next) => {
   try {
     const config = moduleMap[req.params.module];
     if (!config?.update) return next();
-    await new Promise<void>((resolve, reject) => requirePermission(config.writePermission || config.permission)(req, res, (err) => err ? reject(err) : resolve()));
+    
+    // Support both legacy and new permissions for backward compatibility
+    const legacyPerm = config.writePermission || config.permission;
+    const newPerm = config.managePermission || legacyPerm;
+    await new Promise<void>((resolve, reject) => 
+      requirePermissionOr([legacyPerm, newPerm])(req, res, (err) => err ? reject(err) : resolve())
+    );
     const item = await config.update(req.params.id, req.body);
     await prisma.auditLog.create({ data: { actorId: req.user?.id, actorEmail: req.user?.email, action: 'UPDATE', entityType: config.entityType, entityId: req.params.id, newValue: item as any, ipAddress: req.ip } });
     res.json({ item });
@@ -231,22 +308,24 @@ genericModuleRouter.patch('/:module/:id', requireAuth, async (req, res, next) =>
   }
 });
 
-// DELETE endpoint for users-teams (soft delete)
+// DELETE - Delete record (delete permission)
 genericModuleRouter.delete('/:module/:id', requireAuth, async (req, res, next) => {
   try {
     const config = moduleMap[req.params.module];
     
-    // Only allow delete for users-teams module
+    // Only allow delete for modules that support it
     if (req.params.module !== 'users-teams') {
       return next();
     }
     
-    // Check delete permission
+    // Check delete permission (no new permission needed for users - uses users:delete)
     if (!config?.deletePermission) {
       throw new HttpError(403, 'Delete permission not configured for this module');
     }
     
-    await new Promise<void>((resolve, reject) => requirePermission(config.deletePermission)(req, res, (err) => err ? reject(err) : resolve()));
+    await new Promise<void>((resolve, reject) => 
+      requirePermission(config.deletePermission)(req, res, (err) => err ? reject(err) : resolve())
+    );
     
     // Find the user
     const user = await prisma.user.findUnique({
