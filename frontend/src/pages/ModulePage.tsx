@@ -18,6 +18,7 @@ type Field = {
   options?: string[];
 };
 
+// Phase 4C: Extended permissions type for action-level RBAC
 type ModuleConfig = {
   referenceKey: string;
   titleKey: string;
@@ -27,8 +28,10 @@ type ModuleConfig = {
   fields: Field[];
   columns: Field[];
   permissions: {
-    create?: string;
-    write?: string;
+    view?: string;      // NEW: View/Drawer permission
+    create?: string;   // Create button and modal
+    write?: string;    // Edit/Manage actions
+    export?: string;   // NEW: Export permission
   };
 };
 
@@ -250,7 +253,12 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'department', label: 'Department' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'users:create', write: 'users:manage' }
+    permissions: {
+      view: 'users:view',      // View user details in drawer
+      create: 'users:create',  // Create user button/modal
+      write: 'users:manage',   // Edit/Enable/Disable/Reset Password
+      export: 'users:export'  // Export users button
+    }
   },
   'reports-analytics': {
     referenceKey: 'title',
@@ -442,7 +450,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
         <div className="action-row">
           <button className="secondary" onClick={load}>{loading ? 'Refreshing...' : 'Refresh'}</button>
-          {(config.permissions.create || config.permissions.write) && <button className="secondary" onClick={exportCsv}>Export CSV</button>}
+          {config.permissions.export && hasPermission(config.permissions.export) && <button className="secondary" onClick={exportCsv}>Export CSV</button>}
           {config.permissions.create && hasPermission(config.permissions.create) && <button className="primary" onClick={() => setCreateOpen(true)}>Create</button>}
         </div>
       </div>
@@ -469,7 +477,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 {config.columns.map((column) => <td key={column.key}>{formatValue(item[column.key])}</td>)}
                 <td>
                   <div className="action-buttons">
-                    <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>
+                    {hasPermission((config.permissions.view || config.permissions.create) || '') && <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>}
                     {moduleKey === 'users-teams' && hasPermission('users:delete') && (
                       <button 
                         className="btn-delete" 
