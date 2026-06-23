@@ -100,7 +100,6 @@ const moduleMap: Record<string, ModuleConfig> = {
     deletePermission: 'users:delete',
     entityType: 'User',
     list: () => prisma.user.findMany({ 
-      where: { status: { not: 'DELETED' } },
       select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true }, 
       orderBy: { createdAt: 'desc' }, 
       take: 100 
@@ -268,10 +267,33 @@ genericModuleRouter.delete('/:module/:id', requireAuth, async (req, res, next) =
       throw new HttpError(400, 'Cannot delete the admin user');
     }
     
-    // Soft delete: Set status to DELETED
-    const updatedUser = await prisma.user.update({
-      where: { id: req.params.id },
-      data: { status: 'DELETED' }
+    // Check for ServiceRequest references
+    const serviceRequests = await prisma.serviceRequest.findMany({
+      where: {
+        OR: [
+          { requesterId: req.params.id },
+          { assigneeId: req.params.id }
+        ]
+      }
+    });
+    
+    if (serviceRequests.length > 0) {
+      throw new HttpError(400, 'User cannot be deleted because tickets are associated with this account.');
+    }
+    
+    // Delete related UserRole records
+    await prisma.userRole.deleteMany({
+      where: { userId: req.params.id }
+    });
+    
+    // Delete related UserActivationToken records
+    await prisma.userActivationToken.deleteMany({
+      where: { userId: req.params.id }
+    });
+    
+    // Hard delete the user
+    await prisma.user.delete({
+      where: { id: req.params.id }
     });
     
     // Audit log
@@ -282,13 +304,13 @@ genericModuleRouter.delete('/:module/:id', requireAuth, async (req, res, next) =
         action: 'USER_DELETED',
         entityType: 'User',
         entityId: user.id,
-        oldValue: { email: user.email, status: user.status },
-        newValue: { email: user.email, status: 'DELETED' },
+        oldValue: { email: user.email },
+        newValue: null,
         ipAddress: req.ip
       }
     });
     
-    res.json({ success: true, item: updatedUser });
+    res.json({ success: true });
   } catch (error) {
     next(error instanceof Error ? error : new HttpError(400, 'Delete failed'));
   }

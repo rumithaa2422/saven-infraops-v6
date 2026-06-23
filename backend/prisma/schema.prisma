@@ -48,7 +48,6 @@ enum UserStatus {
   ACTIVE
   DISABLED
   LOCKED
-  DELETED
 }
 
 enum AccessStatus {
