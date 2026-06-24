@@ -20,14 +20,14 @@ rolesRouter.get('/permissions', requireAuth, requirePermissionOr(['users:read', 
   }
 });
 
-// Get all roles with permission count
+// Get all roles with permission and user count
 // Supports both legacy (users:read) and new (roles:view) permissions
 rolesRouter.get('/', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (_req, res, next) => {
   try {
     const roles = await prisma.role.findMany({
       include: {
         _count: {
-          select: { permissions: true }
+          select: { permissions: true, users: true }  // Phase 5B.1: Include user count
         }
       },
       orderBy: { name: 'asc' }
@@ -37,6 +37,7 @@ rolesRouter.get('/', requireAuth, requirePermissionOr(['users:read', 'roles:view
       name: role.name,
       description: role.description,
       permissionCount: role._count.permissions,
+      userCount: role._count.users,  // Phase 5B.1: Add user count
       createdAt: role.createdAt
     }));
     res.json({ items });
