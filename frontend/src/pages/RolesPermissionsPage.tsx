@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
-// Phase 5B.1: Enhanced Role type with user count
+// Enhanced Role type with status
 type Role = {
   id: string;
   name: string;
@@ -10,6 +10,7 @@ type Role = {
   permissionCount: number;
   userCount: number;
   createdAt: string;
+  status?: 'active' | 'inactive';
 };
 
 type Permission = {
@@ -18,151 +19,158 @@ type Permission = {
   description: string | null;
 };
 
-// Phase 5B.1: Module configuration with groups and icons
-type ModuleGroup = {
-  label: string;
-  modules: {
-    label: string;
-    icon: string;
-    permissions: string[];
-  }[];
-};
-
-const moduleGroups: ModuleGroup[] = [
+// Phase 5B.2: Module configuration for permissions
+const moduleGroups = [
   {
     label: 'Core Operations',
     modules: [
-      { label: 'Dashboard', icon: '📊', permissions: ['dashboard:view'] },
-      { label: 'Service Requests', icon: '🎫', permissions: ['tickets:view', 'tickets:create', 'tickets:manage', 'tickets:assign'] },
-      { label: 'Incidents', icon: '🚨', permissions: ['incidents:view', 'incidents:create', 'incidents:manage'] },
-      { label: 'Changes', icon: '🔄', permissions: ['changes:view', 'changes:create', 'changes:approve', 'changes:manage'] }
+      { label: 'Dashboard', permissions: ['dashboard:view'] },
+      { label: 'Service Requests', permissions: ['tickets:view', 'tickets:create', 'tickets:manage', 'tickets:assign'] },
+      { label: 'Incidents', permissions: ['incidents:view', 'incidents:create', 'incidents:manage'] },
+      { label: 'Problems', permissions: ['problems:view', 'problems:create', 'problems:manage'] },
+      { label: 'Changes', permissions: ['changes:view', 'changes:create', 'changes:approve', 'changes:manage'] }
     ]
   },
   {
     label: 'Asset Management',
     modules: [
-      { label: 'Inventory', icon: '📦', permissions: ['inventory:view', 'inventory:create', 'inventory:manage', 'inventory:delete'] },
-      { label: 'Projects & Environments', icon: '🖥️', permissions: ['projects:view', 'projects:create', 'projects:manage'] },
-      { label: 'Vendors & Licenses', icon: '📄', permissions: ['vendors:view', 'vendors:create', 'vendors:manage'] },
-      { label: 'Access Management', icon: '🔑', permissions: ['access:view', 'access:request', 'access:approve', 'access:revoke'] }
+      { label: 'Inventory', permissions: ['inventory:view', 'inventory:create', 'inventory:manage', 'inventory:delete'] },
+      { label: 'Projects', permissions: ['projects:view', 'projects:create', 'projects:manage'] },
+      { label: 'Vendors', permissions: ['vendors:view', 'vendors:create', 'vendors:manage'] },
+      { label: 'Access', permissions: ['access:view', 'access:request', 'access:approve', 'access:revoke'] }
     ]
   },
   {
     label: 'Governance',
     modules: [
-      { label: 'Compliance', icon: '✓', permissions: ['compliance:view', 'compliance:create', 'compliance:manage', 'compliance:audit'] },
-      { label: 'Knowledge Base', icon: '📚', permissions: ['kb:view'] },
-      { label: 'Reports & Analytics', icon: '📈', permissions: ['reports:view'] }
+      { label: 'Compliance', permissions: ['compliance:view', 'compliance:create', 'compliance:manage', 'compliance:audit'] },
+      { label: 'Knowledge Base', permissions: ['kb:view'] },
+      { label: 'Reports', permissions: ['reports:view', 'reports:export'] }
     ]
   },
   {
     label: 'Administration',
     modules: [
-      { label: 'Users & Teams', icon: '👥', permissions: ['users:view', 'users:create', 'users:manage', 'users:delete'] },
-      { label: 'Roles & Permissions', icon: '🔐', permissions: ['roles:view', 'roles:create', 'roles:manage', 'roles:delete'] },
-      { label: 'Settings', icon: '⚙️', permissions: ['settings:view', 'settings:manage'] },
-      { label: 'AI Assistant', icon: '🤖', permissions: ['ai:ask'] }
+      { label: 'Users', permissions: ['users:view', 'users:create', 'users:manage', 'users:delete', 'users:export'] },
+      { label: 'Roles', permissions: ['roles:view', 'roles:create', 'roles:manage', 'roles:delete'] },
+      { label: 'Settings', permissions: ['settings:view', 'settings:manage'] }
     ]
   }
 ];
 
-// Flat module config for compatibility
-const moduleConfig = moduleGroups.flatMap(group => group.modules);
+// Flat list of all permissions for mapping
+const allModuleLabels = moduleGroups.flatMap(group => 
+  group.modules.map(m => m.label)
+);
+
+// Get module label from permission code
+function getModuleLabel(permCode: string): string {
+  for (const group of moduleGroups) {
+    for (const mod of group.modules) {
+      if (mod.permissions.includes(permCode)) {
+        return mod.label;
+      }
+    }
+  }
+  return permCode.split(':')[0];
+}
+
+// Role permission display component
+function RolePermissionChips({ rolePermissions, permissionCount, maxVisible = 4 }: { 
+  rolePermissions: string[]; 
+  permissionCount: number;
+  maxVisible?: number 
+}) {
+  // Use actual permissions if available, otherwise use placeholder
+  const permissions = rolePermissions.length > 0 ? rolePermissions : [];
+  
+  if (permissions.length === 0 && permissionCount === 0) {
+    return <span className="no-permissions">No permissions</span>;
+  }
+
+  // Get unique module labels from permissions
+  const uniqueModules = [...new Set(permissions.map(p => getModuleLabel(p)))];
+  const visible = uniqueModules.slice(0, maxVisible);
+  const remaining = uniqueModules.length - maxVisible;
+
+  return (
+    <div className="permission-chips">
+      {visible.map(label => (
+        <span key={label} className="permission-chip">{label}</span>
+      ))}
+      {remaining > 0 && (
+        <span className="permission-chip more">+{remaining} More</span>
+      )}
+    </div>
+  );
+}
 
 export function RolesPermissionsPage() {
   const { hasPermission } = useAuth();
   const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-  // Phase 5B.1: Search and selection state
-  const [roleSearch, setRoleSearch] = useState('');
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-
-  // Edit modal state
-  const [editOpen, setEditOpen] = useState(false);
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editPermissions, setEditPermissions] = useState<string[]>([]);
-  const [editPermissionSearch, setEditPermissionSearch] = useState('');
+  
+  // Form state
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formStatus, setFormStatus] = useState<'active' | 'inactive'>('active');
+  const [formPermissions, setFormPermissions] = useState<string[]>([]);
+  const [permissionSearch, setPermissionSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Create modal state
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createName, setCreateName] = useState('');
-  const [createDescription, setCreateDescription] = useState('');
-  const [createPermissions, setCreatePermissions] = useState<string[]>([]);
-  const [createPermissionSearch, setCreatePermissionSearch] = useState('');
-  const [creating, setCreating] = useState(false);
-
-  // Helper: Check if all permissions in a module are selected
+  // Helper functions
   function isModuleChecked(modulePermissions: string[], selectedPermissions: string[]): boolean {
-    if (modulePermissions.length === 0) return false;
     return modulePermissions.every(perm => selectedPermissions.includes(perm));
   }
 
-  // Helper: Check if some permissions in a module are selected (indeterminate state)
   function isModuleIndeterminate(modulePermissions: string[], selectedPermissions: string[]): boolean {
-    if (modulePermissions.length === 0) return false;
     const checked = modulePermissions.filter(perm => selectedPermissions.includes(perm)).length;
     return checked > 0 && checked < modulePermissions.length;
   }
 
-  // Toggle module: select/deselect all child permissions
-  function toggleModule(modulePermissions: string[], isCreate: boolean) {
-    const allSelected = modulePermissions.every(perm =>
-      isCreate ? createPermissions.includes(perm) : editPermissions.includes(perm)
+  function toggleModule(modulePermissions: string[]) {
+    const allSelected = modulePermissions.every(perm => formPermissions.includes(perm));
+    if (allSelected) {
+      setFormPermissions(prev => prev.filter(p => !modulePermissions.includes(p)));
+    } else {
+      setFormPermissions(prev => [...new Set([...prev, ...modulePermissions])]);
+    }
+  }
+
+  function togglePermission(perm: string) {
+    setFormPermissions(prev =>
+      prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
     );
-
-    if (isCreate) {
-      if (allSelected) {
-        setCreatePermissions(prev => prev.filter(p => !modulePermissions.includes(p)));
-      } else {
-        setCreatePermissions(prev => [...new Set([...prev, ...modulePermissions])]);
-      }
-    } else {
-      if (allSelected) {
-        setEditPermissions(prev => prev.filter(p => !modulePermissions.includes(p)));
-      } else {
-        setEditPermissions(prev => [...new Set([...prev, ...modulePermissions])]);
-      }
-    }
   }
-
-  // Toggle single permission
-  function togglePermission(perm: string, isCreate: boolean) {
-    if (isCreate) {
-      setCreatePermissions(prev =>
-        prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
-      );
-    } else {
-      setEditPermissions(prev =>
-        prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
-      );
-    }
-  }
-
-  // Phase 5B.1: Filter roles by search
-  const filteredRoles = roles.filter(role =>
-    role.name.toLowerCase().includes(roleSearch.toLowerCase()) ||
-    (role.description?.toLowerCase().includes(roleSearch.toLowerCase()) ?? false)
-  );
 
   async function loadData() {
     setLoading(true);
     try {
-      const [rolesRes, permissionsRes] = await Promise.all([
-        api.get('/roles'),
-        api.get('/roles/permissions')
-      ]);
-      setRoles(rolesRes.data.items || []);
-      setPermissions(permissionsRes.data.items || []);
+      const rolesRes = await api.get('/roles');
+      const rolesData = rolesRes.data.items || [];
+      setRoles(rolesData);
+      
+      // Load permissions for each role to get module labels
+      const permMap: Record<string, string[]> = {};
+      for (const role of rolesData) {
+        try {
+          const detailRes = await api.get(`/roles/${role.id}`);
+          permMap[role.id] = detailRes.data.permissions || [];
+        } catch {
+          permMap[role.id] = [];
+        }
+      }
+      setRolePermissions(permMap);
       setMessage('');
     } catch {
       setRoles([]);
-      setPermissions([]);
       setMessage('Unable to load data. Check backend connection.');
     } finally {
       setLoading(false);
@@ -173,37 +181,61 @@ export function RolesPermissionsPage() {
     loadData();
   }, []);
 
+  function openCreate() {
+    setModalMode('create');
+    setEditingRole(null);
+    setFormName('');
+    setFormDescription('');
+    setFormStatus('active');
+    setFormPermissions([]);
+    setPermissionSearch('');
+    setModalOpen(true);
+  }
+
   async function openEdit(role: Role) {
     try {
       const res = await api.get(`/roles/${role.id}`);
       const roleData = res.data;
+      setModalMode('edit');
       setEditingRole(role);
-      setEditName(roleData.name);
-      setEditDescription(roleData.description || '');
-      setEditPermissions(roleData.permissions || []);
-      setEditOpen(true);
+      setFormName(roleData.name);
+      setFormDescription(roleData.description || '');
+      setFormStatus((role as any).status || 'active');
+      setFormPermissions(roleData.permissions || []);
+      setPermissionSearch('');
+      setModalOpen(true);
     } catch {
       setMessage('Failed to load role details.');
     }
   }
 
-  async function saveEdit(event: FormEvent) {
+  async function saveRole(event: FormEvent) {
     event.preventDefault();
-    if (!editingRole) return;
+    if (!formName.trim()) return;
+    
     setSaving(true);
     try {
-      await api.patch(`/roles/${editingRole.id}`, {
-        name: editName,
-        description: editDescription
-      });
-      await api.patch(`/roles/${editingRole.id}/permissions`, {
-        permissions: editPermissions
-      });
-      setEditOpen(false);
+      if (modalMode === 'create') {
+        await api.post('/roles', {
+          name: formName,
+          description: formDescription,
+          permissions: formPermissions
+        });
+        setMessage('Role created successfully.');
+      } else if (editingRole) {
+        await api.patch(`/roles/${editingRole.id}`, {
+          name: formName,
+          description: formDescription
+        });
+        await api.patch(`/roles/${editingRole.id}/permissions`, {
+          permissions: formPermissions
+        });
+        setMessage('Role updated successfully.');
+      }
+      setModalOpen(false);
       await loadData();
-      setMessage('Role updated successfully.');
     } catch (err: any) {
-      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to update role.');
+      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to save role.');
     } finally {
       setSaving(false);
     }
@@ -226,428 +258,235 @@ export function RolesPermissionsPage() {
     }
   }
 
-  async function createRole(event: FormEvent) {
-    event.preventDefault();
-    setCreating(true);
-    try {
-      await api.post('/roles', {
-        name: createName,
-        description: createDescription,
-        permissions: createPermissions
-      });
-      setCreateOpen(false);
-      setCreateName('');
-      setCreateDescription('');
-      setCreatePermissions([]);
-      await loadData();
-      setMessage('Role created successfully.');
-    } catch (err: any) {
-      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to create role.');
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  function closeCreateModal() {
-    setCreateOpen(false);
-    setCreateName('');
-    setCreateDescription('');
-    setCreatePermissions([]);
-    setCreatePermissionSearch('');
-  }
-
-  function closeEditModal() {
-    setEditOpen(false);
+  function closeModal() {
+    setModalOpen(false);
     setEditingRole(null);
-    setEditName('');
-    setEditDescription('');
-    setEditPermissions([]);
-    setEditPermissionSearch('');
+    setFormName('');
+    setFormDescription('');
+    setFormStatus('active');
+    setFormPermissions([]);
+    setPermissionSearch('');
   }
+
+  // Filter modules based on search
+  const filteredGroups = moduleGroups.map(group => ({
+    ...group,
+    modules: group.modules.filter(m =>
+      permissionSearch === '' ||
+      m.label.toLowerCase().includes(permissionSearch.toLowerCase()) ||
+      m.permissions.some(p => p.toLowerCase().includes(permissionSearch.toLowerCase()))
+    )
+  })).filter(g => g.modules.length > 0 || permissionSearch === '');
 
   return (
-    <div className="page-stack">
-      <div className="page-title-row">
-        <div>
-          <span className="eyebrow">Administration</span>
-          <h2>Roles & Permissions</h2>
+    <div className="page-container roles-page">
+      {/* Page Header - Phase 5B.2 */}
+      <div className="page-header">
+        <div className="header-left">
+          <h1>Roles & Permissions</h1>
+          <p className="header-subtitle">Manage user roles and their access permissions</p>
         </div>
-        <div className="action-row">
-          <button className="secondary" onClick={loadData}>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+        <div className="header-right">
           {hasPermission('users:write') && (
-            <button className="primary" onClick={() => setCreateOpen(true)}>
-              Create Role
+            <button className="btn btn-primary" onClick={openCreate}>
+              <span className="btn-icon">+</span>
+              Add Role
             </button>
           )}
         </div>
       </div>
 
-      {message && <div className="notice">{message}</div>}
+      {message && <div className="notice notice-info">{message}</div>}
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <section className="grid cards-3">
-          <div className="stat-card">
-            <div className="stat-value">{roles.length}</div>
-            <div className="stat-label">Total Roles</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{permissions.length}</div>
-            <div className="stat-label">Total Permissions</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{moduleConfig.length}</div>
-            <div className="stat-label">Modules</div>
-          </div>
-        </section>
-      )}
-
-      {/* Phase 5B.1: Two-column layout */}
-      <div className="roles-layout">
-        {/* Left: Role Summary Panel */}
-        <aside className="role-summary-panel">
-          <div className="panel-header">
-            <h3>Role Summary</h3>
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Search roles..."
-                value={roleSearch}
-                onChange={(e) => setRoleSearch(e.target.value)}
-                className="search-input"
-              />
-            </div>
-          </div>
-          <div className="role-list">
-            {filteredRoles.length === 0 && (
-              <p className="no-results">No roles found.</p>
-            )}
-            {filteredRoles.map(role => (
-              <div
-                key={role.id}
-                className={`role-card ${selectedRole?.id === role.id ? 'selected' : ''}`}
-                onClick={() => setSelectedRole(selectedRole?.id === role.id ? null : role)}
-              >
-                <div className="role-card-header">
-                  <strong>{role.name}</strong>
-                  {role.name === 'Super Admin' && <span className="protected-badge">Protected</span>}
-                </div>
-                <div className="role-card-meta">
-                  <span className="meta-item">📋 {role.permissionCount} permissions</span>
-                  <span className="meta-item">👥 {role.userCount || 0} users</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
-
-        {/* Right: Main content */}
-        <main className="role-main-content">
-          {selectedRole ? (
-            /* Phase 5B.1: Role Detail Panel */
-            <div className="role-detail-panel">
-              <div className="detail-header">
-                <div>
-                  <h3>{selectedRole.name}</h3>
-                  <p className="detail-description">{selectedRole.description || 'No description'}</p>
-                </div>
-                {hasPermission('users:write') && (
-                  <button className="secondary" onClick={() => openEdit(selectedRole)}>
-                    Edit Role
-                  </button>
-                )}
-              </div>
-              <div className="detail-stats">
-                <div className="detail-stat">
-                  <span className="stat-label">Permissions</span>
-                  <span className="stat-value">{selectedRole.permissionCount}</span>
-                </div>
-                <div className="detail-stat">
-                  <span className="stat-label">Users</span>
-                  <span className="stat-value">{selectedRole.userCount || 0}</span>
-                </div>
-                <div className="detail-stat">
-                  <span className="stat-label">Categories</span>
-                  <span className="stat-value">{moduleGroups.length}</span>
-                </div>
-              </div>
-              <div className="detail-section">
-                <h4>Permission Categories</h4>
-                <div className="category-list">
-                  {moduleGroups.map(group => (
-                    <span key={group.label} className="category-chip">{group.label}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Table view */
-            <section className="module-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Role Name</th>
-                    <th>Description</th>
-                    <th>Permissions</th>
-                    <th>Users</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRoles.map(role => (
-                    <tr key={role.id} onClick={() => setSelectedRole(role)} style={{cursor: 'pointer'}}>
-                      <td><strong>{role.name}</strong></td>
-                      <td>{role.description || '-'}</td>
-                      <td>
-                        <span className="permission-badge">{role.permissionCount} permissions</span>
-                      </td>
-                      <td>
-                        <span className="permission-badge">{role.userCount || 0} users</span>
-                      </td>
-                      <td>
-                        {hasPermission('users:write') && (
-                          <div className="action-buttons">
-                            <button className="secondary small" onClick={(e) => { e.stopPropagation(); openEdit(role); }}>
-                              Edit
-                            </button>
-                            <button
-                              className="secondary small danger"
-                              onClick={(e) => { e.stopPropagation(); deleteRole(role); }}
-                              disabled={role.name === 'Super Admin'}
-                            >
-                              Delete
-                            </button>
-                          </div>
+      {/* Main Content - Single Table Layout - Phase 5B.2 */}
+      <div className="page-content">
+        {loading ? (
+          <div className="loading-state">Loading...</div>
+        ) : (
+          <div className="table-container">
+            <table className="roles-table">
+              <thead>
+                <tr>
+                  <th className="col-name">Role Name</th>
+                  <th className="col-description">Description</th>
+                  <th className="col-permissions">Menu Access</th>
+                  <th className="col-status">Status</th>
+                  <th className="col-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map(role => (
+                  <tr key={role.id}>
+                    <td className="col-name">
+                      <div className="role-name-cell">
+                        <span className="role-name">{role.name}</span>
+                        {role.name === 'Super Admin' && (
+                          <span className="protected-badge">Protected</span>
                         )}
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredRoles.length === 0 && !loading && (
-                    <tr>
-                      <td colSpan={5} className="empty-row">No roles found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </section>
-          )}
-        </main>
+                      </div>
+                    </td>
+                    <td className="col-description">
+                      <span className="role-description">{role.description || '-'}</span>
+                    </td>
+                    <td className="col-permissions">
+                      <RolePermissionChips 
+                        rolePermissions={rolePermissions[role.id] || []}
+                        permissionCount={role.permissionCount}
+                      />
+                      <span className="perm-count">{role.permissionCount} permissions</span>
+                    </td>
+                    <td className="col-status">
+                      <span className="status-badge active">Active</span>
+                    </td>
+                    <td className="col-actions">
+                      {hasPermission('users:write') && (
+                        <div className="action-buttons">
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            onClick={() => openEdit(role)}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="btn btn-danger btn-sm" 
+                            onClick={() => deleteRole(role)}
+                            disabled={role.name === 'Super Admin'}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {roles.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="empty-row">No roles found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Create Role Modal - Phase 5B.1: Enhanced */}
-      {createOpen && (
-        <div className="modal-backdrop">
-          <form className="modal wide enhanced" onSubmit={createRole}>
-            <div className="page-title-row">
-              <h3>Create Role</h3>
-              <button type="button" className="close" onClick={closeCreateModal}>Close</button>
+      {/* Add/Edit Role Modal - Phase 5B.2 */}
+      {modalOpen && (
+        <div className="modal-backdrop" onClick={closeModal}>
+          <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{modalMode === 'create' ? 'Add Role' : 'Edit Role'}</h2>
+              <button className="modal-close" onClick={closeModal}>×</button>
             </div>
+            
+            <form className="modal-body" onSubmit={saveRole}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="role-name">Role Name *</label>
+                  <input
+                    id="role-name"
+                    type="text"
+                    value={formName}
+                    onChange={e => setFormName(e.target.value)}
+                    required
+                    disabled={editingRole?.name === 'Super Admin'}
+                    placeholder="Enter role name"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="role-status">Status</label>
+                  <select
+                    id="role-status"
+                    value={formStatus}
+                    onChange={e => setFormStatus(e.target.value as 'active' | 'inactive')}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
 
-            <div className="form-row">
-              <label>
-                Role Name *
-                <input
-                  type="text"
-                  value={createName}
-                  onChange={e => setCreateName(e.target.value)}
-                  required
+              <div className="form-group">
+                <label htmlFor="role-description">Description</label>
+                <textarea
+                  id="role-description"
+                  value={formDescription}
+                  onChange={e => setFormDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Enter role description"
                 />
-              </label>
-              <label>
-                Description
-                <input
-                  type="text"
-                  value={createDescription}
-                  onChange={e => setCreateDescription(e.target.value)}
-                />
-              </label>
-            </div>
+              </div>
 
-            {/* Phase 5B.1: Permission Search */}
-            <div className="permission-search-bar">
-              <input
-                type="text"
-                placeholder="Search permissions..."
-                value={createPermissionSearch}
-                onChange={(e) => setCreatePermissionSearch(e.target.value)}
-              />
-              <span className="perm-count">{createPermissions.length} selected</span>
-            </div>
+              <div className="permissions-section">
+                <div className="permissions-header">
+                  <label>Permissions</label>
+                  <div className="permission-search">
+                    <input
+                      type="text"
+                      placeholder="Search permissions..."
+                      value={permissionSearch}
+                      onChange={e => setPermissionSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="permissions-selected">
+                  <span>{formPermissions.length} permission(s) selected</span>
+                </div>
 
-            {/* Phase 5B.1: Grouped Module Permissions */}
-            <div className="module-groups">
-              {moduleGroups.map(group => {
-                const visibleModules = group.modules.filter(m =>
-                  createPermissionSearch === '' ||
-                  m.label.toLowerCase().includes(createPermissionSearch.toLowerCase()) ||
-                  m.permissions.some(p => p.toLowerCase().includes(createPermissionSearch.toLowerCase()))
-                );
-                if (createPermissionSearch !== '' && visibleModules.length === 0) return null;
-
-                return (
-                  <div key={group.label} className="module-group">
-                    <div className="group-header">
-                      <span className="group-label">{group.label}</span>
-                    </div>
-                    <div className="group-modules">
-                      {visibleModules.map(module => {
-                        const isChecked = isModuleChecked(module.permissions, createPermissions);
-                        const isIndeterminate = isModuleIndeterminate(module.permissions, createPermissions);
-
-                        return (
-                          <div key={module.label} className={`module-card ${isChecked ? 'module-active' : ''}`}>
-                            <div className="module-header">
+                <div className="permissions-list">
+                  {filteredGroups.map(group => (
+                    <div key={group.label} className="permission-group">
+                      <div className="group-title">{group.label}</div>
+                      <div className="group-modules">
+                        {group.modules.map(module => {
+                          const isChecked = isModuleChecked(module.permissions, formPermissions);
+                          const isIndeterminate = isModuleIndeterminate(module.permissions, formPermissions);
+                          
+                          return (
+                            <div key={module.label} className="module-item">
                               <label className="module-checkbox">
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
                                   ref={el => { if (el) el.indeterminate = isIndeterminate; }}
-                                  onChange={() => toggleModule(module.permissions, true)}
+                                  onChange={() => toggleModule(module.permissions)}
                                 />
-                                <span className="module-icon">{module.icon}</span>
                                 <span className="module-label">{module.label}</span>
                               </label>
+                              <div className="module-permissions">
+                                {module.permissions.map(perm => (
+                                  <label key={perm} className="permission-item">
+                                    <input
+                                      type="checkbox"
+                                      checked={formPermissions.includes(perm)}
+                                      onChange={() => togglePermission(perm)}
+                                    />
+                                    <span className="perm-code">{perm}</span>
+                                  </label>
+                                ))}
+                              </div>
                             </div>
-                            <div className="module-permissions">
-                              {module.permissions.map(perm => (
-                                <label key={perm} className="permission-item">
-                                  <input
-                                    type="checkbox"
-                                    checked={createPermissions.includes(perm)}
-                                    onChange={() => togglePermission(perm, true)}
-                                  />
-                                  <span className="perm-code">{perm}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                  {filteredGroups.length === 0 && (
+                    <div className="no-results">No permissions match your search.</div>
+                  )}
+                </div>
+              </div>
 
-            <div className="form-actions">
-              <button type="button" className="secondary" onClick={closeCreateModal}>
-                Cancel
-              </button>
-              <button type="submit" className="primary" disabled={creating}>
-                {creating ? 'Creating...' : 'Create Role'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Edit Role Modal - Phase 5B.1: Enhanced */}
-      {editOpen && editingRole && (
-        <div className="modal-backdrop">
-          <form className="modal wide enhanced" onSubmit={saveEdit}>
-            <div className="page-title-row">
-              <h3>Edit Role: {editingRole.name}</h3>
-              <button type="button" className="close" onClick={closeEditModal}>Close</button>
-            </div>
-
-            <div className="form-row">
-              <label>
-                Role Name *
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                Description
-                <input
-                  type="text"
-                  value={editDescription}
-                  onChange={e => setEditDescription(e.target.value)}
-                />
-              </label>
-            </div>
-
-            {/* Phase 5B.1: Permission Search */}
-            <div className="permission-search-bar">
-              <input
-                type="text"
-                placeholder="Search permissions..."
-                value={editPermissionSearch}
-                onChange={(e) => setEditPermissionSearch(e.target.value)}
-              />
-              <span className="perm-count">{editPermissions.length} selected</span>
-            </div>
-
-            {/* Phase 5B.1: Grouped Module Permissions */}
-            <div className="module-groups">
-              {moduleGroups.map(group => {
-                const visibleModules = group.modules.filter(m =>
-                  editPermissionSearch === '' ||
-                  m.label.toLowerCase().includes(editPermissionSearch.toLowerCase()) ||
-                  m.permissions.some(p => p.toLowerCase().includes(editPermissionSearch.toLowerCase()))
-                );
-                if (editPermissionSearch !== '' && visibleModules.length === 0) return null;
-
-                return (
-                  <div key={group.label} className="module-group">
-                    <div className="group-header">
-                      <span className="group-label">{group.label}</span>
-                    </div>
-                    <div className="group-modules">
-                      {visibleModules.map(module => {
-                        const isChecked = isModuleChecked(module.permissions, editPermissions);
-                        const isIndeterminate = isModuleIndeterminate(module.permissions, editPermissions);
-
-                        return (
-                          <div key={module.label} className={`module-card ${isChecked ? 'module-active' : ''}`}>
-                            <div className="module-header">
-                              <label className="module-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  ref={el => { if (el) el.indeterminate = isIndeterminate; }}
-                                  onChange={() => toggleModule(module.permissions, false)}
-                                />
-                                <span className="module-icon">{module.icon}</span>
-                                <span className="module-label">{module.label}</span>
-                              </label>
-                            </div>
-                            <div className="module-permissions">
-                              {module.permissions.map(perm => (
-                                <label key={perm} className="permission-item">
-                                  <input
-                                    type="checkbox"
-                                    checked={editPermissions.includes(perm)}
-                                    onChange={() => togglePermission(perm, false)}
-                                  />
-                                  <span className="perm-code">{perm}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="secondary" onClick={closeEditModal}>
-                Cancel
-              </button>
-              <button type="submit" className="primary" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={closeModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : (modalMode === 'create' ? 'Create Role' : 'Save Changes')}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
