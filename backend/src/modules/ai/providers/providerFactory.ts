@@ -2,11 +2,12 @@
  * AI Provider Factory
  * 
  * Routes AI requests to the appropriate provider based on configuration.
- * Current providers: OpenAI, Claude, Private model
+ * Current providers: Mock, OpenAI, Claude, Gemini, Private model
  */
 
 import { env } from '../../../config/env.js';
 import { runOpenAi } from './openai.js';
+import { runGemini } from './gemini.js';
 
 /**
  * Provider response interface
@@ -32,6 +33,8 @@ export async function runAiProvider(question: string): Promise<ProviderResponse>
   switch (env.AI_PROVIDER) {
     case 'openai':
       return runOpenAi(question);
+    case 'gemini':
+      return runGemini(question);
     case 'claude':
       return runClaude(question);
     case 'private':
