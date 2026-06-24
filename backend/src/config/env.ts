@@ -31,7 +31,7 @@ const envSchema = z.object({
   CLAUDE_API_KEY: z.string().optional(),
   CLAUDE_MODEL: z.string().default('claude-3-5-sonnet-latest'),
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-2.0-flash'),
   GEMINI_TIMEOUT: z.coerce.number().default(30000),
   GEMINI_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
   GEMINI_MAX_TOKENS: z.coerce.number().default(2048),
