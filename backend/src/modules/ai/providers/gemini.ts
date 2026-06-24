@@ -128,11 +128,18 @@ Please provide a helpful response based on your role as an ITSM assistant.`;
     };
   } catch (error) {
     const latencyMs = Date.now() - startTime;
+    
+    // DEBUG: Log full error object
+    console.error('[Gemini] RAW ERROR OBJECT:');
+    console.error(JSON.stringify(error, null, 2));
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     // Handle specific Gemini errors
     if (error instanceof Error) {
-      console.error(`[Gemini] Error: ${errorMessage}`);
+      console.error(`[Gemini] Parsed Error Message: ${errorMessage}`);
+      console.error(`[Gemini] Error Name: ${error.name}`);
+      console.error(`[Gemini] Error Stack: ${error.stack}`);
       
       // Provide user-friendly error messages based on error type
       if (errorMessage.includes('API_KEY_INVALID') || 
