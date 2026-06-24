@@ -297,3 +297,712 @@ button.danger:disabled {
   justify-content: flex-end;
   margin-top: 1rem;
 }
+
+/* ============================================
+   Phase 5C.2 - Roles & Permissions UI Styling
+   ============================================ */
+
+/* Page Layout */
+.page-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.roles-page {
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.header-left h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px 0;
+}
+
+.header-subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Page Content */
+.page-content {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(16,24,44,0.06);
+}
+
+/* Table Container */
+.table-container {
+  overflow-x: auto;
+}
+
+/* Roles Table */
+.roles-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.roles-table th {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 700;
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 2px solid var(--line);
+}
+
+.roles-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.roles-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.roles-table tbody tr:hover {
+  background: #f8faff;
+}
+
+/* Table Columns */
+.col-name {
+  min-width: 180px;
+}
+
+.col-description {
+  min-width: 200px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.col-permissions {
+  min-width: 200px;
+}
+
+.col-status {
+  width: 100px;
+}
+
+.col-actions {
+  width: 140px;
+  text-align: right;
+}
+
+/* Loading & Empty States */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.empty-row {
+  text-align: center;
+  padding: 40px 20px !important;
+  color: var(--muted);
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: white;
+  border: 0;
+}
+
+.btn-primary:hover {
+  background: #4356e8;
+  box-shadow: 0 4px 12px rgba(84, 104, 255, 0.35);
+}
+
+.btn-primary:active {
+  background: #3748cc;
+  transform: translateY(1px);
+}
+
+.btn-primary:disabled {
+  background: #a0a8e0;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.btn-secondary:hover {
+  background: var(--panel-soft);
+  border-color: var(--brand);
+}
+
+.btn-outline {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.btn-outline:hover {
+  background: var(--panel-soft);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.btn-icon {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: 0;
+}
+
+.btn-danger:hover {
+  background: #a93226;
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.35);
+}
+
+/* Form Elements */
+.form-control {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.form-control:disabled {
+  background: var(--panel-soft);
+  cursor: not-allowed;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Role Display */
+.role-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.role-description {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.role-name-cell {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.status-badge.active {
+  background: #e4f8ef;
+  color: var(--success);
+}
+
+.status-badge.inactive {
+  background: #f5f5f5;
+  color: var(--muted);
+}
+
+.protected-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* Permission Chips */
+.permission-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.permission-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-radius: 6px;
+}
+
+.permission-chip.more {
+  background: var(--panel-soft);
+  color: var(--muted);
+}
+
+.no-permissions {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ============================================
+   Modal Styling - Enterprise Role Editor
+   ============================================ */
+
+/* Modal Sizes */
+.modal-xl {
+  width: min(1000px, 96vw);
+  max-height: 92vh;
+}
+
+.modal-lg {
+  width: min(800px, 96vw);
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--muted);
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.modal-close:hover {
+  background: #ffe8e5;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Modal Body */
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  max-height: calc(92vh - 180px);
+  padding-right: 8px;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+}
+
+/* ============================================
+   Role Information Section
+   ============================================ */
+
+.role-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.role-info-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px 0;
+}
+
+/* ============================================
+   Permissions Section
+   ============================================ */
+
+.permissions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.permissions-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.permissions-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Permissions Toolbar */
+.permissions-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.permission-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.permission-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Permissions Summary */
+.permissions-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.perm-count {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ============================================
+   Permissions Accordion
+   ============================================ */
+
+.permissions-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.accordion-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--panel-soft);
+  border-radius: 10px;
+}
+
+.group-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.group-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+/* ============================================
+   Module Card
+   ============================================ */
+
+.module-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  transition: all 0.2s ease;
+}
+
+.module-card:hover {
+  border-color: var(--brand);
+  box-shadow: 0 4px 12px rgba(84, 104, 255, 0.1);
+}
+
+.module-card.selected {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.module-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+
+.module-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.module-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--brand);
+}
+
+.module-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.module-count {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  background: var(--panel-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.module-card.selected .module-count {
+  background: white;
+}
+
+/* ============================================
+   Permission Toggle Buttons
+   ============================================ */
+
+.module-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.perm-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: capitalize;
+}
+
+.perm-toggle:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.perm-toggle.selected {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+  box-shadow: 0 2px 8px rgba(84, 104, 255, 0.3);
+}
+
+.perm-toggle.selected:hover {
+  background: #4356e8;
+  border-color: #4356e8;
+  color: white;
+}
+
+/* ============================================
+   No Results
+   ============================================ */
+
+.no-results {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ============================================
+   Notice Variations
+   ============================================ */
+
+.notice {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.notice-info {
+  background: var(--brand-soft);
+  border: 1px solid var(--brand);
+  color: var(--brand);
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .permissions-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .permission-actions {
+    justify-content: flex-start;
+  }
+  
+  .group-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .col-permissions {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .modal-xl {
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+}
