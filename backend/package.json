@@ -25,6 +25,7 @@
     "multer": "latest",
     "mysql2": "^3.22.5",
     "nodemailer": "^9.0.0",
+    "openai": "^6.44.0",
     "pino": "latest",
     "pino-http": "latest",
     "saven-infraops-enterprise-v5": "file:..",
