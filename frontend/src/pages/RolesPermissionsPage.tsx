@@ -58,9 +58,9 @@ const moduleGroups = [
   }
 ];
 
-// Flat list of all permissions for mapping
-const allModuleLabels = moduleGroups.flatMap(group => 
-  group.modules.map(m => m.label)
+// Flat list of all permission codes
+const allPermissions = moduleGroups.flatMap(group => 
+  group.modules.flatMap(m => m.permissions)
 );
 
 // Get module label from permission code
@@ -370,100 +370,139 @@ export function RolesPermissionsPage() {
         )}
       </div>
 
-      {/* Add/Edit Role Modal - Phase 5B.2 */}
+      {/* Add/Edit Role Modal - Phase 5C: Enterprise Permission Editor */}
       {modalOpen && (
         <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+          <div className="modal modal-xl" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Add Role' : 'Edit Role'}</h2>
+              <h2>{modalMode === 'create' ? 'Create Role' : 'Edit Role'}</h2>
               <button className="modal-close" onClick={closeModal}>×</button>
             </div>
             
             <form className="modal-body" onSubmit={saveRole}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="role-name">Role Name *</label>
-                  <input
-                    id="role-name"
-                    type="text"
-                    value={formName}
-                    onChange={e => setFormName(e.target.value)}
-                    required
-                    disabled={editingRole?.name === 'Super Admin'}
-                    placeholder="Enter role name"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="role-status">Status</label>
-                  <select
-                    id="role-status"
-                    value={formStatus}
-                    onChange={e => setFormStatus(e.target.value as 'active' | 'inactive')}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="role-description">Description</label>
-                <textarea
-                  id="role-description"
-                  value={formDescription}
-                  onChange={e => setFormDescription(e.target.value)}
-                  rows={2}
-                  placeholder="Enter role description"
-                />
-              </div>
-
-              <div className="permissions-section">
-                <div className="permissions-header">
-                  <label>Permissions</label>
-                  <div className="permission-search">
+              {/* Section 1: Role Information */}
+              <div className="role-info-section">
+                <h3>Role Information</h3>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="role-name">Role Name *</label>
                     <input
+                      id="role-name"
                       type="text"
-                      placeholder="Search permissions..."
-                      value={permissionSearch}
-                      onChange={e => setPermissionSearch(e.target.value)}
+                      value={formName}
+                      onChange={e => setFormName(e.target.value)}
+                      required
+                      disabled={editingRole?.name === 'Super Admin'}
+                      placeholder="Enter role name"
+                      className="form-control"
                     />
                   </div>
+                  <div className="form-group">
+                    <label htmlFor="role-status">Status</label>
+                    <select
+                      id="role-status"
+                      value={formStatus}
+                      onChange={e => setFormStatus(e.target.value as 'active' | 'inactive')}
+                      className="form-control"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="permissions-selected">
-                  <span>{formPermissions.length} permission(s) selected</span>
+                <div className="form-group">
+                  <label htmlFor="role-description">Description</label>
+                  <textarea
+                    id="role-description"
+                    value={formDescription}
+                    onChange={e => setFormDescription(e.target.value)}
+                    rows={2}
+                    placeholder="Enter role description"
+                    className="form-control"
+                  />
+                </div>
+              </div>
+
+              {/* Section 2: Permissions */}
+              <div className="permissions-section">
+                <div className="permissions-header">
+                  <h3>Permissions</h3>
+                  <div className="permissions-toolbar">
+                    <div className="permission-search">
+                      <input
+                        type="text"
+                        placeholder="Search permissions..."
+                        value={permissionSearch}
+                        onChange={e => setPermissionSearch(e.target.value)}
+                        className="search-input"
+                      />
+                    </div>
+                    <div className="permission-actions">
+                      <button 
+                        type="button" 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setFormPermissions([...allPermissions])}
+                      >
+                        Select All
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setFormPermissions([])}
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                  </div>
+                  <div className="permissions-summary">
+                    <span className="perm-count">{formPermissions.length} of {allPermissions.length} permissions selected</span>
+                  </div>
                 </div>
 
-                <div className="permissions-list">
+                {/* Accordion Modules */}
+                <div className="permissions-accordion">
                   {filteredGroups.map(group => (
-                    <div key={group.label} className="permission-group">
-                      <div className="group-title">{group.label}</div>
-                      <div className="group-modules">
+                    <div key={group.label} className="accordion-group">
+                      <div className="group-header">
+                        <span className="group-name">{group.label}</span>
+                      </div>
+                      <div className="group-cards">
                         {group.modules.map(module => {
-                          const isChecked = isModuleChecked(module.permissions, formPermissions);
+                          const isModuleSelected = isModuleChecked(module.permissions, formPermissions);
                           const isIndeterminate = isModuleIndeterminate(module.permissions, formPermissions);
                           
                           return (
-                            <div key={module.label} className="module-item">
-                              <label className="module-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  ref={el => { if (el) el.indeterminate = isIndeterminate; }}
-                                  onChange={() => toggleModule(module.permissions)}
-                                />
-                                <span className="module-label">{module.label}</span>
-                              </label>
+                            <div key={module.label} className={`module-card ${isModuleSelected ? 'selected' : ''}`}>
+                              <div className="module-card-header">
+                                <label className="module-checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={isModuleSelected}
+                                    ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                                    onChange={() => toggleModule(module.permissions)}
+                                  />
+                                  <span className="module-label">{module.label}</span>
+                                </label>
+                                <span className="module-count">
+                                  {module.permissions.filter(p => formPermissions.includes(p)).length}/{module.permissions.length}
+                                </span>
+                              </div>
                               <div className="module-permissions">
-                                {module.permissions.map(perm => (
-                                  <label key={perm} className="permission-item">
-                                    <input
-                                      type="checkbox"
-                                      checked={formPermissions.includes(perm)}
-                                      onChange={() => togglePermission(perm)}
-                                    />
-                                    <span className="perm-code">{perm}</span>
-                                  </label>
-                                ))}
+                                {module.permissions.map(perm => {
+                                  const isSelected = formPermissions.includes(perm);
+                                  const actionName = perm.split(':')[1];
+                                  
+                                  return (
+                                    <button
+                                      key={perm}
+                                      type="button"
+                                      className={`perm-toggle ${isSelected ? 'selected' : ''}`}
+                                      onClick={() => togglePermission(perm)}
+                                    >
+                                      {actionName}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
                           );
@@ -472,7 +511,9 @@ export function RolesPermissionsPage() {
                     </div>
                   ))}
                   {filteredGroups.length === 0 && (
-                    <div className="no-results">No permissions match your search.</div>
+                    <div className="no-results">
+                      <p>No permissions match your search.</p>
+                    </div>
                   )}
                 </div>
               </div>
