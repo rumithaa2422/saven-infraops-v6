@@ -8,6 +8,7 @@
 import { env } from '../../../config/env.js';
 import { runOpenAi } from './openai.js';
 import { runGemini } from './gemini.js';
+import { runClaude } from './claude.js';
 
 /**
  * Provider response interface
@@ -44,20 +45,6 @@ export async function runAiProvider(question: string): Promise<ProviderResponse>
         answer: `Mock AI response: I received your question, "${question}". Connect a real provider from Settings and environment variables.` 
       };
   }
-}
-
-// Claude stub - to be implemented in Phase AI-2
-async function runClaude(question: string): Promise<ProviderResponse> {
-  if (!env.CLAUDE_API_KEY) {
-    return { 
-      answer: 'Claude provider is selected but CLAUDE_API_KEY is not configured. Please set the CLAUDE_API_KEY environment variable.',
-      metadata: { model: env.CLAUDE_MODEL || 'unknown', provider: 'claude' }
-    };
-  }
-  return { 
-    answer: `Claude integration coming soon! Your question was: "${question}"`,
-    metadata: { model: env.CLAUDE_MODEL || 'unknown', provider: 'claude' }
-  };
 }
 
 // Private model stub - to be implemented later
