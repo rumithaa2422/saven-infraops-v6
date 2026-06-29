@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
@@ -27,9 +27,6 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
   const [answer, setAnswer] = useState('Ask me about tickets, incidents, assets, compliance, access, or reports.');
   const [cards, setCards] = useState<AiCard[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // Track last navigation to prevent duplicate calls
-  const lastNavigatedRef = useRef<string | null>(null);
 
   async function ask(text = question) {
     if (!text.trim()) return;
@@ -37,22 +34,23 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
     
     try {
       const response = await api.post<AiResponse>('/ai/ask', { question: text });
+      
+      // Debug: log full response
+      console.log('AI RESPONSE:', response.data);
+      
       setAnswer(response.data.answer);
       setCards(response.data.cards || []);
       
-      // Handle navigation if backend provides it
-      if (response.data.navigation?.route) {
-        const targetRoute = response.data.navigation.route;
-        
-        // Navigate immediately if route is valid and different from current
-        if (targetRoute && targetRoute !== lastNavigatedRef.current) {
-          lastNavigatedRef.current = targetRoute;
-          navigate(targetRoute);
-        }
+      // Navigation: call navigate() immediately with no conditions
+      const navRoute = response.data.navigation?.route;
+      if (navRoute) {
+        console.log('NAVIGATING TO:', navRoute);
+        navigate(navRoute);
       }
       
       setQuestion('');
     } catch (error) {
+      console.error('AI ERROR:', error);
       setAnswer('AI assistant is unable to reach backend. Check API is running on port 4000.');
       setCards([]);
     } finally {
