@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
@@ -27,19 +27,14 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
   const [answer, setAnswer] = useState('Ask me about tickets, incidents, assets, compliance, access, or reports.');
   const [cards, setCards] = useState<AiCard[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-
-  // Handle navigation from AI responses
-  useEffect(() => {
-    if (pendingNavigation && pendingNavigation !== window.location.pathname) {
-      navigate(pendingNavigation);
-      setPendingNavigation(null);
-    }
-  }, [pendingNavigation, navigate]);
+  
+  // Track last navigation to prevent duplicate calls
+  const lastNavigatedRef = useRef<string | null>(null);
 
   async function ask(text = question) {
     if (!text.trim()) return;
     setLoading(true);
+    
     try {
       const response = await api.post<AiResponse>('/ai/ask', { question: text });
       setAnswer(response.data.answer);
@@ -48,9 +43,11 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
       // Handle navigation if backend provides it
       if (response.data.navigation?.route) {
         const targetRoute = response.data.navigation.route;
-        // Only navigate if route is different from current page
-        if (targetRoute !== window.location.pathname) {
-          setPendingNavigation(targetRoute);
+        
+        // Navigate immediately if route is valid and different from current
+        if (targetRoute && targetRoute !== lastNavigatedRef.current) {
+          lastNavigatedRef.current = targetRoute;
+          navigate(targetRoute);
         }
       }
       
