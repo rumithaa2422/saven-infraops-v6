@@ -59,11 +59,13 @@ Current date: ${new Date().toISOString().split('T')[0]}`;
  * Execute a Gemini content generation request
  * 
  * @param question - The user's question
+ * @param systemPrompt - Optional system prompt to override default
  * @param options - Optional configuration (temperature, maxTokens)
  * @returns GeminiProviderResponse with answer and metadata
  */
 export async function runGemini(
   question: string,
+  systemPrompt?: string,
   options?: GeminiOptions
 ): Promise<GeminiProviderResponse> {
   // Use gemini-2.0-flash as the default model (free tier available)
@@ -89,7 +91,7 @@ export async function runGemini(
 
   try {
     // Build prompt with system context
-    const prompt = `${SYSTEM_PROMPT}
+    const prompt = `${systemPrompt || SYSTEM_PROMPT}
 
 User question: ${question}
 

@@ -58,11 +58,13 @@ Current date: ${new Date().toISOString().split('T')[0]}`;
  * Execute a Claude messages API request
  * 
  * @param question - The user's question
+ * @param systemPrompt - Optional system prompt to override default
  * @param options - Optional configuration (temperature, maxTokens)
  * @returns ClaudeProviderResponse with answer and metadata
  */
 export async function runClaude(
   question: string,
+  systemPrompt?: string,
   options?: ClaudeOptions
 ): Promise<ClaudeProviderResponse> {
   const model = env.CLAUDE_MODEL || 'claude-3-5-sonnet-latest';
@@ -91,7 +93,7 @@ export async function runClaude(
     // Create message using the Claude messages API
     const response = await client.messages.create({
       model,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt || SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',

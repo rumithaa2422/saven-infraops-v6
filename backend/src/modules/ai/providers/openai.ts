@@ -59,14 +59,16 @@ Current date: ${new Date().toISOString().split('T')[0]}`;
  * Execute an OpenAI chat completion request
  * 
  * @param question - The user's question
+ * @param systemPrompt - Optional system prompt to override default
  * @param options - Optional configuration (temperature, maxTokens, timeout)
  * @returns AiProviderResponse with answer and metadata
  */
 export async function runOpenAi(
   question: string,
+  systemPrompt?: string,
   options?: OpenAiOptions
 ): Promise<AiProviderResponse> {
-  const model = env.OPENAI_MODEL || 'gpt-4.1-mini';
+  const model = env.OPENAI_MODEL || 'gpt-4o-mini';
   const temperature = options?.temperature ?? env.OPENAI_TEMPERATURE ?? 0.7;
   const maxTokens = options?.maxTokens ?? env.OPENAI_MAX_TOKENS ?? 2000;
   const timeout = options?.timeout ?? env.OPENAI_TIMEOUT ?? 30000; // 30 second default timeout
@@ -98,7 +100,7 @@ export async function runOpenAi(
       messages: [
         {
           role: 'system',
-          content: SYSTEM_PROMPT,
+          content: systemPrompt || SYSTEM_PROMPT,
         },
         {
           role: 'user',

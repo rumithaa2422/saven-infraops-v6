@@ -30,14 +30,17 @@ export interface ProviderResponse {
  * Main entry point for AI provider calls
  * Routes to the appropriate provider based on env.AI_PROVIDER
  */
-export async function runAiProvider(question: string): Promise<ProviderResponse> {
+export async function runAiProvider(
+  question: string, 
+  systemPrompt?: string
+): Promise<ProviderResponse> {
   switch (env.AI_PROVIDER) {
     case 'openai':
-      return runOpenAi(question);
+      return runOpenAi(question, systemPrompt);
     case 'gemini':
-      return runGemini(question);
+      return runGemini(question, systemPrompt);
     case 'claude':
-      return runClaude(question);
+      return runClaude(question, systemPrompt);
     case 'private':
       return runPrivateModel(question);
     default:

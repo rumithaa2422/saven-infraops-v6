@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
 type AiCard = {
@@ -9,23 +9,51 @@ type AiCard = {
   href?: string;
 };
 
+type AiResponse = {
+  answer: string;
+  cards: AiCard[];
+  navigation?: {
+    route: string;
+  };
+};
+
 type AssistantPanelProps = {
   onCollapse: () => void;
 };
 
 export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
+  const navigate = useNavigate();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('Ask me about tickets, incidents, assets, compliance, access, or reports.');
   const [cards, setCards] = useState<AiCard[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+
+  // Handle navigation from AI responses
+  useEffect(() => {
+    if (pendingNavigation && pendingNavigation !== window.location.pathname) {
+      navigate(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  }, [pendingNavigation, navigate]);
 
   async function ask(text = question) {
     if (!text.trim()) return;
     setLoading(true);
     try {
-      const response = await api.post('/ai/ask', { question: text });
+      const response = await api.post<AiResponse>('/ai/ask', { question: text });
       setAnswer(response.data.answer);
       setCards(response.data.cards || []);
+      
+      // Handle navigation if backend provides it
+      if (response.data.navigation?.route) {
+        const targetRoute = response.data.navigation.route;
+        // Only navigate if route is different from current page
+        if (targetRoute !== window.location.pathname) {
+          setPendingNavigation(targetRoute);
+        }
+      }
+      
       setQuestion('');
     } catch (error) {
       setAnswer('AI assistant is unable to reach backend. Check API is running on port 4000.');
