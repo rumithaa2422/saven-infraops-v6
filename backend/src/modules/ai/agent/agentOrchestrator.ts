@@ -122,15 +122,13 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       };
     }
     
-    // NAVIGATION: Return navigation only
+    // NAVIGATION: Return navigation with clean response (NO UI instructions)
     if (llmIntent.intent === 'NAVIGATION') {
       console.log('[AGENT] Intent is NAVIGATION → Returning route\n');
       
-      const llmResult = await synthesizeResponse(
-        input.question,
-        [],
-        'NAVIGATION'
-      );
+      // Generate clean navigation response WITHOUT UI instructions
+      const routeName = llmIntent.route?.replace('/', '') || 'page';
+      const cleanAnswer = `Navigating to ${routeName}.`;
       
       const navigation = llmIntent.route ? {
         route: llmIntent.route,
@@ -139,11 +137,11 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       } : undefined;
       
       return {
-        answer: llmResult.answer,
+        answer: cleanAnswer,
         cards: [],
         navigation,
-        provider: llmResult.provider,
-        model: llmResult.model,
+        provider: 'system',
+        model: 'navigation',
         metadata: {
           intent: 'NAVIGATION',
           entity: null,

@@ -8,18 +8,15 @@ import { runAgent } from './src/modules/ai/agent/agentOrchestrator.ts';
 
 async function test() {
   const testCases = [
-    { question: 'How many users exist in the system?', expected: 'DATABASE_QUERY' },
-    { question: 'How many SEV1 incidents?', expected: 'DATABASE_QUERY' },
     { question: 'Go to incidents page', expected: 'NAVIGATION' },
-    { question: 'What is DevOps?', expected: 'KNOWLEDGE' },
-    { question: 'Show users and go to dashboard', expected: 'MIXED' }
+    { question: 'How many users exist in the system?', expected: 'DATABASE_QUERY' },
+    { question: 'What is DevOps?', expected: 'KNOWLEDGE' }
   ];
   
   for (const tc of testCases) {
     console.log('\n\n' + '='.repeat(60));
     console.log(`TEST: "${tc.question}"`);
-    console.log(`EXPECTED: ${tc.expected}`);
-    console.log('='.repeat(60) + '\n');
+    console.log('='.repeat(60));
     
     const result = await runAgent({
       question: tc.question,
@@ -28,12 +25,12 @@ async function test() {
       userRoles: ['admin']
     });
     
-    console.log('\n📤 FINAL RESPONSE:');
-    console.log('Intent:', result.metadata?.intent);
-    console.log('Entity:', result.metadata?.entity || 'none');
-    console.log('Tools Used:', result.metadata?.toolsUsed?.join(', ') || 'none');
-    console.log('Navigation:', result.navigation ? result.navigation.route : 'none');
-    console.log('Answer:', result.answer.substring(0, 100) + '...');
+    console.log('\n📤 FULL RESPONSE:');
+    console.log(JSON.stringify({
+      answer: result.answer,
+      navigation: result.navigation,
+      metadata: result.metadata
+    }, null, 2));
   }
 }
 
