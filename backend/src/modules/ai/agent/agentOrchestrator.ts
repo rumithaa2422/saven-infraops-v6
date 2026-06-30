@@ -10,18 +10,19 @@
  * 1. LLM Intent Resolution (llmIntentResolver)
  * 2. Tool Execution based on intent
  * 3. Response Synthesis
+ * 
+ * Note: Conversation history is handled entirely on the frontend.
+ * This orchestrator only handles single-turn request/response.
  */
 
 import { PrismaClient } from '@prisma/client';
 import { 
   AgentInput, 
-  AgentExecutionResult, 
   AgentOutput,
-  ToolContext,
-  ToolCallRecord
+  ToolContext
 } from './types.js';
-import { resolveIntent, LlmIntentResult } from './core/llmIntentResolver.js';
-import { synthesizeResponse, aggregateCards } from './core/responseSynthesizer.js';
+import { resolveIntent } from './core/llmIntentResolver.js';
+import { synthesizeResponse } from './core/responseSynthesizer.js';
 import { queryDatabaseTool } from './tools/database/queryDatabaseTool.js';
 
 /**
@@ -67,7 +68,6 @@ function buildToolContext(input: AgentInput): ToolContext {
  */
 export async function runAgent(input: AgentInput): Promise<AgentOutput> {
   const startTime = Date.now();
-  const toolCalls: ToolCallRecord[] = [];
   
   console.log('\n========================================');
   console.log('[AGENT] Phase 6 - LLM-Driven Orchestration');
@@ -235,18 +235,6 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
           description: `Navigate to ${llmIntent.route}`
         };
       }
-      
-      // Log conversation
-      await logConversation(input, {
-        answer: synthesizedResponse.answer,
-        cards,
-        navigation,
-        toolCalls,
-        provider: synthesizedResponse.provider,
-        model: synthesizedResponse.model,
-        intent: llmIntent.intent,
-        executionTimeMs: Date.now() - startTime
-      });
       
       console.log('\n========================================');
       console.log(`[AGENT] Complete! Execution time: ${Date.now() - startTime}ms`);
