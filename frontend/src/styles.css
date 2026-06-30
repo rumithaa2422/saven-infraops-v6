@@ -98,6 +98,191 @@ tbody tr:hover { background: #f8faff; }
 .link-button { border: 0; background: transparent; color: var(--brand); font-weight: 800; padding: 0; }
 .assistant-header > div span { display: block; color: var(--success); font-size: 12px; }
 .assistant-rail { writing-mode: vertical-rl; text-orientation: mixed; border: 0; background: #10182c; color: white; font-weight: 800; letter-spacing: .08em; }
+
+/* AI Conversation History */
+.assistant-content {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  min-height: 0;
+}
+
+.conversations-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-right: 1px solid var(--line);
+  padding-right: 12px;
+}
+
+.new-chat-btn {
+  width: 100%;
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: white;
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: 600;
+}
+
+.new-chat-btn:hover {
+  background: #4051e0;
+}
+
+.search-box input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.conversations-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conversation-group {
+  margin-bottom: 12px;
+}
+
+.group-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  position: relative;
+}
+
+.conversation-item:hover {
+  background: var(--panel-soft);
+}
+
+.conversation-item.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.conv-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.conv-time {
+  color: var(--muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.delete-conv-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.conversation-item:hover .delete-conv-btn {
+  opacity: 1;
+}
+
+.no-conversations {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestions button {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.message {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.message.user {
+  background: var(--brand-soft);
+  align-self: flex-end;
+}
+
+.message.assistant {
+  background: #f0f4ff;
+  align-self: flex-start;
+}
+
+.message-content {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1180px) {
+  .conversations-sidebar {
+    display: none;
+  }
+}
 .modal-backdrop { position: fixed; inset: 0; background: rgba(16,24,44,0.35); display: grid; place-items: center; z-index: 10; padding: 24px; }
 .modal { width: min(640px, 96vw); max-height: 92vh; overflow: auto; display: flex; flex-direction: column; gap: 12px; background: white; border: 1px solid var(--line); border-radius: 22px; padding: 22px; box-shadow: 0 24px 90px rgba(16,24,44,0.25); }
 .modal label, .comment-box label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 700; }

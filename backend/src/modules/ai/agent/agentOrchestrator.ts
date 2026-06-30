@@ -332,35 +332,6 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
 }
 
 /**
- * Log conversation to database
- */
-async function logConversation(
-  input: AgentInput,
-  result: AgentExecutionResult
-): Promise<void> {
-  try {
-    const prisma = getPrisma();
-    
-    await prisma.aiConversation.create({
-      data: {
-        userId: input.userId || null,
-        question: input.question,
-        answer: result.answer,
-        provider: result.provider,
-        sourceJson: {
-          intent: result.intent,
-          toolsUsed: result.metadata?.toolsUsed || [],
-          executionTimeMs: result.executionTimeMs
-        } as any
-      }
-    });
-  } catch (error) {
-    // Don't fail the request if logging fails
-    console.error('[Agent] Failed to log conversation:', error);
-  }
-}
-
-/**
  * Shutdown the agent (cleanup resources)
  */
 export async function shutdownAgent(): Promise<void> {
