@@ -11,7 +11,7 @@
  * 4. Handles navigation actions
  */
 
-import { AgentExecutionResult, ToolCallRecord, AiCard, NavigationAction } from '../types.js';
+import { AiCard, NavigationAction, ToolResult } from '../types.js';
 import { runAiProvider } from '../../providers/providerFactory.js';
 
 /**
@@ -19,12 +19,12 @@ import { runAiProvider } from '../../providers/providerFactory.js';
  */
 export async function synthesizeResponse(
   question: string,
-  toolResults: ToolCallRecord[],
+  toolResults: ToolResult[],
   intent: string
 ): Promise<{ answer: string; provider: string; model: string }> {
   // Check if any tools were executed
   const hasResults = toolResults.length > 0 && 
-    toolResults.some(r => r.result.success && r.result.data);
+    toolResults.some(r => r.success && r.data);
   
   if (!hasResults) {
     // No successful results, try LLM directly
@@ -58,40 +58,36 @@ export async function synthesizeResponse(
 /**
  * Build context string from tool results
  */
-function buildContext(question: string, toolResults: ToolCallRecord[]): string {
+function buildContext(question: string, toolResults: ToolResult[]): string {
   const parts: string[] = [];
   
   parts.push(`User Question: ${question}`);
   parts.push('');
-  parts.push('Tool Results:');
+  parts.push('Database Query Results:');
   
-  for (const record of toolResults) {
-    const { toolName, result } = record;
-    
+  for (const result of toolResults) {
     if (!result.success) {
-      parts.push(`- ${toolName}: ERROR - ${result.error}`);
+      parts.push(`- Query: ERROR - ${result.error}`);
       continue;
     }
     
-    parts.push(`- ${toolName}:`);
-    
     if (result.count !== undefined) {
-      parts.push(`  Count: ${result.count}`);
+      parts.push(`Count: ${result.count}`);
     }
     
     if (result.records && result.records.length > 0) {
-      parts.push(`  Records (${result.records.length}):`);
+      parts.push(`Records (${result.records.length}):`);
       for (const record of result.records.slice(0, 5)) {
         const summary = formatRecordSummary(record);
-        parts.push(`    - ${summary}`);
+        parts.push(`  - ${summary}`);
       }
       if (result.records.length > 5) {
-        parts.push(`    ... and ${result.records.length - 5} more`);
+        parts.push(`  ... and ${result.records.length - 5} more`);
       }
     }
     
     if (result.metadata?.executionTimeMs) {
-      parts.push(`  (Execution time: ${result.metadata.executionTimeMs}ms)`);
+      parts.push(`(Query time: ${result.metadata.executionTimeMs}ms)`);
     }
   }
   
@@ -161,22 +157,21 @@ function formatRecordSummary(record: Record<string, unknown>): string {
 /**
  * Generate a fallback response when LLM fails
  */
-function generateFallbackResponse(toolResults: ToolCallRecord[]): { 
+function generateFallbackResponse(toolResults: ToolResult[]): { 
   answer: string; 
   provider: string; 
   model: string 
 } {
   const parts: string[] = [];
   
-  for (const record of toolResults) {
-    if (!record.result.success) {
-      parts.push(`Error querying ${record.toolName}: ${record.result.error}`);
+  for (const result of toolResults) {
+    if (!result.success) {
+      parts.push(`Error: ${result.error}`);
       continue;
     }
     
-    if (record.result.count !== undefined) {
-      const entityName = getEntityDisplayName(record.toolName);
-      parts.push(`Found ${record.result.count} ${entityName}.`);
+    if (result.count !== undefined) {
+      parts.push(`Found ${result.count} records.`);
     }
   }
   
@@ -196,37 +191,14 @@ function generateFallbackResponse(toolResults: ToolCallRecord[]): {
 }
 
 /**
- * Get human-readable entity name
- */
-function getEntityDisplayName(toolName: string): string {
-  const names: Record<string, string> = {
-    'query_tickets': 'service requests',
-    'query_incidents': 'incidents',
-    'query_assets': 'assets',
-    'query_compliance': 'compliance controls',
-    'query_users': 'users',
-    'query_roles': 'roles',
-    'query_problems': 'problems',
-    'query_changes': 'change requests',
-    'query_access_requests': 'access requests',
-    'query_projects': 'projects',
-    'query_vendors': 'vendor licenses',
-    'query_knowledge': 'knowledge articles',
-    'query_audit_logs': 'audit log entries'
-  };
-  
-  return names[toolName] || toolName;
-}
-
-/**
  * Aggregate cards from all tool results
  */
-export function aggregateCards(toolResults: ToolCallRecord[]): AiCard[] {
+export function aggregateCards(toolResults: ToolResult[]): AiCard[] {
   const allCards: AiCard[] = [];
   
-  for (const record of toolResults) {
-    if (record.result.success && record.result.cards) {
-      allCards.push(...record.result.cards);
+  for (const result of toolResults) {
+    if (result.success && result.cards) {
+      allCards.push(...result.cards);
     }
   }
   
@@ -243,10 +215,10 @@ export function aggregateCards(toolResults: ToolCallRecord[]): AiCard[] {
  * Extract navigation from tool results
  * Returns the first navigation action found
  */
-export function extractNavigation(toolResults: ToolCallRecord[]): NavigationAction | undefined {
-  for (const record of toolResults) {
-    if (record.result.success && record.result.navigation) {
-      return record.result.navigation;
+export function extractNavigation(toolResults: ToolResult[]): NavigationAction | undefined {
+  for (const result of toolResults) {
+    if (result.success && result.navigation) {
+      return result.navigation;
     }
   }
   return undefined;

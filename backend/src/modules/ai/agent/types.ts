@@ -7,6 +7,8 @@
  * - Intent classification
  * - Agent orchestration
  * - Response synthesis
+ * 
+ * Note: Conversation history is handled entirely on the frontend.
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -179,56 +181,3 @@ export interface AgentOutput {
     executionTimeMs?: number;
   };
 }
-
-/**
- * Tool call record for logging
- */
-export interface ToolCallRecord {
-  toolName: string;
-  parameters: Record<string, unknown>;
-  result: ToolResult;
-  executionTimeMs: number;
-}
-
-/**
- * Agent execution result (internal)
- */
-export interface AgentExecutionResult {
-  answer: string;
-  cards: AiCard[];
-  navigation?: NavigationAction;
-  toolCalls: ToolCallRecord[];
-  provider: string;
-  model: string;
-  intent: IntentType;
-  executionTimeMs: number;
-  metadata?: {
-    intent?: IntentType;
-    toolsUsed?: string[];
-    executionTimeMs?: number;
-  };
-}
-
-// ============================================================================
-// Configuration Types
-// ============================================================================
-
-/**
- * Agent configuration options
- */
-export interface AgentConfig {
-  defaultProvider: string;
-  maxToolCalls: number;
-  toolTimeoutMs: number;
-  enablePermissionFiltering: boolean;
-}
-
-/**
- * Default agent configuration
- */
-export const DEFAULT_AGENT_CONFIG: AgentConfig = {
-  defaultProvider: 'mock',
-  maxToolCalls: 5,
-  toolTimeoutMs: 30000,
-  enablePermissionFiltering: true,
-};

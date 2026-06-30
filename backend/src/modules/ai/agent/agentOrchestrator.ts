@@ -174,12 +174,6 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       // Execute the unified database tool
       const result = await queryDatabaseTool.execute(toolParams, context);
       
-      const toolResult: ToolCallRecord = {
-        toolName: 'query_database',
-        result,
-        executionTimeMs: result.metadata?.executionTimeMs || 0
-      };
-      
       console.log('\n--- TOOL RESULT ---');
       console.log('Success:', result.success);
       console.log('Count:', result.count || 0);
@@ -189,15 +183,13 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       }
       console.log('-------------------\n');
       
-      toolCalls.push(toolResult);
-      
       // Check if tool succeeded
       if (!result.success) {
         console.log('[AGENT] Database query failed → Falling back to LLM\n');
         
         const llmResult = await synthesizeResponse(
           input.question,
-          [toolResult],
+          [result],
           'DATABASE_QUERY'
         );
         
@@ -208,8 +200,6 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
           model: llmResult.model,
           metadata: {
             intent: llmIntent.intent,
-            entity: llmIntent.entity,
-            filters: llmIntent.filters,
             toolsUsed: ['query_database']
           }
         };
@@ -222,7 +212,7 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
       // Synthesize response with database results
       const synthesizedResponse = await synthesizeResponse(
         input.question,
-        [toolResult],
+        [result],
         'DATABASE_QUERY'
       );
       
@@ -248,8 +238,6 @@ export async function runAgent(input: AgentInput): Promise<AgentOutput> {
         model: synthesizedResponse.model,
         metadata: {
           intent: llmIntent.intent,
-          entity: llmIntent.entity,
-          filters: llmIntent.filters,
           toolsUsed: ['query_database']
         }
       };

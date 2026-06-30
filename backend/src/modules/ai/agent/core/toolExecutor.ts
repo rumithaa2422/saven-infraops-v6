@@ -5,7 +5,7 @@
  * Handles the execution of database tools and other tool types.
  */
 
-import { Tool, ToolContext, ToolResult, ToolCallRecord } from '../types.js';
+import { Tool, ToolContext, ToolResult } from '../types.js';
 
 /**
  * Execute a single tool
@@ -61,17 +61,11 @@ export async function executeToolsParallel(
   tools: { tool: Tool; parameters: Record<string, unknown> }[],
   context: ToolContext,
   timeoutMs: number = 30000
-): Promise<ToolCallRecord[]> {
+): Promise<ToolResult[]> {
   // Execute all tools in parallel
   const results = await Promise.all(
     tools.map(async ({ tool, parameters }) => {
-      const result = await executeTool(tool, parameters, context, timeoutMs);
-      return {
-        toolName: tool.name,
-        parameters,
-        result,
-        executionTimeMs: result.metadata?.executionTimeMs || 0
-      } as ToolCallRecord;
+      return await executeTool(tool, parameters, context, timeoutMs);
     })
   );
   
@@ -85,20 +79,12 @@ export async function executeToolsSequential(
   tools: { tool: Tool; parameters: Record<string, unknown> }[],
   context: ToolContext,
   timeoutMs: number = 30000
-): Promise<ToolCallRecord[]> {
-  const results: ToolCallRecord[] = [];
+): Promise<ToolResult[]> {
+  const results: ToolResult[] = [];
   
   for (const { tool, parameters } of tools) {
     const result = await executeTool(tool, parameters, context, timeoutMs);
-    results.push({
-      toolName: tool.name,
-      parameters,
-      result,
-      executionTimeMs: result.metadata?.executionTimeMs || 0
-    });
-    
-    // If a tool fails, we might want to stop
-    // For now, continue executing
+    results.push(result);
   }
   
   return results;
@@ -113,18 +99,13 @@ export async function executeWithFallback(
   fallbacks: { tool: Tool; parameters: Record<string, unknown> }[],
   context: ToolContext,
   timeoutMs: number = 30000
-): Promise<ToolCallRecord> {
+): Promise<ToolResult> {
   // Try primary
   try {
     const result = await executeTool(primary.tool, primary.parameters, context, timeoutMs);
     
     if (result.success) {
-      return {
-        toolName: primary.tool.name,
-        parameters: primary.parameters,
-        result,
-        executionTimeMs: result.metadata?.executionTimeMs || 0
-      };
+      return result;
     }
   } catch (error) {
     console.warn(`[ToolExecutor] Primary tool ${primary.tool.name} failed, trying fallbacks`);
@@ -137,12 +118,7 @@ export async function executeWithFallback(
       
       if (result.success) {
         console.log(`[ToolExecutor] Fallback tool ${fallback.tool.name} succeeded`);
-        return {
-          toolName: fallback.tool.name,
-          parameters: fallback.parameters,
-          result,
-          executionTimeMs: result.metadata?.executionTimeMs || 0
-        };
+        return result;
       }
     } catch (error) {
       console.warn(`[ToolExecutor] Fallback tool ${fallback.tool.name} also failed`);
@@ -151,12 +127,7 @@ export async function executeWithFallback(
   
   // All failed
   return {
-    toolName: primary.tool.name,
-    parameters: primary.parameters,
-    result: {
-      success: false,
-      error: 'All tools failed'
-    },
-    executionTimeMs: 0
+    success: false,
+    error: 'All tools failed'
   };
 }
