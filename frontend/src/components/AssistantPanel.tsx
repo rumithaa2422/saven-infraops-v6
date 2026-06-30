@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../auth/AuthContext';
 
 // Types
 type Message = {
@@ -37,10 +38,6 @@ type AssistantPanelProps = {
   onCollapse: () => void;
 };
 
-// LocalStorage keys
-const STORAGE_KEY = 'infraops_ai_conversations';
-const SELECTED_KEY = 'infraops_ai_selected';
-
 // Generate unique ID
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -70,35 +67,6 @@ function generateTitle(content: string): string {
   return cleaned.substring(0, 37) + '...';
 }
 
-// Load conversations from localStorage
-function loadConversations(): Conversation[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-// Save conversations to localStorage
-function saveConversations(conversations: Conversation[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
-}
-
-// Get selected conversation ID
-function getSelectedId(): string | null {
-  return localStorage.getItem(SELECTED_KEY);
-}
-
-// Set selected conversation ID
-function setSelectedId(id: string | null): void {
-  if (id) {
-    localStorage.setItem(SELECTED_KEY, id);
-  } else {
-    localStorage.removeItem(SELECTED_KEY);
-  }
-}
-
 // Default suggestions
 const DEFAULT_SUGGESTIONS = [
   'How many service requests are open?',
@@ -110,6 +78,7 @@ const DEFAULT_SUGGESTIONS = [
 export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
   
   // State
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -120,41 +89,66 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
   
+  // User-specific localStorage keys
+  const storageKey = user ? `infraops_ai_conversations_${user.id}` : null;
+  const selectedKey = user ? `infraops_ai_selected_${user.id}` : null;
+  
   // Get current conversation
   const currentConversation = conversations.find(c => c.id === selectedId);
   
-  // Load on mount
+  // Load on mount - using user-specific key
   useEffect(() => {
-    const loaded = loadConversations();
-    setConversations(loaded);
-    
-    const savedId = getSelectedId();
-    if (savedId && loaded.find(c => c.id === savedId)) {
-      setSelectedIdState(savedId);
+    if (!user) {
+      setConversations([]);
+      setSelectedIdState(null);
+      return;
     }
-  }, []);
+    
+    const key = `infraops_ai_conversations_${user.id}`;
+    const selKey = `infraops_ai_selected_${user.id}`;
+    
+    try {
+      const data = localStorage.getItem(key);
+      const loaded: Conversation[] = data ? JSON.parse(data) : [];
+      setConversations(loaded);
+      
+      const savedId = localStorage.getItem(selKey);
+      if (savedId && loaded.find(c => c.id === savedId)) {
+        setSelectedIdState(savedId);
+      }
+    } catch {
+      setConversations([]);
+    }
+  }, [user?.id]);
   
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentConversation?.messages]);
   
-  // Save conversations when they change
+  // Save conversations when they change (user-specific)
   useEffect(() => {
+    if (!user || !storageKey) return;
     if (conversations.length > 0) {
-      saveConversations(conversations);
+      localStorage.setItem(storageKey, JSON.stringify(conversations));
+    } else {
+      localStorage.removeItem(storageKey);
     }
-  }, [conversations]);
+  }, [conversations, user?.id, storageKey]);
   
-  // Save selected ID when it changes
+  // Save selected ID when it changes (user-specific)
   useEffect(() => {
-    setSelectedId(selectedId);
-  }, [selectedId]);
+    if (!user || !selectedKey) return;
+    if (selectedId) {
+      localStorage.setItem(selectedKey, selectedId);
+    } else {
+      localStorage.removeItem(selectedKey);
+    }
+  }, [selectedId, user?.id, selectedKey]);
   
   // Select conversation
   const selectConversation = useCallback((id: string) => {
     setSelectedIdState(id);
-    setSelectedId(id);
   }, []);
   
   // Start new chat
@@ -175,18 +169,16 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
     e.stopPropagation();
     setConversations(prev => {
       const updated = prev.filter(c => c.id !== id);
-      saveConversations(updated);
       return updated;
     });
     if (selectedId === id) {
       setSelectedIdState(null);
-      setSelectedId(null);
     }
   }, [selectedId]);
   
   // Send message
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || !user) return;
     
     const now = Date.now();
     
@@ -205,7 +197,6 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
       setConversations(prev => [newConv, ...prev]);
       convId = newConv.id;
       setSelectedIdState(convId);
-      setSelectedId(convId);
     } else {
       // Update existing conversation title if it's the first message
       setConversations(prev => prev.map(c => {
