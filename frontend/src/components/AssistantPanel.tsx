@@ -1,6 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+
+// Types
+type Message = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+};
+
+type Conversation = {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
+};
 
 type AiCard = {
   title: string;
@@ -15,402 +31,542 @@ type AiResponse = {
   navigation?: {
     route: string;
   };
-  conversationId?: string;
-};
-
-type Message = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
-type Conversation = {
-  id: string;
-  title: string;
-  updatedAt: string;
 };
 
 type AssistantPanelProps = {
   onCollapse: () => void;
 };
 
+// LocalStorage keys
+const STORAGE_KEY = 'infraops_ai_conversations';
+const SELECTED_KEY = 'infraops_ai_selected';
+
+// Generate unique ID
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Format relative time
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
+// Generate title from first message
+function generateTitle(content: string): string {
+  const cleaned = content.replace(/[?!.,]+$/, '').trim();
+  if (cleaned.length <= 40) return cleaned;
+  return cleaned.substring(0, 37) + '...';
+}
+
+// Load conversations from localStorage
+function loadConversations(): Conversation[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Save conversations to localStorage
+function saveConversations(conversations: Conversation[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+}
+
+// Get selected conversation ID
+function getSelectedId(): string | null {
+  return localStorage.getItem(SELECTED_KEY);
+}
+
+// Set selected conversation ID
+function setSelectedId(id: string | null): void {
+  if (id) {
+    localStorage.setItem(SELECTED_KEY, id);
+  } else {
+    localStorage.removeItem(SELECTED_KEY);
+  }
+}
+
+// Default suggestions
+const DEFAULT_SUGGESTIONS = [
+  'How many service requests are open?',
+  'Show SLA breached tickets',
+  'Summarize today incidents',
+  'Show compliance due this month'
+];
+
 export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
   const navigate = useNavigate();
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [cards, setCards] = useState<AiCard[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // State
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [selectedId, setSelectedIdState] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [hoveredConversation, setHoveredConversation] = useState<string | null>(null);
-
-  // Load conversations on mount
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [showSidebar, setShowSidebar] = useState(true);
+  
+  // Get current conversation
+  const currentConversation = conversations.find(c => c.id === selectedId);
+  
+  // Load on mount
   useEffect(() => {
-    loadConversations();
-  }, []);
-
-  // Load conversations from API
-  const loadConversations = async () => {
-    try {
-      const response = await api.get<Conversation[]>('/ai/conversations');
-      setConversations(response.data);
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-    }
-  };
-
-  // Create new conversation
-  const startNewChat = async () => {
-    try {
-      const response = await api.post<{ id: string; title: string }>('/ai/conversations');
-      setCurrentConversationId(response.data.id);
-      setMessages([]);
-      setAnswer('');
-      setCards([]);
-      setConversations(prev => [{ ...response.data, updatedAt: new Date().toISOString() }, ...prev]);
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
-    }
-  };
-
-  // Load conversation messages
-  const loadConversation = async (conversationId: string) => {
-    try {
-      const response = await api.get<{ id: string; title: string; messages: Message[] }>(
-        `/ai/conversations/${conversationId}`
-      );
-      setCurrentConversationId(conversationId);
-      setMessages(response.data.messages);
-      
-      // Show last assistant message as current answer
-      const lastAssistant = [...response.data.messages].reverse().find(m => m.role === 'assistant');
-      if (lastAssistant) {
-        setAnswer(lastAssistant.content);
-      }
-    } catch (error) {
-      console.error('Failed to load conversation:', error);
-    }
-  };
-
-  // Delete conversation
-  const deleteConversationHandler = async (e: React.MouseEvent, conversationId: string) => {
-    e.stopPropagation();
-    try {
-      await api.delete(`/ai/conversations/${conversationId}`);
-      setConversations(prev => prev.filter(c => c.id !== conversationId));
-      if (currentConversationId === conversationId) {
-        setCurrentConversationId(null);
-        setMessages([]);
-        setAnswer('');
-      }
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
-    }
-  };
-
-  // Format relative time
-  const formatRelativeTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    const loaded = loadConversations();
+    setConversations(loaded);
     
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    const savedId = getSelectedId();
+    if (savedId && loaded.find(c => c.id === savedId)) {
+      setSelectedIdState(savedId);
+    }
+  }, []);
+  
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [currentConversation?.messages]);
+  
+  // Save conversations when they change
+  useEffect(() => {
+    if (conversations.length > 0) {
+      saveConversations(conversations);
+    }
+  }, [conversations]);
+  
+  // Save selected ID when it changes
+  useEffect(() => {
+    setSelectedId(selectedId);
+  }, [selectedId]);
+  
+  // Select conversation
+  const selectConversation = useCallback((id: string) => {
+    setSelectedIdState(id);
+    setSelectedId(id);
+  }, []);
+  
+  // Start new chat
+  const startNewChat = useCallback(() => {
+    const newConv: Conversation = {
+      id: generateId(),
+      title: 'New Chat',
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    setConversations(prev => [newConv, ...prev]);
+    selectConversation(newConv.id);
+  }, [selectConversation]);
+  
+  // Delete conversation
+  const deleteConversation = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setConversations(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      saveConversations(updated);
+      return updated;
+    });
+    if (selectedId === id) {
+      setSelectedIdState(null);
+      setSelectedId(null);
+    }
+  }, [selectedId]);
+  
+  // Send message
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+    
+    const now = Date.now();
+    
+    // Create or update conversation
+    let convId = selectedId;
+    
+    if (!convId) {
+      // Create new conversation
+      const newConv: Conversation = {
+        id: generateId(),
+        title: generateTitle(text),
+        messages: [],
+        createdAt: now,
+        updatedAt: now
+      };
+      setConversations(prev => [newConv, ...prev]);
+      convId = newConv.id;
+      setSelectedIdState(convId);
+      setSelectedId(convId);
+    } else {
+      // Update existing conversation title if it's the first message
+      setConversations(prev => prev.map(c => {
+        if (c.id === convId && c.messages.length === 0) {
+          return { ...c, title: generateTitle(text), updatedAt: now };
+        }
+        if (c.id === convId) {
+          return { ...c, updatedAt: now };
+        }
+        return c;
+      }));
+    }
+    
+    // Add user message
+    const userMessage: Message = {
+      id: generateId(),
+      role: 'user',
+      content: text,
+      timestamp: now
+    };
+    
+    setConversations(prev => prev.map(c => {
+      if (c.id === convId) {
+        return { ...c, messages: [...c.messages, userMessage], updatedAt: now };
+      }
+      return c;
+    }));
+    
+    setInputValue('');
+    setIsLoading(true);
+    
+    try {
+      const response = await api.post<AiResponse>('/ai/ask', { question: text });
+      
+      const assistantMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: response.data.answer,
+        timestamp: Date.now()
+      };
+      
+      setConversations(prev => prev.map(c => {
+        if (c.id === convId) {
+          return { 
+            ...c, 
+            messages: [...c.messages, assistantMessage],
+            updatedAt: Date.now()
+          };
+        }
+        return c;
+      }));
+      
+      // Navigation
+      if (response.data.navigation?.route) {
+        navigate(response.data.navigation.route);
+      }
+    } catch (error) {
+      const errorMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: 'AI assistant is unable to reach backend. Check API is running on port 4000.',
+        timestamp: Date.now()
+      };
+      
+      setConversations(prev => prev.map(c => {
+        if (c.id === convId) {
+          return { ...c, messages: [...c.messages, errorMessage] };
+        }
+        return c;
+      }));
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  // Group conversations by time
-  const groupConversations = (convs: Conversation[]) => {
-    const now = new Date();
+  
+  // Handle input key down
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(inputValue);
+    }
+  };
+  
+  // Filter conversations
+  const filteredConversations = searchQuery
+    ? conversations.filter(c => 
+        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.messages.some(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : conversations;
+  
+  // Group conversations
+  const groupByTime = (convs: Conversation[]) => {
+    const now = Date.now();
     const today: Conversation[] = [];
     const yesterday: Conversation[] = [];
     const lastWeek: Conversation[] = [];
     const older: Conversation[] = [];
     
     convs.forEach(c => {
-      const date = new Date(c.updatedAt);
-      const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
-      
-      if (diffDays === 0) today.push(c);
-      else if (diffDays === 1) yesterday.push(c);
-      else if (diffDays < 7) lastWeek.push(c);
+      const days = Math.floor((now - c.updatedAt) / 86400000);
+      if (days === 0) today.push(c);
+      else if (days === 1) yesterday.push(c);
+      else if (days < 7) lastWeek.push(c);
       else older.push(c);
     });
     
     return { today, yesterday, lastWeek, older };
   };
-
-  // Filter conversations by search
-  const filteredConversations = searchQuery
-    ? conversations.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    : conversations;
-
-  const grouped = groupConversations(filteredConversations);
-
-  // Send message
-  const ask = async (text = question) => {
-    if (!text.trim()) return;
-    setLoading(true);
-    
-    try {
-      const response = await api.post<AiResponse>('/ai/ask', { 
-        question: text,
-        conversationId: currentConversationId || undefined
-      });
-      
-      // Add user message to local state
-      const userMsg: Message = { role: 'user', content: text };
-      setMessages(prev => [...prev, userMsg]);
-      
-      // Add assistant response to local state
-      const assistantMsg: Message = { role: 'assistant', content: response.data.answer };
-      setMessages(prev => [...prev, assistantMsg]);
-      
-      setAnswer(response.data.answer);
-      setCards(response.data.cards || []);
-      
-      // If new conversation created, update state
-      if (response.data.conversationId && !currentConversationId) {
-        setCurrentConversationId(response.data.conversationId);
-        await loadConversations(); // Refresh list
-      }
-      
-      // Navigation
-      const navRoute = response.data.navigation?.route;
-      if (navRoute) {
-        console.log('NAVIGATING TO:', navRoute);
-        navigate(navRoute);
-      }
-      
-      setQuestion('');
-    } catch (error) {
-      console.error('AI ERROR:', error);
-      setAnswer('AI assistant is unable to reach backend. Check API is running on port 4000.');
-      setCards([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const suggestions = [
-    'How many service requests are open?',
-    'Show SLA breached tickets',
-    'Summarize today incidents',
-    'Show compliance due this month'
-  ];
-
+  
+  const grouped = groupByTime(filteredConversations);
+  
   return (
-    <aside className="assistant">
-      <div className="assistant-header">
-        <div>
-          <strong>AI Assistant</strong>
-          <span>Always on</span>
-        </div>
+    <aside className="ai-panel">
+      {/* Header */}
+      <div className="ai-header">
         <button 
-          className="icon-button" 
-          onClick={() => setShowSidebar(!showSidebar)} 
+          className="ai-sidebar-toggle"
+          onClick={() => setShowSidebar(!showSidebar)}
           title={showSidebar ? 'Hide sidebar' : 'Show sidebar'}
         >
-          {showSidebar ? '←' : '→'}
+          {showSidebar ? '◀' : '▶'}
         </button>
-        <button className="icon-button" onClick={onCollapse} title="Collapse AI panel">→</button>
+        <div className="ai-header-title">
+          <span className="ai-badge">AI</span>
+          <strong>InfraOps Assistant</strong>
+        </div>
+        <button className="ai-collapse-btn" onClick={onCollapse} title="Collapse">×</button>
       </div>
-
-      <div className="assistant-content">
-        {/* Conversations Sidebar */}
+      
+      <div className="ai-body">
+        {/* Sidebar */}
         {showSidebar && (
-          <div className="conversations-sidebar">
-            <button className="new-chat-btn" onClick={startNewChat}>
-              + New Chat
+          <div className="ai-sidebar">
+            <button className="ai-new-chat" onClick={startNewChat}>
+              <span>+</span> New Chat
             </button>
             
-            <div className="search-box">
+            <div className="ai-search">
               <input
                 type="text"
                 placeholder="Search conversations..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
             
-            <div className="conversations-list">
+            <div className="ai-conversations">
               {grouped.today.length > 0 && (
-                <div className="conversation-group">
-                  <div className="group-label">Today</div>
+                <div className="ai-conv-group">
+                  <div className="ai-conv-label">Today</div>
                   {grouped.today.map(conv => (
-                    <div
+                    <ConversationItem
                       key={conv.id}
-                      className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
-                      onClick={() => loadConversation(conv.id)}
-                      onMouseEnter={() => setHoveredConversation(conv.id)}
-                      onMouseLeave={() => setHoveredConversation(null)}
-                    >
-                      <span className="conv-title">{conv.title}</span>
-                      <span className="conv-time">{formatRelativeTime(conv.updatedAt)}</span>
-                      {hoveredConversation === conv.id && (
-                        <button 
-                          className="delete-conv-btn"
-                          onClick={(e) => deleteConversationHandler(e, conv.id)}
-                          title="Delete conversation"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
+                      conversation={conv}
+                      isActive={selectedId === conv.id}
+                      isHovered={hoveredId === conv.id}
+                      onSelect={() => selectConversation(conv.id)}
+                      onHover={setHoveredId}
+                      onDelete={(e) => deleteConversation(e, conv.id)}
+                    />
                   ))}
                 </div>
               )}
               
               {grouped.yesterday.length > 0 && (
-                <div className="conversation-group">
-                  <div className="group-label">Yesterday</div>
+                <div className="ai-conv-group">
+                  <div className="ai-conv-label">Yesterday</div>
                   {grouped.yesterday.map(conv => (
-                    <div
+                    <ConversationItem
                       key={conv.id}
-                      className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
-                      onClick={() => loadConversation(conv.id)}
-                      onMouseEnter={() => setHoveredConversation(conv.id)}
-                      onMouseLeave={() => setHoveredConversation(null)}
-                    >
-                      <span className="conv-title">{conv.title}</span>
-                      <span className="conv-time">{formatRelativeTime(conv.updatedAt)}</span>
-                      {hoveredConversation === conv.id && (
-                        <button 
-                          className="delete-conv-btn"
-                          onClick={(e) => deleteConversationHandler(e, conv.id)}
-                          title="Delete conversation"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
+                      conversation={conv}
+                      isActive={selectedId === conv.id}
+                      isHovered={hoveredId === conv.id}
+                      onSelect={() => selectConversation(conv.id)}
+                      onHover={setHoveredId}
+                      onDelete={(e) => deleteConversation(e, conv.id)}
+                    />
                   ))}
                 </div>
               )}
               
               {grouped.lastWeek.length > 0 && (
-                <div className="conversation-group">
-                  <div className="group-label">Last Week</div>
+                <div className="ai-conv-group">
+                  <div className="ai-conv-label">Previous 7 Days</div>
                   {grouped.lastWeek.map(conv => (
-                    <div
+                    <ConversationItem
                       key={conv.id}
-                      className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
-                      onClick={() => loadConversation(conv.id)}
-                      onMouseEnter={() => setHoveredConversation(conv.id)}
-                      onMouseLeave={() => setHoveredConversation(null)}
-                    >
-                      <span className="conv-title">{conv.title}</span>
-                      <span className="conv-time">{formatRelativeTime(conv.updatedAt)}</span>
-                      {hoveredConversation === conv.id && (
-                        <button 
-                          className="delete-conv-btn"
-                          onClick={(e) => deleteConversationHandler(e, conv.id)}
-                          title="Delete conversation"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
+                      conversation={conv}
+                      isActive={selectedId === conv.id}
+                      isHovered={hoveredId === conv.id}
+                      onSelect={() => selectConversation(conv.id)}
+                      onHover={setHoveredId}
+                      onDelete={(e) => deleteConversation(e, conv.id)}
+                    />
                   ))}
                 </div>
               )}
               
               {grouped.older.length > 0 && (
-                <div className="conversation-group">
-                  <div className="group-label">Older</div>
+                <div className="ai-conv-group">
+                  <div className="ai-conv-label">Older</div>
                   {grouped.older.map(conv => (
-                    <div
+                    <ConversationItem
                       key={conv.id}
-                      className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
-                      onClick={() => loadConversation(conv.id)}
-                      onMouseEnter={() => setHoveredConversation(conv.id)}
-                      onMouseLeave={() => setHoveredConversation(null)}
-                    >
-                      <span className="conv-title">{conv.title}</span>
-                      <span className="conv-time">{formatRelativeTime(conv.updatedAt)}</span>
-                      {hoveredConversation === conv.id && (
-                        <button 
-                          className="delete-conv-btn"
-                          onClick={(e) => deleteConversationHandler(e, conv.id)}
-                          title="Delete conversation"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
+                      conversation={conv}
+                      isActive={selectedId === conv.id}
+                      isHovered={hoveredId === conv.id}
+                      onSelect={() => selectConversation(conv.id)}
+                      onHover={setHoveredId}
+                      onDelete={(e) => deleteConversation(e, conv.id)}
+                    />
                   ))}
                 </div>
               )}
               
-              {filteredConversations.length === 0 && (
-                <div className="no-conversations">
-                  {searchQuery ? 'No conversations found' : 'No conversations yet'}
+              {filteredConversations.length === 0 && !searchQuery && (
+                <div className="ai-empty-state">
+                  No conversations yet
+                </div>
+              )}
+              
+              {filteredConversations.length === 0 && searchQuery && (
+                <div className="ai-empty-state">
+                  No results found
                 </div>
               )}
             </div>
           </div>
         )}
-
+        
         {/* Chat Area */}
-        <div className="chat-area">
-          {!currentConversationId && messages.length === 0 && (
-            <div className="suggestions">
-              {suggestions.map((item) => (
-                <button key={item} onClick={() => ask(item)}>{item}</button>
-              ))}
+        <div className="ai-chat">
+          {(!selectedId || currentConversation?.messages.length === 0) && !isLoading && (
+            <div className="ai-welcome">
+              <div className="ai-welcome-icon">💬</div>
+              <h3>Welcome to InfraOps AI</h3>
+              <p>Ask me about tickets, incidents, assets, compliance, or anything else.</p>
+              <div className="ai-suggestions">
+                {DEFAULT_SUGGESTIONS.map(suggestion => (
+                  <button key={suggestion} onClick={() => sendMessage(suggestion)}>
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           
-          {messages.length > 0 && (
-            <div className="messages-list">
-              {messages.map((msg, i) => (
-                <div key={i} className={`message ${msg.role}`}>
-                  <div className="message-content">{msg.content}</div>
+          {currentConversation && currentConversation.messages.length > 0 && (
+            <div className="ai-messages">
+              {currentConversation.messages.map(msg => (
+                <div key={msg.id} className={`ai-message ai-message-${msg.role}`}>
+                  <div className="ai-message-avatar">
+                    {msg.role === 'user' ? '👤' : '🤖'}
+                  </div>
+                  <div className="ai-message-content">
+                    <div className="ai-message-text">{msg.content}</div>
+                    <div className="ai-message-time">{formatRelativeTime(msg.timestamp)}</div>
+                  </div>
                 </div>
               ))}
+              {isLoading && (
+                <div className="ai-message ai-message-assistant">
+                  <div className="ai-message-avatar">🤖</div>
+                  <div className="ai-message-content">
+                    <div className="ai-message-text ai-loading">
+                      <span className="ai-loading-dot"></span>
+                      <span className="ai-loading-dot"></span>
+                      <span className="ai-loading-dot"></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           )}
           
-          <div className="answer-card">
-            <p>{loading ? 'Checking records...' : answer}</p>
-            {cards.map((card) => (
-              card.href ? (
-                <Link className="mini-card" key={card.title} to={card.href}>
-                  <span>{card.title}</span>
-                  {card.value && <strong>{card.value}</strong>}
-                  {card.description && <small>{card.description}</small>}
-                </Link>
-              ) : (
-                <div className="mini-card" key={card.title}>
-                  <span>{card.title}</span>
-                  {card.value && <strong>{card.value}</strong>}
-                  {card.description && <small>{card.description}</small>}
+          {!currentConversation && !isLoading && (
+            <div className="ai-messages">
+              {isLoading && (
+                <div className="ai-message ai-message-assistant">
+                  <div className="ai-message-avatar">🤖</div>
+                  <div className="ai-message-content">
+                    <div className="ai-message-text ai-loading">
+                      <span className="ai-loading-dot"></span>
+                      <span className="ai-loading-dot"></span>
+                      <span className="ai-loading-dot"></span>
+                    </div>
+                  </div>
                 </div>
-              )
-            ))}
-          </div>
+              )}
+            </div>
+          )}
           
-          <div className="assistant-input">
-            <input
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') ask();
-              }}
+          {/* Input */}
+          <div className="ai-input-area">
+            <textarea
+              className="ai-input"
               placeholder="Ask InfraOps..."
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              rows={1}
             />
-            <button onClick={() => ask()} disabled={loading}>Ask</button>
+            <button 
+              className="ai-send-btn" 
+              onClick={() => sendMessage(inputValue)}
+              disabled={!inputValue.trim() || isLoading}
+            >
+              {isLoading ? '...' : '➤'}
+            </button>
           </div>
         </div>
       </div>
     </aside>
+  );
+}
+
+// Conversation Item Component
+function ConversationItem({
+  conversation,
+  isActive,
+  isHovered,
+  onSelect,
+  onHover,
+  onDelete
+}: {
+  conversation: Conversation;
+  isActive: boolean;
+  isHovered: boolean;
+  onSelect: () => void;
+  onHover: (id: string | null) => void;
+  onDelete: (e: React.MouseEvent) => void;
+}) {
+  const lastMessage = conversation.messages[conversation.messages.length - 1];
+  
+  return (
+    <div
+      className={`ai-conv-item ${isActive ? 'active' : ''}`}
+      onClick={onSelect}
+      onMouseEnter={() => onHover(conversation.id)}
+      onMouseLeave={() => onHover(null)}
+    >
+      <div className="ai-conv-icon">💬</div>
+      <div className="ai-conv-info">
+        <div className="ai-conv-title">{conversation.title}</div>
+        {lastMessage && (
+          <div className="ai-conv-preview">
+            {lastMessage.content.substring(0, 30)}...
+          </div>
+        )}
+      </div>
+      <div className="ai-conv-meta">
+        <span className="ai-conv-time">{formatRelativeTime(conversation.updatedAt)}</span>
+        {(isHovered || isActive) && (
+          <button className="ai-conv-delete" onClick={onDelete} title="Delete">
+            ×
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
