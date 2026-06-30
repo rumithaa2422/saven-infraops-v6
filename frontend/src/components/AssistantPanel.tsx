@@ -211,65 +211,85 @@ export function AssistantPanel({ onCollapse }: AssistantPanelProps) {
     }
     
     // Add user message
-    const userMessage: Message = {
-      id: generateId(),
-      role: 'user',
-      content: text,
-      timestamp: now
-    };
-    
-    setConversations(prev => prev.map(c => {
+const userMessage: Message = {
+  id: generateId(),
+  role: 'user',
+  content: text,
+  timestamp: now
+};
+
+setConversations(prev =>
+  prev.map(c => {
+    if (c.id === convId) {
+      return {
+        ...c,
+        messages: [...c.messages, userMessage],
+        updatedAt: now
+      };
+    }
+    return c;
+  })
+);
+
+setInputValue('');
+setIsLoading(true);
+
+try {
+  const response = await api.post<AiResponse>('/ai/ask', { question: text });
+
+  const data = response.data;
+  console.log("Full AI Response:", data);
+
+  const assistantMessage: Message = {
+    id: generateId(),
+    role: 'assistant',
+    content: data.answer,
+    timestamp: Date.now()
+  };
+
+  setConversations(prev =>
+    prev.map(c => {
       if (c.id === convId) {
-        return { ...c, messages: [...c.messages, userMessage], updatedAt: now };
+        return {
+          ...c,
+          messages: [...c.messages, assistantMessage],
+          updatedAt: Date.now()
+        };
       }
       return c;
-    }));
-    
-    setInputValue('');
-    setIsLoading(true);
-    
-    try {
-      const response = await api.post<AiResponse>('/ai/ask', { question: text });
-      
-      const assistantMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: response.data.answer,
-        timestamp: Date.now()
-      };
-      
-      setConversations(prev => prev.map(c => {
-        if (c.id === convId) {
-          return { 
-            ...c, 
-            messages: [...c.messages, assistantMessage],
-            updatedAt: Date.now()
-          };
-        }
-        return c;
-      }));
-      
-      // Navigation
-      if (response.data.navigation?.route) {
-        navigate(response.data.navigation.route);
-      }
-    } catch (error) {
-      const errorMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: 'AI assistant is unable to reach backend. Check API is running on port 4000.',
-        timestamp: Date.now()
-      };
-      
-      setConversations(prev => prev.map(c => {
-        if (c.id === convId) {
-          return { ...c, messages: [...c.messages, errorMessage] };
-        }
-        return c;
-      }));
-    } finally {
-      setIsLoading(false);
+    })
+  );
+
+  // ✅ NAVIGATION (ONLY ONCE, SAFE)
+  if (data?.navigation?.route) {
+    const route = data.navigation.route;
+    console.log("Navigating to:", route);
+    navigate(route);
     }
+  
+} catch (error) {
+  const errorMessage: Message = {
+    id: generateId(),
+    role: 'assistant',
+    content:
+      'AI assistant is unable to reach backend. Check API is running on port 4000.',
+    timestamp: Date.now()
+  };
+
+  setConversations(prev =>
+    prev.map(c => {
+      if (c.id === convId) {
+        return {
+          ...c,
+          messages: [...c.messages, errorMessage]
+        };
+      }
+      return c;
+    })
+  );
+} finally {
+  setIsLoading(false);
+}
   };
   
   // Handle input key down

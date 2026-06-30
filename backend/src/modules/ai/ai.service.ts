@@ -32,6 +32,7 @@ export async function askAi(input: {
   return {
     answer: result.answer,
     cards: result.cards,
+    navigation: result.navigation,
     provider: result.provider,
     model: result.model
   };

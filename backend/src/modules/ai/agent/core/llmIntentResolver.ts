@@ -240,20 +240,128 @@ function fallbackIntent(question: string): LlmIntentResult {
   const lower = question.toLowerCase();
   
   // Check for navigation
-  const isNavigation = /^(go to|navigate|open|show me|take me|go|show)\s+(me\s+)?/.test(lower);
-  if (isNavigation) {
-    return {
-      intent: 'NAVIGATION',
-      entity: extractEntityFromQuestion(lower),
-      operation: 'findMany',
-      filters: {},
-      aggregation: 'list',
-      route: '/incidents', // Default route
-      navigationOnly: true,
-      confidence: 0.5,
-      reasoning: 'Fallback: Navigation pattern detected'
-    };
-  }
+const isNavigation = /^(go to|navigate|open|show me|take me|go|show)\s+(me\s+)?/.test(lower);
+
+if (isNavigation) {
+
+  let route = '/dashboard';
+
+if (lower.includes('dashboard')) {
+  route = '/dashboard';
+}
+else if (
+  lower.includes('service request') ||
+  lower.includes('service requests')
+) {
+  route = '/service-requests';
+}
+else if (
+  lower.includes('incident') ||
+  lower.includes('incidents')
+) {
+  route = '/incidents';
+}
+else if (
+  lower.includes('problem') ||
+  lower.includes('problems')
+) {
+  route = '/problems';
+}
+else if (
+  lower.includes('change') ||
+  lower.includes('changes')
+) {
+  route = '/changes';
+}
+else if (
+  lower.includes('inventory') ||
+  lower.includes('asset') ||
+  lower.includes('assets')
+) {
+  route = '/inventory';
+}
+else if (
+  lower.includes('access') ||
+  lower.includes('access management')
+) {
+  route = '/access-management';
+}
+else if (
+  lower.includes('compliance')
+) {
+  route = '/compliance';
+}
+else if (
+  lower.includes('project') ||
+  lower.includes('projects') ||
+  lower.includes('environment') ||
+  lower.includes('environments')
+) {
+  route = '/projects-environments';
+}
+else if (
+  lower.includes('vendor') ||
+  lower.includes('vendors') ||
+  lower.includes('license') ||
+  lower.includes('licenses')
+) {
+  route = '/vendors-licenses';
+}
+else if (
+  lower.includes('knowledge') ||
+  lower.includes('knowledge base') ||
+  lower.includes('kb')
+) {
+  route = '/knowledge-base';
+}
+else if (
+  lower.includes('user') ||
+  lower.includes('users') ||
+  lower.includes('team') ||
+  lower.includes('teams')
+) {
+  route = '/users-teams';
+}
+else if (
+  lower.includes('role') ||
+  lower.includes('roles') ||
+  lower.includes('permission') ||
+  lower.includes('permissions')
+) {
+  route = '/roles-permissions';
+}
+else if (
+  lower.includes('audit') ||
+  lower.includes('audit log')
+) {
+  route = '/audit';
+}
+else if (
+  lower.includes('report') ||
+  lower.includes('reports') ||
+  lower.includes('analytics')
+) {
+  route = '/reports';
+}
+else if (
+  lower.includes('setting') ||
+  lower.includes('settings')
+) {
+  route = '/settings';
+}
+
+  return {
+    intent: 'NAVIGATION',
+    entity: extractEntityFromQuestion(lower),
+    operation: 'findMany',
+    filters: {},
+    aggregation: 'list',
+    route,
+    navigationOnly: true,
+    confidence: 0.5,
+    reasoning: 'Fallback: Navigation pattern detected'
+  };
+}
   
   // Check for knowledge
   const knowledgePatterns = ['what is', 'what are', 'explain', 'define', 'how do', 'why'];
