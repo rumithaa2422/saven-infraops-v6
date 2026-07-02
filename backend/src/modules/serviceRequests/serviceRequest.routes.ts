@@ -53,7 +53,8 @@ serviceRequestRouter.post('/', requireAuth, requirePermissionOr(['tickets:write'
     const item = await prisma.serviceRequest.create({
       data: {
         ...payload,
-        ticketNo: `SR-${1001 + count}`
+        ticketNo: `SR-${1001 + count}`,
+        requesterId: req.user?.id  // Set from authenticated user, not from request body
       }
     });
     await prisma.auditLog.create({
