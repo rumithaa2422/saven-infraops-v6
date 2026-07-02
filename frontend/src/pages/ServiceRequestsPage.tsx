@@ -13,7 +13,13 @@ type ServiceRequest = {
   status: string;
   requesterName: string;
   assigneeName?: string;
+  assigneeId?: string;
   projectName?: string;
+};
+
+type AdminUser = {
+  id: string;
+  name: string;
 };
 
 const initialForm = {
@@ -27,18 +33,22 @@ const initialForm = {
 };
 
 export function ServiceRequestsPage() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [selected, setSelected] = useState<ServiceRequest | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [comment, setComment] = useState('');
   const [message, setMessage] = useState('');
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('');
 
   // Permission checks
   const canCreate = hasPermission('tickets:create');
   const canManage = hasPermission('tickets:manage');
   const canAssign = hasPermission('tickets:assign');
+  // Only Super Admin can assign tickets
+  const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
 
   async function load() {
     try {
@@ -51,8 +61,18 @@ export function ServiceRequestsPage() {
     }
   }
 
+  async function loadAdmins() {
+    try {
+      const res = await api.get('/users/admins');
+      setAdmins(res.data);
+    } catch {
+      setAdmins([]);
+    }
+  }
+
   useEffect(() => {
     load();
+    loadAdmins();
   }, []);
 
   async function createRequest(event: FormEvent) {
@@ -76,6 +96,20 @@ export function ServiceRequestsPage() {
       await load();
     } catch {
       setMessage('Action failed. Check backend logs and user permission.');
+    }
+  }
+
+  async function assignTicket() {
+    if (!selected || !selectedAssignee) return;
+    try {
+      const response = await api.patch(`/service-requests/${selected.id}/assign`, {
+        assigneeId: selectedAssignee
+      });
+      setSelected(response.data.item);
+      setSelectedAssignee('');
+      await load();
+    } catch {
+      setMessage('Assignment failed. Check backend logs and user permission.');
     }
   }
 
@@ -175,14 +209,50 @@ export function ServiceRequestsPage() {
           <p>Requester: {selected.requesterName}</p>
           <p>Assignee: {selected.assigneeName || 'Unassigned'}</p>
           <p>Description: {selected.description || '-'}</p>
-          {canManage && (
+          
+          {/* Assignment section - Only visible to Super Admin */}
+          {isSuperAdmin && (
+            <div className="assignment-section">
+              <h4>Assigned To</h4>
+              <select
+                value={selectedAssignee}
+                onChange={(e) => setSelectedAssignee(e.target.value)}
+              >
+                <option value="">Select Admin...</option>
+                {admins.map((admin) => (
+                  <option key={admin.id} value={admin.id}>
+                    {admin.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="primary"
+                onClick={assignTicket}
+                disabled={!selectedAssignee}
+              >
+                Assign
+              </button>
+            </div>
+          )}
+          
+          {/* Other actions - visible to users with manage permission (but not Super Admin for assignment) */}
+          {canManage && !isSuperAdmin && (
             <div className="drawer-actions">
-              {canAssign && <button onClick={() => updateSelected({ status: 'ASSIGNED', assigneeName: selected.assigneeName || 'Infra Team' })}>Assign</button>}
               <button onClick={() => updateSelected({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}>Escalate</button>
               <button onClick={() => updateSelected({ status: 'WAITING_FOR_USER' })}>Wait for User</button>
               <button onClick={() => updateSelected({ status: 'CLOSED' })}>Close</button>
             </div>
           )}
+          
+          {/* Super Admin can also do these actions */}
+          {isSuperAdmin && (
+            <div className="drawer-actions">
+              <button onClick={() => updateSelected({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}>Escalate</button>
+              <button onClick={() => updateSelected({ status: 'WAITING_FOR_USER' })}>Wait for User</button>
+              <button onClick={() => updateSelected({ status: 'CLOSED' })}>Close</button>
+            </div>
+          )}
+          
           {canManage && (
             <div className="comment-box">
               <label>Add Comment<textarea value={comment} onChange={(e) => setComment(e.target.value)} /></label>

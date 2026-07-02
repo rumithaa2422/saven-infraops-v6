@@ -141,3 +141,74 @@ serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:wr
     next(error);
   }
 });
+
+// PATCH /service-requests/:id/assign - Assign ticket to Admin user
+// Only Super Admin can assign tickets; assignee must have Admin role
+const assignSchema = z.object({
+  assigneeId: z.string().min(1)
+});
+
+serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) => {
+  try {
+    // Check if user has Super Admin role
+    const userRoles = req.user?.roles || [];
+    if (!userRoles.includes('Super Admin')) {
+      throw new HttpError(403, 'Only Super Admin can assign tickets');
+    }
+
+    const { assigneeId } = assignSchema.parse(req.body);
+
+    // Verify the assignee has Admin role
+    const assignee = await prisma.user.findFirst({
+      where: {
+        id: assigneeId,
+        roles: {
+          some: {
+            role: {
+              name: 'Admin'
+            }
+          }
+        }
+      },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
+    if (!assignee) {
+      throw new HttpError(400, 'Assignee must have Admin role');
+    }
+
+    // Get existing ticket
+    const existing = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new HttpError(404, 'Service request not found');
+
+    // Update the ticket
+    const item = await prisma.serviceRequest.update({
+      where: { id: req.params.id },
+      data: {
+        assigneeId: assignee.id,
+        assigneeName: assignee.name,
+        status: 'ASSIGNED'
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id,
+        actorEmail: req.user?.email,
+        action: 'ASSIGN',
+        entityType: 'ServiceRequest',
+        entityId: item.id,
+        oldValue: existing as any,
+        newValue: item as any,
+        ipAddress: req.ip
+      }
+    });
+
+    res.json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
