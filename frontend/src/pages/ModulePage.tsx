@@ -57,7 +57,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'ownerName', label: 'Owner' }
     ],
-    permissions: { create: 'incidents:create', write: 'incidents:manage' }
+    permissions: { create: 'incidents:create', write: 'incidents:manage', export: 'incidents:export' }
   },
   problems: {
     referenceKey: 'problemNo',
@@ -77,7 +77,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'ownerName', label: 'Owner' }
     ],
-    permissions: { create: 'problems:create', write: 'problems:manage' }
+    permissions: { create: 'problems:create', write: 'problems:manage', export: 'problems:export' }
   },
   changes: {
     referenceKey: 'changeNo',
@@ -99,7 +99,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'ownerName', label: 'Owner' }
     ],
-    permissions: { create: 'changes:create', write: 'changes:approve' }
+    permissions: { create: 'changes:create', write: 'changes:approve', export: 'changes:export' }
   },
   inventory: {
     referenceKey: 'assetNo',
@@ -123,7 +123,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'assignedToName', label: 'Assigned To' }
     ],
-    permissions: { create: 'inventory:create', write: 'inventory:manage' }
+    permissions: { create: 'inventory:create', write: 'inventory:manage', export: 'inventory:export' }
   },
   'access-management': {
     referenceKey: 'requestNo',
@@ -145,7 +145,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'systemName', label: 'System' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'access:request', write: 'access:approve' }
+    permissions: { create: 'access:request', write: 'access:approve', export: 'access:export' }
   },
   compliance: {
     referenceKey: 'controlNo',
@@ -167,7 +167,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'compliance:create', write: 'compliance:manage' }
+    permissions: { create: 'compliance:create', write: 'compliance:manage', export: 'compliance:export' }
   },
   'projects-environments': {
     referenceKey: 'projectName',
@@ -189,7 +189,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'serverName', label: 'Server' },
       { key: 'ownerName', label: 'Owner' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage' }
+    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'projects:export' }
   },
   'vendors-licenses': {
     referenceKey: 'vendorName',
@@ -211,7 +211,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'assignedCount', label: 'Assigned' },
       { key: 'renewalAt', label: 'Renewal' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage' }
+    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'vendors:export' }
   },
   'knowledge-base': {
     referenceKey: 'category',
@@ -231,7 +231,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'authorName', label: 'Author' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage' }
+    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'kb:export' }
   },
   'users-teams': {
     referenceKey: 'email',
@@ -274,7 +274,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'description', label: 'Description' },
       { key: 'owner', label: 'Owner' }
     ],
-    permissions: { create: undefined, write: 'reports:view' }
+    permissions: { create: undefined, write: 'reports:view', export: 'reports:export' }
   }
 };
 
