@@ -7,13 +7,28 @@ import { HttpError } from '../../common/httpError.js';
 
 export const serviceRequestRouter = Router();
 
-// GET /service-requests - List all tickets
+// GET /service-requests - List tickets with role-based visibility
 // Supports both legacy (tickets:read) and new (tickets:view) permissions
+// Super Admin and Admin see all tickets; Employees see only their own
 serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
   try {
     const status = req.query.status as string | undefined;
+    const userRoles = req.user?.roles || [];
+
+    // Build where clause based on user role
+    const isPrivileged = userRoles.includes('Super Admin') || userRoles.includes('Admin');
+
+    const where: { status?: string; requesterId?: string } = {};
+    if (status) {
+      where.status = status;
+    }
+    if (!isPrivileged) {
+      // Employees can only see their own tickets
+      where.requesterId = req.user?.id;
+    }
+
     const items = await prisma.serviceRequest.findMany({
-      where: status ? { status: status as any } : undefined,
+      where,
       orderBy: { createdAt: 'desc' },
       take: 100
     });
