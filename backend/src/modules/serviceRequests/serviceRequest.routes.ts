@@ -102,13 +102,35 @@ const updateSchema = z.object({
   comment: z.string().optional()
 });
 
+// Helper function to check if user can perform actions on a ticket
+function canPerformAction(user: Express.Request['user'], ticket: { assigneeId?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can perform all actions
+  if (user.roles.includes('Super Admin')) return true;
+  
+  // Admin can only perform actions if they are the assignee
+  if (user.roles.includes('Admin')) {
+    return ticket.assigneeId === user.id;
+  }
+  
+  // Employees cannot perform admin actions
+  return false;
+}
+
 // PATCH /service-requests/:id - Update ticket
 // Supports both legacy (tickets:write) and new (tickets:manage) permissions
+// Authorization: Super Admin bypasses all, Admin must own ticket (assigneeId matches)
 serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
   try {
     const payload = updateSchema.parse(req.body);
     const existing = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new HttpError(404, 'Service request not found');
+
+    // Authorization check: Only Super Admin or Admin who owns the ticket can update
+    if (!canPerformAction(req.user, existing)) {
+      throw new HttpError(403, 'You can only perform actions on tickets assigned to you');
+    }
 
     const { comment, ...updates } = payload;
     const description = comment?.trim()

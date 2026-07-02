@@ -47,8 +47,14 @@ export function ServiceRequestsPage() {
   const canCreate = hasPermission('tickets:create');
   const canManage = hasPermission('tickets:manage');
   const canAssign = hasPermission('tickets:assign');
-  // Only Super Admin can assign tickets
+  
+  // Role checks
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
+  const isAdmin = user?.roles.includes('Admin') ?? false;
+  
+  // Ownership check: Admin can only perform actions on tickets assigned to them
+  // Super Admin can do everything; Admin must own the ticket
+  const canPerformActions = isSuperAdmin || (isAdmin && selected?.assigneeId === user?.id);
 
   async function load() {
     try {
@@ -235,8 +241,8 @@ export function ServiceRequestsPage() {
             </div>
           )}
           
-          {/* Other actions - visible to users with manage permission (but not Super Admin for assignment) */}
-          {canManage && !isSuperAdmin && (
+          {/* Action buttons - shown based on ownership logic */}
+          {canPerformActions && (
             <div className="drawer-actions">
               <button onClick={() => updateSelected({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}>Escalate</button>
               <button onClick={() => updateSelected({ status: 'WAITING_FOR_USER' })}>Wait for User</button>
@@ -244,19 +250,19 @@ export function ServiceRequestsPage() {
             </div>
           )}
           
-          {/* Super Admin can also do these actions */}
-          {isSuperAdmin && (
-            <div className="drawer-actions">
-              <button onClick={() => updateSelected({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}>Escalate</button>
-              <button onClick={() => updateSelected({ status: 'WAITING_FOR_USER' })}>Wait for User</button>
-              <button onClick={() => updateSelected({ status: 'CLOSED' })}>Close</button>
-            </div>
-          )}
-          
-          {canManage && (
+          {/* Comment box - shown only when user can perform actions */}
+          {canPerformActions && (
             <div className="comment-box">
               <label>Add Comment<textarea value={comment} onChange={(e) => setComment(e.target.value)} /></label>
               <button className="secondary" onClick={() => updateSelected({ comment })} disabled={!comment.trim()}>Save Comment</button>
+            </div>
+          )}
+          
+          {/* Show message to Admin if ticket is not assigned to them */}
+          {isAdmin && !isSuperAdmin && !canPerformActions && selected && (
+            <div className="notice info">
+              This ticket is assigned to another admin or is unassigned. 
+              You can only perform actions on tickets assigned to you.
             </div>
           )}
         </div>
