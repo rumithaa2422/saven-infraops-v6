@@ -120,8 +120,19 @@ export function ServiceRequestsPage() {
   }
 
   function exportCsv() {
-    const header = ['Ticket', 'Title', 'Category', 'Priority', 'Status', 'Requester', 'Assignee'].join(',');
-    const rows = items.map((item) => [item.ticketNo, item.title, item.category, item.priority, item.status, item.requesterName, item.assigneeName || ''].map((value) => `"${value.replace(/"/g, '""')}"`).join(','));
+    const header = ['Ticket No', 'Title', 'Category', 'Sub Category', 'Priority', 'Status', 'Requester', 'Assignee', 'Project', 'Description'].join(',');
+    const rows = items.map((item) => [
+      item.ticketNo,
+      item.title,
+      item.category,
+      item.subCategory || '',
+      item.priority,
+      item.status,
+      item.requesterName,
+      item.assigneeName || '',
+      item.projectName || '',
+      item.description || ''
+    ].map((value) => `"${value.replace(/"/g, '""')}"`).join(','));
     const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

@@ -51,11 +51,14 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'description', label: 'Description', type: 'textarea' }
     ],
     columns: [
-      { key: 'incidentNo', label: 'Incident' },
+      { key: 'incidentNo', label: 'Incident No' },
       { key: 'title', label: 'Title' },
       { key: 'severity', label: 'Severity' },
+      { key: 'impactedService', label: 'Impacted Service' },
+      { key: 'impactedProject', label: 'Impacted Project' },
+      { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' },
-      { key: 'ownerName', label: 'Owner' }
+      { key: 'description', label: 'Description' }
     ],
     permissions: { create: 'incidents:create', write: 'incidents:manage', export: 'incidents:export' }
   },
@@ -72,10 +75,12 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'rootCause', label: 'Root Cause', type: 'textarea' }
     ],
     columns: [
-      { key: 'problemNo', label: 'Problem' },
+      { key: 'problemNo', label: 'Problem No' },
       { key: 'title', label: 'Title' },
-      { key: 'status', label: 'Status' },
-      { key: 'ownerName', label: 'Owner' }
+      { key: 'description', label: 'Description' },
+      { key: 'rootCause', label: 'Root Cause' },
+      { key: 'ownerName', label: 'Owner' },
+      { key: 'status', label: 'Status' }
     ],
     permissions: { create: 'problems:create', write: 'problems:manage', export: 'problems:export' }
   },
@@ -93,11 +98,13 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'rollbackPlan', label: 'Rollback Plan', type: 'textarea' }
     ],
     columns: [
-      { key: 'changeNo', label: 'Change' },
+      { key: 'changeNo', label: 'Change No' },
       { key: 'title', label: 'Title' },
-      { key: 'riskLevel', label: 'Risk' },
-      { key: 'status', label: 'Status' },
-      { key: 'ownerName', label: 'Owner' }
+      { key: 'riskLevel', label: 'Risk Level' },
+      { key: 'changeWindow', label: 'Change Window' },
+      { key: 'ownerName', label: 'Owner' },
+      { key: 'rollbackPlan', label: 'Rollback Plan' },
+      { key: 'status', label: 'Status' }
     ],
     permissions: { create: 'changes:create', write: 'changes:approve', export: 'changes:export' }
   },
@@ -116,12 +123,14 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'location', label: 'Location' }
     ],
     columns: [
-      { key: 'assetNo', label: 'Asset' },
-      { key: 'assetType', label: 'Type' },
+      { key: 'assetNo', label: 'Asset No' },
+      { key: 'assetType', label: 'Asset Type' },
       { key: 'make', label: 'Make' },
       { key: 'model', label: 'Model' },
-      { key: 'status', label: 'Status' },
-      { key: 'assignedToName', label: 'Assigned To' }
+      { key: 'serialNo', label: 'Serial No' },
+      { key: 'assignedToName', label: 'Assigned To' },
+      { key: 'location', label: 'Location' },
+      { key: 'status', label: 'Status' }
     ],
     permissions: { create: 'inventory:create', write: 'inventory:manage', export: 'inventory:export' }
   },
@@ -139,10 +148,12 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'justification', label: 'Justification', type: 'textarea' }
     ],
     columns: [
-      { key: 'requestNo', label: 'Request' },
+      { key: 'requestNo', label: 'Request No' },
       { key: 'requesterName', label: 'Requester' },
       { key: 'accessType', label: 'Access Type' },
-      { key: 'systemName', label: 'System' },
+      { key: 'systemName', label: 'System Name' },
+      { key: 'approverName', label: 'Approver' },
+      { key: 'justification', label: 'Justification' },
       { key: 'status', label: 'Status' }
     ],
     permissions: { create: 'access:request', write: 'access:approve', export: 'access:export' }
@@ -161,9 +172,11 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'riskRating', label: 'Risk Rating', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] }
     ],
     columns: [
-      { key: 'controlNo', label: 'Control' },
-      { key: 'title', label: 'Title' },
-      { key: 'controlArea', label: 'Area' },
+      { key: 'controlNo', label: 'Control No' },
+      { key: 'title', label: 'Control Title' },
+      { key: 'controlArea', label: 'Control Area' },
+      { key: 'frequency', label: 'Frequency' },
+      { key: 'riskRating', label: 'Risk Rating' },
       { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' }
     ],
@@ -183,10 +196,11 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' }
     ],
     columns: [
-      { key: 'projectName', label: 'Project' },
+      { key: 'projectName', label: 'Project Name' },
       { key: 'environmentName', label: 'Environment' },
-      { key: 'serviceName', label: 'Service' },
-      { key: 'serverName', label: 'Server' },
+      { key: 'serviceName', label: 'Service Name' },
+      { key: 'serverName', label: 'Server Name' },
+      { key: 'databaseName', label: 'Database Name' },
       { key: 'ownerName', label: 'Owner' }
     ],
     permissions: { create: 'settings:manage', write: 'settings:manage', export: 'projects:export' }
@@ -205,11 +219,12 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'renewalAt', label: 'Renewal Date', type: 'date' }
     ],
     columns: [
-      { key: 'vendorName', label: 'Vendor' },
-      { key: 'licenseName', label: 'License' },
-      { key: 'licenseCount', label: 'Count' },
-      { key: 'assignedCount', label: 'Assigned' },
-      { key: 'renewalAt', label: 'Renewal' }
+      { key: 'vendorName', label: 'Vendor Name' },
+      { key: 'licenseName', label: 'License Name' },
+      { key: 'licenseCount', label: 'License Count' },
+      { key: 'assignedCount', label: 'Assigned Count' },
+      { key: 'ownerName', label: 'Owner' },
+      { key: 'renewalAt', label: 'Renewal Date' }
     ],
     permissions: { create: 'settings:manage', write: 'settings:manage', export: 'vendors:export' }
   },
@@ -226,10 +241,11 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'body', label: 'Body', type: 'textarea', required: true }
     ],
     columns: [
-      { key: 'title', label: 'Title' },
+      { key: 'title', label: 'Article Title' },
       { key: 'category', label: 'Category' },
-      { key: 'status', label: 'Status' },
-      { key: 'authorName', label: 'Author' }
+      { key: 'authorName', label: 'Author' },
+      { key: 'body', label: 'Body' },
+      { key: 'status', label: 'Status' }
     ],
     permissions: { create: 'settings:manage', write: 'settings:manage', export: 'kb:export' }
   },
@@ -249,8 +265,9 @@ const configs: Record<string, ModuleConfig> = {
     columns: [
       { key: 'name', label: 'Name' },
       { key: 'email', label: 'Email' },
-      { key: 'phoneNumber', label: 'Phone' },
+      { key: 'phoneNumber', label: 'Phone Number' },
       { key: 'department', label: 'Department' },
+      { key: 'role', label: 'Role' },
       { key: 'status', label: 'Status' }
     ],
     permissions: {
