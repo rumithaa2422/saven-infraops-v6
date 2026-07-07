@@ -24,8 +24,9 @@ const updateSchema = z.object({ value: z.string() });
 settingsRouter.put('/:key', requireAuth, requirePermissionOr(['settings:write', 'settings:manage']), async (req, res, next) => {
   try {
     const payload = updateSchema.parse(req.body);
+    const key = req.params.key as string;
     const item = await prisma.systemSetting.update({
-      where: { key: req.params.key },
+      where: { key },
       data: { value: payload.value, updatedBy: req.user?.email }
     });
     res.json({ item });

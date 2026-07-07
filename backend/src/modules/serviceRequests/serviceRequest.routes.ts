@@ -1,29 +1,30 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
-import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
+import { requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
+import { WorkStatus } from '@prisma/client';
+import {
+  createServiceRequest,
+  updateServiceRequest,
+  assignServiceRequest
+} from '../../services/serviceRequest.service.js';
 
 export const serviceRequestRouter = Router();
 
-// GET /service-requests - List tickets with role-based visibility
-// Supports both legacy (tickets:read) and new (tickets:view) permissions
-// Super Admin and Admin see all tickets; Employees see only their own
 serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
   try {
     const status = req.query.status as string | undefined;
     const userRoles = req.user?.roles || [];
 
-    // Build where clause based on user role
     const isPrivileged = userRoles.includes('Super Admin') || userRoles.includes('Admin');
 
-    const where: { status?: string; requesterId?: string } = {};
-    if (status) {
-      where.status = status;
+    const where: { status?: WorkStatus; requesterId?: string } = {};
+    if (status && status in WorkStatus) {
+      where.status = status as WorkStatus;
     }
     if (!isPrivileged) {
-      // Employees can only see their own tickets
       where.requesterId = req.user?.id;
     }
 
@@ -38,10 +39,10 @@ serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 
   }
 });
 
-// GET /service-requests/:id - Get single ticket
 serviceRequestRouter.get('/:id', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
   try {
-    const item = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
+    const id = req.params.id as string;
+    const item = await prisma.serviceRequest.findUnique({ where: { id } });
     if (!item) throw new HttpError(404, 'Service request not found');
     res.json({ item });
   } catch (error) {
@@ -59,29 +60,15 @@ const createSchema = z.object({
   projectName: z.string().optional()
 });
 
-// POST /service-requests - Create ticket
-// Supports both legacy (tickets:write) and new (tickets:create) permissions
 serviceRequestRouter.post('/', requireAuth, requirePermissionOr(['tickets:write', 'tickets:create']), async (req, res, next) => {
   try {
     const payload = createSchema.parse(req.body);
-    const count = await prisma.serviceRequest.count();
-    const item = await prisma.serviceRequest.create({
-      data: {
-        ...payload,
-        ticketNo: `SR-${1001 + count}`,
-        requesterId: req.user?.id  // Set from authenticated user, not from request body
-      }
-    });
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user?.id,
-        actorEmail: req.user?.email,
-        action: 'CREATE',
-        entityType: 'ServiceRequest',
-        entityId: item.id,
-        newValue: item as any,
-        ipAddress: req.ip
-      }
+    const item = await createServiceRequest({
+      ...payload,
+      requesterId: req.user?.id,
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      ipAddress: req.ip
     });
     res.status(201).json({ item });
   } catch (error) {
@@ -102,77 +89,48 @@ const updateSchema = z.object({
   comment: z.string().optional()
 });
 
-// Helper function to check if user can perform actions on a ticket
 function canPerformAction(user: Express.Request['user'], ticket: { assigneeId?: string | null }): boolean {
   if (!user) return false;
-  
-  // Super Admin can perform all actions
+
   if (user.roles.includes('Super Admin')) return true;
-  
-  // Admin can only perform actions if they are the assignee
+
   if (user.roles.includes('Admin')) {
     return ticket.assigneeId === user.id;
   }
-  
-  // Employees cannot perform admin actions
+
   return false;
 }
 
-// PATCH /service-requests/:id - Update ticket
-// Supports both legacy (tickets:write) and new (tickets:manage) permissions
-// Authorization: Super Admin bypasses all, Admin must own ticket (assigneeId matches)
 serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
   try {
+    const id = req.params.id as string;
     const payload = updateSchema.parse(req.body);
-    const existing = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.serviceRequest.findUnique({ where: { id } });
     if (!existing) throw new HttpError(404, 'Service request not found');
 
-    // Authorization check: Only Super Admin or Admin who owns the ticket can update
     if (!canPerformAction(req.user, existing)) {
       throw new HttpError(403, 'You can only perform actions on tickets assigned to you');
     }
 
-    const { comment, ...updates } = payload;
-    const description = comment?.trim()
-      ? `${existing.description || ''}\n\n[${new Date().toISOString()}] ${req.user?.email || 'user'}: ${comment.trim()}`.trim()
-      : updates.description;
-
-    const item = await prisma.serviceRequest.update({
-      where: { id: req.params.id },
-      data: {
-        ...updates,
-        ...(description !== undefined ? { description } : {})
-      }
+    const item = await updateServiceRequest(id, {
+      ...payload,
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      ipAddress: req.ip
     });
-
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user?.id,
-        actorEmail: req.user?.email,
-        action: 'UPDATE',
-        entityType: 'ServiceRequest',
-        entityId: item.id,
-        oldValue: existing as any,
-        newValue: item as any,
-        ipAddress: req.ip
-      }
-    });
-
     res.json({ item });
   } catch (error) {
     next(error);
   }
 });
 
-// PATCH /service-requests/:id/assign - Assign ticket to Admin user
-// Only Super Admin can assign tickets; assignee must have Admin role
 const assignSchema = z.object({
   assigneeId: z.string().min(1)
 });
 
 serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) => {
   try {
-    // Check if user has Super Admin role
+    const id = req.params.id as string;
     const userRoles = req.user?.roles || [];
     if (!userRoles.includes('Super Admin')) {
       throw new HttpError(403, 'Only Super Admin can assign tickets');
@@ -180,55 +138,12 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) =>
 
     const { assigneeId } = assignSchema.parse(req.body);
 
-    // Verify the assignee has Admin role
-    const assignee = await prisma.user.findFirst({
-      where: {
-        id: assigneeId,
-        roles: {
-          some: {
-            role: {
-              name: 'Admin'
-            }
-          }
-        }
-      },
-      select: {
-        id: true,
-        name: true
-      }
+    const item = await assignServiceRequest(id, {
+      assigneeId,
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      ipAddress: req.ip
     });
-
-    if (!assignee) {
-      throw new HttpError(400, 'Assignee must have Admin role');
-    }
-
-    // Get existing ticket
-    const existing = await prisma.serviceRequest.findUnique({ where: { id: req.params.id } });
-    if (!existing) throw new HttpError(404, 'Service request not found');
-
-    // Update the ticket
-    const item = await prisma.serviceRequest.update({
-      where: { id: req.params.id },
-      data: {
-        assigneeId: assignee.id,
-        assigneeName: assignee.name,
-        status: 'ASSIGNED'
-      }
-    });
-
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user?.id,
-        actorEmail: req.user?.email,
-        action: 'ASSIGN',
-        entityType: 'ServiceRequest',
-        entityId: item.id,
-        oldValue: existing as any,
-        newValue: item as any,
-        ipAddress: req.ip
-      }
-    });
-
     res.json({ item });
   } catch (error) {
     next(error);

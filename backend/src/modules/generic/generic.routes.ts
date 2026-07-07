@@ -1,9 +1,31 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
+import {
+  createIncident,
+  updateIncident,
+  createProblem,
+  updateProblem,
+  createChangeRequest,
+  updateChangeRequest,
+  createAsset,
+  updateAsset,
+  createAccessRequest,
+  updateAccessRequest,
+  createComplianceControl,
+  updateComplianceControl,
+  createProjectEnvironment,
+  updateProjectEnvironment,
+  createVendorLicense,
+  updateVendorLicense,
+  createKnowledgeBaseArticle,
+  updateKnowledgeBaseArticle,
+  createUser,
+  updateUser,
+  deleteUser
+} from '../../services/index.js';
 
 export const genericModuleRouter = Router();
 
@@ -12,25 +34,18 @@ export const genericModuleRouter = Router();
  * Supports both legacy (old) and new permissions for backward compatibility
  */
 type ModuleConfig = {
-  // Legacy permissions (for backward compatibility)
   permission: string;
   writePermission?: string;
   deletePermission?: string;
-  // New permissions (Phase 3B)
   viewPermission?: string;
   createPermission?: string;
   managePermission?: string;
   exportPermission?: string;
-  // Entity configuration
   entityType: string;
   list: () => Promise<unknown[]>;
-  create?: (payload: any) => Promise<unknown>;
-  update?: (id: string, payload: any) => Promise<unknown>;
+  create?: (payload: any, actor?: { id?: string; email?: string }, ip?: string) => Promise<unknown>;
+  update?: (id: string, payload: any, actor?: { id?: string; email?: string }, ip?: string) => Promise<unknown>;
 };
-
-function withRef(prefix: string, count: number) {
-  return `${prefix}-${1001 + count}`;
-}
 
 const moduleMap: Record<string, ModuleConfig> = {
   incidents: {
@@ -42,20 +57,20 @@ const moduleMap: Record<string, ModuleConfig> = {
     exportPermission: 'incidents:export',
     entityType: 'Incident',
     list: () => prisma.incident.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload) => prisma.incident.create({ data: { incidentNo: withRef('INC', await prisma.incident.count()), title: payload.title, severity: payload.severity || 'SEV3', impactedService: payload.impactedService || null, impactedProject: payload.impactedProject || null, ownerName: payload.ownerName || null, description: payload.description || null } }),
-    update: (id, payload) => prisma.incident.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createIncident({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateIncident(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   problems: {
-    permission: 'incidents:read',        // Legacy - problems shared incidents namespace
-    writePermission: 'incidents:write',  // Legacy
-    viewPermission: 'problems:view',     // NEW
-    createPermission: 'problems:create', // NEW
-    managePermission: 'problems:manage',  // NEW
-    exportPermission: 'problems:export',  // NEW
+    permission: 'incidents:read',
+    writePermission: 'incidents:write',
+    viewPermission: 'problems:view',
+    createPermission: 'problems:create',
+    managePermission: 'problems:manage',
+    exportPermission: 'problems:export',
     entityType: 'Problem',
     list: () => prisma.problem.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload) => prisma.problem.create({ data: { problemNo: withRef('PRB', await prisma.problem.count()), title: payload.title, ownerName: payload.ownerName || null, description: payload.description || null, rootCause: payload.rootCause || null } }),
-    update: (id, payload) => prisma.problem.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createProblem({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateProblem(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   changes: {
     permission: 'changes:read',
@@ -66,8 +81,8 @@ const moduleMap: Record<string, ModuleConfig> = {
     exportPermission: 'changes:export',
     entityType: 'ChangeRequest',
     list: () => prisma.changeRequest.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload) => prisma.changeRequest.create({ data: { changeNo: withRef('CHG', await prisma.changeRequest.count()), title: payload.title, riskLevel: payload.riskLevel || 'MEDIUM', ownerName: payload.ownerName || null, rollbackPlan: payload.rollbackPlan || null, changeWindow: payload.changeWindow ? new Date(payload.changeWindow) : null } }),
-    update: (id, payload) => prisma.changeRequest.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createChangeRequest({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateChangeRequest(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   inventory: {
     permission: 'inventory:read',
@@ -78,8 +93,8 @@ const moduleMap: Record<string, ModuleConfig> = {
     exportPermission: 'inventory:export',
     entityType: 'Asset',
     list: () => prisma.asset.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload) => prisma.asset.create({ data: { assetNo: withRef('AST', await prisma.asset.count()), assetType: payload.assetType, make: payload.make || null, model: payload.model || null, serialNo: payload.serialNo || null, assignedToName: payload.assignedToName || null, location: payload.location || null } }),
-    update: (id, payload) => prisma.asset.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createAsset({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateAsset(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'access-management': {
     permission: 'access:read',
@@ -90,8 +105,8 @@ const moduleMap: Record<string, ModuleConfig> = {
     exportPermission: 'access:export',
     entityType: 'AccessRequest',
     list: () => prisma.accessRequest.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload) => prisma.accessRequest.create({ data: { requestNo: withRef('ACC', await prisma.accessRequest.count()), requesterName: payload.requesterName, accessType: payload.accessType, systemName: payload.systemName, approverName: payload.approverName || null, justification: payload.justification || null } }),
-    update: (id, payload) => prisma.accessRequest.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createAccessRequest({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateAccessRequest(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   compliance: {
     permission: 'compliance:read',
@@ -102,44 +117,44 @@ const moduleMap: Record<string, ModuleConfig> = {
     exportPermission: 'compliance:export',
     entityType: 'ComplianceControl',
     list: () => prisma.complianceControl.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload) => prisma.complianceControl.create({ data: { controlNo: withRef('CMP', await prisma.complianceControl.count()), title: payload.title, controlArea: payload.controlArea, ownerName: payload.ownerName, frequency: payload.frequency || 'Quarterly', riskRating: payload.riskRating || 'MEDIUM' } }),
-    update: (id, payload) => prisma.complianceControl.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createComplianceControl({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateComplianceControl(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'projects-environments': {
-    permission: 'dashboard:read',       // Legacy
-    writePermission: 'settings:write',  // Legacy
-    viewPermission: 'projects:view',     // NEW
-    createPermission: 'projects:create', // NEW
-    managePermission: 'projects:manage',  // NEW
-    exportPermission: 'projects:export',  // NEW
+    permission: 'dashboard:read',
+    writePermission: 'settings:write',
+    viewPermission: 'projects:view',
+    createPermission: 'projects:create',
+    managePermission: 'projects:manage',
+    exportPermission: 'projects:export',
     entityType: 'ProjectEnvironment',
     list: () => prisma.projectEnvironment.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: (payload) => prisma.projectEnvironment.create({ data: { projectName: payload.projectName, environmentName: payload.environmentName, serviceName: payload.serviceName || null, serverName: payload.serverName || null, databaseName: payload.databaseName || null, ownerName: payload.ownerName || null } }),
-    update: (id, payload) => prisma.projectEnvironment.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createProjectEnvironment({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateProjectEnvironment(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'vendors-licenses': {
-    permission: 'dashboard:read',       // Legacy
-    writePermission: 'settings:write',  // Legacy
-    viewPermission: 'vendors:view',     // NEW
-    createPermission: 'vendors:create',  // NEW
-    managePermission: 'vendors:manage',  // NEW
-    exportPermission: 'vendors:export',  // NEW
+    permission: 'dashboard:read',
+    writePermission: 'settings:write',
+    viewPermission: 'vendors:view',
+    createPermission: 'vendors:create',
+    managePermission: 'vendors:manage',
+    exportPermission: 'vendors:export',
     entityType: 'VendorLicense',
     list: () => prisma.vendorLicense.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: (payload) => prisma.vendorLicense.create({ data: { vendorName: payload.vendorName, licenseName: payload.licenseName, licenseCount: Number(payload.licenseCount || 0), assignedCount: Number(payload.assignedCount || 0), ownerName: payload.ownerName || null, renewalAt: payload.renewalAt ? new Date(payload.renewalAt) : null } }),
-    update: (id, payload) => prisma.vendorLicense.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createVendorLicense({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateVendorLicense(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'knowledge-base': {
-    permission: 'dashboard:read',       // Legacy
-    writePermission: 'settings:write',  // Legacy
-    viewPermission: 'kb:view',          // NEW
-    createPermission: 'kb:create',      // NEW
-    managePermission: 'kb:manage',      // NEW
-    exportPermission: 'kb:export',      // NEW
+    permission: 'dashboard:read',
+    writePermission: 'settings:write',
+    viewPermission: 'kb:view',
+    createPermission: 'kb:create',
+    managePermission: 'kb:manage',
+    exportPermission: 'kb:export',
     entityType: 'KnowledgeBaseArticle',
     list: () => prisma.knowledgeBaseArticle.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: (payload) => prisma.knowledgeBaseArticle.create({ data: { title: payload.title, category: payload.category, authorName: payload.authorName || null, body: payload.body || '' } }),
-    update: (id, payload) => prisma.knowledgeBaseArticle.update({ where: { id }, data: payload })
+    create: async (payload, actor, ip) => createKnowledgeBaseArticle({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateKnowledgeBaseArticle(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'users-teams': {
     permission: 'users:read',
@@ -150,83 +165,21 @@ const moduleMap: Record<string, ModuleConfig> = {
     managePermission: 'users:manage',
     exportPermission: 'users:export',
     entityType: 'User',
-    list: () => prisma.user.findMany({ 
-      select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true }, 
-      orderBy: { createdAt: 'desc' }, 
-      take: 100 
+    list: () => prisma.user.findMany({
+      select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100
     }),
-    create: async (payload) => {
-      const { sendUserActivationEmail } = await import('../../modules/auth/activation.service.js');
-      
-      // Check for duplicate email
-      const existing = await prisma.user.findUnique({ where: { email: payload.email } });
-      if (existing) {
-        throw new HttpError(400, 'A user with this email already exists');
-      }
-
-      // Create user with PENDING_ACTIVATION status (no password)
-      const user = await prisma.user.create({ 
-        data: { 
-          name: payload.name, 
-          email: payload.email, 
-          phoneNumber: payload.phoneNumber || null,
-          department: payload.department || null,
-          status: 'PENDING_ACTIVATION'
-        } 
-      });
-
-      // Assign role if provided
-      if (payload.roleId) {
-        // roleId might be the role name, so look it up
-        const role = await prisma.role.findFirst({
-          where: {
-            OR: [
-              { id: payload.roleId },
-              { name: payload.roleId }
-            ]
-          }
-        });
-        if (role) {
-          await prisma.userRole.create({
-            data: { userId: user.id, roleId: role.id }
-          });
-        }
-      }
-
-      // Send activation email
-      await sendUserActivationEmail(user.id);
-
-      // Audit log
-      await prisma.auditLog.create({
-        data: { 
-          actorId: 'system', 
-          actorEmail: 'system', 
-          action: 'USER_CREATED', 
-          entityType: 'User', 
-          entityId: user.id,
-          newValue: { email: user.email, status: 'PENDING_ACTIVATION' }
-        }
-      });
-
-      return user;
-    },
-    update: (id, payload) => prisma.user.update({ 
-      where: { id }, 
-      data: { 
-        name: payload.name, 
-        department: payload.department, 
-        status: payload.status,
-        phoneNumber: payload.phoneNumber
-      } 
-    })
+    create: async (payload, actor, ip) => createUser({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
+    update: async (id, payload, actor, ip) => updateUser(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'reports-analytics': {
-    permission: 'dashboard:read',       // Legacy
-    writePermission: 'dashboard:read', // Legacy
-    viewPermission: 'reports:view',    // NEW
-    createPermission: 'reports:create', // NEW
-    managePermission: 'reports:create',  // Reports use create for custom reports
-    exportPermission: 'reports:export',  // NEW
+    permission: 'dashboard:read',
+    writePermission: 'dashboard:read',
+    viewPermission: 'reports:view',
+    createPermission: 'reports:create',
+    managePermission: 'reports:create',
+    exportPermission: 'reports:export',
     entityType: 'Report',
     list: async () => [
       { id: 'ticket-aging', title: 'Ticket Ageing Report', description: 'Open service requests by priority and owner', owner: 'Admin Team' },
@@ -240,8 +193,7 @@ const moduleMap: Record<string, ModuleConfig> = {
 // Roles endpoint for user management
 genericModuleRouter.get('/roles', requireAuth, async (req, res, next) => {
   try {
-    // Support both legacy and new permissions for backward compatibility
-    await new Promise<void>((resolve, reject) => 
+    await new Promise<void>((resolve, reject) =>
       requirePermissionOr(['users:read', 'roles:view'])(req, res, (err) => err ? reject(err) : resolve())
     );
     const items = await prisma.role.findMany({ select: { id: true, name: true, description: true }, orderBy: { name: 'asc' } });
@@ -254,11 +206,11 @@ genericModuleRouter.get('/roles', requireAuth, async (req, res, next) => {
 // GET - List records (view permission)
 genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
   try {
-    const config = moduleMap[req.params.module];
+    const moduleName = req.params.module as string;
+    const config = moduleMap[moduleName];
     if (!config) return next();
-    
-    // Support both legacy and new permissions for backward compatibility
-    await new Promise<void>((resolve, reject) => 
+
+    await new Promise<void>((resolve, reject) =>
       requirePermissionOr([config.permission, config.viewPermission || config.permission])(req, res, (err) => err ? reject(err) : resolve())
     );
     const items = await config.list();
@@ -271,17 +223,18 @@ genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
 // POST - Create record (create permission)
 genericModuleRouter.post('/:module', requireAuth, async (req, res, next) => {
   try {
-    const config = moduleMap[req.params.module];
+    const moduleName = req.params.module as string;
+    const config = moduleMap[moduleName];
     if (!config?.create) return next();
-    
-    // Support both legacy and new permissions for backward compatibility
+
     const legacyPerm = config.writePermission || config.permission;
     const newPerm = config.createPermission || legacyPerm;
-    await new Promise<void>((resolve, reject) => 
+    await new Promise<void>((resolve, reject) =>
       requirePermissionOr([legacyPerm, newPerm])(req, res, (err) => err ? reject(err) : resolve())
     );
-    const item = await config.create(req.body);
-    await prisma.auditLog.create({ data: { actorId: req.user?.id, actorEmail: req.user?.email, action: 'CREATE', entityType: config.entityType, newValue: item as any, ipAddress: req.ip } });
+
+    // Services handle their own audit logging
+    const item = await config.create(req.body, { id: req.user?.id, email: req.user?.email }, req.ip);
     res.status(201).json({ item });
   } catch (error) {
     next(error);
@@ -291,17 +244,19 @@ genericModuleRouter.post('/:module', requireAuth, async (req, res, next) => {
 // PATCH - Update record (manage permission)
 genericModuleRouter.patch('/:module/:id', requireAuth, async (req, res, next) => {
   try {
-    const config = moduleMap[req.params.module];
+    const moduleName = req.params.module as string;
+    const config = moduleMap[moduleName];
     if (!config?.update) return next();
-    
-    // Support both legacy and new permissions for backward compatibility
+
     const legacyPerm = config.writePermission || config.permission;
     const newPerm = config.managePermission || legacyPerm;
-    await new Promise<void>((resolve, reject) => 
+    await new Promise<void>((resolve, reject) =>
       requirePermissionOr([legacyPerm, newPerm])(req, res, (err) => err ? reject(err) : resolve())
     );
-    const item = await config.update(req.params.id, req.body);
-    await prisma.auditLog.create({ data: { actorId: req.user?.id, actorEmail: req.user?.email, action: 'UPDATE', entityType: config.entityType, entityId: req.params.id, newValue: item as any, ipAddress: req.ip } });
+
+    // Services handle their own audit logging
+    const id = req.params.id as string;
+    const item = await config.update(id, req.body, { id: req.user?.id, email: req.user?.email }, req.ip);
     res.json({ item });
   } catch (error) {
     next(error instanceof Error ? error : new HttpError(400, 'Update failed'));
@@ -311,85 +266,34 @@ genericModuleRouter.patch('/:module/:id', requireAuth, async (req, res, next) =>
 // DELETE - Delete record (delete permission)
 genericModuleRouter.delete('/:module/:id', requireAuth, async (req, res, next) => {
   try {
-    const config = moduleMap[req.params.module];
-    
-    // Only allow delete for modules that support it
-    if (req.params.module !== 'users-teams') {
+    const moduleName = req.params.module as string;
+    const config = moduleMap[moduleName];
+
+    if (moduleName !== 'users-teams') {
       return next();
     }
-    
-    // Check delete permission (no new permission needed for users - uses users:delete)
-    if (!config?.deletePermission) {
+
+    const deletePermission = config?.deletePermission;
+    if (!deletePermission) {
       throw new HttpError(403, 'Delete permission not configured for this module');
     }
-    
-    await new Promise<void>((resolve, reject) => 
-      requirePermission(config.deletePermission)(req, res, (err) => err ? reject(err) : resolve())
+
+    await new Promise<void>((resolve, reject) =>
+      requirePermission(deletePermission)(req, res, (err) => err ? reject(err) : resolve())
     );
-    
-    // Find the user
-    const user = await prisma.user.findUnique({
-      where: { id: req.params.id }
-    });
-    
-    if (!user) {
-      throw new HttpError(404, 'User not found');
+
+    // Use the user service for deletion
+    const id = req.params.id as string;
+    if (!id) {
+      throw new HttpError(400, 'ID is required');
     }
-    
-    // Prevent self-deletion
-    if (req.user?.id === req.params.id) {
-      throw new HttpError(400, 'Cannot delete your own account');
-    }
-    
-    // Prevent deletion of Super Admin account
-    if (user.email === 'admin@saven.in') {
-      throw new HttpError(400, 'Cannot delete the admin user');
-    }
-    
-    // Check for ServiceRequest references
-    const serviceRequests = await prisma.serviceRequest.findMany({
-      where: {
-        OR: [
-          { requesterId: req.params.id },
-          { assigneeId: req.params.id }
-        ]
-      }
+    const result = await deleteUser(id, {
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      ipAddress: req.ip
     });
-    
-    if (serviceRequests.length > 0) {
-      throw new HttpError(400, 'User cannot be deleted because tickets are associated with this account.');
-    }
-    
-    // Delete related UserRole records
-    await prisma.userRole.deleteMany({
-      where: { userId: req.params.id }
-    });
-    
-    // Delete related UserActivationToken records
-    await prisma.userActivationToken.deleteMany({
-      where: { userId: req.params.id }
-    });
-    
-    // Hard delete the user
-    await prisma.user.delete({
-      where: { id: req.params.id }
-    });
-    
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user?.id,
-        actorEmail: req.user?.email,
-        action: 'USER_DELETED',
-        entityType: 'User',
-        entityId: user.id,
-        oldValue: { email: user.email },
-        newValue: null,
-        ipAddress: req.ip
-      }
-    });
-    
-    res.json({ success: true });
+
+    res.json(result);
   } catch (error) {
     next(error instanceof Error ? error : new HttpError(400, 'Delete failed'));
   }

@@ -1,0 +1,182 @@
+import { prisma } from '../common/prisma.js';
+import { HttpError } from '../common/httpError.js';
+import { sendUserActivationEmail } from '../modules/auth/activation.service.js';
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  phoneNumber?: string | null;
+  department?: string | null;
+  roleId?: string | null;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  ipAddress?: string | null;
+}
+
+export async function createUser(data: CreateUserInput) {
+  // Check for duplicate email
+  const existing = await prisma.user.findUnique({ where: { email: data.email } });
+  if (existing) {
+    throw new HttpError(400, 'A user with this email already exists');
+  }
+
+  // Create user with PENDING_ACTIVATION status (no password)
+  const user = await prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      phoneNumber: data.phoneNumber || null,
+      department: data.department || null,
+      status: 'PENDING_ACTIVATION'
+    }
+  });
+
+  // Assign role if provided
+  if (data.roleId) {
+    // roleId might be the role name, so look it up
+    const role = await prisma.role.findFirst({
+      where: {
+        OR: [
+          { id: data.roleId },
+          { name: data.roleId }
+        ]
+      }
+    });
+    if (role) {
+      await prisma.userRole.create({
+        data: { userId: user.id, roleId: role.id }
+      });
+    }
+  }
+
+  // Send activation email
+  await sendUserActivationEmail(user.id);
+
+  // Audit log
+  await prisma.auditLog.create({
+    data: {
+      actorId: data.actorId || 'system',
+      actorEmail: data.actorEmail || 'system',
+      action: 'USER_CREATED',
+      entityType: 'User',
+      entityId: user.id,
+      newValue: { email: user.email, status: 'PENDING_ACTIVATION' }
+    }
+  });
+
+  return user;
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  department?: string | null;
+  status?: 'PENDING_ACTIVATION' | 'ACTIVE' | 'DISABLED' | 'LOCKED';
+  phoneNumber?: string | null;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  ipAddress?: string | null;
+}
+
+export async function updateUser(id: string, data: UpdateUserInput) {
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: {
+      name: data.name,
+      department: data.department !== undefined ? (data.department || null) : undefined,
+      status: data.status,
+      phoneNumber: data.phoneNumber !== undefined ? (data.phoneNumber || null) : undefined
+    }
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: data.actorId || null,
+      actorEmail: data.actorEmail || null,
+      action: 'USER_UPDATED',
+      entityType: 'User',
+      entityId: user.id,
+      oldValue: { email: existing.email } as any,
+      newValue: { email: user.email, status: user.status } as any,
+      ipAddress: data.ipAddress || null
+    }
+  });
+
+  return user;
+}
+
+export interface DeleteUserInput {
+  actorId?: string | null;
+  actorEmail?: string | null;
+  ipAddress?: string | null;
+}
+
+export async function deleteUser(id: string, data: DeleteUserInput) {
+  // Find the user
+  const user = await prisma.user.findUnique({
+    where: { id }
+  });
+
+  if (!user) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  // Prevent self-deletion
+  if (data.actorId === id) {
+    throw new HttpError(400, 'Cannot delete your own account');
+  }
+
+  // Prevent deletion of Super Admin account
+  if (user.email === 'admin@saven.in') {
+    throw new HttpError(400, 'Cannot delete the admin user');
+  }
+
+  // Check for ServiceRequest references
+  const serviceRequests = await prisma.serviceRequest.findMany({
+    where: {
+      OR: [
+        { requesterId: id },
+        { assigneeId: id }
+      ]
+    }
+  });
+
+  if (serviceRequests.length > 0) {
+    throw new HttpError(400, 'User cannot be deleted because tickets are associated with this account.');
+  }
+
+  // Delete related UserRole records
+  await prisma.userRole.deleteMany({
+    where: { userId: id }
+  });
+
+  // Delete related UserActivationToken records
+  await prisma.userActivationToken.deleteMany({
+    where: { userId: id }
+  });
+
+  // Hard delete the user
+  await prisma.user.delete({
+    where: { id }
+  });
+
+  // Audit log
+  await prisma.auditLog.create({
+    data: {
+      actorId: data.actorId || null,
+      actorEmail: data.actorEmail || null,
+      action: 'USER_DELETED',
+      entityType: 'User',
+      entityId: user.id,
+      oldValue: { email: user.email } as any,
+      newValue: null as any,
+      ipAddress: data.ipAddress || null
+    }
+  });
+
+  return { success: true };
+}
