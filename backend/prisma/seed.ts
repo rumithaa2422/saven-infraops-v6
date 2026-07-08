@@ -306,47 +306,23 @@ async function main() {
   console.log(`[RBAC] Assigned ${userAdminPerms.length} permissions to User Admin`);
 
   // ============================================
-  // TEST USERS FOR RBAC VALIDATION - Phase 4D
+  // DEFAULT ADMIN USER
   // ============================================
-  // Each test user is assigned to a specific test role
-
-  const testUsers = [
-    { email: 'viewer@saven.in', name: 'Test Viewer', role: viewerRole, password: 'Test@12345' },
-    { email: 'creator@saven.in', name: 'Test Creator', role: userCreatorRole, password: 'Test@12345' },
-    { email: 'manager@saven.in', name: 'Test Manager', role: userManagerRole, password: 'Test@12345' },
-    { email: 'useradmin@saven.in', name: 'Test User Admin', role: userAdminRole, password: 'Test@12345' }
-  ];
-
-  for (const userData of testUsers) {
-    const user = await prisma.user.upsert({
-      where: { email: userData.email },
-      update: { name: userData.name },
-      create: {
-        name: userData.name,
-        email: userData.email,
-        department: 'InfraOps',
-        passwordHash: await bcrypt.hash(userData.password, 12)
-      }
-    });
-
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: user.id, roleId: userData.role.id } },
-      update: {},
-      create: { userId: user.id, roleId: userData.role.id }
-    });
-
-    console.log(`[RBAC] Created test user: ${userData.email} (${userData.role.name})`);
-  }
-
-  console.log('[RBAC] Test users created successfully.');
+  // Creates a single default administrator account
+  // Using upsert ensures idempotency - running seed multiple times won't create duplicates
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@saven.in' },
-    update: {},
+    update: { 
+      name: 'Saven Admin',
+      department: 'InfraOps',
+      status: 'ACTIVE'
+    },
     create: {
       name: 'Saven Admin',
       email: 'admin@saven.in',
       department: 'InfraOps',
+      status: 'ACTIVE',
       passwordHash: await bcrypt.hash('Admin@12345', 12)
     }
   });
@@ -356,6 +332,8 @@ async function main() {
     update: {},
     create: { userId: admin.id, roleId: adminRole.id }
   });
+
+  console.log('[RBAC] Default admin user created/updated: admin@saven.in');
 
   const settings = [
     ['AI', 'AI_PROVIDER', 'mock'],
