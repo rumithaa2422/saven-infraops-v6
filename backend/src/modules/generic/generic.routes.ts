@@ -213,7 +213,36 @@ genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
     await new Promise<void>((resolve, reject) =>
       requirePermissionOr([config.permission, config.viewPermission || config.permission])(req, res, (err) => err ? reject(err) : resolve())
     );
-    const items = await config.list();
+
+    // Handle search for users-teams module
+    const search = req.query.search as string | undefined;
+    let items: unknown[];
+
+    if (moduleName === 'users-teams' && search) {
+      // Search users by name, email, or phoneNumber
+      items = await prisma.user.findMany({
+        where: {
+          OR: [
+            { name: { contains: search } },
+            { email: { contains: search } },
+            { phoneNumber: { contains: search } }
+          ]
+        },
+        select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100
+      });
+    } else if (moduleName === 'users-teams') {
+      // Default list for users-teams without search
+      items = await prisma.user.findMany({
+        select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100
+      });
+    } else {
+      items = await config.list();
+    }
+
     res.json({ items });
   } catch (error) {
     next(error);

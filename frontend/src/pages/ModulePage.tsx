@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
@@ -352,6 +352,27 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  // Search state for users-teams module
+  const [searchQuery, setSearchQuery] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced search function
+  const debouncedSearch = useCallback((query: string) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      load(query);
+    }, 300);
+  }, [moduleKey]);
+
+  // Handle search input change
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    setSearchQuery(value);
+    debouncedSearch(value);
+  }
+
   // Fetch roles for users-teams module
   useEffect(() => {
     if (moduleKey === 'users-teams') {
@@ -370,10 +391,14 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const dueCount = useMemo(() => items.filter((item) => config.dateKey && item[config.dateKey]).length, [items, config.dateKey]);
   const riskCount = useMemo(() => items.filter((item) => ['HIGH', 'CRITICAL', 'SEV1', 'SEV2'].includes(String(item.priority || item.riskRating || item.severity || ''))).length, [items]);
 
-  async function load() {
+  async function load(search?: string) {
     setLoading(true);
     try {
-      const response = await api.get(`/${moduleKey}`);
+      const params: Record<string, string> = {};
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      const response = await api.get(`/${moduleKey}`, { params });
       setItems(response.data.items || []);
       setMessage('');
     } catch {
@@ -384,10 +409,20 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     }
   }
 
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     setForm(getInitialForm(config.fields));
     setSelected(null);
     setCreateOpen(false);
+    setSearchQuery('');
     load();
   }, [moduleKey]);
 
@@ -466,7 +501,16 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           <h2>{title}</h2>
         </div>
         <div className="action-row">
-          <button className="secondary" onClick={load}>{loading ? 'Refreshing...' : 'Refresh'}</button>
+          {moduleKey === 'users-teams' && (
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search by name, email, phone..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+          )}
+          <button className="secondary" onClick={() => load(searchQuery)}>{loading ? 'Refreshing...' : 'Refresh'}</button>
           {config.permissions.export && hasPermission(config.permissions.export) && <button className="secondary" onClick={exportCsv}>Export CSV</button>}
           {config.permissions.create && hasPermission(config.permissions.create) && <button className="primary" onClick={() => setCreateOpen(true)}>Create</button>}
         </div>
