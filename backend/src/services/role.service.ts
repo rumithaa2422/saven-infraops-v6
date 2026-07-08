@@ -23,7 +23,7 @@ export async function createRole(data: CreateRoleInput) {
   });
 
   // Create role with permissions in transaction
-  const role = await prisma.$transaction(async (tx) => {
+  const role = await prisma.$transaction(async (tx: { role: { create: (arg0: { data: { name: string; description: string | null; }; }) => any; }; rolePermission: { create: (arg0: { data: { roleId: any; permissionId: any; }; }) => any; }; }) => {
     const newRole = await tx.role.create({
       data: {
         name: data.name,
@@ -141,7 +141,7 @@ export async function updateRolePermissions(id: string, data: UpdateRolePermissi
   });
 
   // Replace permissions in transaction
-  const role = await prisma.$transaction(async (tx) => {
+  const role = await prisma.$transaction(async (tx: { rolePermission: { deleteMany: (arg0: { where: { roleId: string; }; }) => any; create: (arg0: { data: { roleId: string; permissionId: any; }; }) => any; }; role: { findUnique: (arg0: { where: { id: string; }; include: { permissions: { include: { permission: boolean; }; }; }; }) => any; }; }) => {
     // Delete existing permissions
     await tx.rolePermission.deleteMany({
       where: { roleId: id }
@@ -163,7 +163,7 @@ export async function updateRolePermissions(id: string, data: UpdateRolePermissi
     });
   });
 
-  const oldPermissions = existingRole.permissions.map(rp => rp.permission.code);
+  const oldPermissions = existingRole.permissions.map((rp: { permission: { code: any; }; }) => rp.permission.code);
 
   // Audit log
   await prisma.auditLog.create({
@@ -182,7 +182,7 @@ export async function updateRolePermissions(id: string, data: UpdateRolePermissi
     id: role!.id,
     name: role!.name,
     description: role!.description,
-    permissions: role!.permissions.map(rp => rp.permission.code)
+    permissions: role!.permissions.map((rp: { permission: { code: any; }; }) => rp.permission.code)
   };
 }
 
@@ -214,7 +214,7 @@ export async function deleteRole(id: string, data: DeleteRoleInput) {
   }
 
   // Delete RolePermission records and role in a transaction
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: { rolePermission: { deleteMany: (arg0: { where: { roleId: string; }; }) => any; }; role: { delete: (arg0: { where: { id: string; }; }) => any; }; }) => {
     // Delete all RolePermission records for this role
     await tx.rolePermission.deleteMany({
       where: { roleId: id }
