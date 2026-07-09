@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { FormEvent, useEffect, useMemo, useState, useRef, useCallback, useId } from 'react';
 import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
@@ -362,6 +362,11 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  // Import state (Phase 1 - file selection only, no upload)
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const importInputId = useId();
+
   // Search state for users-teams module
   const [searchQuery, setSearchQuery] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -381,6 +386,26 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     const value = e.target.value;
     setSearchQuery(value);
     debouncedSearch(value);
+  }
+
+  // Handle import file selection
+  function handleImportClick() {
+    importInputRef.current?.click();
+  }
+
+  // Handle file selection from file picker
+  function handleImportChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null;
+    setImportFile(file);
+    // Reset the input so the same file can be selected again if needed
+    if (importInputRef.current) {
+      importInputRef.current.value = '';
+    }
+  }
+
+  // Clear import file selection
+  function handleClearImport() {
+    setImportFile(null);
   }
 
   // Fetch roles for users-teams module
@@ -527,10 +552,32 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             />
           )}
           <button className="secondary" onClick={() => load(searchQuery)}>{loading ? 'Refreshing...' : 'Refresh'}</button>
+          {/* Import button - shown only for modules with export permission */}
+          {config.permissions.export && hasPermission(config.permissions.export) && (
+            <>
+              <button className="secondary" onClick={handleImportClick}>Import</button>
+              <input
+                ref={importInputRef}
+                type="file"
+                id={importInputId}
+                accept=".csv,.xlsx"
+                onChange={handleImportChange}
+                style={{ display: 'none' }}
+              />
+            </>
+          )}
           {config.permissions.export && hasPermission(config.permissions.export) && <button className="secondary" onClick={exportCsv}>Export CSV</button>}
           {config.permissions.create && hasPermission(config.permissions.create) && <button className="primary" onClick={() => setCreateOpen(true)}>Create</button>}
         </div>
       </div>
+
+      {/* Show selected file name */}
+      {importFile && (
+        <div className="import-file-info">
+          <span className="import-file-name">📄 {importFile.name}</span>
+          <button className="import-clear-btn" onClick={handleClearImport}>×</button>
+        </div>
+      )}
 
       {message && <div className="notice">{message}</div>}
 
