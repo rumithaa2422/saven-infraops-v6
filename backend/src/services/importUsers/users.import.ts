@@ -1,0 +1,307 @@
+/**
+ * Users Import Module
+ * 
+ * Implements the import framework for Users & Teams module.
+ * This file plugs into the reusable import framework.
+ */
+
+import { prisma } from '../../common/prisma.js';
+import { HttpError } from '../../common/httpError.js';
+import { sendUserActivationEmail } from '../../modules/auth/activation.service.js';
+import {
+  BaseImportValidator,
+  ValidationUtils,
+  BaseImportExecutor,
+  createImportRecordResult,
+  registerImportModule
+} from '../importFramework/importFramework.index.js';
+import {
+  FieldError,
+  ValidationContext,
+  ImportInput,
+  ImportRecordResult,
+  ColumnMapping
+} from '../importFramework/importFramework.types.js';
+import { normalizeValue } from '../importFramework/importFramework.parser.js';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/**
+ * Allowed departments
+ */
+const ALLOWED_DEPARTMENTS = [
+  'Engineering',
+  'Support',
+  'QA',
+  'DevOps',
+  'HR',
+  'Finance',
+  'Operations',
+  'Security',
+  'InfraOps'
+];
+
+// ============================================================================
+// Users Validator
+// ============================================================================
+
+class UsersImportValidator extends BaseImportValidator {
+  /**
+   * Column name variations for flexible matching
+   */
+  getColumnMappings(): ColumnMapping {
+    return {
+      name: ['name', 'user name', 'username', 'full name', 'fullname', 'user'],
+      email: ['email', 'email address', 'e-mail', 'mail'],
+      phone: ['phone', 'phone number', 'phonenumber', 'mobile', 'contact', 'telephone'],
+      department: ['department', 'dept', 'division', 'team'],
+      role: ['role', 'user role', 'userrole', 'access level']
+    };
+  }
+
+  /**
+   * Required fields
+   */
+  getRequiredFields(): string[] {
+    return ['name', 'email', 'department', 'role'];
+  }
+
+  /**
+   * Entity name for messages
+   */
+  protected getEntityName(): string {
+    return 'user';
+  }
+
+  /**
+   * Build validation context with database lookups
+   */
+  async buildContext(): Promise<ValidationContext> {
+    // Get existing emails
+    const existingUsers = await prisma.user.findMany({
+      select: { email: true }
+    });
+    const existingEmails = new Set(existingUsers.map(u => u.email.toLowerCase()));
+
+    // Get existing role names
+    const existingRoles = await prisma.role.findMany({
+      select: { name: true }
+    });
+    const existingRoleNames = new Set(existingRoles.map(r => r.name));
+
+    return {
+      existingValues: {
+        email: existingEmails,
+        role: existingRoleNames
+      }
+    };
+  }
+
+  /**
+   * Validate row-specific rules
+   */
+  protected validateRowData(
+    row: Record<string, unknown>,
+    rowNumber: number,
+    context: ValidationContext,
+    columnMap: Record<string, string | undefined>
+  ): FieldError[] {
+    const errors: FieldError[] = [];
+    const existingValues = context.existingValues || {};
+
+    // Get email
+    const email = normalizeValue(columnMap['email'] ? row[columnMap['email']] : row['Email']).toLowerCase();
+
+    // Validate email format
+    if (email && !ValidationUtils.isValidEmail(email)) {
+      errors.push({
+        row: rowNumber,
+        field: 'Email',
+        message: 'Invalid email format'
+      });
+    }
+
+    // Check email uniqueness
+    const existingEmails = existingValues['email'];
+    if (email && existingEmails && ValidationUtils.valueExists(email, existingEmails)) {
+      errors.push({
+        row: rowNumber,
+        field: 'Email',
+        message: 'Email already exists in the system'
+      });
+    }
+
+    // Get department
+    const department = normalizeValue(columnMap['department'] ? row[columnMap['department']] : row['Department']);
+
+    // Validate department
+    if (department && !ValidationUtils.isInAllowedList(department, ALLOWED_DEPARTMENTS)) {
+      errors.push({
+        row: rowNumber,
+        field: 'Department',
+        message: `Invalid department. Allowed: ${ALLOWED_DEPARTMENTS.join(', ')}`
+      });
+    }
+
+    // Get role
+    const role = normalizeValue(columnMap['role'] ? row[columnMap['role']] : row['Role']);
+
+    // Validate role exists
+    const existingRoles = existingValues['role'];
+    if (role && existingRoles && !ValidationUtils.valueExists(role, existingRoles)) {
+      errors.push({
+        row: rowNumber,
+        field: 'Role',
+        message: `Role not found. Available: ${[...existingRoles].join(', ')}`
+      });
+    }
+
+    return errors;
+  }
+
+  /**
+   * Normalize row data for import
+   */
+  protected normalizeRowData(
+    row: Record<string, unknown>,
+    rowNumber: number,
+    columnMap: Record<string, string | undefined>
+  ): ImportInput {
+    const name = normalizeValue(columnMap['name'] ? row[columnMap['name']] : row['Name']);
+    const email = normalizeValue(columnMap['email'] ? row[columnMap['email']] : row['Email']).toLowerCase();
+    const phone = normalizeValue(columnMap['phone'] ? row[columnMap['phone']] : row['Phone']);
+    const department = normalizeValue(columnMap['department'] ? row[columnMap['department']] : row['Department']);
+    const role = normalizeValue(columnMap['role'] ? row[columnMap['role']] : row['Role']);
+
+    return {
+      name,
+      email,
+      phoneNumber: phone || undefined,
+      department,
+      role,
+      importedRow: rowNumber
+    };
+  }
+}
+
+// ============================================================================
+// Users Executor
+// ============================================================================
+
+class UsersImportExecutor extends BaseImportExecutor {
+  /**
+   * Entity name for messages
+   */
+  protected getEntityName(): string {
+    return 'user';
+  }
+
+  /**
+   * Import a single user
+   */
+  async importRecord(input: ImportInput): Promise<ImportRecordResult> {
+    const { name, email, phoneNumber, department, role } = input as {
+      name: string;
+      email: string;
+      phoneNumber?: string;
+      department: string;
+      role: string;
+    };
+
+    try {
+      // Create user
+      const user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          phoneNumber: phoneNumber || null,
+          department,
+          status: 'PENDING_ACTIVATION'
+        }
+      });
+
+      // Assign role
+      if (role) {
+        const roleRecord = await prisma.role.findFirst({
+          where: {
+            OR: [{ id: role }, { name: role }]
+          }
+        });
+        if (roleRecord) {
+          await prisma.userRole.create({
+            data: { userId: user.id, roleId: roleRecord.id }
+          });
+        }
+      }
+
+      // Create audit log
+      await prisma.auditLog.create({
+        data: {
+          actorId: 'system',
+          actorEmail: 'system',
+          action: 'USER_CREATED',
+          entityType: 'User',
+          entityId: user.id,
+          newValue: { email, status: 'PENDING_ACTIVATION', source: 'import' }
+        }
+      });
+
+      // Try to send activation email (don't fail if email doesn't work)
+      let emailError: string | undefined;
+      try {
+        const emailResult = await sendUserActivationEmail(user.id);
+        if (!emailResult.success && emailResult.error) {
+          emailError = emailResult.error;
+        }
+      } catch (err) {
+        emailError = err instanceof Error ? err.message : 'Unknown email error';
+      }
+
+      return createImportRecordResult(true, input, {
+        id: user.id,
+        warning: emailError ? `Activation email failed: ${emailError}` : undefined
+      });
+
+    } catch (err) {
+      if (err instanceof HttpError) {
+        return createImportRecordResult(false, input, { error: err.message });
+      }
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      return createImportRecordResult(false, input, { error: errorMessage });
+    }
+  }
+}
+
+// ============================================================================
+// Module Registration
+// ============================================================================
+
+const usersValidator = new UsersImportValidator();
+const usersExecutor = new UsersImportExecutor();
+
+/**
+ * Register the Users import module
+ * Call this during application startup
+ */
+export function registerUsersImport(): void {
+  registerImportModule('users-teams', () => usersValidator, () => usersExecutor);
+}
+
+/**
+ * Get the users validator instance
+ */
+export function getUsersValidator(): UsersImportValidator {
+  return usersValidator;
+}
+
+/**
+ * Get the users executor instance
+ */
+export function getUsersExecutor(): UsersImportExecutor {
+  return usersExecutor;
+}
+
+// Also export for backward compatibility
+export { usersValidator, usersExecutor };
