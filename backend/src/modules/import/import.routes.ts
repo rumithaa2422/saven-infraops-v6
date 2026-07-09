@@ -2,6 +2,14 @@ import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { registerUsersImport } from '../../services/importUsers/index.js';
+import { registerIncidentsImport } from '../../services/importIncidents/index.js';
+import { registerProblemsImport } from '../../services/importProblems/index.js';
+import { registerChangesImport } from '../../services/importChanges/index.js';
+import { registerInventoryImport } from '../../services/importInventory/index.js';
+import { registerComplianceImport } from '../../services/importCompliance/index.js';
+import { registerProjectsImport } from '../../services/importProjects/index.js';
+import { registerVendorsImport } from '../../services/importVendors/index.js';
+import { registerKnowledgeBaseImport } from '../../services/importKnowledgeBase/index.js';
 import {
   ImportFramework,
   importErrorHandler
@@ -11,6 +19,14 @@ export const importRouter = Router();
 
 // Register all import modules
 registerUsersImport();
+registerIncidentsImport();
+registerProblemsImport();
+registerChangesImport();
+registerInventoryImport();
+registerComplianceImport();
+registerProjectsImport();
+registerVendorsImport();
+registerKnowledgeBaseImport();
 
 /**
  * POST /api/import/upload

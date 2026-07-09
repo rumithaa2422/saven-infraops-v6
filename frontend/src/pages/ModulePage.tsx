@@ -32,7 +32,9 @@ type ModuleConfig = {
     create?: string;   // Create button and modal
     write?: string;    // Edit/Manage actions
     export?: string;   // NEW: Export permission
+    import?: string;   // NEW: Import permission
   };
+  moduleType?: string; // Module type for import framework (e.g., 'incidents', 'users-teams')
 };
 
 const configs: Record<string, ModuleConfig> = {
@@ -60,7 +62,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'description', label: 'Description' }
     ],
-    permissions: { create: 'incidents:create', write: 'incidents:manage', export: 'incidents:export' }
+    permissions: { create: 'incidents:create', write: 'incidents:manage', export: 'incidents:export', import: 'settings:write' },
+    moduleType: 'incidents'
   },
   problems: {
     referenceKey: 'problemNo',
@@ -82,7 +85,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'problems:create', write: 'problems:manage', export: 'problems:export' }
+    permissions: { create: 'problems:create', write: 'problems:manage', export: 'problems:export', import: 'settings:write' },
+    moduleType: 'problems'
   },
   changes: {
     referenceKey: 'changeNo',
@@ -106,7 +110,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'rollbackPlan', label: 'Rollback Plan' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'changes:create', write: 'changes:approve', export: 'changes:export' }
+    permissions: { create: 'changes:create', write: 'changes:approve', export: 'changes:export', import: 'settings:write' },
+    moduleType: 'change-requests'
   },
   inventory: {
     referenceKey: 'assetNo',
@@ -132,7 +137,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'location', label: 'Location' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'inventory:create', write: 'inventory:manage', export: 'inventory:export' }
+    permissions: { create: 'inventory:create', write: 'inventory:manage', export: 'inventory:export', import: 'settings:write' },
+    moduleType: 'inventory'
   },
   'access-management': {
     referenceKey: 'requestNo',
@@ -180,7 +186,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'compliance:create', write: 'compliance:manage', export: 'compliance:export' }
+    permissions: { create: 'compliance:create', write: 'compliance:manage', export: 'compliance:export', import: 'settings:write' },
+    moduleType: 'compliance'
   },
   'projects-environments': {
     referenceKey: 'projectName',
@@ -203,7 +210,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'databaseName', label: 'Database Name' },
       { key: 'ownerName', label: 'Owner' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'projects:export' }
+    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'projects:export', import: 'settings:write' },
+    moduleType: 'projects'
   },
   'vendors-licenses': {
     referenceKey: 'vendorName',
@@ -226,7 +234,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'renewalAt', label: 'Renewal Date' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'vendors:export' }
+    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'vendors:export', import: 'settings:write' },
+    moduleType: 'vendors'
   },
   'knowledge-base': {
     referenceKey: 'category',
@@ -247,7 +256,8 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'body', label: 'Body' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'kb:export' }
+    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'kb:export', import: 'settings:write' },
+    moduleType: 'knowledge-base'
   },
   'users-teams': {
     referenceKey: 'email',
@@ -274,8 +284,10 @@ const configs: Record<string, ModuleConfig> = {
       view: 'users:view',      // View user details in drawer
       create: 'users:create',  // Create user button/modal
       write: 'users:manage',   // Edit/Enable/Disable/Reset Password
-      export: 'users:export'  // Export users button
-    }
+      export: 'users:export',  // Export users button
+      import: 'settings:write' // Import users
+    },
+    moduleType: 'users-teams'
   },
   'reports-analytics': {
     referenceKey: 'title',
@@ -466,8 +478,9 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         setParsedData(response.data.parsed);
         
         // Phase 4: Trigger validation automatically
+        const importModuleType = config.moduleType || moduleKey;
         if (response.data.parsed.totalRows > 0) {
-          await validateImportData(response.data.parsed.data, moduleKey);
+          await validateImportData(response.data.parsed.data, importModuleType);
         } else {
           setMessage(`File uploaded successfully. No data rows found.`);
         }
@@ -698,8 +711,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             />
           )}
           <button className="secondary" onClick={() => load(searchQuery)}>{loading ? 'Refreshing...' : 'Refresh'}</button>
-          {/* Import button - shown only for modules with export permission */}
-          {config.permissions.export && hasPermission(config.permissions.export) && (
+          {/* Import button - shown only for modules with import permission */}
+          {config.permissions.import && hasPermission(config.permissions.import) && (
             <>
               <button className="secondary" onClick={handleImportClick}>Import</button>
               <input
@@ -761,7 +774,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             <div className="import-actions">
               <button 
                 className="primary" 
-                onClick={() => parsedData && executeImport(parsedData.data, moduleKey)}
+                onClick={() => parsedData && executeImport(parsedData.data, config.moduleType || moduleKey)}
                 disabled={isExecuting}
               >
                 {isExecuting ? '⏳ Importing...' : '📥 Import to System'}
@@ -774,7 +787,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       {/* Show executing status */}
       {isExecuting && (
         <div className="import-executing">
-          <span>⏳ Importing users... Please wait.</span>
+          <span>⏳ Importing... Please wait.</span>
         </div>
       )}
 
