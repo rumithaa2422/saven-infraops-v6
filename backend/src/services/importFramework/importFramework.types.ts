@@ -173,6 +173,14 @@ export interface IImportValidator {
     row: Record<string, unknown>,
     rowNumber: number
   ): ImportInput;
+
+  /**
+   * Validate all rows and return validation result
+   * @param data - Array of row data
+   * @param context - Validation context
+   * @returns Complete validation result
+   */
+  validateAll(data: Record<string, unknown>[], context?: ValidationContext): ValidationResult;
 }
 
 /**
@@ -193,6 +201,14 @@ export interface IImportExecutor {
    * @returns Import result for this record
    */
   importRecord(input: ImportInput): Promise<ImportRecordResult>;
+
+  /**
+   * Import all records
+   * @param data - Array of import inputs
+   * @param validationResult - Optional validation result for context
+   * @returns Complete import result
+   */
+  importAll(data: ImportInput[], validationResult?: ValidationResult): Promise<ImportResult>;
 }
 
 // ============================================================================

@@ -42,4 +42,14 @@ export * from './importFramework.validator.js';
 export * from './importFramework.importer.js';
 
 // Framework orchestrator
-export { ImportFramework } from './importFramework.orchestrator.js';
+export { 
+  ImportFramework,
+  importUpload,
+  registerImportModule,
+  getModuleValidator,
+  getModuleExecutor,
+  isModuleRegistered,
+  getRegisteredModules,
+  buildValidationContext,
+  importErrorHandler
+} from './importFramework.orchestrator.js';
