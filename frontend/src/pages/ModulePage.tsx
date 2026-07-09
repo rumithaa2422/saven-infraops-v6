@@ -464,7 +464,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     const rows = items.map((item) => config.columns.map((c) => {
       // Special handling for role column in users-teams
       if (moduleKey === 'users-teams' && c.key === 'role') {
-        return `"${formatUserRoles((item as RecordItem & { role?: Array<{ role: { name: string } }> }).role).replace(/"/g, '""')}"`;
+        return `"${formatUserRoles((item as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles).replace(/"/g, '""')}"`;
       }
       return `"${formatValue(item[c.key]).replace(/"/g, '""')}"`;
     }).join(','));
@@ -554,7 +554,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 {config.columns.map((column) => {
                   // Special handling for role column in users-teams
                   if (moduleKey === 'users-teams' && column.key === 'role') {
-                    return <td key={column.key}>{formatUserRoles((item as RecordItem & { role?: Array<{ role: { name: string } }> }).role)}</td>;
+                    return <td key={column.key}>{formatUserRoles((item as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles)}</td>;
                   }
                   return <td key={column.key}>{formatValue(item[column.key])}</td>;
                 })}
@@ -636,7 +636,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             {config.columns.map((column) => {
               // Special handling for role column in users-teams
               if (moduleKey === 'users-teams' && column.key === 'role') {
-                return <p key={column.key}><strong>{column.label}:</strong> {formatUserRoles((selected as RecordItem & { role?: Array<{ role: { name: string } }> }).role)}</p>;
+                return <p key={column.key}><strong>{column.label}:</strong> {formatUserRoles((selected as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles)}</p>;
               }
               return <p key={column.key}><strong>{column.label}:</strong> {formatValue(selected[column.key])}</p>;
             })}
