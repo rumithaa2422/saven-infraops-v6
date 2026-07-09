@@ -6,8 +6,6 @@
  */
 
 import { prisma } from '../../common/prisma.js';
-import { HttpError } from '../../common/httpError.js';
-import { sendUserActivationEmail } from '../../modules/auth/activation.service.js';
 import {
   BaseImportValidator,
   ValidationUtils,
@@ -23,6 +21,7 @@ import {
   ColumnMapping
 } from '../importFramework/importFramework.types.js';
 import { normalizeValue } from '../importFramework/importFramework.parser.js';
+import { createUser } from '../user.service.js';
 
 // ============================================================================
 // Constants
@@ -207,6 +206,11 @@ class UsersImportExecutor extends BaseImportExecutor {
 
   /**
    * Import a single user
+   * Reuses createUser() service to ensure:
+   * - Duplicate email validation
+   * - Role assignment
+   * - Audit logging
+   * - Activation email
    */
   async importRecord(input: ImportInput): Promise<ImportRecordResult> {
     const { name, email, phoneNumber, department, role } = input as {
@@ -218,63 +222,20 @@ class UsersImportExecutor extends BaseImportExecutor {
     };
 
     try {
-      // Create user
-      const user = await prisma.user.create({
-        data: {
-          name,
-          email,
-          phoneNumber: phoneNumber || null,
-          department,
-          status: 'PENDING_ACTIVATION'
-        }
+      // Reuse the existing createUser service
+      // This handles: email uniqueness, user creation, role assignment, audit log, activation email
+      const user = await createUser({
+        name,
+        email,
+        phoneNumber: phoneNumber || null,
+        department: department || null,
+        roleId: role || null,
+        actorId: 'system',
+        actorEmail: 'system'
       });
 
-      // Assign role
-      if (role) {
-        const roleRecord = await prisma.role.findFirst({
-          where: {
-            OR: [{ id: role }, { name: role }]
-          }
-        });
-        if (roleRecord) {
-          await prisma.userRole.create({
-            data: { userId: user.id, roleId: roleRecord.id }
-          });
-        }
-      }
-
-      // Create audit log
-      await prisma.auditLog.create({
-        data: {
-          actorId: 'system',
-          actorEmail: 'system',
-          action: 'USER_CREATED',
-          entityType: 'User',
-          entityId: user.id,
-          newValue: { email, status: 'PENDING_ACTIVATION', source: 'import' }
-        }
-      });
-
-      // Try to send activation email (don't fail if email doesn't work)
-      let emailError: string | undefined;
-      try {
-        const emailResult = await sendUserActivationEmail(user.id);
-        if (!emailResult.success && emailResult.error) {
-          emailError = emailResult.error;
-        }
-      } catch (err) {
-        emailError = err instanceof Error ? err.message : 'Unknown email error';
-      }
-
-      return createImportRecordResult(true, input, {
-        id: user.id,
-        warning: emailError ? `Activation email failed: ${emailError}` : undefined
-      });
-
+      return createImportRecordResult(true, input, { id: user.id });
     } catch (err) {
-      if (err instanceof HttpError) {
-        return createImportRecordResult(false, input, { error: err.message });
-      }
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       return createImportRecordResult(false, input, { error: errorMessage });
     }
