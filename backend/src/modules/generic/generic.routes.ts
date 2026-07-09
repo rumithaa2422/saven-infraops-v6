@@ -166,7 +166,23 @@ const moduleMap: Record<string, ModuleConfig> = {
     exportPermission: 'users:export',
     entityType: 'User',
     list: () => prisma.user.findMany({
-      select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true },
+      select: { 
+        id: true, 
+        name: true, 
+        email: true, 
+        phoneNumber: true, 
+        department: true, 
+        status: true, 
+        createdAt: true, 
+        updatedAt: true,
+        roles: {
+          include: {
+            role: {
+              select: { name: true }
+            }
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' },
       take: 100
     }),
@@ -218,6 +234,25 @@ genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
     const search = req.query.search as string | undefined;
     let items: unknown[];
 
+    // Common select for users with roles included
+    const userSelect = {
+      id: true,
+      name: true,
+      email: true,
+      phoneNumber: true,
+      department: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      roles: {
+        include: {
+          role: {
+            select: { name: true }
+          }
+        }
+      }
+    };
+
     if (moduleName === 'users-teams' && search) {
       // Search users by name, email, or phoneNumber
       items = await prisma.user.findMany({
@@ -228,14 +263,14 @@ genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
             { phoneNumber: { contains: search } }
           ]
         },
-        select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true },
+        select: userSelect,
         orderBy: { createdAt: 'desc' },
         take: 100
       });
     } else if (moduleName === 'users-teams') {
       // Default list for users-teams without search
       items = await prisma.user.findMany({
-        select: { id: true, name: true, email: true, phoneNumber: true, department: true, status: true, createdAt: true, updatedAt: true },
+        select: userSelect,
         orderBy: { createdAt: 'desc' },
         take: 100
       });

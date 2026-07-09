@@ -302,6 +302,16 @@ function formatValue(value: unknown) {
   return String(value);
 }
 
+// Special formatter for user roles (handles the nested roles array from Prisma)
+function formatUserRoles(value: unknown): string {
+  if (!value || !Array.isArray(value)) return '-';
+  if (value.length === 0) return '-';
+  // Extract role names from the nested structure: [{ role: { name: "Admin" } }]
+  const roleNames = value.map((r: { role?: { name?: string } }) => r?.role?.name).filter(Boolean);
+  if (roleNames.length === 0) return '-';
+  return roleNames.join(', ');
+}
+
 
 function getStatusActions(moduleKey: string) {
   if (moduleKey === 'access-management') return [
@@ -451,7 +461,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
 
   function exportCsv() {
     const header = config.columns.map((c) => c.label).join(',');
-    const rows = items.map((item) => config.columns.map((c) => `"${formatValue(item[c.key]).replace(/"/g, '""')}"`).join(','));
+    const rows = items.map((item) => config.columns.map((c) => {
+      // Special handling for role column in users-teams
+      if (moduleKey === 'users-teams' && c.key === 'role') {
+        return `"${formatUserRoles((item as RecordItem & { role?: Array<{ role: { name: string } }> }).role).replace(/"/g, '""')}"`;
+      }
+      return `"${formatValue(item[c.key]).replace(/"/g, '""')}"`;
+    }).join(','));
     const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -535,7 +551,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           <tbody>
             {items.map((item, index) => (
               <tr key={String(item.id || index)} onClick={() => setSelected(item)}>
-                {config.columns.map((column) => <td key={column.key}>{formatValue(item[column.key])}</td>)}
+                {config.columns.map((column) => {
+                  // Special handling for role column in users-teams
+                  if (moduleKey === 'users-teams' && column.key === 'role') {
+                    return <td key={column.key}>{formatUserRoles((item as RecordItem & { role?: Array<{ role: { name: string } }> }).role)}</td>;
+                  }
+                  return <td key={column.key}>{formatValue(item[column.key])}</td>;
+                })}
                 <td>
                   <div className="action-buttons">
                     {hasPermission((config.permissions.view || config.permissions.create) || '') && <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>}
@@ -611,9 +633,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           <span className="eyebrow">{formatValue(selected[config.referenceKey])}</span>
           <h3>{formatValue(selected[config.titleKey])}</h3>
           <div className="record-detail">
-            {config.columns.map((column) => (
-              <p key={column.key}><strong>{column.label}:</strong> {formatValue(selected[column.key])}</p>
-            ))}
+            {config.columns.map((column) => {
+              // Special handling for role column in users-teams
+              if (moduleKey === 'users-teams' && column.key === 'role') {
+                return <p key={column.key}><strong>{column.label}:</strong> {formatUserRoles((selected as RecordItem & { role?: Array<{ role: { name: string } }> }).role)}</p>;
+              }
+              return <p key={column.key}><strong>{column.label}:</strong> {formatValue(selected[column.key])}</p>;
+            })}
           </div>
           {config.statusKey && statusActions.length > 0 && config.permissions.write && hasPermission(config.permissions.write) && (
             <div className="drawer-actions">
