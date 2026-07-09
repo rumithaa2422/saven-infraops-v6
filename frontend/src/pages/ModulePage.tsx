@@ -362,7 +362,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  // Import state (Phase 3 - parse to JSON)
+  // Import state (Phase 4 - validation)
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<{
     name: string;
@@ -376,8 +376,18 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     isPreview: boolean;
     data: Record<string, unknown>[];
   } | null>(null);
+  const [validationResult, setValidationResult] = useState<{
+    success: boolean;
+    totalRows: number;
+    validRows: number;
+    invalidRows: number;
+    summary: { allValid: boolean; message: string };
+    rows: Array<{ row: number; valid: boolean; data: Record<string, unknown>; errors: Array<{ row: number; field: string; message: string }> }>;
+    errorsByRow: Record<number, string[]>;
+  } | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const importInputId = useId();
 
@@ -425,6 +435,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   async function uploadImportFile(file: File) {
     setIsImporting(true);
     setImportError(null);
+    setValidationResult(null);
 
     try {
       const formData = new FormData();
@@ -443,7 +454,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           mimeType: response.data.file.mimeType
         });
         setParsedData(response.data.parsed);
-        setMessage(`File uploaded successfully. Found ${response.data.parsed.totalRows} rows with ${response.data.parsed.columns.length} columns.`);
+        
+        // Phase 4: Trigger validation automatically
+        if (response.data.parsed.totalRows > 0) {
+          await validateImportData(response.data.parsed.data, moduleKey);
+        } else {
+          setMessage(`File uploaded successfully. No data rows found.`);
+        }
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
@@ -456,11 +473,38 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     }
   }
 
+  // Validate import data
+  async function validateImportData(data: Record<string, unknown>[], moduleType: string) {
+    setIsValidating(true);
+
+    try {
+      const response = await api.post('/import/validate', {
+        moduleType,
+        data
+      });
+
+      setValidationResult(response.data);
+      
+      if (response.data.success) {
+        setMessage(`File uploaded successfully. All ${response.data.validRows} row(s) are valid and ready for import.`);
+      } else {
+        setMessage(`Found ${response.data.invalidRows} row(s) with errors. Please fix them before importing.`);
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      const errorMessage = error.response?.data?.error || 'Failed to validate data.';
+      setImportError(errorMessage);
+    } finally {
+      setIsValidating(false);
+    }
+  }
+
   // Clear import file selection
   function handleClearImport() {
     setImportFile(null);
     setImportResult(null);
     setParsedData(null);
+    setValidationResult(null);
     setImportError(null);
   }
 
@@ -649,7 +693,28 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
       )}
 
-      {/* Show parsed data preview */}
+      {/* Show validating status */}
+      {isValidating && (
+        <div className="import-validating">
+          <span>🔄 Validating data...</span>
+        </div>
+      )}
+
+      {/* Show validation summary */}
+      {validationResult && !isValidating && (
+        <div className={`import-validation-summary ${validationResult.success ? 'success' : 'error'}`}>
+          <div className="validation-summary-header">
+            <span className="validation-icon">{validationResult.success ? '✅' : '❌'}</span>
+            <span className="validation-message">{validationResult.summary.message}</span>
+          </div>
+          <div className="validation-stats">
+            <span className="stat valid">✓ Valid: {validationResult.validRows}</span>
+            <span className="stat invalid">✗ Invalid: {validationResult.invalidRows}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Show parsed data preview with validation status */}
       {parsedData && !isImporting && (
         <div className="import-preview">
           <div className="import-preview-header">
@@ -666,20 +731,54 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   {parsedData.columns.map((col) => (
                     <th key={col}>{col}</th>
                   ))}
+                  {validationResult && <th>Status</th>}
                 </tr>
               </thead>
               <tbody>
-                {parsedData.data.map((row, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    {parsedData.columns.map((col) => (
-                      <td key={col}>{String(row[col] ?? '')}</td>
-                    ))}
-                  </tr>
-                ))}
+                {parsedData.data.map((row, index) => {
+                  const rowNum = index + 2; // +2 because row 1 is headers
+                  const rowValidation = validationResult?.rows.find(r => r.row === rowNum);
+                  const hasErrors = rowValidation && !rowValidation.valid;
+                  return (
+                    <tr key={index} className={hasErrors ? 'row-error' : ''}>
+                      <td>{index + 1}</td>
+                      {parsedData.columns.map((col) => (
+                        <td key={col}>{String(row[col] ?? '')}</td>
+                      ))}
+                      {validationResult && (
+                        <td>
+                          {isValidating ? (
+                            <span className="status-validating">...</span>
+                          ) : rowValidation?.valid ? (
+                            <span className="status-valid">✓</span>
+                          ) : (
+                            <span className="status-invalid" title={validationResult.errorsByRow[rowNum]?.join(', ')}>✗</span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          
+          {/* Show error details */}
+          {validationResult && validationResult.invalidRows > 0 && (
+            <div className="import-errors">
+              <h5>⚠️ Validation Errors:</h5>
+              {Object.entries(validationResult.errorsByRow).map(([row, errors]) => (
+                <div key={row} className="error-row">
+                  <strong>Row {row}:</strong>
+                  <ul>
+                    {errors.map((error, i) => (
+                      <li key={i}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

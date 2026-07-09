@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { env } from '../../config/env.js';
+import { validateImport } from '../../services/importValidation.service.js';
 
 export const importRouter = Router();
 
@@ -42,17 +43,13 @@ const upload = multer({
 
 /**
  * Parse Excel/CSV file and return JSON data
- * @param buffer - File buffer
- * @param mimeType - MIME type of the file
- * @returns Parsed data with metadata
  */
-function parseFile(buffer: Buffer, mimeType: string): {
+function parseFile(buffer: Buffer): {
   columns: string[];
   data: Record<string, unknown>[];
   totalRows: number;
   sheetName?: string;
 } {
-  // Determine file type and parse accordingly
   let workbook: XLSX.WorkBook;
   
   try {
@@ -61,8 +58,6 @@ function parseFile(buffer: Buffer, mimeType: string): {
     throw new Error('Invalid or corrupted Excel file');
   }
 
-  // For CSV, use the first sheet
-  // For Excel, use the first worksheet
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
 
@@ -70,9 +65,6 @@ function parseFile(buffer: Buffer, mimeType: string): {
     throw new Error('No worksheet found in the file');
   }
 
-  // Convert sheet to JSON using header row
-  // defval: '' ensures empty cells become empty strings
-  // header: 1 uses first row as headers
   const sheetData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { 
     defval: '',
     raw: false
@@ -82,7 +74,6 @@ function parseFile(buffer: Buffer, mimeType: string): {
     throw new Error('File is empty or has no data rows');
   }
 
-  // Get column names from the first row
   const columns = Object.keys(sheetData[0]);
 
   if (columns.length === 0) {
@@ -117,7 +108,7 @@ importRouter.post('/upload', requireAuth, requirePermissionOr(['settings:write',
 
   try {
     // Parse the file
-    const parsed = parseFile(req.file.buffer, req.file.mimetype);
+    const parsed = parseFile(req.file.buffer);
 
     // Determine if we should return full data or preview
     const isLargeFile = parsed.totalRows > PREVIEW_ROW_LIMIT;
@@ -151,12 +142,50 @@ importRouter.post('/upload', requireAuth, requirePermissionOr(['settings:write',
   }
 });
 
+/**
+ * POST /api/import/validate
+ * Phase 4: Validate parsed import data before importing
+ * Returns validation results
+ */
+importRouter.post('/validate', requireAuth, requirePermissionOr(['settings:write', 'settings:manage']), async (req, res) => {
+  try {
+    const { moduleType, data } = req.body as {
+      moduleType: string;
+      data: Record<string, unknown>[];
+    };
+
+    if (!moduleType) {
+      return res.status(400).json({ error: 'moduleType is required' });
+    }
+
+    if (!data || !Array.isArray(data)) {
+      return res.status(400).json({ error: 'data must be an array' });
+    }
+
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'No data to validate' });
+    }
+
+    // Validate the data
+    const validationResult = await validateImport(moduleType, data);
+
+    res.json(validationResult);
+  } catch (err) {
+    const error = err as Error;
+    if (error.message.includes('not implemented')) {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error('Import validation error:', error);
+    res.status(500).json({ error: 'Failed to validate the data. Please check the data format.' });
+  }
+});
+
 // Legacy endpoint kept for backward compatibility
 importRouter.post('/excel/preview', requireAuth, requirePermission('settings:write'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'Excel file is required' });
 
   try {
-    const parsed = parseFile(req.file.buffer, req.file.mimetype);
+    const parsed = parseFile(req.file.buffer);
 
     res.json({
       fileName: req.file.originalname,
