@@ -15,6 +15,7 @@ import { aiRouter } from './modules/ai/ai.routes.js';
 import { importRouter } from './modules/import/import.routes.js';
 import { rolesRouter } from './modules/roles/roles.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
+import { complianceRouter } from './modules/compliance/compliance.routes.js';
 
 export function createApp() {
   const app = express();
@@ -37,6 +38,7 @@ export function createApp() {
   app.use('/api/import', importRouter);
   app.use('/api/roles', rolesRouter);
   app.use('/api/users', usersRouter);
+  app.use('/api/compliance', complianceRouter);
   app.use('/api', genericModuleRouter);
 
   app.use(errorHandler);

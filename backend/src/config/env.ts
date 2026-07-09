@@ -50,6 +50,7 @@ const envSchema = z.object({
   TEAMS_ENABLED: coerceBool(false),
   TEAMS_WEBHOOK_URL: z.string().optional(),
   EXCEL_MAX_FILE_SIZE_MB: z.coerce.number().default(20),
+  PDF_MAX_FILE_SIZE_MB: z.coerce.number().default(25),
   AUDIT_ENABLED: coerceBool(true)
 });
 

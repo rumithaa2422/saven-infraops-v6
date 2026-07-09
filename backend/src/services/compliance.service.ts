@@ -1,35 +1,62 @@
+/**
+ * Compliance Document Service
+ * 
+ * Handles PDF document storage and retrieval for compliance repository.
+ */
+
 import { prisma } from '../common/prisma.js';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-function withRef(prefix: string, count: number) {
-  return `${prefix}-${1001 + count}`;
-}
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'compliance');
 
-export interface CreateComplianceControlInput {
-  title: string;
-  controlArea: string;
-  ownerName: string;
-  frequency?: string;
-  riskRating?: string;
-  dueAt?: Date | string | null;
-  evidenceUrl?: string | null;
+export interface CreateDocumentInput {
+  fileName: string;
+  storedFileName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy?: string | null;
+  uploadedByEmail?: string | null;
   actorId?: string | null;
   actorEmail?: string | null;
   ipAddress?: string | null;
 }
 
-export async function createComplianceControl(data: CreateComplianceControlInput) {
-  const count = await prisma.complianceControl.count();
-  
-  const item = await prisma.complianceControl.create({
+export interface DocumentRecord {
+  id: string;
+  fileName: string;
+  storedFileName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy: string | null;
+  uploadedByEmail: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Ensure upload directory exists
+ */
+export async function ensureUploadDir(): Promise<void> {
+  try {
+    await fs.access(UPLOAD_DIR);
+  } catch {
+    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+  }
+}
+
+/**
+ * Create a compliance document record
+ */
+export async function createComplianceDocument(data: CreateDocumentInput): Promise<DocumentRecord> {
+  const item = await prisma.complianceDocument.create({
     data: {
-      controlNo: withRef('CMP', count),
-      title: data.title,
-      controlArea: data.controlArea,
-      ownerName: data.ownerName,
-      frequency: data.frequency || 'Quarterly',
-      riskRating: data.riskRating || 'MEDIUM',
-      dueAt: data.dueAt ? new Date(data.dueAt) : null,
-      evidenceUrl: data.evidenceUrl || null
+      fileName: data.fileName,
+      storedFileName: data.storedFileName,
+      mimeType: data.mimeType,
+      fileSize: data.fileSize,
+      uploadedBy: data.uploadedBy || null,
+      uploadedByEmail: data.uploadedByEmail || null
     }
   });
 
@@ -37,10 +64,10 @@ export async function createComplianceControl(data: CreateComplianceControlInput
     data: {
       actorId: data.actorId || null,
       actorEmail: data.actorEmail || null,
-      action: 'CREATE',
-      entityType: 'ComplianceControl',
+      action: 'UPLOAD',
+      entityType: 'ComplianceDocument',
       entityId: item.id,
-      newValue: item as any,
+      newValue: { fileName: item.fileName, fileSize: item.fileSize } as any,
       ipAddress: data.ipAddress || null
     }
   });
@@ -48,40 +75,72 @@ export async function createComplianceControl(data: CreateComplianceControlInput
   return item;
 }
 
-export async function updateComplianceControl(
+/**
+ * List all compliance documents
+ */
+export async function listComplianceDocuments(): Promise<DocumentRecord[]> {
+  return prisma.complianceDocument.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+}
+
+/**
+ * Get a single compliance document by ID
+ */
+export async function getComplianceDocument(id: string): Promise<DocumentRecord | null> {
+  return prisma.complianceDocument.findUnique({
+    where: { id }
+  });
+}
+
+/**
+ * Delete a compliance document and its file
+ */
+export async function deleteComplianceDocument(
   id: string,
-  data: Partial<CreateComplianceControlInput>
-) {
-  const existing = await prisma.complianceControl.findUnique({ where: { id } });
-  if (!existing) {
-    throw new Error('Compliance control not found');
+  actorId?: string | null,
+  actorEmail?: string | null,
+  ipAddress?: string | null
+): Promise<{ success: boolean; message: string }> {
+  const document = await prisma.complianceDocument.findUnique({
+    where: { id }
+  });
+
+  if (!document) {
+    throw new Error('Document not found');
   }
 
-  const item = await prisma.complianceControl.update({
-    where: { id },
-    data: {
-      title: data.title,
-      controlArea: data.controlArea,
-      ownerName: data.ownerName,
-      frequency: data.frequency,
-      riskRating: data.riskRating,
-      dueAt: data.dueAt !== undefined ? (data.dueAt ? new Date(data.dueAt) : null) : undefined,
-      evidenceUrl: data.evidenceUrl !== undefined ? (data.evidenceUrl || null) : undefined
-    }
+  // Delete the file from disk
+  const filePath = path.join(UPLOAD_DIR, document.storedFileName);
+  try {
+    await fs.unlink(filePath);
+  } catch (error) {
+    console.error(`Failed to delete file: ${filePath}`, error);
+  }
+
+  // Delete the database record
+  await prisma.complianceDocument.delete({
+    where: { id }
   });
 
   await prisma.auditLog.create({
     data: {
-      actorId: data.actorId || null,
-      actorEmail: data.actorEmail || null,
-      action: 'UPDATE',
-      entityType: 'ComplianceControl',
-      entityId: item.id,
-      oldValue: existing as any,
-      newValue: item as any,
-      ipAddress: data.ipAddress || null
+      actorId: actorId || null,
+      actorEmail: actorEmail || null,
+      action: 'DELETE',
+      entityType: 'ComplianceDocument',
+      entityId: id,
+      oldValue: { fileName: document.fileName } as any,
+      ipAddress: ipAddress || null
     }
   });
 
-  return item;
+  return { success: true, message: 'Document deleted successfully' };
+}
+
+/**
+ * Get the file path for a stored document
+ */
+export function getDocumentFilePath(storedFileName: string): string {
+  return path.join(UPLOAD_DIR, storedFileName);
 }

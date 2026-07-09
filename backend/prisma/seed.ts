@@ -325,18 +325,8 @@ async function main() {
     }
   });
 
-  await prisma.complianceControl.upsert({
-    where: { controlNo: 'CMP-1001' },
-    update: {},
-    create: {
-      controlNo: 'CMP-1001',
-      title: 'Quarterly user access review',
-      controlArea: 'Access Management',
-      ownerName: 'InfoSec Team',
-      frequency: 'Quarterly',
-      riskRating: 'HIGH'
-    }
-  });
+  // NOTE: Compliance module is now a document repository.
+  // No seed data needed - documents are uploaded by users.
 }
 
 main()

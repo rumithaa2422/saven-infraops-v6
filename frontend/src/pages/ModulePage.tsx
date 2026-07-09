@@ -33,8 +33,10 @@ type ModuleConfig = {
     write?: string;    // Edit/Manage actions
     export?: string;   // NEW: Export permission
     import?: string;   // NEW: Import permission
+    delete?: string;   // Delete permission
   };
   moduleType?: string; // Module type for import framework (e.g., 'incidents', 'users-teams')
+  isDocumentRepository?: boolean; // PDF document repository mode
 };
 
 const configs: Record<string, ModuleConfig> = {
@@ -165,29 +167,19 @@ const configs: Record<string, ModuleConfig> = {
     permissions: { create: 'access:request', write: 'access:approve', export: 'access:export' }
   },
   compliance: {
-    referenceKey: 'controlNo',
-    titleKey: 'title',
-    ownerKey: 'ownerName',
-    statusKey: 'status',
-    dateKey: 'dueAt',
-    fields: [
-      { key: 'title', label: 'Control Title', required: true },
-      { key: 'controlArea', label: 'Control Area', required: true },
-      { key: 'ownerName', label: 'Owner', required: true },
-      { key: 'frequency', label: 'Frequency', type: 'select', options: ['Monthly', 'Quarterly', 'Half-Yearly', 'Yearly'] },
-      { key: 'riskRating', label: 'Risk Rating', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] }
-    ],
+    referenceKey: 'id',
+    titleKey: 'fileName',
+    dateKey: 'createdAt',
+    fields: [], // No form fields needed for document repository
     columns: [
-      { key: 'controlNo', label: 'Control No' },
-      { key: 'title', label: 'Control Title' },
-      { key: 'controlArea', label: 'Control Area' },
-      { key: 'frequency', label: 'Frequency' },
-      { key: 'riskRating', label: 'Risk Rating' },
-      { key: 'ownerName', label: 'Owner' },
-      { key: 'status', label: 'Status' }
+      { key: 'fileName', label: 'File Name' },
+      { key: 'uploadedBy', label: 'Uploaded By' },
+      { key: 'createdAt', label: 'Uploaded Date' },
+      { key: 'fileSize', label: 'File Size' }
     ],
-    permissions: { create: 'compliance:create', write: 'compliance:manage', export: 'compliance:export', import: 'settings:write' },
-    moduleType: 'compliance'
+    permissions: { create: 'compliance:create', delete: 'compliance:manage' },
+    moduleType: 'compliance',
+    isDocumentRepository: true
   },
   'projects-environments': {
     referenceKey: 'projectName',
@@ -426,6 +418,18 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const importInputId = useId();
+
+  // PDF Document Upload State (for compliance document repository)
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfUploadError, setPdfUploadError] = useState<string | null>(null);
+  const [pdfUploadSuccess, setPdfUploadSuccess] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  // Document delete state
+  const [documentToDelete, setDocumentToDelete] = useState<RecordItem | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingDocument, setIsDeletingDocument] = useState(false);
 
   // Search state for users-teams module
   const [searchQuery, setSearchQuery] = useState('');
@@ -757,6 +761,104 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     }
   }
 
+  // ============================================================================
+  // PDF Document Repository Functions
+  // ============================================================================
+
+  function handlePdfFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      setPdfUploadError('Only PDF files are allowed');
+      setPdfFile(null);
+      return;
+    }
+
+    // Validate file size (25MB max)
+    const maxSize = 25 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setPdfUploadError('File size exceeds 25MB limit');
+      setPdfFile(null);
+      return;
+    }
+
+    setPdfFile(file);
+    setPdfUploadError(null);
+    setPdfUploadSuccess(false);
+  }
+
+  async function uploadPdfDocument() {
+    if (!pdfFile) return;
+
+    setIsUploadingPdf(true);
+    setPdfUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+
+      await api.post('/compliance/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setPdfUploadSuccess(true);
+      setPdfFile(null);
+      setMessage('PDF document uploaded successfully');
+      
+      // Refresh the document list
+      await load();
+
+      // Close the modal after a short delay
+      setTimeout(() => {
+        setCreateOpen(false);
+        setPdfUploadSuccess(false);
+      }, 1500);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setPdfUploadError(error.response?.data?.error || 'Failed to upload PDF document');
+    } finally {
+      setIsUploadingPdf(false);
+    }
+  }
+
+  function openDeleteDocumentDialog(item: RecordItem, event: React.MouseEvent) {
+    event.stopPropagation();
+    setDocumentToDelete(item);
+    setShowDeleteConfirm(true);
+  }
+
+  function closeDeleteDocumentDialog() {
+    setDocumentToDelete(null);
+    setShowDeleteConfirm(false);
+  }
+
+  async function confirmDeleteDocument() {
+    if (!documentToDelete?.id) return;
+
+    setIsDeletingDocument(true);
+    try {
+      await api.delete(`/compliance/${documentToDelete.id}`);
+      setMessage('Document deleted successfully');
+      closeDeleteDocumentDialog();
+      await load();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setMessage(error.response?.data?.error || 'Failed to delete document');
+    } finally {
+      setIsDeletingDocument(false);
+    }
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
   function exportCsv() {
     const header = config.columns.map((c) => c.label).join(',');
     const rows = items.map((item) => config.columns.map((c) => {
@@ -856,8 +958,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             </button>
           )}
           {config.permissions.create && hasPermission(config.permissions.create) && (
-            <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting}>
-              Create
+            <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf}>
+              {config.isDocumentRepository ? '📤 Upload' : 'Create'}
             </button>
           )}
         </div>
@@ -1117,96 +1219,223 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
 
       {message && <div className="notice">{message}</div>}
 
-      <section className="grid cards-3">
-        <StatCard label="Active" value={String(openCount)} hint="Current working queue" />
-        <StatCard label="Tracked" value={String(items.length)} hint="Loaded records" />
-        <StatCard label="Risk / Due" value={String(riskCount || dueCount)} hint="Needs review" />
-      </section>
+      {!config.isDocumentRepository && (
+        <section className="grid cards-3">
+          <StatCard label="Active" value={String(openCount)} hint="Current working queue" />
+          <StatCard label="Tracked" value={String(items.length)} hint="Loaded records" />
+          <StatCard label="Risk / Due" value={String(riskCount || dueCount)} hint="Needs review" />
+        </section>
+      )}
+
+      {/* Document Repository Stats */}
+      {config.isDocumentRepository && (
+        <section className="grid cards-3">
+          <StatCard label="Documents" value={String(items.length)} hint="Uploaded files" />
+        </section>
+      )}
 
       <div className="table-card">
         <table>
           <thead>
             <tr>
               {config.columns.map((column) => <th key={column.key}>{column.label}</th>)}
-              <th>Action</th>
+              {config.isDocumentRepository && <th>Actions</th>}
+              {!config.isDocumentRepository && <th>Action</th>}
             </tr>
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <tr key={String(item.id || index)} onClick={() => setSelected(item)}>
+              <tr key={String(item.id || index)} onClick={() => !config.isDocumentRepository && setSelected(item)}>
                 {config.columns.map((column) => {
                   // Special handling for role column in users-teams
                   if (moduleKey === 'users-teams' && column.key === 'role') {
                     return <td key={column.key}>{formatUserRoles((item as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles)}</td>;
                   }
+                  // Special handling for fileSize in document repository
+                  if (config.isDocumentRepository && column.key === 'fileSize') {
+                    return <td key={column.key}>{formatFileSize(item[column.key] as number)}</td>;
+                  }
                   return <td key={column.key}>{formatValue(item[column.key])}</td>;
                 })}
-                <td>
-                  <div className="action-buttons">
-                    {hasPermission((config.permissions.view || config.permissions.create) || '') && <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>}
-                    {moduleKey === 'users-teams' && hasPermission('users:delete') && (
-                      <button 
-                        className="btn-delete" 
-                        onClick={(event) => openDeleteDialog(item, event)}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </td>
+                {config.isDocumentRepository ? (
+                  /* Document Repository Actions */
+                  <td>
+                    <div className="action-buttons">
+                      {hasPermission(config.permissions.delete || '') && (
+                        <button 
+                          className="btn-delete" 
+                          onClick={(event) => openDeleteDocumentDialog(item, event)}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                ) : (
+                  /* Regular Module Actions */
+                  <td>
+                    <div className="action-buttons">
+                      {hasPermission((config.permissions.view || config.permissions.create) || '') && <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>}
+                      {moduleKey === 'users-teams' && hasPermission('users:delete') && (
+                        <button 
+                          className="btn-delete" 
+                          onClick={(event) => openDeleteDialog(item, event)}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
             {!items.length && (
-              <tr><td colSpan={config.columns.length + 1}>{loading ? 'Loading records...' : 'No records found.'}</td></tr>
+              <tr><td colSpan={config.columns.length + 1}>{loading ? 'Loading records...' : config.isDocumentRepository ? 'No documents uploaded yet. Click Upload to add your first document.' : 'No records found.'}</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
+      {/* Create/Upload Modal - Different for document repository */}
       {createOpen && (
         <div className="modal-backdrop">
-          <form className="modal" onSubmit={createRecord}>
-            <div className="page-title-row">
-              <h3>Create {title}</h3>
-              <button type="button" className="close" onClick={() => setCreateOpen(false)}>Close</button>
+          {config.isDocumentRepository ? (
+            /* PDF Document Upload Modal */
+            <div className="modal">
+              <div className="page-title-row">
+                <h3>Upload Compliance Document</h3>
+                <button type="button" className="close" onClick={() => { setCreateOpen(false); setPdfFile(null); setPdfUploadError(null); }}>Close</button>
+              </div>
+              
+              <div className="pdf-upload-area">
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handlePdfFileSelect}
+                  style={{ display: 'none' }}
+                />
+                
+                <div className="pdf-drop-zone" onClick={() => pdfInputRef.current?.click()}>
+                  {pdfFile ? (
+                    <div className="pdf-selected">
+                      <span className="pdf-icon">📄</span>
+                      <span className="pdf-name">{pdfFile.name}</span>
+                      <span className="pdf-size">{formatFileSize(pdfFile.size)}</span>
+                    </div>
+                  ) : (
+                    <div className="pdf-placeholder">
+                      <span className="upload-icon">📤</span>
+                      <p>Click to select a PDF file</p>
+                      <span className="pdf-hint">PDF files only, max 25MB</span>
+                    </div>
+                  )}
+                </div>
+
+                {pdfUploadError && (
+                  <div className="notice error">{pdfUploadError}</div>
+                )}
+
+                {pdfUploadSuccess && (
+                  <div className="notice success">✅ Document uploaded successfully!</div>
+                )}
+
+                <div className="pdf-upload-actions">
+                  <button 
+                    type="button" 
+                    className="secondary" 
+                    onClick={() => { setCreateOpen(false); setPdfFile(null); setPdfUploadError(null); }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="button" 
+                    className="primary" 
+                    onClick={uploadPdfDocument}
+                    disabled={!pdfFile || isUploadingPdf}
+                  >
+                    {isUploadingPdf ? 'Uploading...' : 'Upload Document'}
+                  </button>
+                </div>
+              </div>
             </div>
-            {config.fields.map((field) => {
-              // Special handling for roleId in users-teams
-              if (field.key === 'roleId' && moduleKey === 'users-teams') {
+          ) : (
+            /* Regular Create Form Modal */
+            <form className="modal" onSubmit={createRecord}>
+              <div className="page-title-row">
+                <h3>Create {title}</h3>
+                <button type="button" className="close" onClick={() => setCreateOpen(false)}>Close</button>
+              </div>
+              {config.fields.map((field) => {
+                // Special handling for roleId in users-teams
+                if (field.key === 'roleId' && moduleKey === 'users-teams') {
+                  return (
+                    <label key={field.key}>
+                      {field.label}{field.required ? ' *' : ''}
+                      <select 
+                        value={form[field.key] || ''} 
+                        onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} 
+                        required={field.required}
+                      >
+                        <option value="">Select Role</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>{role.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                }
+                
                 return (
                   <label key={field.key}>
                     {field.label}{field.required ? ' *' : ''}
-                    <select 
-                      value={form[field.key] || ''} 
-                      onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} 
-                      required={field.required}
-                    >
-                      <option value="">Select Role</option>
-                      {roles.map((role) => (
-                        <option key={role.id} value={role.id}>{role.name}</option>
-                      ))}
-                    </select>
+                    {field.type === 'textarea' ? (
+                      <textarea value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
+                    ) : field.type === 'select' ? (
+                      <select value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required}>
+                        {(field.options || []).map((option) => <option key={option}>{option}</option>)}
+                      </select>
+                    ) : (
+                      <input type={field.type || 'text'} value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
+                    )}
                   </label>
                 );
-              }
-              
-              return (
-                <label key={field.key}>
-                  {field.label}{field.required ? ' *' : ''}
-                  {field.type === 'textarea' ? (
-                    <textarea value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
-                  ) : field.type === 'select' ? (
-                    <select value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required}>
-                      {(field.options || []).map((option) => <option key={option}>{option}</option>)}
-                    </select>
-                  ) : (
-                    <input type={field.type || 'text'} value={form[field.key] || ''} onChange={(e) => setForm({ ...form, [field.key]: e.target.value })} required={field.required} />
-                  )}
-                </label>
-              );
-            })}
-            <button className="primary" type="submit">Save</button>
-          </form>
+              })}
+              <button className="primary" type="submit">Save</button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* Document Delete Confirmation Modal */}
+      {showDeleteConfirm && documentToDelete && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="page-title-row">
+              <h3>Delete Document</h3>
+              <button type="button" className="close" onClick={closeDeleteDocumentDialog}>Close</button>
+            </div>
+            
+            <div className="warning-box">
+              <p><strong>Warning:</strong> This action cannot be undone.</p>
+              <p>You are about to delete: <strong>{String(documentToDelete.fileName)}</strong></p>
+              <p>This will permanently remove the document from the repository.</p>
+            </div>
+            
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={closeDeleteDocumentDialog}>
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="danger" 
+                onClick={confirmDeleteDocument}
+                disabled={isDeletingDocument}
+              >
+                {isDeletingDocument ? 'Deleting...' : 'Delete Document'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

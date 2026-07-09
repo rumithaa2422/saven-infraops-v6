@@ -215,19 +215,16 @@ model AccessRequest {
   updatedAt     DateTime     @updatedAt
 }
 
-model ComplianceControl {
-  id          String     @id @default(cuid())
-  controlNo   String     @unique
-  title       String
-  controlArea String
-  ownerName   String
-  frequency   String
-  dueAt       DateTime?
-  status      WorkStatus @default(OPEN)
-  evidenceUrl String?
-  riskRating  String     @default("MEDIUM")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+model ComplianceDocument {
+  id              String   @id @default(cuid())
+  fileName        String
+  storedFileName  String   @unique
+  mimeType        String
+  fileSize        Int
+  uploadedBy      String?
+  uploadedByEmail String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model ProjectEnvironment {

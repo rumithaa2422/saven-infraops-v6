@@ -14,8 +14,6 @@ import {
   updateAsset,
   createAccessRequest,
   updateAccessRequest,
-  createComplianceControl,
-  updateComplianceControl,
   createProjectEnvironment,
   updateProjectEnvironment,
   createVendorLicense,
@@ -108,18 +106,7 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createAccessRequest({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateAccessRequest(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
-  compliance: {
-    permission: 'compliance:read',
-    writePermission: 'compliance:write',
-    viewPermission: 'compliance:view',
-    createPermission: 'compliance:create',
-    managePermission: 'compliance:manage',
-    exportPermission: 'compliance:export',
-    entityType: 'ComplianceControl',
-    list: () => prisma.complianceControl.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-    create: async (payload, actor, ip) => createComplianceControl({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
-    update: async (id, payload, actor, ip) => updateComplianceControl(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
-  },
+  // NOTE: 'compliance' module uses dedicated routes at /api/compliance for PDF document management
   'projects-environments': {
     permission: 'dashboard:read',
     writePermission: 'settings:write',

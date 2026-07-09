@@ -6,7 +6,8 @@ import { registerIncidentsImport } from '../../services/importIncidents/index.js
 import { registerProblemsImport } from '../../services/importProblems/index.js';
 import { registerChangesImport } from '../../services/importChanges/index.js';
 import { registerInventoryImport } from '../../services/importInventory/index.js';
-import { registerComplianceImport } from '../../services/importCompliance/index.js';
+// NOTE: Compliance is now a document repository - no CSV import support
+// import { registerComplianceImport } from '../../services/importCompliance/index.js';
 import { registerProjectsImport } from '../../services/importProjects/index.js';
 import { registerVendorsImport } from '../../services/importVendors/index.js';
 import { registerKnowledgeBaseImport } from '../../services/importKnowledgeBase/index.js';
@@ -23,7 +24,8 @@ registerIncidentsImport();
 registerProblemsImport();
 registerChangesImport();
 registerInventoryImport();
-registerComplianceImport();
+// Compliance is now a document repository - PDF uploads only
+// registerComplianceImport();
 registerProjectsImport();
 registerVendorsImport();
 registerKnowledgeBaseImport();

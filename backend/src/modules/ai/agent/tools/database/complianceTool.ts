@@ -1,53 +1,31 @@
 /**
  * Compliance Tool
  * 
- * Provides query capabilities for Compliance Controls.
+ * Provides query capabilities for Compliance Documents.
  * Implements the Tool interface for database operations.
+ * Compliance is now a PDF document repository.
  */
 
 import { Tool, ToolContext, ToolResult, AiCard } from '../../types.js';
 
 /**
- * Tool definition for Compliance Controls
+ * Tool definition for Compliance Documents
  */
 export const complianceTool: Tool = {
   name: 'query_compliance',
-  description: 'Query compliance controls, audits, and regulatory items. Use when user asks about compliance, audits, controls, or regulatory requirements.',
+  description: 'Query compliance documents repository. Use when user asks about compliance documents, uploaded PDFs, or the document library.',
   category: 'database',
   requiredPermissions: ['compliance:view'],
   parameters: {
     type: 'object',
     properties: {
-      status: {
-        type: 'array',
-        description: 'Filter by compliance status. Options: OPEN, ASSIGNED, IN_PROGRESS, WAITING_FOR_USER, WAITING_FOR_VENDOR, PENDING_APPROVAL, RESOLVED, CLOSED, REOPENED',
-        items: { type: 'string' }
-      },
-      riskRating: {
-        type: 'array',
-        description: 'Filter by risk rating. Options: LOW, MEDIUM, HIGH, CRITICAL',
-        items: { type: 'string' }
-      },
-      controlArea: {
+      uploadedBy: {
         type: 'string',
-        description: 'Filter by control area (partial match)'
+        description: 'Filter by uploader name (partial match)'
       },
-      ownerName: {
+      fileName: {
         type: 'string',
-        description: 'Filter by owner name (partial match)'
-      },
-      dueWithinDays: {
-        type: 'number',
-        description: 'Filter controls due within N days'
-      },
-      overdue: {
-        type: 'boolean',
-        description: 'Filter only overdue controls',
-        default: false
-      },
-      hasEvidence: {
-        type: 'boolean',
-        description: 'Filter controls with evidence uploaded'
+        description: 'Filter by file name (partial match)'
       },
       limit: {
         type: 'number',
@@ -59,16 +37,6 @@ export const complianceTool: Tool = {
         type: 'number',
         description: 'Number of results to skip',
         default: 0
-      },
-      orderBy: {
-        type: 'string',
-        description: 'Sort order. Options: createdAt, dueAt, riskRating',
-        default: 'createdAt'
-      },
-      orderDirection: {
-        type: 'string',
-        description: 'Sort direction. Options: asc, desc',
-        default: 'desc'
       }
     },
     required: []
@@ -82,47 +50,13 @@ export const complianceTool: Tool = {
       // Build where clause
       const where: Record<string, unknown> = {};
       
-      if (params.status && Array.isArray(params.status) && params.status.length > 0) {
-        where.status = { in: params.status };
+      if (params.uploadedBy && typeof params.uploadedBy === 'string') {
+        where.uploadedBy = { contains: params.uploadedBy };
       }
       
-      if (params.riskRating && Array.isArray(params.riskRating) && params.riskRating.length > 0) {
-        where.riskRating = { in: params.riskRating };
+      if (params.fileName && typeof params.fileName === 'string') {
+        where.fileName = { contains: params.fileName };
       }
-      
-      if (params.controlArea && typeof params.controlArea === 'string') {
-        where.controlArea = { contains: params.controlArea };
-      }
-      
-      if (params.ownerName && typeof params.ownerName === 'string') {
-        where.ownerName = { contains: params.ownerName };
-      }
-      
-      // Due date filters
-      if (params.overdue === true) {
-        where.dueAt = { lt: new Date() };
-        // Exclude closed/resolved from overdue
-        if (!params.status) {
-          where.status = { notIn: ['CLOSED', 'RESOLVED'] };
-        }
-      } else if (params.dueWithinDays && typeof params.dueWithinDays === 'number') {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + (params.dueWithinDays as number));
-        where.dueAt = {
-          gte: new Date(),
-          lte: futureDate
-        };
-      }
-      
-      // Evidence filter
-      if (params.hasEvidence === true) {
-        where.evidenceUrl = { not: null };
-      }
-      
-      // Build orderBy
-      const orderByField = (params.orderBy as string) || 'createdAt';
-      const orderDirection = (params.orderDirection as 'desc' | 'asc') || 'desc';
-      const orderBy = { [orderByField]: orderDirection };
       
       // Pagination
       const limit = Math.min(Number(params.limit) || 20, 100);
@@ -130,31 +64,25 @@ export const complianceTool: Tool = {
       
       // Execute queries in parallel
       const [records, totalCount] = await Promise.all([
-        prisma.complianceControl.findMany({
+        prisma.complianceDocument.findMany({
           where: where as any,
-          orderBy,
+          orderBy: { createdAt: 'desc' },
           take: limit,
           skip: offset > 0 ? offset : undefined,
         }),
-        prisma.complianceControl.count({ where: where as any })
+        prisma.complianceDocument.count({ where: where as any })
       ]);
       
       // Convert to cards
       const cards: AiCard[] = records.map((item) => ({
-        title: item.controlNo,
-        value: item.riskRating,
-        description: item.title,
+        title: item.fileName,
+        value: `${(item.fileSize / 1024).toFixed(1)} KB`,
+        description: `Uploaded by ${item.uploadedBy || 'Unknown'}`,
         href: '/compliance'
       }));
       
       // Build summary
-      let answer = `Found ${totalCount} compliance control${totalCount !== 1 ? 's' : ''}`;
-      if (totalCount > limit) {
-        answer += ` (showing ${records.length})`;
-      }
-      if (params.overdue === true) {
-        answer += ' that are overdue.';
-      }
+      const answer = `Found ${totalCount} compliance document${totalCount !== 1 ? 's' : ''}`;
       
       return {
         success: true,
@@ -170,7 +98,7 @@ export const complianceTool: Tool = {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to query compliance controls',
+        error: error instanceof Error ? error.message : 'Failed to query compliance documents',
         metadata: {
           executionTimeMs: Date.now() - startTime,
           toolName: 'query_compliance'
