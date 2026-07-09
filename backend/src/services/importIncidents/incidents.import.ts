@@ -30,7 +30,7 @@ const VALID_SEVERITIES = ['SEV1', 'SEV2', 'SEV3', 'SEV4'];
 class IncidentsImportValidator extends BaseImportValidator {
   getColumnMappings(): ColumnMapping {
     return {
-      title: ['title', 'subject', 'summary', 'name'],
+      title: ['title', 'subject', 'summary'],
       severity: ['severity', 'priority', 'urgency', 'impact'],
       impactedService: ['impacted service', 'impacted_service', 'service', 'affected service'],
       impactedProject: ['impacted project', 'impacted_project', 'project', 'affected project'],

@@ -26,7 +26,7 @@ import { createProblem } from '../problem.service.js';
 class ProblemsImportValidator extends BaseImportValidator {
   getColumnMappings(): ColumnMapping {
     return {
-      title: ['title', 'subject', 'summary', 'name', 'problem title'],
+      title: ['title', 'subject', 'summary', 'problem title'],
       ownerName: ['owner', 'owner name', 'owner_name', 'assigned to', 'assignee', 'responsible'],
       description: ['description', 'details', 'notes', 'body', 'problem description'],
       rootCause: ['root cause', 'root_cause', 'cause', 'reason']

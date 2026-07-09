@@ -27,7 +27,7 @@ const VALID_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED', 'REVIEW'];
 class KnowledgeBaseImportValidator extends BaseImportValidator {
   getColumnMappings(): ColumnMapping {
     return {
-      title: ['title', 'subject', 'name', 'article title', 'article name', 'topic'],
+      title: ['title', 'subject', 'article title', 'article name', 'topic'],
       category: ['category', 'type', 'kind', 'section', 'folder', 'group'],
       body: ['body', 'content', 'description', 'details', 'text', 'article body'],
       status: ['status', 'state', 'stage'],

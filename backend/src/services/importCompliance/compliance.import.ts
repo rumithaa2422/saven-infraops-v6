@@ -31,7 +31,7 @@ const VALID_FREQUENCIES = ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Semi-Annu
 class ComplianceImportValidator extends BaseImportValidator {
   getColumnMappings(): ColumnMapping {
     return {
-      title: ['title', 'subject', 'name', 'control title', 'control name'],
+      title: ['title', 'subject', 'control title', 'control name'],
       controlArea: ['control area', 'control_area', 'area', 'domain', 'category', 'framework'],
       ownerName: ['owner', 'owner name', 'owner_name', 'responsible', 'control owner'],
       frequency: ['frequency', 'review frequency', 'assessment frequency'],

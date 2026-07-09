@@ -28,7 +28,7 @@ const VALID_RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 class ChangesImportValidator extends BaseImportValidator {
   getColumnMappings(): ColumnMapping {
     return {
-      title: ['title', 'subject', 'summary', 'name', 'change title'],
+      title: ['title', 'subject', 'summary', 'change title'],
       riskLevel: ['risk level', 'risk_level', 'risk', 'priority'],
       ownerName: ['owner', 'owner name', 'owner_name', 'assigned to', 'assignee', 'responsible'],
       rollbackPlan: ['rollback plan', 'rollback_plan', 'rollback', 'backout plan'],
