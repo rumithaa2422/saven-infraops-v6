@@ -22,10 +22,9 @@ import {
   isPreviewData,
   ALLOWED_MIME_TYPES,
   ALLOWED_EXTENSIONS,
-  DEFAULT_PREVIEW_LIMIT,
-  validateFileType,
-  normalizeValue
+  DEFAULT_PREVIEW_LIMIT
 } from './importFramework.parser.js';
+import { TemplateValidationResult } from './importFramework.validator.js';
 import { env } from '../../config/env.js';
 
 // ============================================================================
@@ -174,9 +173,10 @@ export class ImportFramework {
    */
   static async validate(req: Request, res: Response): Promise<void> {
     try {
-      const { moduleType, data } = req.body as {
+      const { moduleType, data, columns } = req.body as {
         moduleType: string;
         data: Record<string, unknown>[];
+        columns?: string[];
       };
 
       if (!moduleType) {
@@ -200,6 +200,32 @@ export class ImportFramework {
         return;
       }
 
+      // BUG 1 FIX: Validate the template BEFORE validating rows
+      // Get columns from first row if not provided
+      const fileColumns = columns || (data.length > 0 ? Object.keys(data[0]) : []);
+      
+      // Check if this is a BaseImportValidator with validateTemplate method
+      if ('validateTemplate' in validator && typeof validator.validateTemplate === 'function') {
+        const templateResult = (validator as any).validateTemplate(fileColumns);
+        
+        if (!templateResult.valid) {
+          res.json({
+            success: false,
+            totalRows: data.length,
+            validRows: 0,
+            invalidRows: data.length,
+            templateValidation: templateResult,
+            summary: {
+              allValid: false,
+              message: templateResult.message
+            },
+            rows: [],
+            errorsByRow: {}
+          });
+          return;
+        }
+      }
+
       // Build validation context
       const context = await buildValidationContext(moduleType);
 
@@ -219,9 +245,10 @@ export class ImportFramework {
    */
   static async execute(req: Request, res: Response): Promise<void> {
     try {
-      const { moduleType, data } = req.body as {
+      const { moduleType, data, columns } = req.body as {
         moduleType: string;
         data: Record<string, unknown>[];
+        columns?: string[];
       };
 
       if (!moduleType) {
@@ -247,7 +274,22 @@ export class ImportFramework {
         return;
       }
 
-      // First validate
+      // BUG 1 FIX: Validate the template BEFORE validating rows
+      const fileColumns = columns || (data.length > 0 ? Object.keys(data[0]) : []);
+      
+      if ('validateTemplate' in validator && typeof validator.validateTemplate === 'function') {
+        const templateResult = (validator as any).validateTemplate(fileColumns);
+        
+        if (!templateResult.valid) {
+          res.status(400).json({
+            error: templateResult.message,
+            templateValidation: templateResult
+          });
+          return;
+        }
+      }
+
+      // Validate all rows
       const context = await buildValidationContext(moduleType);
       const validationResult = validator.validateAll(data, context);
 

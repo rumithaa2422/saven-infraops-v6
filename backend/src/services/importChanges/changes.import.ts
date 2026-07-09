@@ -45,6 +45,10 @@ class ChangesImportValidator extends BaseImportValidator {
     return 'change';
   }
 
+  protected getModuleDisplayName(): string {
+    return 'Changes';
+  }
+
   protected validateRowData(
     row: Record<string, unknown>,
     rowNumber: number,

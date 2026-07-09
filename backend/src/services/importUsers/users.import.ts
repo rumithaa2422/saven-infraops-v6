@@ -76,6 +76,13 @@ class UsersImportValidator extends BaseImportValidator {
   }
 
   /**
+   * Module display name for error messages
+   */
+  protected getModuleDisplayName(): string {
+    return 'Users & Teams';
+  }
+
+  /**
    * Build validation context with database lookups
    */
   async buildContext(): Promise<ValidationContext> {

@@ -43,6 +43,10 @@ class KnowledgeBaseImportValidator extends BaseImportValidator {
     return 'knowledge base article';
   }
 
+  protected getModuleDisplayName(): string {
+    return 'Knowledge Base';
+  }
+
   protected validateRowData(
     row: Record<string, unknown>,
     rowNumber: number,

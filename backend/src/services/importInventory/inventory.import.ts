@@ -41,6 +41,10 @@ class InventoryImportValidator extends BaseImportValidator {
     return 'asset';
   }
 
+  protected getModuleDisplayName(): string {
+    return 'Inventory';
+  }
+
   protected validateRowData(
     _row: Record<string, unknown>,
     _rowNumber: number,

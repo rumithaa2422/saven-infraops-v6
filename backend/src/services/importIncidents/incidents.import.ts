@@ -47,6 +47,10 @@ class IncidentsImportValidator extends BaseImportValidator {
     return 'incident';
   }
 
+  protected getModuleDisplayName(): string {
+    return 'Incidents';
+  }
+
   protected validateRowData(
     row: Record<string, unknown>,
     rowNumber: number,

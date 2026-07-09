@@ -49,6 +49,10 @@ class ComplianceImportValidator extends BaseImportValidator {
     return 'compliance control';
   }
 
+  protected getModuleDisplayName(): string {
+    return 'Compliance';
+  }
+
   protected validateRowData(
     row: Record<string, unknown>,
     rowNumber: number,

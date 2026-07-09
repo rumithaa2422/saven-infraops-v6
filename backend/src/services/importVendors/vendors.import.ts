@@ -42,6 +42,10 @@ class VendorsImportValidator extends BaseImportValidator {
     return 'vendor license';
   }
 
+  protected getModuleDisplayName(): string {
+    return 'Vendors';
+  }
+
   protected validateRowData(
     _row: Record<string, unknown>,
     _rowNumber: number,

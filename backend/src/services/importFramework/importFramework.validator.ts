@@ -16,9 +16,18 @@ import {
 import { 
   findColumn, 
   normalizeValue, 
-  isEmptyRow, 
-  DEFAULT_PREVIEW_LIMIT 
+  isEmptyRow 
 } from './importFramework.parser.js';
+
+/**
+ * Result of template validation
+ */
+export interface TemplateValidationResult {
+  valid: boolean;
+  matchedColumns: string[];
+  missingRequired: string[];
+  message: string;
+}
 
 /**
  * Base validator class with common validation logic
@@ -53,12 +62,65 @@ export abstract class BaseImportValidator implements IImportValidator {
     rowNumber: number,
     columnMap: Record<string, string | undefined>
   ): ImportInput;
-
+	
   /**
    * Get the entity name for messages (e.g., "user", "incident")
    */
   protected getEntityName(): string {
     return 'record';
+  }
+
+  /**
+   * Get the module display name for error messages
+   */
+  protected abstract getModuleDisplayName(): string;
+
+  /**
+   * Validate that the uploaded file matches this module's expected template
+   * Returns detailed validation result
+   */
+  validateTemplate(columns: string[]): TemplateValidationResult {
+    const mappings = this.getColumnMappings();
+    const requiredFields = this.getRequiredFields();
+    const matchedColumns: string[] = [];
+    const missingRequired: string[] = [];
+
+    // Find which required fields have matching columns
+    for (const field of requiredFields) {
+      const variations = mappings[field] || [field];
+      const lowerColumns = columns.map(c => c.toLowerCase().trim());
+      
+      let found = false;
+      for (const variation of variations) {
+        const index = lowerColumns.indexOf(variation.toLowerCase());
+        if (index !== -1) {
+          matchedColumns.push(columns[index]);
+          found = true;
+          break;
+        }
+      }
+      
+      if (!found) {
+        missingRequired.push(field);
+      }
+    }
+
+    const isValid = missingRequired.length === 0;
+    const moduleName = this.getModuleDisplayName();
+
+    let message: string;
+    if (isValid) {
+      message = `Template matches ${moduleName} import format.`;
+    } else {
+      message = `This file does not match the ${moduleName} import template. Missing required columns: ${missingRequired.join(', ')}`;
+    }
+
+    return {
+      valid: isValid,
+      matchedColumns,
+      missingRequired,
+      message
+    };
   }
 
   /**

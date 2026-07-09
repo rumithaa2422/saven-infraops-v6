@@ -480,7 +480,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         // Phase 4: Trigger validation automatically
         const importModuleType = config.moduleType || moduleKey;
         if (response.data.parsed.totalRows > 0) {
-          await validateImportData(response.data.parsed.data, importModuleType);
+          await validateImportData(response.data.parsed.data, importModuleType, response.data.parsed.columns);
         } else {
           setMessage(`File uploaded successfully. No data rows found.`);
         }
@@ -497,14 +497,16 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   }
 
   // Validate import data
-  async function validateImportData(data: Record<string, unknown>[], moduleType: string) {
+  async function validateImportData(data: Record<string, unknown>[], moduleType: string, columns: string[]) {
     setIsValidating(true);
     setExecuteResult(null);
+    setValidationResult(null);
 
     try {
       const response = await api.post('/import/validate', {
         moduleType,
-        data
+        data,
+        columns // BUG 2 FIX: Pass columns for template validation
       });
 
       setValidationResult(response.data);
@@ -512,19 +514,25 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       if (response.data.success) {
         setMessage(`All ${response.data.validRows} row(s) are valid and ready for import.`);
       } else {
-        setMessage(`Found ${response.data.invalidRows} row(s) with errors. Please fix them before importing.`);
+        // Check if it's a template validation error
+        if (response.data.templateValidation) {
+          setMessage(response.data.templateValidation.message);
+        } else {
+          setMessage(`Found ${response.data.invalidRows} row(s) with errors. Please fix them before importing.`);
+        }
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
       const errorMessage = error.response?.data?.error || 'Failed to validate data.';
       setImportError(errorMessage);
+      setValidationResult(null);
     } finally {
       setIsValidating(false);
     }
   }
 
   // Execute import (Phase 5)
-  async function executeImport(data: Record<string, unknown>[], moduleType: string) {
+  async function executeImport(data: Record<string, unknown>[], moduleType: string, columns: string[]) {
     if (!validationResult?.success) {
       setImportError('Cannot import: Some rows have validation errors.');
       return;
@@ -536,14 +544,15 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     try {
       const response = await api.post('/import/execute', {
         moduleType,
-        data
+        data,
+        columns // BUG 2 FIX: Pass columns for template validation
       });
 
       setExecuteResult(response.data);
       
       if (response.data.success) {
-        setMessage(`Import completed: ${response.data.imported} user(s) imported successfully.`);
-        // Refresh the user list
+        setMessage(`Import completed: ${response.data.imported} record(s) imported successfully.`);
+        // Refresh the data
         await load();
       } else {
         setMessage(`Import completed with errors: ${response.data.imported} imported, ${response.data.failed} failed.`);
@@ -774,7 +783,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             <div className="import-actions">
               <button 
                 className="primary" 
-                onClick={() => parsedData && executeImport(parsedData.data, config.moduleType || moduleKey)}
+                onClick={() => parsedData && executeImport(parsedData.data, config.moduleType || moduleKey, parsedData.columns)}
                 disabled={isExecuting}
               >
                 {isExecuting ? '⏳ Importing...' : '📥 Import to System'}
