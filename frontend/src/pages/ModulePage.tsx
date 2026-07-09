@@ -362,9 +362,20 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  // Import state (Phase 2 - file upload)
+  // Import state (Phase 3 - parse to JSON)
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [importResult, setImportResult] = useState<{ name: string; size: number; mimeType: string } | null>(null);
+  const [importResult, setImportResult] = useState<{
+    name: string;
+    size: number;
+    mimeType: string;
+  } | null>(null);
+  const [parsedData, setParsedData] = useState<{
+    totalRows: number;
+    columns: string[];
+    sheetName?: string;
+    isPreview: boolean;
+    data: Record<string, unknown>[];
+  } | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -431,13 +442,15 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           size: response.data.file.size,
           mimeType: response.data.file.mimeType
         });
-        setMessage('File uploaded successfully. Preview and import features coming in next phase.');
+        setParsedData(response.data.parsed);
+        setMessage(`File uploaded successfully. Found ${response.data.parsed.totalRows} rows with ${response.data.parsed.columns.length} columns.`);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
       const errorMessage = error.response?.data?.error || 'Failed to upload file. Please try again.';
       setImportError(errorMessage);
       setImportFile(null);
+      setParsedData(null);
     } finally {
       setIsImporting(false);
     }
@@ -447,6 +460,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   function handleClearImport() {
     setImportFile(null);
     setImportResult(null);
+    setParsedData(null);
     setImportError(null);
   }
 
@@ -632,6 +646,40 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         <div className="import-success">
           <span>✅ Uploaded: {importResult.name}</span>
           <span className="import-meta">({(importResult.size / 1024).toFixed(1)} KB, {importResult.mimeType})</span>
+        </div>
+      )}
+
+      {/* Show parsed data preview */}
+      {parsedData && !isImporting && (
+        <div className="import-preview">
+          <div className="import-preview-header">
+            <h4>📊 Data Preview</h4>
+            <span className="import-preview-info">
+              {parsedData.totalRows} rows {parsedData.isPreview && '(showing first 10)'}
+            </span>
+          </div>
+          <div className="import-preview-table-container">
+            <table className="import-preview-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  {parsedData.columns.map((col) => (
+                    <th key={col}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {parsedData.data.map((row, index) => (
+                  <tr key={index}>
+                    <td>{index + 1}</td>
+                    {parsedData.columns.map((col) => (
+                      <td key={col}>{String(row[col] ?? '')}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

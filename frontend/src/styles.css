@@ -1508,3 +1508,77 @@ button.danger:disabled {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* Import Data Preview */
+.import-preview {
+  margin-top: 12px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.import-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--panel-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.import-preview-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.import-preview-info {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.import-preview-table-container {
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.import-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.import-preview-table th {
+  position: sticky;
+  top: 0;
+  background: white;
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.import-preview-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-preview-table tr:hover td {
+  background: #f8faff;
+}
+
+.import-preview-table td:first-child {
+  color: var(--muted);
+  font-size: 12px;
+  width: 40px;
+  text-align: center;
+}
