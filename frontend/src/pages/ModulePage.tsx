@@ -362,8 +362,11 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  // Import state (Phase 1 - file selection only, no upload)
+  // Import state (Phase 2 - file upload)
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<{ name: string; size: number; mimeType: string } | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const importInputId = useId();
 
@@ -396,16 +399,55 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   // Handle file selection from file picker
   function handleImportChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
+    
+    if (!file) return;
+
     setImportFile(file);
-    // Reset the input so the same file can be selected again if needed
-    if (importInputRef.current) {
-      importInputRef.current.value = '';
+    setImportError(null);
+    setImportResult(null);
+
+    // Phase 2: Upload the file immediately
+    uploadImportFile(file);
+  }
+
+  // Upload import file to backend
+  async function uploadImportFile(file: File) {
+    setIsImporting(true);
+    setImportError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post('/import/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.data.success) {
+        setImportResult({
+          name: response.data.file.name,
+          size: response.data.file.size,
+          mimeType: response.data.file.mimeType
+        });
+        setMessage('File uploaded successfully. Preview and import features coming in next phase.');
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      const errorMessage = error.response?.data?.error || 'Failed to upload file. Please try again.';
+      setImportError(errorMessage);
+      setImportFile(null);
+    } finally {
+      setIsImporting(false);
     }
   }
 
   // Clear import file selection
   function handleClearImport() {
     setImportFile(null);
+    setImportResult(null);
+    setImportError(null);
   }
 
   // Fetch roles for users-teams module
@@ -574,9 +616,28 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       {/* Show selected file name */}
       {importFile && (
         <div className="import-file-info">
-          <span className="import-file-name">📄 {importFile.name}</span>
-          <button className="import-clear-btn" onClick={handleClearImport}>×</button>
+          {isImporting ? (
+            <span className="import-file-name">⏳ Uploading {importFile.name}...</span>
+          ) : (
+            <>
+              <span className="import-file-name">📄 {importFile.name}</span>
+              <button className="import-clear-btn" onClick={handleClearImport}>×</button>
+            </>
+          )}
         </div>
+      )}
+
+      {/* Show upload success result */}
+      {importResult && !isImporting && (
+        <div className="import-success">
+          <span>✅ Uploaded: {importResult.name}</span>
+          <span className="import-meta">({(importResult.size / 1024).toFixed(1)} KB, {importResult.mimeType})</span>
+        </div>
+      )}
+
+      {/* Show upload error */}
+      {importError && (
+        <div className="notice error">{importError}</div>
       )}
 
       {message && <div className="notice">{message}</div>}
