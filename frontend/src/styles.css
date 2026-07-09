@@ -1847,3 +1847,171 @@ button.danger:disabled {
 .failure-item strong {
   color: var(--danger);
 }
+
+/* ============================================================================
+   PHASE 8 - ENHANCED IMPORT UX IMPROVEMENTS
+   ============================================================================ */
+
+/* Template mismatch error box */
+.template-error {
+  padding: 12px;
+  background: #fde8e8;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.template-error strong {
+  color: var(--danger);
+}
+
+.template-error small {
+  color: #666;
+  display: block;
+  margin-top: 4px;
+}
+
+/* Enhanced Success Summary */
+.import-success-summary {
+  display: flex;
+  gap: 24px;
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+}
+
+.summary-stat {
+  text-align: center;
+  min-width: 80px;
+}
+
+.summary-stat .stat-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  line-height: 1;
+}
+
+.summary-stat .stat-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-stat.success .stat-value {
+  color: #2e7d32;
+}
+
+.summary-stat.skipped .stat-value {
+  color: #666;
+}
+
+.summary-stat.failed .stat-value {
+  color: var(--danger);
+}
+
+/* Success message */
+.success-message {
+  font-size: 14px;
+  color: #2e7d32;
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(46, 125, 50, 0.1);
+  border-radius: 8px;
+}
+
+/* Skipped info */
+.skipped-info {
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.skipped-info h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.skipped-info p {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+/* More errors indicator */
+.more-errors {
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+  margin: 8px 0 0 0 !important;
+}
+
+/* Validation stats - total */
+.validation-stats .stat.total {
+  color: #333;
+  font-weight: 500;
+}
+
+/* Disable states for buttons */
+button:disabled,
+input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading spinner for import */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.import-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Progress indicator for large files */
+.import-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.import-progress-text {
+  font-size: 14px;
+  color: #1565c0;
+}
+
+.import-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.import-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
