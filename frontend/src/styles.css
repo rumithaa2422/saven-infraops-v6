@@ -1715,3 +1715,135 @@ button.danger:disabled {
   font-size: 13px;
   margin: 4px 0;
 }
+
+/* Import Actions Button */
+.import-actions {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Executing Status */
+.import-executing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff8e6;
+  border: 1px solid #ffc107;
+  border-radius: 12px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #856404;
+  font-weight: 500;
+}
+
+/* Import Execute Result */
+.import-execute-result {
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+.import-execute-result.success {
+  background: #e4f8ef;
+  border: 1px solid var(--success);
+}
+
+.import-execute-result.warning {
+  background: #fff8e6;
+  border: 1px solid #ffc107;
+}
+
+.execute-result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.execute-icon {
+  font-size: 20px;
+}
+
+.execute-message {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.import-execute-result.success .execute-message {
+  color: #2e7d32;
+}
+
+.import-execute-result.warning .execute-message {
+  color: #856404;
+}
+
+.execute-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.execute-stats .stat.imported {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.execute-stats .stat.failed {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.execute-stats .stat.skipped {
+  color: var(--muted);
+}
+
+/* Email Warnings */
+.email-warnings {
+  padding: 12px;
+  background: #fff3cd;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.email-warnings h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #856404;
+}
+
+.email-warning-item {
+  font-size: 13px;
+  color: #856404;
+  padding: 4px 0;
+}
+
+.email-warning-item strong {
+  color: #5d4200;
+}
+
+/* Import Failures */
+.import-failures {
+  padding: 12px;
+  background: #fde8e8;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.import-failures h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.failure-item {
+  font-size: 13px;
+  color: #555;
+  padding: 4px 0;
+}
+
+.failure-item strong {
+  color: var(--danger);
+}

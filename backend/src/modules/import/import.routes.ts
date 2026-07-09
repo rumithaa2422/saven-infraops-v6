@@ -5,6 +5,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { env } from '../../config/env.js';
 import { validateImport } from '../../services/importValidation.service.js';
+import { importUsers, ImportUserInput } from '../../services/importUsers.service.js';
 
 export const importRouter = Router();
 
@@ -97,6 +98,58 @@ function parseFile(buffer: Buffer): {
 }
 
 /**
+ * Convert parsed row data to ImportUserInput
+ */
+function convertToUserInput(data: Record<string, unknown>[], startRow: number = 2): ImportUserInput[] {
+  // Column name variations (case-insensitive matching)
+  const columnVariations: Record<string, string[]> = {
+    name: ['name', 'user name', 'username', 'full name', 'fullname', 'user'],
+    email: ['email', 'email address', 'e-mail', 'mail'],
+    phone: ['phone', 'phone number', 'phonenumber', 'mobile', 'contact', 'telephone'],
+    department: ['department', 'dept', 'division', 'team'],
+    role: ['role', 'user role', 'userrole', 'access level']
+  };
+
+  // Find actual column names in the data
+  const columns = data.length > 0 ? Object.keys(data[0]) : [];
+  
+  function findColumn(key: string): string | undefined {
+    const variations = columnVariations[key] || [key];
+    const lowerColumns = columns.map(c => c.toLowerCase().trim());
+    
+    for (const variation of variations) {
+      const index = lowerColumns.indexOf(variation.toLowerCase());
+      if (index !== -1) {
+        return columns[index];
+      }
+    }
+    return undefined;
+  }
+
+  function normalize(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  }
+
+  return data.map((row, index) => {
+    const nameCol = findColumn('name');
+    const emailCol = findColumn('email');
+    const phoneCol = findColumn('phone');
+    const departmentCol = findColumn('department');
+    const roleCol = findColumn('role');
+
+    return {
+      name: normalize(nameCol ? row[nameCol] : row['Name']),
+      email: normalize(emailCol ? row[emailCol] : row['Email']).toLowerCase(),
+      phoneNumber: normalize(phoneCol ? row[phoneCol] : row['Phone']) || undefined,
+      department: normalize(departmentCol ? row[departmentCol] : row['Department']) || undefined,
+      role: normalize(roleCol ? row[roleCol] : row['Role']) || undefined,
+      importedRow: startRow + index
+    };
+  });
+}
+
+/**
  * POST /api/import/upload
  * Phase 2-3: Upload file, validate, and parse to JSON
  * Returns file metadata and parsed data
@@ -177,6 +230,65 @@ importRouter.post('/validate', requireAuth, requirePermissionOr(['settings:write
     }
     console.error('Import validation error:', error);
     res.status(500).json({ error: 'Failed to validate the data. Please check the data format.' });
+  }
+});
+
+/**
+ * POST /api/import/execute
+ * Phase 5: Execute the import (create users)
+ * Reuses existing createUser business logic
+ */
+importRouter.post('/execute', requireAuth, requirePermissionOr(['settings:write', 'settings:manage']), async (req, res) => {
+  try {
+    const { moduleType, data } = req.body as {
+      moduleType: string;
+      data: Record<string, unknown>[];
+    };
+
+    if (!moduleType) {
+      return res.status(400).json({ error: 'moduleType is required' });
+    }
+
+    if (!data || !Array.isArray(data)) {
+      return res.status(400).json({ error: 'data must be an array' });
+    }
+
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'No data to import' });
+    }
+
+    // First validate the data
+    const validationResult = await validateImport(moduleType, data);
+
+    // Check if all rows are valid
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Some rows have validation errors. Please fix them before importing.',
+        validationResult
+      });
+    }
+
+    // Convert parsed data to import format
+    const usersToImport: ImportUserInput[] = data.map((row, index) => {
+      const normalized = validationResult.rows.find(r => r.row === index + 2);
+      return {
+        name: String(normalized?.data.name || row.Name || ''),
+        email: String(normalized?.data.email || row.Email || '').toLowerCase(),
+        phoneNumber: normalized?.data.phone ? String(normalized.data.phone) : undefined,
+        department: normalized?.data.department ? String(normalized.data.department) : undefined,
+        role: normalized?.data.role ? String(normalized.data.role) : undefined,
+        importedRow: index + 2 // Excel row number (1-indexed, header is row 1)
+      };
+    });
+
+    // Execute the import
+    const importResult = await importUsers(usersToImport);
+
+    res.json(importResult);
+  } catch (err) {
+    const error = err as Error;
+    console.error('Import execute error:', error);
+    res.status(500).json({ error: 'Failed to import users. Please try again.' });
   }
 });
 

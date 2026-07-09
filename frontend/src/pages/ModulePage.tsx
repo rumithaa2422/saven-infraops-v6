@@ -362,7 +362,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  // Import state (Phase 4 - validation)
+  // Import state (Phase 5 - import)
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<{
     name: string;
@@ -385,9 +385,19 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     rows: Array<{ row: number; valid: boolean; data: Record<string, unknown>; errors: Array<{ row: number; field: string; message: string }> }>;
     errorsByRow: Record<number, string[]>;
   } | null>(null);
+  const [executeResult, setExecuteResult] = useState<{
+    success: boolean;
+    totalRows: number;
+    imported: number;
+    failed: number;
+    skipped: number;
+    results: Array<{ row: number; success: boolean; email: string; userId?: string; error?: string; emailSent?: boolean; emailError?: string }>;
+    summary: { allSuccessful: boolean; message: string };
+  } | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const importInputId = useId();
 
@@ -476,6 +486,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   // Validate import data
   async function validateImportData(data: Record<string, unknown>[], moduleType: string) {
     setIsValidating(true);
+    setExecuteResult(null);
 
     try {
       const response = await api.post('/import/validate', {
@@ -486,7 +497,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       setValidationResult(response.data);
       
       if (response.data.success) {
-        setMessage(`File uploaded successfully. All ${response.data.validRows} row(s) are valid and ready for import.`);
+        setMessage(`All ${response.data.validRows} row(s) are valid and ready for import.`);
       } else {
         setMessage(`Found ${response.data.invalidRows} row(s) with errors. Please fix them before importing.`);
       }
@@ -499,12 +510,47 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     }
   }
 
+  // Execute import (Phase 5)
+  async function executeImport(data: Record<string, unknown>[], moduleType: string) {
+    if (!validationResult?.success) {
+      setImportError('Cannot import: Some rows have validation errors.');
+      return;
+    }
+
+    setIsExecuting(true);
+    setImportError(null);
+
+    try {
+      const response = await api.post('/import/execute', {
+        moduleType,
+        data
+      });
+
+      setExecuteResult(response.data);
+      
+      if (response.data.success) {
+        setMessage(`Import completed: ${response.data.imported} user(s) imported successfully.`);
+        // Refresh the user list
+        await load();
+      } else {
+        setMessage(`Import completed with errors: ${response.data.imported} imported, ${response.data.failed} failed.`);
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      const errorMessage = error.response?.data?.error || 'Failed to execute import.';
+      setImportError(errorMessage);
+    } finally {
+      setIsExecuting(false);
+    }
+  }
+
   // Clear import file selection
   function handleClearImport() {
     setImportFile(null);
     setImportResult(null);
     setParsedData(null);
     setValidationResult(null);
+    setExecuteResult(null);
     setImportError(null);
   }
 
@@ -700,8 +746,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
       )}
 
-      {/* Show validation summary */}
-      {validationResult && !isValidating && (
+      {/* Show validation summary with Import button */}
+      {validationResult && !isValidating && !executeResult && (
         <div className={`import-validation-summary ${validationResult.success ? 'success' : 'error'}`}>
           <div className="validation-summary-header">
             <span className="validation-icon">{validationResult.success ? '✅' : '❌'}</span>
@@ -710,6 +756,71 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           <div className="validation-stats">
             <span className="stat valid">✓ Valid: {validationResult.validRows}</span>
             <span className="stat invalid">✗ Invalid: {validationResult.invalidRows}</span>
+          </div>
+          {validationResult.success && (
+            <div className="import-actions">
+              <button 
+                className="primary" 
+                onClick={() => parsedData && executeImport(parsedData.data, moduleKey)}
+                disabled={isExecuting}
+              >
+                {isExecuting ? '⏳ Importing...' : '📥 Import to System'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Show executing status */}
+      {isExecuting && (
+        <div className="import-executing">
+          <span>⏳ Importing users... Please wait.</span>
+        </div>
+      )}
+
+      {/* Show import result */}
+      {executeResult && !isExecuting && (
+        <div className={`import-execute-result ${executeResult.success ? 'success' : 'warning'}`}>
+          <div className="execute-result-header">
+            <span className="execute-icon">{executeResult.success ? '✅' : '⚠️'}</span>
+            <span className="execute-message">{executeResult.summary.message}</span>
+          </div>
+          <div className="execute-stats">
+            <span className="stat imported">✓ Imported: {executeResult.imported}</span>
+            {executeResult.failed > 0 && (
+              <span className="stat failed">✗ Failed: {executeResult.failed}</span>
+            )}
+            {executeResult.skipped > 0 && (
+              <span className="stat skipped">○ Skipped: {executeResult.skipped}</span>
+            )}
+          </div>
+          
+          {/* Show email failures if any */}
+          {executeResult.results.some(r => r.emailError) && (
+            <div className="email-warnings">
+              <h5>⚠️ Email Notification Issues:</h5>
+              {executeResult.results.filter(r => r.emailError).map((r) => (
+                <div key={r.row} className="email-warning-item">
+                  <strong>Row {r.row} ({r.email}):</strong> {r.emailError}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Show failed imports if any */}
+          {executeResult.failed > 0 && (
+            <div className="import-failures">
+              <h5>❌ Import Failures:</h5>
+              {executeResult.results.filter(r => !r.success).map((r) => (
+                <div key={r.row} className="failure-item">
+                  <strong>Row {r.row} ({r.email}):</strong> {r.error}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="import-actions">
+            <button className="secondary" onClick={handleClearImport}>Import Another File</button>
           </div>
         </div>
       )}
