@@ -426,6 +426,17 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
+  // Document Import State (multiple PDFs)
+  const [isImportingDocs, setIsImportingDocs] = useState(false);
+  const [docImportResult, setDocImportResult] = useState<{
+    imported: number;
+    skipped: { fileName: string; reason: string }[];
+  } | null>(null);
+  const docImportInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and drop state
+  const [isDragging, setIsDragging] = useState(false);
+
   // Document delete state
   const [documentToDelete, setDocumentToDelete] = useState<RecordItem | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -825,6 +836,87 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     }
   }
 
+  // Handle document import file selection
+  function handleDocImportClick() {
+    docImportInputRef.current?.click();
+  }
+
+  // Handle file selection for document import
+  function handleDocImportChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    importPdfDocuments(Array.from(files));
+    // Reset input so the same file can be selected again
+    e.target.value = '';
+  }
+
+  // Import multiple PDF documents
+  async function importPdfDocuments(files: File[]) {
+    if (files.length === 0) return;
+
+    setIsImportingDocs(true);
+    setDocImportResult(null);
+
+    try {
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append('files', file);
+      }
+
+      const response = await api.post('/compliance/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const result = response.data;
+      setDocImportResult({
+        imported: result.totalImported || result.imported?.length || 0,
+        skipped: result.skipped || []
+      });
+
+      if (result.totalImported > 0) {
+        setMessage(`${result.totalImported} document(s) imported successfully`);
+        await load();
+      } else if (result.skipped?.length > 0) {
+        setMessage('No documents imported. All files were skipped.');
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setMessage(error.response?.data?.error || 'Failed to import documents');
+    } finally {
+      setIsImportingDocs(false);
+    }
+  }
+
+  // Drag and drop handlers
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (config.isDocumentRepository) {
+      setIsDragging(true);
+    }
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (!config.isDocumentRepository) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      importPdfDocuments(files);
+    }
+  }
+
   function openDeleteDocumentDialog(item: RecordItem, event: React.MouseEvent) {
     event.stopPropagation();
     setDocumentToDelete(item);
@@ -977,7 +1069,12 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   }
 
   return (
-    <div className="page-stack">
+    <div 
+      className={`page-stack ${isDragging ? 'dragging' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="page-title-row">
         <div>
           <span className="eyebrow">Management</span>
@@ -1020,12 +1117,33 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             </>
           )}
           {config.permissions.export && hasPermission(config.permissions.export) && (
-            <button className="secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf}>
+            <button className="secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
               {config.isDocumentRepository ? '📥 Export All' : 'Export CSV'}
             </button>
           )}
+          {/* Import button for document repository - accepts multiple PDFs */}
+          {config.isDocumentRepository && config.permissions.create && hasPermission(config.permissions.create) && (
+            <>
+              <button 
+                className="secondary" 
+                onClick={handleDocImportClick}
+                disabled={isImportingDocs || isUploadingPdf}
+              >
+                {isImportingDocs ? '⏳ Importing...' : '📥 Import'}
+              </button>
+              <input
+                ref={docImportInputRef}
+                type="file"
+                accept="application/pdf"
+                multiple
+                onChange={handleDocImportChange}
+                style={{ display: 'none' }}
+                disabled={isImportingDocs || isUploadingPdf}
+              />
+            </>
+          )}
           {config.permissions.create && hasPermission(config.permissions.create) && (
-            <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf}>
+            <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
               {config.isDocumentRepository ? '📤 Upload' : 'Create'}
             </button>
           )}
@@ -1207,6 +1325,43 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
 
           <div className="import-actions">
             <button className="secondary" onClick={handleClearImport}>Import Another File</button>
+          </div>
+        </div>
+      )}
+
+      {/* Document Import Results - shown only for document repository */}
+      {config.isDocumentRepository && docImportResult && !isImportingDocs && (
+        <div className="import-validation-summary success">
+          <div className="validation-summary-header">
+            <span className="validation-icon">✅</span>
+            <span className="validation-message">
+              {docImportResult.imported} document(s) imported successfully
+              {docImportResult.skipped.length > 0 && `, ${docImportResult.skipped.length} file(s) skipped`}
+            </span>
+          </div>
+          
+          {/* Show skipped files */}
+          {docImportResult.skipped.length > 0 && (
+            <div className="skipped-info">
+              <h5>ℹ️ Skipped Files:</h5>
+              <ul>
+                {docImportResult.skipped.map((item, index) => (
+                  <li key={index}>
+                    <strong>{item.fileName}</strong> - {item.reason === 'duplicate' ? 'already exists' : 'not a PDF file'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Drag and drop overlay */}
+      {isDragging && config.isDocumentRepository && (
+        <div className="drag-drop-overlay">
+          <div className="drag-drop-content">
+            <span className="drag-drop-icon">📥</span>
+            <span className="drag-drop-text">Drop PDF files here to import</span>
           </div>
         </div>
       )}

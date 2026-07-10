@@ -17,7 +17,8 @@ import {
   deleteComplianceDocument,
   getComplianceDocument,
   ensureUploadDir,
-  getDocumentFilePath
+  getDocumentFilePath,
+  importComplianceDocuments
 } from '../../services/compliance.service.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
@@ -49,6 +50,16 @@ const upload = multer({
   storage,
   limits: {
     fileSize: env.PDF_MAX_FILE_SIZE_MB * 1024 * 1024
+  },
+  fileFilter
+});
+
+// Multer config for multiple file uploads (import)
+const uploadMultiple = multer({
+  storage,
+  limits: {
+    fileSize: env.PDF_MAX_FILE_SIZE_MB * 1024 * 1024,
+    files: 50 // Maximum 50 files at once
   },
   fileFilter
 });
@@ -134,6 +145,94 @@ complianceRouter.post('/upload', requireAuth, async (req: Request, res: Response
           createdAt: document.createdAt,
           updatedAt: document.updatedAt
         }
+      });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/compliance/import
+ * Import multiple PDF documents
+ */
+complianceRouter.post('/import', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:create', 'compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    uploadMultiple.array('files', 50)(req, res, async (err) => {
+      if (err) {
+        if (err.message === 'Only PDF files are allowed') {
+          return res.status(400).json({ 
+            error: 'Only PDF files are allowed',
+            imported: [],
+            skipped: []
+          });
+        }
+        if (err.message && err.message.includes('File too large')) {
+          return res.status(400).json({ 
+            error: `Some files exceed the ${env.PDF_MAX_FILE_SIZE_MB}MB size limit`,
+            imported: [],
+            skipped: []
+          });
+        }
+        return res.status(400).json({ 
+          error: 'File upload failed',
+          imported: [],
+          skipped: []
+        });
+      }
+
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ 
+          error: 'No files uploaded',
+          imported: [],
+          skipped: []
+        });
+      }
+
+      // Process the files - check for non-PDFs first
+      const validFiles: { originalname: string; filename: string; mimetype: string; size: number }[] = [];
+      const invalidFiles: { fileName: string; reason: 'invalid_type' }[] = [];
+
+      for (const file of files) {
+        if (file.mimetype === 'application/pdf') {
+          validFiles.push({
+            originalname: file.originalname,
+            filename: file.filename,
+            mimetype: file.mimetype,
+            size: file.size
+          });
+        } else {
+          invalidFiles.push({
+            fileName: file.originalname,
+            reason: 'invalid_type'
+          });
+        }
+      }
+
+      // Import valid files (handles duplicates)
+      const importResult = await importComplianceDocuments(
+        validFiles,
+        req.user?.id || null,
+        req.user?.email || null,
+        typeof req.ip === 'string' ? req.ip : (Array.isArray(req.ip) ? req.ip[0] : null)
+      );
+
+      // Combine invalid files with skipped files from import
+      const allSkipped = [
+        ...invalidFiles,
+        ...importResult.skipped
+      ];
+
+      res.status(201).json({
+        imported: importResult.imported,
+        skipped: allSkipped,
+        totalImported: importResult.imported.length,
+        totalSkipped: allSkipped.length
       });
     });
   } catch (error) {

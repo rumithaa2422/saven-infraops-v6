@@ -144,3 +144,82 @@ export async function deleteComplianceDocument(
 export function getDocumentFilePath(storedFileName: string): string {
   return path.join(UPLOAD_DIR, storedFileName);
 }
+
+/**
+ * Check if a document with the same filename already exists
+ */
+export async function documentExistsByFileName(fileName: string): Promise<boolean> {
+  const existing = await prisma.complianceDocument.findFirst({
+    where: { fileName }
+  });
+  return existing !== null;
+}
+
+/**
+ * Import result type
+ */
+export interface ImportResult {
+  imported: { id: string; fileName: string }[];
+  skipped: { fileName: string; reason: 'duplicate' | 'invalid_type' }[];
+}
+
+/**
+ * Import multiple compliance documents
+ */
+export async function importComplianceDocuments(
+  files: { originalname: string; filename: string; mimetype: string; size: number }[],
+  actorId?: string | null,
+  actorEmail?: string | null,
+  ipAddress?: string | null
+): Promise<ImportResult> {
+  const result: ImportResult = { imported: [], skipped: [] };
+
+  // Get existing filenames for duplicate detection
+  const existingDocs = await prisma.complianceDocument.findMany({
+    select: { fileName: true }
+  });
+  const existingFileNames = new Set(existingDocs.map(doc => doc.fileName));
+
+  for (const file of files) {
+    // Check if valid PDF
+    if (file.mimetype !== 'application/pdf') {
+      result.skipped.push({
+        fileName: file.originalname,
+        reason: 'invalid_type'
+      });
+      continue;
+    }
+
+    // Check for duplicate
+    if (existingFileNames.has(file.originalname)) {
+      result.skipped.push({
+        fileName: file.originalname,
+        reason: 'duplicate'
+      });
+      continue;
+    }
+
+    // Create the document
+    const document = await createComplianceDocument({
+      fileName: file.originalname,
+      storedFileName: file.filename,
+      mimeType: file.mimetype,
+      fileSize: file.size,
+      uploadedBy: actorId || null,
+      uploadedByEmail: actorEmail || null,
+      actorId: actorId || null,
+      actorEmail: actorEmail || null,
+      ipAddress: ipAddress || null
+    });
+
+    result.imported.push({
+      id: document.id,
+      fileName: document.fileName
+    });
+
+    // Add to existing set to handle duplicate names within the batch
+    existingFileNames.add(file.originalname);
+  }
+
+  return result;
+}
