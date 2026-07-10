@@ -442,6 +442,15 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
 
+  // Document repository search/filter/sort state
+  const [docSearchQuery, setDocSearchQuery] = useState('');
+  const [docUploadedBy, setDocUploadedBy] = useState('all');
+  const [docDateRange, setDocDateRange] = useState<string>('allTime');
+  const [docSortBy, setDocSortBy] = useState<'fileName' | 'createdAt' | 'fileSize'>('createdAt');
+  const [docSortOrder, setDocSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [uploaders, setUploaders] = useState<{ id: string; email: string }[]>([]);
+  const docDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Search state for users-teams module
   const [searchQuery, setSearchQuery] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -732,6 +741,54 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     }
   }
 
+  // Load compliance documents with search, filter, and sort
+  async function loadComplianceDocuments() {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = {};
+      if (docSearchQuery.trim()) {
+        params.search = docSearchQuery.trim();
+      }
+      if (docUploadedBy !== 'all') {
+        params.uploadedBy = docUploadedBy;
+      }
+      if (docDateRange !== 'allTime') {
+        params.dateRange = docDateRange;
+      }
+      params.sortBy = docSortBy;
+      params.sortOrder = docSortOrder;
+      
+      const response = await api.get('/compliance', { params });
+      setItems(response.data.items || []);
+      setMessage('');
+    } catch {
+      setItems([]);
+      setMessage('Unable to load documents. Check backend, database, and permissions.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Load uploaders list for filter dropdown
+  async function loadUploaders() {
+    try {
+      const response = await api.get('/compliance', { params: { uploaders: 'true' } });
+      setUploaders(response.data.uploaders || []);
+    } catch {
+      setUploaders([]);
+    }
+  }
+
+  // Debounced search for compliance documents
+  const debouncedDocSearch = useCallback(() => {
+    if (docDebounceRef.current) {
+      clearTimeout(docDebounceRef.current);
+    }
+    docDebounceRef.current = setTimeout(() => {
+      loadComplianceDocuments();
+    }, 300);
+  }, [docSearchQuery, docUploadedBy, docDateRange, docSortBy, docSortOrder]);
+
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
@@ -746,7 +803,19 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     setSelected(null);
     setCreateOpen(false);
     setSearchQuery('');
-    load();
+    
+    if (config.isDocumentRepository) {
+      // Reset compliance-specific state
+      setDocSearchQuery('');
+      setDocUploadedBy('all');
+      setDocDateRange('allTime');
+      setDocSortBy('createdAt');
+      setDocSortOrder('desc');
+      loadComplianceDocuments();
+      loadUploaders();
+    } else {
+      load();
+    }
   }, [moduleKey]);
 
   async function createRecord(event: FormEvent) {
@@ -821,7 +890,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       setMessage('PDF document uploaded successfully');
       
       // Refresh the document list
-      await load();
+      await loadComplianceDocuments();
 
       // Close the modal after a short delay
       setTimeout(() => {
@@ -877,7 +946,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
 
       if (result.totalImported > 0) {
         setMessage(`${result.totalImported} document(s) imported successfully`);
-        await load();
+        await loadComplianceDocuments();
       } else if (result.skipped?.length > 0) {
         setMessage('No documents imported. All files were skipped.');
       }
@@ -936,7 +1005,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       await api.delete(`/compliance/${documentToDelete.id}`);
       setMessage('Document deleted successfully');
       closeDeleteDocumentDialog();
-      await load();
+      await loadComplianceDocuments();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
       setMessage(error.response?.data?.error || 'Failed to delete document');
@@ -1090,8 +1159,51 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               onChange={handleSearchChange}
             />
           )}
+          {/* Document repository search and filters */}
+          {config.isDocumentRepository && (
+            <div className="doc-filters">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search documents..."
+                value={docSearchQuery}
+                onChange={(e) => {
+                  setDocSearchQuery(e.target.value);
+                  if (docDebounceRef.current) clearTimeout(docDebounceRef.current);
+                  docDebounceRef.current = setTimeout(() => loadComplianceDocuments(), 300);
+                }}
+              />
+              <select
+                className="filter-select"
+                value={docUploadedBy}
+                onChange={(e) => {
+                  setDocUploadedBy(e.target.value);
+                  loadComplianceDocuments();
+                }}
+              >
+                <option value="all">All Users</option>
+                {uploaders.map(u => (
+                  <option key={u.id} value={u.id}>{u.email}</option>
+                ))}
+              </select>
+              <select
+                className="filter-select"
+                value={docDateRange}
+                onChange={(e) => {
+                  setDocDateRange(e.target.value);
+                  loadComplianceDocuments();
+                }}
+              >
+                <option value="allTime">All Time</option>
+                <option value="today">Today</option>
+                <option value="last7days">Last 7 Days</option>
+                <option value="last30days">Last 30 Days</option>
+                <option value="thisYear">This Year</option>
+              </select>
+            </div>
+          )}
           {/* Disable all buttons during any import operation */}
-          <button className="secondary" onClick={() => load(searchQuery)} disabled={loading || isImporting || isValidating || isExecuting}>
+          <button className="secondary" onClick={() => config.isDocumentRepository ? loadComplianceDocuments() : load(searchQuery)} disabled={loading || isImporting || isValidating || isExecuting}>
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
           {/* Import button - shown only for modules with import permission */}
@@ -1460,7 +1572,28 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         <table>
           <thead>
             <tr>
-              {config.columns.map((column) => <th key={column.key}>{column.label}</th>)}
+              {config.columns.map((column) => {
+                // Add sorting for document repository columns
+                if (config.isDocumentRepository && ['fileName', 'createdAt', 'fileSize'].includes(column.key)) {
+                  const isActive = docSortBy === column.key;
+                  const nextSortOrder = isActive && docSortOrder === 'asc' ? 'desc' : 'asc';
+                  return (
+                    <th 
+                      key={column.key} 
+                      className="sortable-header"
+                      onClick={() => {
+                        setDocSortBy(column.key as 'fileName' | 'createdAt' | 'fileSize');
+                        setDocSortOrder(nextSortOrder);
+                        loadComplianceDocuments();
+                      }}
+                    >
+                      {column.label}
+                      {isActive && <span className="sort-indicator">{docSortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
+                    </th>
+                  );
+                }
+                return <th key={column.key}>{column.label}</th>;
+              })}
               {config.isDocumentRepository && <th>Actions</th>}
               {!config.isDocumentRepository && <th>Action</th>}
             </tr>

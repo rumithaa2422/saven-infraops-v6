@@ -14,6 +14,8 @@ import { HttpError } from '../../common/httpError.js';
 import {
   createComplianceDocument,
   listComplianceDocuments,
+  listComplianceDocumentsFiltered,
+  getUniqueUploaders,
   deleteComplianceDocument,
   getComplianceDocument,
   ensureUploadDir,
@@ -66,7 +68,14 @@ const uploadMultiple = multer({
 
 /**
  * GET /api/compliance
- * List all compliance documents
+ * List all compliance documents with search, filter, and sort support
+ * Query params:
+ *   - search: Search term (matches fileName, uploadedBy, uploadedByEmail)
+ *   - uploadedBy: Filter by specific uploader ID
+ *   - dateRange: today | last7days | last30days | thisYear | allTime
+ *   - sortBy: fileName | createdAt | fileSize
+ *   - sortOrder: asc | desc
+ *   - uploaders: If true, returns list of unique uploaders for filter dropdown
  */
 complianceRouter.get('/', requireAuth, async (req: Request, res: Response, next) => {
   try {
@@ -74,10 +83,30 @@ complianceRouter.get('/', requireAuth, async (req: Request, res: Response, next)
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const documents = await listComplianceDocuments();
-    
+    // Check if requesting uploaders list for filter dropdown
+    if (req.query.uploaders === 'true') {
+      const uploaders = await getUniqueUploaders();
+      return res.json({ uploaders });
+    }
+
+    // Parse query parameters
+    const search = req.query.search as string | undefined;
+    const uploadedBy = req.query.uploadedBy as string | undefined;
+    const dateRange = req.query.dateRange as 'today' | 'last7days' | 'last30days' | 'thisYear' | 'allTime' | undefined;
+    const sortBy = req.query.sortBy as 'fileName' | 'createdAt' | 'fileSize' | undefined;
+    const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
+
+    // Get filtered documents
+    const result = await listComplianceDocumentsFiltered({
+      search,
+      uploadedBy,
+      dateRange,
+      sortBy,
+      sortOrder
+    });
+
     // Format documents for frontend
-    const items = documents.map(doc => ({
+    const items = result.items.map(doc => ({
       id: doc.id,
       fileName: doc.fileName,
       mimeType: doc.mimeType,
@@ -88,7 +117,7 @@ complianceRouter.get('/', requireAuth, async (req: Request, res: Response, next)
       updatedAt: doc.updatedAt
     }));
 
-    res.json({ items });
+    res.json({ items, total: result.total });
   } catch (error) {
     next(error);
   }

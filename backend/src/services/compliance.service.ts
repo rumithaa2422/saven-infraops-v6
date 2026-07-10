@@ -85,6 +85,138 @@ export async function listComplianceDocuments(): Promise<DocumentRecord[]> {
 }
 
 /**
+ * Query options for listing compliance documents
+ */
+export interface ListDocumentsOptions {
+  search?: string;
+  uploadedBy?: string;
+  dateRange?: 'today' | 'last7days' | 'last30days' | 'thisYear' | 'allTime';
+  sortBy?: 'fileName' | 'createdAt' | 'fileSize';
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * List compliance documents with search, filter, and sort support
+ */
+export async function listComplianceDocumentsFiltered(options: ListDocumentsOptions): Promise<{
+  items: DocumentRecord[];
+  total: number;
+}> {
+  const {
+    search,
+    uploadedBy,
+    dateRange,
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = options;
+
+  // Build where clause
+  const where: Record<string, unknown> = {};
+
+  // Search filter (fileName, uploadedBy, uploadedByEmail)
+  if (search) {
+    const searchLower = search.toLowerCase();
+    where.OR = [
+      { fileName: { contains: search, mode: 'insensitive' } },
+      { uploadedByEmail: { contains: search, mode: 'insensitive' } },
+      { uploadedBy: { contains: search, mode: 'insensitive' } }
+    ];
+  }
+
+  // Uploaded by filter
+  if (uploadedBy && uploadedBy !== 'all') {
+    where.uploadedBy = uploadedBy;
+  }
+
+  // Date range filter
+  if (dateRange && dateRange !== 'allTime') {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (dateRange) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'last7days':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+        break;
+      case 'last30days':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+        break;
+      case 'thisYear':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        startDate = new Date(0);
+    }
+
+    where.createdAt = {
+      gte: startDate
+    };
+  }
+
+  // Build orderBy clause
+  const orderBy: Record<string, 'asc' | 'desc'> = {};
+  switch (sortBy) {
+    case 'fileName':
+      orderBy.fileName = sortOrder;
+      break;
+    case 'fileSize':
+      orderBy.fileSize = sortOrder;
+      break;
+    case 'createdAt':
+    default:
+      orderBy.createdAt = sortOrder;
+      break;
+  }
+
+  // Execute query
+  const [items, total] = await Promise.all([
+    prisma.complianceDocument.findMany({
+      where,
+      orderBy,
+      select: {
+        id: true,
+        fileName: true,
+        storedFileName: true,
+        mimeType: true,
+        fileSize: true,
+        uploadedBy: true,
+        uploadedByEmail: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    }),
+    prisma.complianceDocument.count({ where })
+  ]);
+
+  return { items, total };
+}
+
+/**
+ * Get list of unique uploaders for filter dropdown
+ */
+export async function getUniqueUploaders(): Promise<{ id: string; email: string }[]> {
+  const documents = await prisma.complianceDocument.findMany({
+    select: {
+      uploadedBy: true,
+      uploadedByEmail: true
+    },
+    distinct: ['uploadedBy'],
+    where: {
+      uploadedBy: { not: null }
+    }
+  });
+
+  return documents
+    .filter(doc => doc.uploadedBy !== null)
+    .map(doc => ({
+      id: doc.uploadedBy as string,
+      email: doc.uploadedByEmail || doc.uploadedBy as string
+    }));
+}
+
+/**
  * Get a single compliance document by ID
  */
 export async function getComplianceDocument(id: string): Promise<DocumentRecord | null> {
