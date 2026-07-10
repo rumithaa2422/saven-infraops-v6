@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, useRef, useCallback, useId } from 'react';
-import { api, API_BASE_URL } from '../services/api';
+import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
 
@@ -177,7 +177,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'createdAt', label: 'Uploaded Date' },
       { key: 'fileSize', label: 'File Size' }
     ],
-    permissions: { create: 'compliance:create', delete: 'compliance:manage', view: 'compliance:view' },
+    permissions: { create: 'compliance:create', delete: 'compliance:manage' },
     moduleType: 'compliance',
     isDocumentRepository: true
   },
@@ -350,7 +350,7 @@ function getInitialForm(fields: Field[]) {
 
 export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const config = configs[moduleKey] || configs['reports-analytics'];
-  const { hasPermission, token } = useAuth();
+  const { hasPermission } = useAuth();
   const [items, setItems] = useState<RecordItem[]>([]);
   const [selected, setSelected] = useState<RecordItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -859,25 +859,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
-  // View PDF document in browser using authenticated fetch
-  async function viewPdfDocument(documentId: string) {
-    try {
-      const response = await api.get(`/compliance/${documentId}/view`, {
-        responseType: 'blob'
-      });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch (err: unknown) {
-      const error = err as { response?: { status?: number } };
-      if (error.response?.status === 404) {
-        setMessage('Document not found');
-      } else {
-        setMessage('Failed to open document');
-      }
-    }
-  }
-
   function exportCsv() {
     const header = config.columns.map((c) => c.label).join(',');
     const rows = items.map((item) => config.columns.map((c) => {
@@ -1280,17 +1261,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   /* Document Repository Actions */
                   <td>
                     <div className="action-buttons">
-                      {hasPermission(config.permissions.view || config.permissions.create || '') && (
-                        <button 
-                          className="link-button" 
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            viewPdfDocument(item.id as string);
-                          }}
-                        >
-                          View
-                        </button>
-                      )}
                       {hasPermission(config.permissions.delete || '') && (
                         <button 
                           className="btn-delete" 
@@ -1307,7 +1277,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                     <div className="action-buttons">
                       {hasPermission((config.permissions.view || config.permissions.create) || '') && <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>}
                       {moduleKey === 'users-teams' && hasPermission('users:delete') && (
-                        <button 
+                        <button  
                           className="btn-delete" 
                           onClick={(event) => openDeleteDialog(item, event)}
                         >
