@@ -31,7 +31,6 @@ rolesRouter.get('/', requireAuth, requirePermissionOr(['users:read', 'roles:view
         id: true,
         name: true,
         description: true,
-        createdAt: true,
         _count: {
           select: { permissions: true, users: true }
         }
@@ -43,8 +42,7 @@ rolesRouter.get('/', requireAuth, requirePermissionOr(['users:read', 'roles:view
       name: role.name,
       description: role.description,
       permissionCount: role._count.permissions,
-      userCount: role._count.users,
-      createdAt: role.createdAt
+      userCount: role._count.users
     }));
     res.json({ items });
   } catch (error) {
@@ -61,7 +59,6 @@ rolesRouter.get('/:id', requireAuth, requirePermissionOr(['users:read', 'roles:v
         id: true,
         name: true,
         description: true,
-        createdAt: true,
         permissions: {
           include: { permission: true }
         }
@@ -76,8 +73,7 @@ rolesRouter.get('/:id', requireAuth, requirePermissionOr(['users:read', 'roles:v
       id: role.id,
       name: role.name,
       description: role.description,
-      permissions: role.permissions.map(rp => rp.permission.code),
-      createdAt: role.createdAt
+      permissions: role.permissions.map(rp => rp.permission.code)
     });
   } catch (error) {
     next(error);

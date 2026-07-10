@@ -9,7 +9,6 @@ type Role = {
   description: string | null;
   permissionCount: number;
   userCount: number;
-  createdAt: string;
   status?: 'active' | 'inactive';
 };
 
