@@ -177,7 +177,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'createdAt', label: 'Uploaded Date' },
       { key: 'fileSize', label: 'File Size' }
     ],
-    permissions: { create: 'compliance:create', delete: 'compliance:manage' },
+    permissions: { create: 'compliance:create', delete: 'compliance:manage', view: 'compliance:view' },
     moduleType: 'compliance',
     isDocumentRepository: true
   },
@@ -1261,6 +1261,17 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   /* Document Repository Actions */
                   <td>
                     <div className="action-buttons">
+                      {hasPermission(config.permissions.view || config.permissions.create || '') && (
+                        <button 
+                          className="link-button" 
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            window.open(`/api/compliance/${item.id}/view`, '_blank');
+                          }}
+                        >
+                          View
+                        </button>
+                      )}
                       {hasPermission(config.permissions.delete || '') && (
                         <button 
                           className="btn-delete" 

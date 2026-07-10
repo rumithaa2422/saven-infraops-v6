@@ -170,10 +170,46 @@ complianceRouter.delete('/:id', requireAuth, async (req: Request, res: Response,
 });
 
 /**
- * GET /api/compliance/:id/file
- * Get the actual PDF file for download/preview (NOT IMPLEMENTED YET)
+ * GET /api/compliance/:id/view
+ * View a PDF document inline in the browser
  */
-complianceRouter.get('/:id/file', requireAuth, async (_req: Request, _res: Response, _next) => {
-  // This will be implemented in a later phase
-  throw new HttpError(501, 'Download functionality not implemented yet');
+complianceRouter.get('/:id/view', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const idParam = req.params.id;
+    const id = Array.isArray(idParam) ? idParam[0] : idParam;
+    if (!id) {
+      throw new HttpError(400, 'Document ID is required');
+    }
+
+    // Get document metadata
+    const document = await getComplianceDocument(id);
+    if (!document) {
+      throw new HttpError(404, 'Document not found');
+    }
+
+    // Get the file path
+    const filePath = getDocumentFilePath(document.storedFileName);
+
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch {
+      throw new HttpError(404, 'Document file not found');
+    }
+
+    // Stream the PDF file with inline disposition (opens in browser)
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${document.fileName}"`);
+    res.setHeader('Content-Length', document.fileSize);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+
+    const fileStream = await fs.readFile(filePath);
+    res.send(fileStream);
+  } catch (error) {
+    next(error);
+  }
 });
