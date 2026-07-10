@@ -39,12 +39,7 @@ const allMenuItems = [
   { label: 'Settings', path: '/settings', icon: '⚙' }
 ];
 
-type SidebarProps = {
-  collapsed: boolean;
-  onToggle: () => void;
-};
-
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar() {
   const { hasPermission } = useAuth();
 
   // Filter menu items based on user permissions
@@ -57,17 +52,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   });
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <aside className="sidebar">
       <div className="brand">
         <div className="brand-mark">S</div>
-        {!collapsed && (
-          <div>
-            <strong>InfraOps</strong>
-            <span>AI Command</span>
-          </div>
-        )}
+        <div>
+          <strong>InfraOps</strong>
+          <span>AI Command</span>
+        </div>
       </div>
-      <button className="sidebar-toggle" onClick={onToggle}>{collapsed ? 'Expand' : 'Collapse'}</button>
       <nav>
         {menuItems.map((item) => (
           <NavLink
@@ -77,7 +69,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <span className="nav-icon">{item.icon}</span>
-            {!collapsed && <span>{item.label}</span>}
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
