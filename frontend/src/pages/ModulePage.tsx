@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, useRef, useCallback, useId } from 'react';
-import { api } from '../services/api';
+import { api, API_BASE_URL } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
 
@@ -350,7 +350,7 @@ function getInitialForm(fields: Field[]) {
 
 export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const config = configs[moduleKey] || configs['reports-analytics'];
-  const { hasPermission } = useAuth();
+  const { hasPermission, token } = useAuth();
   const [items, setItems] = useState<RecordItem[]>([]);
   const [selected, setSelected] = useState<RecordItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -859,6 +859,25 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
+  // View PDF document in browser using authenticated fetch
+  async function viewPdfDocument(documentId: string) {
+    try {
+      const response = await api.get(`/compliance/${documentId}/view`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } };
+      if (error.response?.status === 404) {
+        setMessage('Document not found');
+      } else {
+        setMessage('Failed to open document');
+      }
+    }
+  }
+
   function exportCsv() {
     const header = config.columns.map((c) => c.label).join(',');
     const rows = items.map((item) => config.columns.map((c) => {
@@ -1266,7 +1285,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                           className="link-button" 
                           onClick={(event) => {
                             event.stopPropagation();
-                            window.open(`/api/compliance/${item.id}/view`, '_blank');
+                            viewPdfDocument(item.id as string);
                           }}
                         >
                           View
