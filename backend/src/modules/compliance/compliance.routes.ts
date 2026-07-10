@@ -1,12 +1,13 @@
 /**
  * Compliance Document Repository Routes
  * 
- * Handles PDF document upload, list, and delete operations.
+ * Handles PDF document upload, list, delete, and export operations.
  */
 
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
+import { ZipArchive } from 'archiver';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermissionOr } from '../../middleware/rbac.js';
 import { HttpError } from '../../common/httpError.js';
@@ -14,9 +15,12 @@ import {
   createComplianceDocument,
   listComplianceDocuments,
   deleteComplianceDocument,
-  ensureUploadDir
+  getComplianceDocument,
+  ensureUploadDir,
+  getDocumentFilePath
 } from '../../services/compliance.service.js';
 import { env } from '../../config/env.js';
+import { promises as fs } from 'fs';
 
 export const complianceRouter = Router();
 
@@ -166,3 +170,91 @@ complianceRouter.delete('/:id', requireAuth, async (req: Request, res: Response,
   }
 });
 
+/**
+ * GET /api/compliance/export/all
+ * Export all compliance documents as a ZIP archive
+ */
+complianceRouter.get('/export/all', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const documents = await listComplianceDocuments();
+
+    if (documents.length === 0) {
+      throw new HttpError(404, 'No documents to export');
+    }
+
+    // Set ZIP headers
+    const timestamp = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="compliance-documents-${timestamp}.zip"`);
+
+    // Create archive
+    const archive = new ZipArchive({ zlib: { level: 9 } });
+    
+    archive.on('error', (err: Error) => {
+      throw err;
+    });
+
+    archive.pipe(res);
+
+    // Add each document to the ZIP
+    for (const doc of documents) {
+      const filePath = getDocumentFilePath(doc.storedFileName);
+      try {
+        await fs.access(filePath);
+        // Use original filename to preserve it
+        archive.file(filePath, { name: doc.fileName });
+      } catch {
+        console.error(`File not found for document ${doc.id}: ${filePath}`);
+      }
+    }
+
+    archive.finalize();
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/:id/export
+ * Export a single compliance document
+ */
+complianceRouter.get('/:id/export', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const idParam = req.params.id;
+    const id = Array.isArray(idParam) ? idParam[0] : idParam;
+    if (!id) {
+      throw new HttpError(400, 'Document ID is required');
+    }
+
+    const document = await getComplianceDocument(id);
+    if (!document) {
+      throw new HttpError(404, 'Document not found');
+    }
+
+    const filePath = getDocumentFilePath(document.storedFileName);
+
+    try {
+      await fs.access(filePath);
+    } catch {
+      throw new HttpError(404, 'Document file not found');
+    }
+
+    // Set PDF download headers - preserve original filename
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+    res.setHeader('Content-Length', document.fileSize);
+
+    const fileStream = await fs.readFile(filePath);
+    res.send(fileStream);
+  } catch (error) {
+    next(error);
+  }
+});

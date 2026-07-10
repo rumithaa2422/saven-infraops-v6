@@ -177,7 +177,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'createdAt', label: 'Uploaded Date' },
       { key: 'fileSize', label: 'File Size' }
     ],
-    permissions: { create: 'compliance:create', delete: 'compliance:manage' },
+    permissions: { create: 'compliance:create', delete: 'compliance:manage', export: 'compliance:read' },
     moduleType: 'compliance',
     isDocumentRepository: true
   },
@@ -859,6 +859,73 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
+  // Export all compliance documents as ZIP
+  async function exportAllDocuments() {
+    try {
+      setLoading(true);
+      const response = await api.get('/compliance/export/all', {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `compliance-documents-${new Date().toISOString().slice(0, 10)}.zip`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } };
+      if (error.response?.status === 404) {
+        setMessage('No documents to export');
+      } else {
+        setMessage('Failed to export documents');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Export single document
+  async function exportDocument(documentId: string) {
+    try {
+      const response = await api.get(`/compliance/${documentId}/export`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      // Extract filename from Content-Disposition header
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'document.pdf';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } };
+      if (error.response?.status === 404) {
+        setMessage('Document not found');
+      } else {
+        setMessage('Failed to export document');
+      }
+    }
+  }
+
   function exportCsv() {
     const header = config.columns.map((c) => c.label).join(',');
     const rows = items.map((item) => config.columns.map((c) => {
@@ -953,8 +1020,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             </>
           )}
           {config.permissions.export && hasPermission(config.permissions.export) && (
-            <button className="secondary" onClick={exportCsv} disabled={loading || isImporting || isValidating || isExecuting}>
-              Export CSV
+            <button className="secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf}>
+              {config.isDocumentRepository ? '📥 Export All' : 'Export CSV'}
             </button>
           )}
           {config.permissions.create && hasPermission(config.permissions.create) && (
@@ -1261,6 +1328,17 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   /* Document Repository Actions */
                   <td>
                     <div className="action-buttons">
+                      {hasPermission(config.permissions.export || '') && (
+                        <button 
+                          className="link-button" 
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            exportDocument(item.id as string);
+                          }}
+                        >
+                          Export
+                        </button>
+                      )}
                       {hasPermission(config.permissions.delete || '') && (
                         <button 
                           className="btn-delete" 
