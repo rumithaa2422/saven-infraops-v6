@@ -10,18 +10,18 @@ interface MyTasksData {
   openIncidents: number;
   pendingChanges: number;
   pendingAccessRequests: number;
-  complianceReviews: number;
+  openProblems: number;
 }
 
 const defaultTasks: MyTasksData = {
   openIncidents: 0,
   pendingChanges: 0,
   pendingAccessRequests: 0,
-  complianceReviews: 0
+  openProblems: 0
 };
 
 export function MyTasksWidget({ className = '' }: MyTasksWidgetProps) {
-  const { user, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
   const [tasksData, setTasksData] = useState<MyTasksData>(defaultTasks);
   const [loading, setLoading] = useState(true);
 
@@ -31,30 +31,15 @@ export function MyTasksWidget({ className = '' }: MyTasksWidgetProps) {
         const response = await api.get('/dashboard/my-tasks');
         setTasksData(response.data);
       } catch {
-        // Fallback: try to fetch from summary and combine with user-specific queries
-        try {
-          const [incidentsRes, changesRes, accessRes] = await Promise.all([
-            hasPermission('incidents:view') ? api.get('/generic/incidents', { params: { ownerName: user?.name, status: 'OPEN', limit: 100 } }) : Promise.resolve({ data: { total: 0 } }),
-            hasPermission('changes:view') ? api.get('/generic/changes', { params: { ownerName: user?.name, limit: 100 } }) : Promise.resolve({ data: { total: 0 } }),
-            hasPermission('access:view') ? api.get('/generic/access-management', { params: { requesterName: user?.name, status: 'REQUESTED', limit: 100 } }) : Promise.resolve({ data: { total: 0 } })
-          ]);
-
-          setTasksData({
-            openIncidents: incidentsRes.data.total || 0,
-            pendingChanges: changesRes.data.total || 0,
-            pendingAccessRequests: accessRes.data.total || 0,
-            complianceReviews: 0 // Would need specific API for compliance reviews
-          });
-        } catch {
-          setTasksData(defaultTasks);
-        }
+        // Use default values if API fails
+        setTasksData(defaultTasks);
       } finally {
         setLoading(false);
       }
     };
 
     fetchMyTasks();
-  }, [user?.name, hasPermission]);
+  }, []);
 
   const taskItems = [
     {
@@ -72,18 +57,18 @@ export function MyTasksWidget({ className = '' }: MyTasksWidgetProps) {
       permission: 'changes:view'
     },
     {
-      label: 'Pending Access Requests',
+      label: 'Access Requests',
       value: tasksData.pendingAccessRequests,
       icon: '🔐',
       color: 'info',
       permission: 'access:view'
     },
     {
-      label: 'Compliance Reviews',
-      value: tasksData.complianceReviews,
-      icon: '📋',
+      label: 'Open Problems',
+      value: tasksData.openProblems,
+      icon: '⚠️',
       color: 'success',
-      permission: 'compliance:view'
+      permission: 'problems:view'
     }
   ];
 

@@ -15,7 +15,6 @@ interface ActivityItem {
   status?: string;
   createdAt: string;
   createdBy?: string;
-  action?: string;
 }
 
 interface RecentActivityData {
@@ -44,42 +43,12 @@ export function RecentActivityWidget({ className = '', maxItems = 8 }: RecentAct
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
-        const response = await api.get('/dashboard/recent-activity-timeline');
+        // Use the dashboard endpoint that returns all recent activity
+        const response = await api.get('/dashboard/recent-activity');
         setActivityData(response.data);
       } catch {
-        // Fallback to fetching from generic module
-        try {
-          const [incidentsRes, changesRes, accessRes, complianceRes, ticketsRes] = await Promise.all([
-            api.get('/generic/incidents', { params: { limit: 3, sort: 'createdAt:desc' } }),
-            api.get('/generic/changes', { params: { limit: 3, sort: 'createdAt:desc' } }),
-            api.get('/generic/access-management', { params: { limit: 3, sort: 'createdAt:desc' } }),
-            api.get('/compliance', { params: { limit: 3 } }),
-            api.get('/generic/service-requests', { params: { limit: 3, sort: 'createdAt:desc' } })
-          ]);
-
-          const mapToActivity = (data: unknown[], type: ActivityItem['type'], titleKey: string, refKey: string) => {
-            return (data as Array<Record<string, unknown>>).map((item) => ({
-              id: String(item.id),
-              type,
-              title: String(item[titleKey] || ''),
-              reference: String(item[refKey] || item.id),
-              status: item.status ? String(item.status) : undefined,
-              createdAt: item.createdAt ? String(item.createdAt) : new Date().toISOString(),
-              createdBy: item.createdBy ? String(item.createdBy) : undefined
-            }));
-          };
-
-          setActivityData({
-            incidents: mapToActivity(incidentsRes.data.records || [], 'incident', 'title', 'incidentNo'),
-            problems: [],
-            changes: mapToActivity(changesRes.data.records || [], 'change', 'title', 'changeNo'),
-            complianceDocuments: mapToActivity(complianceRes.data.records || [], 'compliance', 'fileName', 'id'),
-            accessRequests: mapToActivity(accessRes.data.records || [], 'access', 'systemName', 'requestNo'),
-            serviceRequests: mapToActivity(ticketsRes.data.records || [], 'ticket', 'title', 'requestNo')
-          });
-        } catch {
-          setActivityData(defaultActivity);
-        }
+        // Use default values if API fails
+        setActivityData(defaultActivity);
       } finally {
         setLoading(false);
       }

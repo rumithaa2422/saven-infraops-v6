@@ -8,19 +8,11 @@ interface SystemHealthWidgetProps {
 interface HealthItem {
   name: string;
   status: 'healthy' | 'warning' | 'error';
-  lastChecked?: string;
   detail?: string;
-}
-
-interface SystemMetrics {
-  storageUsed: number;
-  storageTotal: number;
-  onlineUsers: number;
 }
 
 interface HealthData {
   services: HealthItem[];
-  metrics?: SystemMetrics;
 }
 
 export function SystemHealthWidget({ className = '' }: SystemHealthWidgetProps) {
@@ -30,12 +22,7 @@ export function SystemHealthWidget({ className = '' }: SystemHealthWidgetProps) 
       { name: 'Database', status: 'healthy', detail: 'Connected' },
       { name: 'AI Assistant', status: 'healthy', detail: 'Ready' },
       { name: 'Compliance Repository', status: 'healthy', detail: 'Available' }
-    ],
-    metrics: {
-      storageUsed: 0,
-      storageTotal: 100,
-      onlineUsers: 1
-    }
+    ]
   });
   const [loading, setLoading] = useState(true);
 
@@ -54,12 +41,7 @@ export function SystemHealthWidget({ className = '' }: SystemHealthWidgetProps) 
             { name: 'Database', status: 'healthy', detail: 'Connected' },
             { name: 'AI Assistant', status: 'healthy', detail: 'Ready' },
             { name: 'Compliance Repository', status: 'healthy', detail: 'Available' }
-          ],
-          metrics: {
-            storageUsed: 45, // Mock: 45GB used
-            storageTotal: 100, // Mock: 100GB total
-            onlineUsers: 1 // Will need real implementation
-          }
+          ]
         });
       } finally {
         setLoading(false);
@@ -95,11 +77,6 @@ export function SystemHealthWidget({ className = '' }: SystemHealthWidgetProps) 
     }
   };
 
-  const calculateStoragePercentage = () => {
-    if (!healthData.metrics) return 0;
-    return Math.round((healthData.metrics.storageUsed / healthData.metrics.storageTotal) * 100);
-  };
-
   if (loading) {
     return (
       <div className={`system-health-widget ${className}`}>
@@ -114,7 +91,6 @@ export function SystemHealthWidget({ className = '' }: SystemHealthWidgetProps) 
       <h2 className="widget-title">System Health</h2>
       
       <div className="health-section">
-        <h3 className="section-label">Services</h3>
         <div className="health-items">
           {healthData.services.map((item, index) => (
             <div key={index} className="health-item">
@@ -132,37 +108,6 @@ export function SystemHealthWidget({ className = '' }: SystemHealthWidgetProps) 
           ))}
         </div>
       </div>
-
-      {healthData.metrics && (
-        <div className="health-section">
-          <h3 className="section-label">System Metrics</h3>
-          <div className="health-metrics">
-            <div className="metric-item">
-              <div className="metric-header">
-                <span className="metric-icon">💾</span>
-                <span className="metric-name">Storage</span>
-                <span className="metric-value">{healthData.metrics.storageUsed}GB / {healthData.metrics.storageTotal}GB</span>
-              </div>
-              <div className="metric-bar">
-                <div 
-                  className={`metric-fill ${calculateStoragePercentage() > 80 ? 'metric-fill--warning' : ''}`}
-                  style={{ width: `${calculateStoragePercentage()}%` }}
-                ></div>
-              </div>
-              <span className="metric-percentage">{calculateStoragePercentage()}% used</span>
-            </div>
-            
-            <div className="metric-item">
-              <div className="metric-header">
-                <span className="metric-icon">🟢</span>
-                <span className="metric-name">Online Users</span>
-                <span className="metric-value">{healthData.metrics.onlineUsers}</span>
-              </div>
-              <span className="metric-label">Currently active</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -180,12 +125,7 @@ export function useSystemHealth() {
           { name: 'Database', status: 'healthy' },
           { name: 'AI Assistant', status: 'healthy' },
           { name: 'Compliance Repository', status: 'healthy' }
-        ],
-        metrics: {
-          storageUsed: 0,
-          storageTotal: 100,
-          onlineUsers: 0
-        }
+        ]
       };
     }
   };
