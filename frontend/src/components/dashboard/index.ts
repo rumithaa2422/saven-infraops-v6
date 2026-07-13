@@ -1,5 +1,7 @@
 export { HeaderWidget } from './HeaderWidget';
-export { KpiCardsWidget } from './KpiCardsWidget';
+export { SystemSummaryWidget } from './SystemSummaryWidget';
+export { MyTasksWidget } from './MyTasksWidget';
 export { SystemHealthWidget } from './SystemHealthWidget';
 export { QuickActionsWidget } from './QuickActionsWidget';
 export { RecentActivityWidget } from './RecentActivityWidget';
+export { ModuleShortcutsWidget } from './ModuleShortcutsWidget';

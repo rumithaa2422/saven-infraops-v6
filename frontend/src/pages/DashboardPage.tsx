@@ -1,4 +1,12 @@
-import { HeaderWidget, KpiCardsWidget, SystemHealthWidget, QuickActionsWidget, RecentActivityWidget } from '../components/dashboard';
+import { 
+  HeaderWidget, 
+  SystemSummaryWidget,
+  MyTasksWidget,
+  SystemHealthWidget, 
+  QuickActionsWidget, 
+  RecentActivityWidget,
+  ModuleShortcutsWidget
+} from '../components/dashboard';
 
 export function DashboardPage() {
   return (
@@ -6,16 +14,22 @@ export function DashboardPage() {
       <HeaderWidget />
       
       <div className="dashboard-main">
+        {/* Left Column - Primary Content */}
         <div className="dashboard-left-column">
-          <KpiCardsWidget />
+          <SystemSummaryWidget />
+          <MyTasksWidget />
           <QuickActionsWidget />
         </div>
         
+        {/* Right Column - Secondary Content */}
         <div className="dashboard-right-column">
           <SystemHealthWidget />
           <RecentActivityWidget />
         </div>
       </div>
+
+      {/* Full Width - Module Shortcuts */}
+      <ModuleShortcutsWidget />
     </div>
   );
 }

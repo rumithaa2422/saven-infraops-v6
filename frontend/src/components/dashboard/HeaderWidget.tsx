@@ -41,12 +41,29 @@ export function HeaderWidget({ className = '' }: HeaderWidgetProps) {
     });
   };
 
+  // Get user role display
+  const getUserRoleDisplay = () => {
+    if (!user?.roles || user.roles.length === 0) {
+      return 'User';
+    }
+    // Format roles for display (capitalize first letter)
+    return user.roles.map(role => 
+      role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
+    ).join(', ');
+  };
+
   return (
     <div className={`dashboard-header ${className}`}>
       <div className="header-content">
         <div className="header-greeting">
           <h1 className="greeting-text">{getGreeting()}, {user?.name || 'User'}</h1>
-          <p className="header-date">{formatDate(currentTime)}</p>
+          <div className="header-meta">
+            <span className="header-role">
+              <span className="role-icon">👤</span>
+              {getUserRoleDisplay()}
+            </span>
+            <span className="header-date">{formatDate(currentTime)}</span>
+          </div>
         </div>
         <div className="header-time">
           <span className="time-label">Current Time</span>
