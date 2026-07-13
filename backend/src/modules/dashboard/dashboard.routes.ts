@@ -2,63 +2,55 @@ import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
+import { WorkStatus, UserStatus, AccessStatus } from '@prisma/client';
 
 export const dashboardRouter = Router();
 
+// Terminal statuses - records with these statuses are considered closed/resolved
+const CLOSED_STATUSES: WorkStatus[] = [WorkStatus.CLOSED, WorkStatus.RESOLVED];
+
 // GET /api/dashboard/summary
 // Returns comprehensive system-wide metrics using only existing Prisma models
-// Reuses existing authentication and authorization
 dashboardRouter.get('/summary', requireAuth, requirePermissionOr(['dashboard:read', 'dashboard:view']), async (_req, res, next) => {
   try {
     const [
-      // Users & Teams
       totalUsers,
       totalRoles,
-      // Service Requests (Tickets)
       openTickets,
       slaBreaches,
-      // Incidents
       totalIncidents,
       criticalIncidents,
       openIncidents,
-      // Problems
       openProblems,
-      // Changes
       pendingChanges,
-      // Access Management
       pendingAccessRequests,
-      // Compliance
       complianceDocuments,
-      // Inventory
       totalAssets,
       availableAssets,
-      // Projects & Environments
       totalProjects,
-      // Vendors & Licenses
       totalVendors,
-      // Knowledge Base
       totalKnowledgeBase
     ] = await Promise.all([
       // Users - count active users
-      prisma.user.count({ where: { status: 'ACTIVE' } }),
+      prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
       // Roles - count all roles
       prisma.role.count(),
-      // Open Service Requests (Tickets)
-      prisma.serviceRequest.count({ where: { status: { notIn: ['CLOSED', 'RESOLVED'] } } }),
+      // Open Service Requests (Tickets) - not closed or resolved
+      prisma.serviceRequest.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
       // SLA Breaches - overdue tickets
-      prisma.serviceRequest.count({ where: { dueAt: { lt: new Date() }, status: { notIn: ['CLOSED', 'RESOLVED'] } } }),
+      prisma.serviceRequest.count({ where: { dueAt: { lt: new Date() }, status: { notIn: CLOSED_STATUSES } } }),
       // Total Incidents - all incidents
       prisma.incident.count(),
       // Critical Incidents - SEV1 and open
-      prisma.incident.count({ where: { severity: 'SEV1', status: { notIn: ['CLOSED', 'RESOLVED'] } } }),
+      prisma.incident.count({ where: { severity: 'SEV1', status: { notIn: CLOSED_STATUSES } } }),
       // Open Incidents - not closed
-      prisma.incident.count({ where: { status: { notIn: ['CLOSED', 'RESOLVED'] } } }),
+      prisma.incident.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
       // Open Problems - not resolved
-      prisma.problem.count({ where: { status: { notIn: ['CLOSED', 'RESOLVED'] } } }),
-      // Pending Changes - in progress or pending
-      prisma.changeRequest.count({ where: { status: { in: ['PENDING', 'IN_REVIEW', 'SCHEDULED', 'IN_PROGRESS'] } } }),
+      prisma.problem.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
+      // Pending Changes - not closed or resolved
+      prisma.changeRequest.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
       // Pending Access Requests
-      prisma.accessRequest.count({ where: { status: 'REQUESTED' } }),
+      prisma.accessRequest.count({ where: { status: AccessStatus.REQUESTED } }),
       // Compliance Documents
       prisma.complianceDocument.count(),
       // Total Assets
@@ -74,32 +66,21 @@ dashboardRouter.get('/summary', requireAuth, requirePermissionOr(['dashboard:rea
     ]);
 
     res.json({
-      // Users & Teams
       totalUsers,
       totalRoles,
-      // Service Requests
       openTickets,
       slaBreaches,
-      // Incidents
       totalIncidents,
       criticalIncidents,
       openIncidents,
-      // Problems
       openProblems,
-      // Changes
       pendingChanges,
-      // Access
       pendingAccessRequests,
-      // Compliance
       complianceDocuments,
-      // Inventory
       totalAssets,
       availableAssets,
-      // Projects
       totalProjects,
-      // Vendors
       totalVendors,
-      // Knowledge Base
       totalKnowledgeBase
     });
   } catch (error) {
@@ -115,41 +96,32 @@ dashboardRouter.get('/my-tasks', requireAuth, requirePermissionOr(['dashboard:re
     const userName = user?.name || '';
 
     const [openIncidents, pendingChanges, pendingAccessRequests, openProblems] = await Promise.all([
-      // Open incidents assigned to or created by the user
+      // Open incidents owned by the user
       prisma.incident.count({
         where: {
-          status: { notIn: ['CLOSED', 'RESOLVED'] },
-          OR: [
-            { ownerName: userName },
-            { createdBy: userName }
-          ]
+          status: { notIn: CLOSED_STATUSES },
+          ownerName: userName
         }
       }),
-      // Pending changes assigned to or owned by the user
+      // Pending changes owned by the user
       prisma.changeRequest.count({
         where: {
-          status: { in: ['PENDING', 'IN_REVIEW', 'SCHEDULED', 'IN_PROGRESS'] },
-          OR: [
-            { ownerName: userName },
-            { createdBy: userName }
-          ]
+          status: { notIn: CLOSED_STATUSES },
+          ownerName: userName
         }
       }),
       // Pending access requests from the user
       prisma.accessRequest.count({
         where: {
-          status: 'REQUESTED',
+          status: AccessStatus.REQUESTED,
           requesterName: userName
         }
       }),
-      // Open problems assigned to the user
+      // Open problems owned by the user
       prisma.problem.count({
         where: {
-          status: { notIn: ['CLOSED', 'RESOLVED'] },
-          OR: [
-            { ownerName: userName },
-            { createdBy: userName }
-          ]
+          status: { notIn: CLOSED_STATUSES },
+          ownerName: userName
         }
       })
     ]);
@@ -179,35 +151,81 @@ dashboardRouter.get('/recent-activity', requireAuth, requirePermissionOr(['dashb
       recentAccessRequests,
       recentServiceRequests
     ] = await Promise.all([
+      // Recent incidents - Incident model has: incidentNo, title, status, ownerName, createdAt
       prisma.incident.findMany({
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, incidentNo: true, title: true, status: true, createdAt: true, createdBy: true }
+        select: { 
+          id: true, 
+          incidentNo: true, 
+          title: true, 
+          status: true, 
+          createdAt: true, 
+          ownerName: true 
+        }
       }),
+      // Recent problems - Problem model has: problemNo, title, status, ownerName, createdAt
       prisma.problem.findMany({
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, problemNo: true, title: true, status: true, createdAt: true, createdBy: true }
+        select: { 
+          id: true, 
+          problemNo: true, 
+          title: true, 
+          status: true, 
+          createdAt: true, 
+          ownerName: true 
+        }
       }),
+      // Recent changes - ChangeRequest model has: changeNo, title, status, ownerName, createdAt
       prisma.changeRequest.findMany({
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, changeNo: true, title: true, status: true, createdAt: true, createdBy: true }
+        select: { 
+          id: true, 
+          changeNo: true, 
+          title: true, 
+          status: true, 
+          createdAt: true, 
+          ownerName: true 
+        }
       }),
+      // Recent compliance documents
       prisma.complianceDocument.findMany({
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, fileName: true, createdAt: true, uploadedBy: true }
+        select: { 
+          id: true, 
+          fileName: true, 
+          createdAt: true, 
+          uploadedBy: true 
+        }
       }),
+      // Recent access requests
       prisma.accessRequest.findMany({
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, requestNo: true, systemName: true, status: true, createdAt: true, requesterName: true }
+        select: { 
+          id: true, 
+          requestNo: true, 
+          systemName: true, 
+          status: true, 
+          createdAt: true, 
+          requesterName: true 
+        }
       }),
+      // Recent service requests (tickets) - ServiceRequest model has: ticketNo, title, status, requesterName, createdAt
       prisma.serviceRequest.findMany({
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, requestNo: true, title: true, status: true, createdAt: true, createdBy: true }
+        select: { 
+          id: true, 
+          ticketNo: true, 
+          title: true, 
+          status: true, 
+          createdAt: true, 
+          requesterName: true 
+        }
       })
     ]);
 
@@ -219,7 +237,7 @@ dashboardRouter.get('/recent-activity', requireAuth, requirePermissionOr(['dashb
       reference: item.incidentNo,
       status: item.status,
       createdAt: item.createdAt.toISOString(),
-      createdBy: item.createdBy
+      createdBy: item.ownerName
     }));
 
     const problems = recentProblems.map(item => ({
@@ -229,7 +247,7 @@ dashboardRouter.get('/recent-activity', requireAuth, requirePermissionOr(['dashb
       reference: item.problemNo,
       status: item.status,
       createdAt: item.createdAt.toISOString(),
-      createdBy: item.createdBy
+      createdBy: item.ownerName
     }));
 
     const changes = recentChanges.map(item => ({
@@ -239,7 +257,7 @@ dashboardRouter.get('/recent-activity', requireAuth, requirePermissionOr(['dashb
       reference: item.changeNo,
       status: item.status,
       createdAt: item.createdAt.toISOString(),
-      createdBy: item.createdBy
+      createdBy: item.ownerName
     }));
 
     const complianceDocuments = recentComplianceDocuments.map(item => ({
@@ -265,10 +283,10 @@ dashboardRouter.get('/recent-activity', requireAuth, requirePermissionOr(['dashb
       id: item.id,
       type: 'ticket' as const,
       title: item.title,
-      reference: item.requestNo,
+      reference: item.ticketNo,
       status: item.status,
       createdAt: item.createdAt.toISOString(),
-      createdBy: item.createdBy
+      createdBy: item.requesterName
     }));
 
     res.json({
@@ -302,14 +320,7 @@ dashboardRouter.get('/health', requireAuth, requirePermissionOr(['dashboard:read
         { name: 'Database', status: dbStatus, detail: dbStatus === 'healthy' ? 'Connected' : 'Degraded' },
         { name: 'AI Assistant', status: 'healthy', detail: 'Ready' },
         { name: 'Compliance Repository', status: 'healthy', detail: 'Available' }
-      ],
-      metrics: {
-        // Note: Storage and online users would require additional infrastructure
-        // These are placeholders for future implementation
-        storageUsed: 0,
-        storageTotal: 0,
-        onlineUsers: 0
-      }
+      ]
     });
   } catch (error) {
     next(error);
@@ -317,13 +328,12 @@ dashboardRouter.get('/health', requireAuth, requirePermissionOr(['dashboard:read
 });
 
 // DEPRECATED: /api/dashboard/kpi - Use /api/dashboard/summary instead
-// Keeping for backward compatibility
 dashboardRouter.get('/kpi', requireAuth, requirePermissionOr(['dashboard:read', 'dashboard:view']), async (_req, res, next) => {
   try {
     const [totalIncidents, openProblems, pendingChanges, complianceDocuments] = await Promise.all([
       prisma.incident.count(),
       prisma.problem.count({ where: { status: { notIn: ['CLOSED', 'RESOLVED'] } } }),
-      prisma.changeRequest.count({ where: { status: { in: ['PENDING', 'IN_REVIEW', 'SCHEDULED', 'IN_PROGRESS'] } } }),
+      prisma.changeRequest.count({ where: { status: { notIn: ['CLOSED', 'RESOLVED'] } } }),
       prisma.complianceDocument.count()
     ]);
 
