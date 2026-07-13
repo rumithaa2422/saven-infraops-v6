@@ -4,4 +4,3 @@ export { MyTasksWidget } from './MyTasksWidget';
 export { SystemHealthWidget } from './SystemHealthWidget';
 export { QuickActionsWidget } from './QuickActionsWidget';
 export { RecentActivityWidget } from './RecentActivityWidget';
-export { ModuleShortcutsWidget } from './ModuleShortcutsWidget';

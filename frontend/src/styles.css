@@ -3192,163 +3192,240 @@ input:disabled {
 }
 
 /* ============================================================================
-   MODULE SHORTCUTS WIDGET
+   PHASE 2C - LOADING, ERROR, AND SKELETON STATES
    ============================================================================ */
 
-.module-shortcuts-widget {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 12px 40px rgba(16, 24, 44, 0.06);
+/* Skeleton Loading Styles */
+.skeleton-icon,
+.skeleton-value,
+.skeleton-label,
+.skeleton-dot,
+.skeleton-line {
+  background: linear-gradient(90deg, var(--panel-soft) 25%, var(--line) 50%, var(--panel-soft) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
 }
 
-.module-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.skeleton-value {
+  width: 40px;
+  height: 24px;
+  margin-bottom: 4px;
+}
+
+.skeleton-label {
+  width: 60px;
+  height: 12px;
+}
+
+.skeleton-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.skeleton-title {
+  width: 80%;
+  height: 16px;
+  margin-bottom: 6px;
+}
+
+.skeleton-meta {
+  width: 50%;
+  height: 12px;
+}
+
+/* Summary Item Skeleton */
+.summary-item--skeleton {
+  display: flex;
+  align-items: center;
   gap: 12px;
+  padding: 14px;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid transparent;
 }
 
-.module-card {
+.summary-item--skeleton .summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Task Item Skeleton */
+.task-item--skeleton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.task-item--skeleton .task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Timeline Item Skeleton */
+.timeline-item--skeleton {
+  padding: 10px 0 10px 16px;
+}
+
+.timeline-item--skeleton .timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Error State Styles */
+.summary-error,
+.tasks-error,
+.activity-error {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
   gap: 8px;
-  padding: 16px 12px;
-  background: var(--bg);
-  border: 1px solid transparent;
-  border-radius: 14px;
+}
+
+.error-icon {
+  font-size: 32px;
+}
+
+.error-message {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.retry-button {
+  padding: 6px 16px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
+}
+
+.retry-button:hover {
+  background: var(--brand-dark);
+}
+
+/* Empty State Improvements */
+.tasks-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
   text-align: center;
 }
 
-.module-card:hover {
-  border-color: var(--brand);
-  background: var(--brand-soft);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(84, 104, 255, 0.15);
+.tasks-empty .empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
 }
 
-.module-card:active {
-  transform: translateY(-1px);
-}
-
-.module-icon-wrapper {
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  transition: transform 0.2s ease;
-}
-
-.module-card:hover .module-icon-wrapper {
-  transform: scale(1.1);
-}
-
-.module-icon {
-  font-size: 24px;
-}
-
-.module-label {
-  font-size: 13px;
-  font-weight: 700;
+.tasks-empty p {
+  margin: 0;
+  font-size: 14px;
   color: var(--text);
+  font-weight: 500;
 }
 
-.module-description {
+.tasks-empty .empty-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Summary Warning State */
+.summary-item--warning .summary-value {
+  color: var(--warning);
+}
+
+/* Pill Info Style */
+.pill.info {
+  background: #e8f4fd;
+  color: #0066cc;
+}
+
+/* Widget Subtitle */
+.widget-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 8px;
+}
+
+/* Reference in Timeline */
+.timeline-reference {
+  font-family: monospace;
   font-size: 10px;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
 
-/* ============================================================================
-   ENHANCED RESPONSIVE DESIGN - PHASE 2
-   ============================================================================ */
-
-/* Tablet (1024px and below) */
-@media (max-width: 1024px) {
-  .summary-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .module-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+/* Improved Activity Title */
+.timeline-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-/* Small Tablet / Large Mobile (768px and below) */
-@media (max-width: 768px) {
-  .header-meta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .tasks-list {
-    grid-template-columns: 1fr;
-  }
-
-  .module-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .module-description {
-    display: none;
-  }
+/* Status Badge Improvements */
+.pill {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: capitalize;
 }
 
-/* Mobile (480px and below) */
-@media (max-width: 480px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
+.pill.medium {
+  background: #fff3e0;
+  color: #e65100;
+}
 
-  .summary-item {
-    padding: 12px;
-  }
+.pill.high {
+  background: #ffebee;
+  color: #c62828;
+}
 
-  .module-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.pill.low {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
 
-  .module-card {
-    padding: 14px 8px;
-  }
+.pill.critical {
+  background: #ffcdd2;
+  color: #b71c1c;
+}
 
-  .module-icon-wrapper {
-    width: 44px;
-    height: 44px;
-  }
-
-  .module-icon {
-    font-size: 20px;
-  }
-
-  .timeline-container {
-    padding-left: 24px;
-  }
-
-  .timeline-line {
-    left: 9px;
-  }
-
-  .timeline-dot {
-    left: -15px;
-    width: 20px;
-    height: 20px;
-  }
-
-  .dot-icon {
-    font-size: 10px;
-  }
+.pill.info {
+  background: #e3f2fd;
+  color: #1565c0;
 }

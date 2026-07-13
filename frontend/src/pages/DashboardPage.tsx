@@ -4,8 +4,7 @@ import {
   MyTasksWidget,
   SystemHealthWidget, 
   QuickActionsWidget, 
-  RecentActivityWidget,
-  ModuleShortcutsWidget
+  RecentActivityWidget
 } from '../components/dashboard';
 
 export function DashboardPage() {
@@ -27,9 +26,6 @@ export function DashboardPage() {
           <RecentActivityWidget />
         </div>
       </div>
-
-      {/* Full Width - Module Shortcuts */}
-      <ModuleShortcutsWidget />
     </div>
   );
 }
