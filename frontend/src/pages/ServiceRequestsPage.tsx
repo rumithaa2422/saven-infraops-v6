@@ -262,9 +262,9 @@ export function ServiceRequestsPage() {
                 <td>{item.assigneeName || 'Unassigned'}</td>
                 <td>
                   <div className="action-buttons">
-                    <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">👁 Open</button>
-                    {canManage && <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">✏️ Edit</button>}
-                    {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">🗑️ Delete</button>}
+                    <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">Open</button>
+                    {canManage && <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">Edit</button>}
+                    {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
                   </div>
                 </td>
               </tr>
@@ -331,13 +331,13 @@ export function ServiceRequestsPage() {
         <div className="modal-backdrop">
           <div className="modal">
             <div className="page-title-row">
-              <h3>Delete Service Request</h3>
+              <h3>Delete Record?</h3>
               <button type="button" className="close" onClick={closeDeleteDialog}>Close</button>
             </div>
 
             <div className="warning-box">
-              <p><strong>Warning:</strong> This action cannot be undone.</p>
-              <p>Are you sure you want to delete this request?</p>
+              <p>Are you sure you want to delete this record?</p>
+              <p>This action cannot be undone.</p>
             </div>
 
             <div className="form-group">

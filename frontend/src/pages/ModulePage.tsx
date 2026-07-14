@@ -1784,13 +1784,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   <td>
                     <div className="action-buttons">
                       {hasPermission((config.permissions.view || config.permissions.create) || '') && (
-                        <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">👁 Open</button>
+                        <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">Open</button>
                       )}
                       {hasPermission(config.permissions.write || '') && (
-                        <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">✏️ Edit</button>
+                        <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">Edit</button>
                       )}
                       {hasPermission(config.permissions.delete || '') && (
-                        <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">🗑️ Delete</button>
+                        <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>
                       )}
                     </div>
                   </td>
@@ -1921,14 +1921,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         <div className="modal-backdrop">
           <div className="modal">
             <div className="page-title-row">
-              <h3>Delete Document</h3>
+              <h3>Delete Record?</h3>
               <button type="button" className="close" onClick={closeDeleteDocumentDialog}>Close</button>
             </div>
             
             <div className="warning-box">
-              <p><strong>Warning:</strong> This action cannot be undone.</p>
-              <p>You are about to delete: <strong>{String(documentToDelete.fileName)}</strong></p>
-              <p>This will permanently remove the document from the repository.</p>
+              <p>Are you sure you want to delete this record?</p>
+              <p>This action cannot be undone.</p>
             </div>
             
             <div className="form-actions">
@@ -2008,8 +2007,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
             </div>
             
             <div className="warning-box">
-              <p><strong>Warning:</strong> This action cannot be undone.</p>
               <p>Are you sure you want to delete this record?</p>
+              <p>This action cannot be undone.</p>
             </div>
             
             <div className="form-group">

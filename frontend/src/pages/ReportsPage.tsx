@@ -298,7 +298,7 @@ export function ReportsPage() {
             <div className="modal-actions">
               {canExport && reportData.rows.length > 0 && (
                 <button className="secondary" onClick={exportCsv}>
-                  📥 Export CSV
+                  Export CSV
                 </button>
               )}
               <span className="record-count">
