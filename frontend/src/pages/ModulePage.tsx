@@ -274,6 +274,7 @@ const configs: Record<string, ModuleConfig> = {
       view: 'users:view',      // View user details in drawer
       create: 'users:create',  // Create user button/modal
       write: 'users:manage',   // Edit/Enable/Disable/Reset Password
+      delete: 'users:delete',  // Delete user
       export: 'users:export',  // Export users button
       import: 'settings:write' // Import users
     },
@@ -1785,9 +1786,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                     <div className="action-buttons">
                       {hasPermission((config.permissions.view || config.permissions.create) || '') && (
                         <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">Open</button>
-                      )}
-                      {hasPermission(config.permissions.write || '') && (
-                        <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">Edit</button>
                       )}
                       {hasPermission(config.permissions.delete || '') && (
                         <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>

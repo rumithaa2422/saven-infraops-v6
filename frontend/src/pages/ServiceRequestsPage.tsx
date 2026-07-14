@@ -263,7 +263,6 @@ export function ServiceRequestsPage() {
                 <td>
                   <div className="action-buttons">
                     <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">Open</button>
-                    {canManage && <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">Edit</button>}
                     {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
                   </div>
                 </td>
