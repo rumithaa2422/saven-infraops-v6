@@ -3,6 +3,7 @@ import { AppShell } from '../layout/AppShell';
 import { LoginPage } from '../pages/LoginPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { ModulePage } from '../pages/ModulePage';
+import { ReportsPage } from '../pages/ReportsPage';
 import { ServiceRequestsPage } from '../pages/ServiceRequestsPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';

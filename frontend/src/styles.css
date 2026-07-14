@@ -4714,3 +4714,73 @@ input:disabled {
 .drawer .unauthorized-content p {
   font-size: 0.875rem;
 }
+
+
+/* Reports Page */
+.report-table-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.report-table-container table {
+  width: 100%;
+  margin: 0;
+}
+
+.report-table-container th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.record-count {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-left: auto;
+}
+
+.empty-row {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem !important;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 150px;
+}
+
+.filter-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.filter-group select,
+.filter-group input {
+  width: 100%;
+}
+
+.modal.large {
+  max-width: 90vw;
+  width: 1200px;
+}
