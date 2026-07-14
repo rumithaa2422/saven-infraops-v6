@@ -1,4 +1,5 @@
 import { prisma } from '../common/prisma.js';
+import { HttpError } from '../common/httpError.js';
 
 function withRef(prefix: string, count: number) {
   return `${prefix}-${1001 + count}`;
@@ -15,6 +16,10 @@ export interface CreateIncidentInput {
   actorEmail?: string | null;
   ipAddress?: string | null;
 }
+
+// Valid status values for incidents (WorkStatus enum)
+const INCIDENT_STATUSES = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'WAITING_FOR_VENDOR', 'PENDING_APPROVAL', 'RESOLVED', 'CLOSED', 'REOPENED'] as const;
+type IncidentStatus = typeof INCIDENT_STATUSES[number];
 
 export async function createIncident(data: CreateIncidentInput) {
   const count = await prisma.incident.count();
@@ -76,6 +81,46 @@ export async function updateIncident(
       entityId: item.id,
       oldValue: existing as any,
       newValue: item as any,
+      ipAddress: data.ipAddress || null
+    }
+  });
+
+  return item;
+}
+
+// Status update for incidents
+export interface UpdateIncidentStatusInput {
+  status: string;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  ipAddress?: string | null;
+}
+
+export async function updateIncidentStatus(id: string, data: UpdateIncidentStatusInput) {
+  const existing = await prisma.incident.findUnique({ where: { id } });
+  if (!existing) {
+    throw new HttpError(404, 'Incident not found');
+  }
+
+  const newStatus = data.status.toUpperCase();
+  if (!INCIDENT_STATUSES.includes(newStatus as IncidentStatus)) {
+    throw new HttpError(400, `Invalid status. Must be one of: ${INCIDENT_STATUSES.join(', ')}`);
+  }
+
+  const item = await prisma.incident.update({
+    where: { id },
+    data: { status: newStatus as IncidentStatus }
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: data.actorId || null,
+      actorEmail: data.actorEmail || null,
+      action: 'STATUS_CHANGE',
+      entityType: 'Incident',
+      entityId: item.id,
+      oldValue: { status: existing.status },
+      newValue: { status: item.status },
       ipAddress: data.ipAddress || null
     }
   });

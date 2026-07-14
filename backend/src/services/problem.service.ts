@@ -1,4 +1,5 @@
 import { prisma } from '../common/prisma.js';
+import { HttpError } from '../common/httpError.js';
 
 function withRef(prefix: string, count: number) {
   return `${prefix}-${1001 + count}`;
@@ -9,10 +10,15 @@ export interface CreateProblemInput {
   ownerName?: string | null;
   description?: string | null;
   rootCause?: string | null;
+  status?: string;
   actorId?: string | null;
   actorEmail?: string | null;
   ipAddress?: string | null;
 }
+
+// Valid status values for problems (WorkStatus enum)
+const PROBLEM_STATUSES = ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'WAITING_FOR_VENDOR', 'PENDING_APPROVAL', 'RESOLVED', 'CLOSED'] as const;
+type ProblemStatus = typeof PROBLEM_STATUSES[number];
 
 export async function createProblem(data: CreateProblemInput) {
   const count = await prisma.problem.count();
@@ -51,6 +57,35 @@ export async function updateProblem(
     throw new Error('Problem not found');
   }
 
+  // Handle status update
+  if (data.status) {
+    const newStatus = data.status.toUpperCase();
+    if (!PROBLEM_STATUSES.includes(newStatus as ProblemStatus)) {
+      throw new HttpError(400, `Invalid status. Must be one of: ${PROBLEM_STATUSES.join(', ')}`);
+    }
+
+    const item = await prisma.problem.update({
+      where: { id },
+      data: { status: newStatus as ProblemStatus }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: data.actorId || null,
+        actorEmail: data.actorEmail || null,
+        action: 'STATUS_CHANGE',
+        entityType: 'Problem',
+        entityId: item.id,
+        oldValue: { status: existing.status },
+        newValue: { status: item.status },
+        ipAddress: data.ipAddress || null
+      }
+    });
+
+    return item;
+  }
+
+  // Handle regular field updates
   const item = await prisma.problem.update({
     where: { id },
     data: {

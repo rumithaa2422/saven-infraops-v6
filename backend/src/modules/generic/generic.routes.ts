@@ -6,14 +6,18 @@ import { HttpError } from '../../common/httpError.js';
 import {
   createIncident,
   updateIncident,
+  updateIncidentStatus,
   createProblem,
   updateProblem,
   createChangeRequest,
   updateChangeRequest,
+  updateChangeStatus,
   createAsset,
   updateAsset,
+  updateAssetStatus,
   createAccessRequest,
   updateAccessRequest,
+  updateAccessStatus,
   createProjectEnvironment,
   updateProjectEnvironment,
   createVendorLicense,
@@ -347,5 +351,70 @@ genericModuleRouter.delete('/:module/:id', requireAuth, async (req, res, next) =
     res.json(result);
   } catch (error) {
     next(error instanceof Error ? error : new HttpError(400, 'Delete failed'));
+  }
+});
+
+// ============================================================================
+// STATUS UPDATE ENDPOINTS
+// ============================================================================
+
+// PATCH /:module/:id/status - Update status for modules with status workflows
+genericModuleRouter.patch('/:module/:id/status', requireAuth, async (req, res, next) => {
+  try {
+    const moduleName = req.params.module as string;
+    const id = req.params.id as string;
+    const { status } = req.body;
+
+    if (!status) {
+      throw new HttpError(400, 'Status is required');
+    }
+
+    const actor = { id: req.user?.id, email: req.user?.email };
+
+    let item;
+    switch (moduleName) {
+      case 'incidents':
+        await new Promise<void>((resolve, reject) =>
+          requirePermissionOr(['incidents:manage', 'incidents:write'])(req, res, (err) => err ? reject(err) : resolve())
+        );
+        item = await updateIncidentStatus(id, { status, ...actor, ipAddress: req.ip });
+        break;
+
+      case 'changes':
+        await new Promise<void>((resolve, reject) =>
+          requirePermissionOr(['changes:approve', 'changes:manage'])(req, res, (err) => err ? reject(err) : resolve())
+        );
+        item = await updateChangeStatus(id, { status, ...actor, ipAddress: req.ip });
+        break;
+
+      case 'inventory':
+        await new Promise<void>((resolve, reject) =>
+          requirePermissionOr(['inventory:manage', 'inventory:write'])(req, res, (err) => err ? reject(err) : resolve())
+        );
+        item = await updateAssetStatus(id, { status, ...actor, ipAddress: req.ip });
+        break;
+
+      case 'access-management':
+        await new Promise<void>((resolve, reject) =>
+          requirePermissionOr(['access:approve', 'access:manage'])(req, res, (err) => err ? reject(err) : resolve())
+        );
+        item = await updateAccessStatus(id, { status, ...actor, ipAddress: req.ip });
+        break;
+
+      case 'problems':
+        await new Promise<void>((resolve, reject) =>
+          requirePermissionOr(['problems:manage', 'problems:write'])(req, res, (err) => err ? reject(err) : resolve())
+        );
+        // Use the existing update function with status
+        item = await updateProblem(id, { status, ...actor, ipAddress: req.ip });
+        break;
+
+      default:
+        throw new HttpError(400, 'Status updates not supported for this module');
+    }
+
+    res.json({ item });
+  } catch (error) {
+    next(error instanceof Error ? error : new HttpError(400, 'Status update failed'));
   }
 });

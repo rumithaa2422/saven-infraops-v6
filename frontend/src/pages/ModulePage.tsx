@@ -317,28 +317,124 @@ function formatUserRoles(value: unknown): string {
 }
 
 
-function getStatusActions(moduleKey: string) {
-  if (moduleKey === 'access-management') return [
-    { label: 'Approve', value: 'APPROVED' },
-    { label: 'Provision', value: 'PROVISIONED' },
-    { label: 'Revoke', value: 'REVOKED' }
-  ];
-  if (moduleKey === 'inventory') return [
-    { label: 'Mark Available', value: 'AVAILABLE' },
-    { label: 'Mark Assigned', value: 'ASSIGNED' },
-    { label: 'Under Repair', value: 'UNDER_REPAIR' }
-  ];
-  if (moduleKey === 'knowledge-base') return [
-    { label: 'Publish', value: 'PUBLISHED' },
-    { label: 'Draft', value: 'DRAFT' },
-    { label: 'Archive', value: 'ARCHIVED' }
-  ];
+type StatusAction = { label: string; value: string };
+
+function getStatusActions(moduleKey: string, currentStatus?: string): StatusAction[] {
+  // Access Management: REQUESTED -> APPROVED -> PROVISIONED -> REVOKED
+  if (moduleKey === 'access-management') {
+    if (currentStatus === 'REVOKED' || currentStatus === 'EXPIRED') return [];
+    if (currentStatus === 'PROVISIONED') {
+      return [{ label: 'Revoke', value: 'REVOKED' }];
+    }
+    if (currentStatus === 'APPROVED') {
+      return [
+        { label: 'Provision', value: 'PROVISIONED' },
+        { label: 'Revoke', value: 'REVOKED' }
+      ];
+    }
+    // REQUESTED, REJECTED or unknown
+    return [{ label: 'Approve', value: 'APPROVED' }];
+  }
+
+  // Inventory: AVAILABLE <-> ASSIGNED, UNDER_REPAIR
+  if (moduleKey === 'inventory') {
+    return [
+      { label: 'Mark Available', value: 'AVAILABLE' },
+      { label: 'Mark Assigned', value: 'ASSIGNED' },
+      { label: 'Under Repair', value: 'UNDER_REPAIR' }
+    ];
+  }
+
+  // Knowledge Base - custom workflow
+  if (moduleKey === 'knowledge-base') {
+    return [
+      { label: 'Publish', value: 'PUBLISHED' },
+      { label: 'Archive', value: 'ARCHIVED' }
+    ];
+  }
+
   if (moduleKey === 'users-teams') return [];
-  return [
-    { label: 'Mark In Progress', value: 'IN_PROGRESS' },
-    { label: 'Mark Pending', value: 'PENDING_APPROVAL' },
-    { label: 'Close', value: 'CLOSED' }
-  ];
+
+  // Incidents, Changes, Problems use WorkStatus enum
+  const status = currentStatus?.toUpperCase();
+  
+  // If already closed, no actions available
+  if (status === 'CLOSED') return [];
+  
+  // Incidents: OPEN -> IN_PROGRESS -> PENDING_APPROVAL -> RESOLVED -> CLOSED
+  if (moduleKey === 'incidents') {
+    if (status === 'OPEN' || status === 'ASSIGNED') {
+      return [
+        { label: 'Mark In Progress', value: 'IN_PROGRESS' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'IN_PROGRESS') {
+      return [
+        { label: 'Mark Pending Approval', value: 'PENDING_APPROVAL' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'PENDING_APPROVAL') {
+      return [
+        { label: 'Mark In Progress', value: 'IN_PROGRESS' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'RESOLVED') {
+      return [{ label: 'Close', value: 'CLOSED' }];
+    }
+    // Default for unknown status
+    return [
+      { label: 'Mark In Progress', value: 'IN_PROGRESS' },
+      { label: 'Close', value: 'CLOSED' }
+    ];
+  }
+
+  // Changes: PENDING_APPROVAL -> OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED
+  if (moduleKey === 'changes') {
+    if (status === 'PENDING_APPROVAL' || status === 'OPEN') {
+      return [
+        { label: 'Approve', value: 'OPEN' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'IN_PROGRESS') {
+      return [
+        { label: 'Mark Resolved', value: 'RESOLVED' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'RESOLVED') {
+      return [{ label: 'Close', value: 'CLOSED' }];
+    }
+    return [];
+  }
+
+  // Problems: OPEN -> IN_PROGRESS -> PENDING_APPROVAL -> RESOLVED -> CLOSED
+  if (moduleKey === 'problems') {
+    if (status === 'OPEN' || status === 'ASSIGNED') {
+      return [{ label: 'Mark In Progress', value: 'IN_PROGRESS' }];
+    }
+    if (status === 'IN_PROGRESS') {
+      return [
+        { label: 'Mark Pending Approval', value: 'PENDING_APPROVAL' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'PENDING_APPROVAL') {
+      return [
+        { label: 'Mark In Progress', value: 'IN_PROGRESS' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'RESOLVED') {
+      return [{ label: 'Close', value: 'CLOSED' }];
+    }
+    return [];
+  }
+
+  return [];
 }
 
 function getInitialForm(fields: Field[]) {
@@ -358,7 +454,9 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [roles, setRoles] = useState<{id: string; name: string}[]>([]);
-  const statusActions = getStatusActions(moduleKey);
+  
+  // Get status actions based on current item's status
+  const statusActions = getStatusActions(moduleKey, selected?.status as string | undefined);
   
   // Delete confirmation state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -833,11 +931,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   async function updateStatus(status: string) {
     if (!selected?.id) return;
     try {
-      const response = await api.patch(`/${moduleKey}/${selected.id}`, { status });
+      const response = await api.patch(`/${moduleKey}/${selected.id}/status`, { status });
       setSelected(response.data.item);
       await load();
-    } catch {
-      setMessage('Status update failed.');
+      setMessage('Status updated successfully');
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || 'Failed to update status';
+      setMessage(errorMsg);
     }
   }
 
