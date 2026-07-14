@@ -53,12 +53,12 @@ const defaultSummary: SystemSummaryData = {
   totalKnowledgeBase: 0
 };
 
-interface SummaryItem {
+interface StatCard {
   label: string;
   value: number;
   icon: string;
-  highlight?: boolean;
-  warning?: boolean;
+  variant?: 'default' | 'critical' | 'warning' | 'success';
+  subtitle?: string;
 }
 
 export function SystemSummaryWidget({ className = '' }: SystemSummaryWidgetProps) {
@@ -85,28 +85,48 @@ export function SystemSummaryWidget({ className = '' }: SystemSummaryWidgetProps
     fetchSystemSummary();
   }, [fetchSystemSummary]);
 
-  // Build summary items dynamically based on available data
-  const summaryItems: SummaryItem[] = [
-    { label: 'Total Users', value: summaryData.totalUsers, icon: '👥' },
-    { label: 'Open Tickets', value: summaryData.openTickets, icon: '🎫', warning: summaryData.highPriorityTickets > 0 },
-    { label: 'Critical Incidents', value: summaryData.criticalIncidents, icon: '🚨', highlight: true, warning: summaryData.criticalIncidents > 0 },
-    { label: 'SEV2 Incidents', value: summaryData.sev2Incidents, icon: '⚠️', warning: summaryData.sev2Incidents > 0 },
-    { label: 'Pending Changes', value: summaryData.pendingChanges, icon: '🔄', warning: summaryData.overdueChanges > 0 },
-    { label: 'Access Requests', value: summaryData.pendingAccessRequests, icon: '🔐' },
-    { label: 'Compliance Docs', value: summaryData.complianceDocuments, icon: '📋' },
-    { label: 'Knowledge Base', value: summaryData.totalKnowledgeBase, icon: '📚' }
+  // Build stat cards based on available data
+  const statCards: StatCard[] = [
+    { label: 'Total Users', value: summaryData.totalUsers, icon: '👥', variant: 'default' },
+    { label: 'Open Tickets', value: summaryData.openTickets, icon: '🎫', variant: summaryData.highPriorityTickets > 0 ? 'warning' : 'default', subtitle: `${summaryData.unassignedTickets} unassigned` },
+    { label: 'Critical Incidents', value: summaryData.criticalIncidents, icon: '🚨', variant: summaryData.criticalIncidents > 0 ? 'critical' : 'success', subtitle: 'SEV1 - Immediate' },
+    { label: 'SEV2 Incidents', value: summaryData.sev2Incidents, icon: '⚠️', variant: summaryData.sev2Incidents > 0 ? 'warning' : 'default', subtitle: 'High Priority' },
+    { label: 'Open Incidents', value: summaryData.openIncidents, icon: '🔥', variant: 'default', subtitle: `Total: ${summaryData.totalIncidents}` },
+    { label: 'Open Problems', value: summaryData.openProblems, icon: '⚠️', variant: 'default' },
+    { label: 'Pending Changes', value: summaryData.pendingChanges, icon: '🔄', variant: summaryData.overdueChanges > 0 ? 'warning' : 'default', subtitle: `${summaryData.overdueChanges} overdue` },
+    { label: 'Access Requests', value: summaryData.pendingAccessRequests, icon: '🔐', variant: 'default' },
+    { label: 'Expiring Licenses', value: summaryData.expiringLicenses, icon: '📜', variant: summaryData.expiringLicenses > 0 ? 'warning' : 'default', subtitle: 'Within 30 days' },
+    { label: 'Compliance Docs', value: summaryData.complianceDocuments, icon: '📋', variant: 'success' },
+    { label: 'Total Assets', value: summaryData.totalAssets, icon: '🖥️', variant: 'default', subtitle: `${summaryData.availableAssets} available` },
+    { label: 'Knowledge Base', value: summaryData.totalKnowledgeBase, icon: '📚', variant: 'success' },
+    { label: 'Projects', value: summaryData.totalProjects, icon: '📁', variant: 'default' },
+    { label: 'Vendors', value: summaryData.totalVendors, icon: '🏢', variant: 'default' },
+    { label: 'SLA Breaches', value: summaryData.slaBreaches, icon: '⏰', variant: summaryData.slaBreaches > 0 ? 'critical' : 'success' },
+    { label: 'Roles', value: summaryData.totalRoles, icon: '🔑', variant: 'default' }
   ];
+
+  const getVariantClass = (variant?: string) => {
+    switch (variant) {
+      case 'critical': return 'stat-card--critical';
+      case 'warning': return 'stat-card--warning';
+      case 'success': return 'stat-card--success';
+      default: return '';
+    }
+  };
 
   // Show skeleton loading state
   if (loading) {
     return (
       <div className={`system-summary-widget ${className}`}>
-        <h2 className="widget-title">System Summary</h2>
-        <div className="summary-grid">
+        <div className="widget-header">
+          <h2 className="widget-title">System Statistics</h2>
+          <span className="stats-updated">Live data from database</span>
+        </div>
+        <div className="stats-grid">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="summary-item summary-item--skeleton">
-              <div className="summary-icon skeleton-icon"></div>
-              <div className="summary-content">
+            <div key={i} className="stat-card stat-card--skeleton">
+              <div className="skeleton-icon"></div>
+              <div className="stat-content">
                 <div className="skeleton-value"></div>
                 <div className="skeleton-label"></div>
               </div>
@@ -121,7 +141,9 @@ export function SystemSummaryWidget({ className = '' }: SystemSummaryWidgetProps
   if (error) {
     return (
       <div className={`system-summary-widget ${className}`}>
-        <h2 className="widget-title">System Summary</h2>
+        <div className="widget-header">
+          <h2 className="widget-title">System Statistics</h2>
+        </div>
         <div className="summary-error">
           <span className="error-icon">⚠️</span>
           <span className="error-message">{error}</span>
@@ -135,18 +157,22 @@ export function SystemSummaryWidget({ className = '' }: SystemSummaryWidgetProps
 
   return (
     <div className={`system-summary-widget ${className}`}>
-      <h2 className="widget-title">System Summary</h2>
-      <div className="summary-grid">
-        {summaryItems.map((item, index) => (
+      <div className="widget-header">
+        <h2 className="widget-title">System Statistics</h2>
+        <span className="stats-updated">Live data from database</span>
+      </div>
+      <div className="stats-grid">
+        {statCards.map((stat, index) => (
           <div 
             key={index} 
-            className={`summary-item ${item.highlight ? 'summary-item--highlight' : ''} ${item.warning ? 'summary-item--warning' : ''}`}
-            title={`${item.label}: ${item.value}`}
+            className={`stat-card ${getVariantClass(stat.variant)}`}
+            title={`${stat.label}: ${stat.value}${stat.subtitle ? ` (${stat.subtitle})` : ''}`}
           >
-            <div className="summary-icon">{item.icon}</div>
-            <div className="summary-content">
-              <span className="summary-value">{item.value}</span>
-              <span className="summary-label">{item.label}</span>
+            <div className="stat-icon">{stat.icon}</div>
+            <div className="stat-content">
+              <span className="stat-value">{stat.value}</span>
+              <span className="stat-label">{stat.label}</span>
+              {stat.subtitle && <span className="stat-subtitle">{stat.subtitle}</span>}
             </div>
           </div>
         ))}

@@ -1,9 +1,7 @@
 import { 
   HeaderWidget, 
   SystemSummaryWidget,
-  MyTasksWidget,
   SystemHealthWidget, 
-  QuickActionsWidget, 
   RecentActivityWidget
 } from '../components/dashboard';
 
@@ -13,14 +11,12 @@ export function DashboardPage() {
       <HeaderWidget />
       
       <div className="dashboard-main">
-        {/* Left Column - Primary Content */}
+        {/* Main Content - Statistics */}
         <div className="dashboard-left-column">
           <SystemSummaryWidget />
-          <MyTasksWidget />
-          <QuickActionsWidget />
         </div>
         
-        {/* Right Column - Secondary Content */}
+        {/* Right Column - System Health & Activity */}
         <div className="dashboard-right-column">
           <SystemHealthWidget />
           <RecentActivityWidget />
