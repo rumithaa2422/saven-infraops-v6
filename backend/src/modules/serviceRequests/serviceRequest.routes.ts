@@ -149,3 +149,51 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) =>
     next(error);
   }
 });
+
+// PUT /service-requests/:id - Update service request (full replacement)
+serviceRequestRouter.put('/:id', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const payload = updateSchema.parse(req.body);
+    const existing = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!existing) throw new HttpError(404, 'Service request not found');
+
+    const item = await updateServiceRequest(id, {
+      ...payload,
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      ipAddress: req.ip
+    });
+    res.json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /service-requests/:id - Delete service request
+serviceRequestRouter.delete('/:id', requireAuth, requirePermissionOr(['tickets:manage']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const existing = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!existing) throw new HttpError(404, 'Service request not found');
+
+    await prisma.serviceRequest.delete({ where: { id } });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id || null,
+        actorEmail: req.user?.email || null,
+        action: 'DELETE',
+        entityType: 'ServiceRequest',
+        entityId: id,
+        oldValue: existing as any,
+        ipAddress: req.ip || null
+      }
+    });
+
+    res.json({ success: true, deleted: existing });
+  } catch (error) {
+    next(error);
+  }
+});

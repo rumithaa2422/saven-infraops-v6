@@ -37,6 +37,12 @@ export function ServiceRequestsPage() {
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [selected, setSelected] = useState<ServiceRequest | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<ServiceRequest | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingRequest, setDeletingRequest] = useState<ServiceRequest | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [comment, setComment] = useState('');
   const [message, setMessage] = useState('');
@@ -45,6 +51,7 @@ export function ServiceRequestsPage() {
 
   // Permission checks
   const canCreate = hasPermission('tickets:create');
+  const canDelete = hasPermission('tickets:manage');
   const canManage = hasPermission('tickets:manage');
   const canAssign = hasPermission('tickets:assign');
   
@@ -119,6 +126,77 @@ export function ServiceRequestsPage() {
     }
   }
 
+  // Open edit modal
+  function openEditDialog(request: ServiceRequest, event: React.MouseEvent) {
+    event.stopPropagation();
+    setEditingRequest(request);
+    setForm({
+      title: request.title,
+      description: request.description || '',
+      category: request.category,
+      subCategory: request.subCategory || '',
+      priority: request.priority,
+      requesterName: request.requesterName,
+      projectName: request.projectName || ''
+    });
+    setEditOpen(true);
+  }
+
+  // Handle edit form submit
+  async function updateRequest(event: FormEvent) {
+    event.preventDefault();
+    if (!editingRequest?.id) return;
+    try {
+      await api.put(`/service-requests/${editingRequest.id}`, form);
+      setEditOpen(false);
+      setEditingRequest(null);
+      setForm(initialForm);
+      await load();
+    } catch {
+      setMessage('Update failed. Check backend logs.');
+    }
+  }
+
+  // Close edit modal
+  function closeEditDialog() {
+    setEditOpen(false);
+    setEditingRequest(null);
+    setForm(initialForm);
+  }
+
+  // Open delete confirmation dialog
+  function openDeleteDialog(request: ServiceRequest, event: React.MouseEvent) {
+    event.stopPropagation();
+    setDeletingRequest(request);
+    setDeleteConfirmText('');
+    setDeleteOpen(true);
+  }
+
+  // Confirm and execute delete
+  async function confirmDelete() {
+    if (!deletingRequest?.id || deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      await api.delete(`/service-requests/${deletingRequest.id}`);
+      setDeleteOpen(false);
+      setDeletingRequest(null);
+      setSelected(null);
+      await load();
+      setMessage('Request deleted successfully.');
+    } catch (err: any) {
+      setMessage(err.response?.data?.message || 'Failed to delete request.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  // Close delete dialog
+  function closeDeleteDialog() {
+    setDeleteOpen(false);
+    setDeletingRequest(null);
+    setDeleteConfirmText('');
+  }
+
   function exportCsv() {
     const header = ['Ticket No', 'Title', 'Category', 'Sub Category', 'Priority', 'Status', 'Requester', 'Assignee', 'Project', 'Description'].join(',');
     const rows = items.map((item) => [
@@ -182,7 +260,13 @@ export function ServiceRequestsPage() {
                 <td>{item.status}</td>
                 <td>{item.requesterName}</td>
                 <td>{item.assigneeName || 'Unassigned'}</td>
-                <td><button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button></td>
+                <td>
+                  <div className="action-buttons">
+                    <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">👁 Open</button>
+                    {canManage && <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">✏️ Edit</button>}
+                    {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">🗑️ Delete</button>}
+                  </div>
+                </td>
               </tr>
             ))}
             {!items.length && (
@@ -212,6 +296,75 @@ export function ServiceRequestsPage() {
             <label>Project<input value={form.projectName} onChange={(e) => setForm({ ...form, projectName: e.target.value })} /></label>
             <button className="primary" type="submit">Save Request</button>
           </form>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editOpen && editingRequest && (
+        <div className="modal-backdrop">
+          <form className="modal" onSubmit={updateRequest}>
+            <div className="page-title-row">
+              <h3>Edit Service Request</h3>
+              <button type="button" className="close" onClick={closeEditDialog}>Close</button>
+            </div>
+            <label>Title *<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></label>
+            <label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
+            <label>Category *<input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required /></label>
+            <label>Sub Category<input value={form.subCategory} onChange={(e) => setForm({ ...form, subCategory: e.target.value })} /></label>
+            <label>Priority
+              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+                <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
+              </select>
+            </label>
+            <label>Requester *<input value={form.requesterName} onChange={(e) => setForm({ ...form, requesterName: e.target.value })} required /></label>
+            <label>Project<input value={form.projectName} onChange={(e) => setForm({ ...form, projectName: e.target.value })} /></label>
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={closeEditDialog}>Cancel</button>
+              <button className="primary" type="submit">Update</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteOpen && deletingRequest && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="page-title-row">
+              <h3>Delete Service Request</h3>
+              <button type="button" className="close" onClick={closeDeleteDialog}>Close</button>
+            </div>
+
+            <div className="warning-box">
+              <p><strong>Warning:</strong> This action cannot be undone.</p>
+              <p>Are you sure you want to delete this request?</p>
+            </div>
+
+            <div className="form-group">
+              <label>
+                Type <strong>DELETE</strong> to confirm:
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  autoFocus
+                />
+              </label>
+            </div>
+
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={closeDeleteDialog}>Cancel</button>
+              <button
+                type="button"
+                className="danger"
+                onClick={confirmDelete}
+                disabled={deleteConfirmText !== 'DELETE' || deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

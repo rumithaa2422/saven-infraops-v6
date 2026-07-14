@@ -64,7 +64,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'description', label: 'Description' }
     ],
-    permissions: { create: 'incidents:create', write: 'incidents:manage', export: 'incidents:export', import: 'settings:write' },
+    permissions: { create: 'incidents:create', write: 'incidents:manage', delete: 'incidents:manage', export: 'incidents:export', import: 'settings:write' },
     moduleType: 'incidents'
   },
   problems: {
@@ -87,7 +87,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'problems:create', write: 'problems:manage', export: 'problems:export', import: 'settings:write' },
+    permissions: { create: 'problems:create', write: 'problems:manage', delete: 'problems:manage', export: 'problems:export', import: 'settings:write' },
     moduleType: 'problems'
   },
   changes: {
@@ -112,7 +112,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'rollbackPlan', label: 'Rollback Plan' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'changes:create', write: 'changes:approve', export: 'changes:export', import: 'settings:write' },
+    permissions: { create: 'changes:create', write: 'changes:approve', delete: 'changes:manage', export: 'changes:export', import: 'settings:write' },
     moduleType: 'change-requests'
   },
   inventory: {
@@ -139,7 +139,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'location', label: 'Location' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'inventory:create', write: 'inventory:manage', export: 'inventory:export', import: 'settings:write' },
+    permissions: { create: 'inventory:create', write: 'inventory:manage', delete: 'inventory:manage', export: 'inventory:export', import: 'settings:write' },
     moduleType: 'inventory'
   },
   'access-management': {
@@ -164,7 +164,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'justification', label: 'Justification' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'access:request', write: 'access:approve', export: 'access:export' }
+    permissions: { create: 'access:request', write: 'access:approve', delete: 'access:manage', export: 'access:export' }
   },
   compliance: {
     referenceKey: 'id',
@@ -202,7 +202,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'databaseName', label: 'Database Name' },
       { key: 'ownerName', label: 'Owner' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'projects:export', import: 'settings:write' },
+    permissions: { create: 'projects:create', write: 'projects:manage', delete: 'projects:manage', export: 'projects:export', import: 'settings:write' },
     moduleType: 'projects'
   },
   'vendors-licenses': {
@@ -226,7 +226,7 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'renewalAt', label: 'Renewal Date' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'vendors:export', import: 'settings:write' },
+    permissions: { create: 'vendors:create', write: 'vendors:manage', delete: 'vendors:manage', export: 'vendors:export', import: 'settings:write' },
     moduleType: 'vendors'
   },
   'knowledge-base': {
@@ -440,6 +440,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [items, setItems] = useState<RecordItem[]>([]);
   const [selected, setSelected] = useState<RecordItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<RecordItem | null>(null);
   const [form, setForm] = useState<Record<string, string>>(() => getInitialForm(config.fields));
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -450,7 +452,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   
   // Delete confirmation state
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletingUser, setDeletingUser] = useState<RecordItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<RecordItem | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
@@ -1196,25 +1198,25 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   }
 
   // Open delete confirmation dialog
-  function openDeleteDialog(user: RecordItem, event: React.MouseEvent) {
+  function openDeleteDialog(item: RecordItem, event: React.MouseEvent) {
     event.stopPropagation();
-    setDeletingUser(user);
+    setDeletingItem(item);
     setDeleteConfirmText('');
     setDeleteOpen(true);
   }
 
   // Confirm and execute delete
   async function confirmDelete() {
-    if (!deletingUser?.id || deleteConfirmText !== 'DELETE') return;
+    if (!deletingItem?.id || deleteConfirmText !== 'DELETE') return;
     setDeleting(true);
     try {
-      await api.delete(`/users-teams/${deletingUser.id}`);
+      await api.delete(`/${moduleKey}/${deletingItem.id}`);
       setDeleteOpen(false);
-      setDeletingUser(null);
-      setMessage('User deleted successfully.');
+      setDeletingItem(null);
+      setMessage('Record deleted successfully.');
       await load();
     } catch (err: any) {
-      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to delete user.');
+      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to delete record.');
     } finally {
       setDeleting(false);
     }
@@ -1223,8 +1225,48 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   // Close delete dialog
   function closeDeleteDialog() {
     setDeleteOpen(false);
-    setDeletingUser(null);
+    setDeletingItem(null);
     setDeleteConfirmText('');
+  }
+
+  // Open edit modal with item data
+  function openEditDialog(item: RecordItem, event: React.MouseEvent) {
+    event.stopPropagation();
+    setEditingItem(item);
+    const itemForm: Record<string, string> = {};
+    config.fields.forEach((field) => {
+      const value = item[field.key];
+      if (value !== undefined && value !== null) {
+        itemForm[field.key] = String(value);
+      } else {
+        itemForm[field.key] = '';
+      }
+    });
+    setForm(itemForm);
+    setEditOpen(true);
+  }
+
+  // Handle edit form submit
+  async function updateRecord(event: FormEvent) {
+    event.preventDefault();
+    if (!editingItem?.id) return;
+    try {
+      await api.put(`/${moduleKey}/${editingItem.id}`, form);
+      setEditOpen(false);
+      setEditingItem(null);
+      setForm(getInitialForm(config.fields));
+      await load();
+      setMessage('Record updated successfully.');
+    } catch {
+      setMessage('Update failed. Check backend logs.');
+    }
+  }
+
+  // Close edit modal
+  function closeEditDialog() {
+    setEditOpen(false);
+    setEditingItem(null);
+    setForm(getInitialForm(config.fields));
   }
 
   return (
@@ -1741,14 +1783,14 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   /* Regular Module Actions */
                   <td>
                     <div className="action-buttons">
-                      {hasPermission((config.permissions.view || config.permissions.create) || '') && <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }}>Open</button>}
-                      {moduleKey === 'users-teams' && hasPermission('users:delete') && (
-                        <button  
-                          className="btn-delete" 
-                          onClick={(event) => openDeleteDialog(item, event)}
-                        >
-                          Delete
-                        </button>
+                      {hasPermission((config.permissions.view || config.permissions.create) || '') && (
+                        <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">👁 Open</button>
+                      )}
+                      {hasPermission(config.permissions.write || '') && (
+                        <button className="link-button" onClick={(event) => openEditDialog(item, event)} title="Edit">✏️ Edit</button>
+                      )}
+                      {hasPermission(config.permissions.delete || '') && (
+                        <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">🗑️ Delete</button>
                       )}
                     </div>
                   </td>
@@ -1957,18 +1999,17 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteOpen && deletingUser && (
+      {deleteOpen && deletingItem && (
         <div className="modal-backdrop">
           <div className="modal">
             <div className="page-title-row">
-              <h3>Delete User</h3>
+              <h3>Delete {title}</h3>
               <button type="button" className="close" onClick={closeDeleteDialog}>Close</button>
             </div>
             
             <div className="warning-box">
               <p><strong>Warning:</strong> This action cannot be undone.</p>
-              <p>You are about to delete the user: <strong>{String(deletingUser.name || deletingUser.email)}</strong></p>
-              <p>The user will be soft-deleted and will no longer be able to log in.</p>
+              <p>Are you sure you want to delete this record?</p>
             </div>
             
             <div className="form-group">
@@ -1994,7 +2035,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 onClick={confirmDelete}
                 disabled={deleteConfirmText !== 'DELETE' || deleting}
               >
-                {deleting ? 'Deleting...' : 'Delete User'}
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

@@ -53,6 +53,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   incidents: {
     permission: 'incidents:read',
     writePermission: 'incidents:write',
+    deletePermission: 'incidents:manage',
     viewPermission: 'incidents:view',
     createPermission: 'incidents:create',
     managePermission: 'incidents:manage',
@@ -65,6 +66,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   problems: {
     permission: 'incidents:read',
     writePermission: 'incidents:write',
+    deletePermission: 'problems:manage',
     viewPermission: 'problems:view',
     createPermission: 'problems:create',
     managePermission: 'problems:manage',
@@ -77,6 +79,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   changes: {
     permission: 'changes:read',
     writePermission: 'changes:approve',
+    deletePermission: 'changes:manage',
     viewPermission: 'changes:view',
     createPermission: 'changes:create',
     managePermission: 'changes:manage',
@@ -89,6 +92,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   inventory: {
     permission: 'inventory:read',
     writePermission: 'inventory:write',
+    deletePermission: 'inventory:manage',
     viewPermission: 'inventory:view',
     createPermission: 'inventory:create',
     managePermission: 'inventory:manage',
@@ -101,6 +105,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   'access-management': {
     permission: 'access:read',
     writePermission: 'access:approve',
+    deletePermission: 'access:manage',
     viewPermission: 'access:view',
     createPermission: 'access:request',
     managePermission: 'access:approve',
@@ -114,6 +119,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   'projects-environments': {
     permission: 'dashboard:read',
     writePermission: 'settings:write',
+    deletePermission: 'projects:manage',
     viewPermission: 'projects:view',
     createPermission: 'projects:create',
     managePermission: 'projects:manage',
@@ -126,6 +132,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   'vendors-licenses': {
     permission: 'dashboard:read',
     writePermission: 'settings:write',
+    deletePermission: 'vendors:manage',
     viewPermission: 'vendors:view',
     createPermission: 'vendors:create',
     managePermission: 'vendors:manage',
@@ -138,6 +145,7 @@ const moduleMap: Record<string, ModuleConfig> = {
   'knowledge-base': {
     permission: 'dashboard:read',
     writePermission: 'settings:write',
+    deletePermission: 'kb:manage',
     viewPermission: 'kb:view',
     createPermission: 'kb:create',
     managePermission: 'kb:manage',
@@ -322,33 +330,90 @@ genericModuleRouter.patch('/:module/:id', requireAuth, async (req, res, next) =>
 genericModuleRouter.delete('/:module/:id', requireAuth, async (req, res, next) => {
   try {
     const moduleName = req.params.module as string;
+    const id = req.params.id as string;
     const config = moduleMap[moduleName];
 
-    if (moduleName !== 'users-teams') {
-      return next();
-    }
-
-    const deletePermission = config?.deletePermission;
-    if (!deletePermission) {
-      throw new HttpError(403, 'Delete permission not configured for this module');
-    }
-
-    await new Promise<void>((resolve, reject) =>
-      requirePermission(deletePermission)(req, res, (err) => err ? reject(err) : resolve())
-    );
-
-    // Use the user service for deletion
-    const id = req.params.id as string;
     if (!id) {
       throw new HttpError(400, 'ID is required');
     }
-    const result = await deleteUser(id, {
-      actorId: req.user?.id,
-      actorEmail: req.user?.email,
-      ipAddress: req.ip
+
+    // Special handling for users-teams (uses soft delete service)
+    if (moduleName === 'users-teams') {
+      const deletePermission = config?.deletePermission;
+      if (deletePermission) {
+        await new Promise<void>((resolve, reject) =>
+          requirePermission(deletePermission)(req, res, (err) => err ? reject(err) : resolve())
+        );
+      }
+      const result = await deleteUser(id, {
+        actorId: req.user?.id,
+        actorEmail: req.user?.email,
+        ipAddress: req.ip
+      });
+      res.json(result);
+      return;
+    }
+
+    // For other modules, check delete permission
+    const deletePermission = config?.deletePermission;
+    if (deletePermission) {
+      await new Promise<void>((resolve, reject) =>
+        requirePermission(deletePermission)(req, res, (err) => err ? reject(err) : resolve())
+      );
+    }
+
+    // Map module names to Prisma model operations
+    const deleteHandlers: Record<string, () => Promise<unknown>> = {
+      'incidents': () => prisma.incident.delete({ where: { id } }),
+      'problems': () => prisma.problem.delete({ where: { id } }),
+      'changes': () => prisma.changeRequest.delete({ where: { id } }),
+      'inventory': () => prisma.asset.delete({ where: { id } }),
+      'access-management': () => prisma.accessRequest.delete({ where: { id } }),
+      'projects-environments': () => prisma.projectEnvironment.delete({ where: { id } }),
+      'vendors-licenses': () => prisma.vendorLicense.delete({ where: { id } }),
+      'knowledge-base': () => prisma.knowledgeBaseArticle.delete({ where: { id } }),
+    };
+
+    const deleteHandler = deleteHandlers[moduleName];
+    if (!deleteHandler) {
+      throw new HttpError(400, `"'Delete not supported for module: '"`);
+    }
+
+    // Check if record exists first
+    const entityType = config?.entityType;
+    let existing;
+    switch (moduleName) {
+      case 'incidents': existing = await prisma.incident.findUnique({ where: { id } }); break;
+      case 'problems': existing = await prisma.problem.findUnique({ where: { id } }); break;
+      case 'changes': existing = await prisma.changeRequest.findUnique({ where: { id } }); break;
+      case 'inventory': existing = await prisma.asset.findUnique({ where: { id } }); break;
+      case 'access-management': existing = await prisma.accessRequest.findUnique({ where: { id } }); break;
+      case 'projects-environments': existing = await prisma.projectEnvironment.findUnique({ where: { id } }); break;
+      case 'vendors-licenses': existing = await prisma.vendorLicense.findUnique({ where: { id } }); break;
+      case 'knowledge-base': existing = await prisma.knowledgeBaseArticle.findUnique({ where: { id } }); break;
+    }
+
+    if (!existing) {
+      throw new HttpError(404, `"'Record not found'"`);
+    }
+
+    // Delete the record
+    const deleted = await deleteHandler();
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id || null,
+        actorEmail: req.user?.email || null,
+        action: 'DELETE',
+        entityType: entityType || moduleName,
+        entityId: id,
+        oldValue: existing as any,
+        ipAddress: req.ip || null
+      }
     });
 
-    res.json(result);
+    res.json({ success: true, deleted });
   } catch (error) {
     next(error instanceof Error ? error : new HttpError(400, 'Delete failed'));
   }
