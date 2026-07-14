@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 
 interface Props {
@@ -14,72 +14,90 @@ const getBrowserTimezone = () => {
   }
 };
 
-const STORAGE_KEY = 'infraops_user_preferences';
+// Apply theme to document
+const applyTheme = (theme: string) => {
+  const root = document.documentElement;
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  } else if (theme === 'light') {
+    root.classList.remove('dark');
+  } else {
+    // System preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }
+};
+
+const STORAGE_KEY = 'infraops_preferences';
 
 export function PreferencesSection({ showToast }: Props) {
-  const [theme, setTheme] = useState('system');
+  const [theme, setTheme] = useState('light');
   const [language, setLanguage] = useState('en');
   const [timezone, setTimezone] = useState(getBrowserTimezone());
-  const [dateFormat, setDateFormat] = useState('MM/DD/YYYY');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load preferences from localStorage or API
+  // Load preferences from localStorage on mount
   useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        // Try to load from API first
-        const response = await api.get('/users/me/preferences');
-        const prefs = response.data;
-        
-        setTheme(prefs.theme || 'system');
+    const loadPreferences = () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const prefs = JSON.parse(stored);
+        setTheme(prefs.theme || 'light');
         setLanguage(prefs.language || 'en');
         setTimezone(prefs.timezone || getBrowserTimezone());
-        setDateFormat(prefs.dateFormat || 'MM/DD/YYYY');
-      } catch {
-        // Fallback to localStorage
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const prefs = JSON.parse(stored);
-          setTheme(prefs.theme || 'system');
-          setLanguage(prefs.language || 'en');
-          setTimezone(prefs.timezone || getBrowserTimezone());
-          setDateFormat(prefs.dateFormat || 'MM/DD/YYYY');
-        }
-      } finally {
-        setLoading(false);
+        // Apply saved theme immediately
+        applyTheme(prefs.theme || 'light');
       }
+      setLoading(false);
     };
-
     loadPreferences();
   }, []);
 
-  const savePreferences = async () => {
+  // Save preferences
+  const savePreferences = useCallback(async () => {
     setSaving(true);
-    const preferences = { theme, language, timezone, dateFormat };
+    const preferences = { theme, language, timezone };
 
     try {
-      // Try to save to API first
-      await api.put('/users/me/preferences', preferences);
-      // Also save to localStorage as backup
+      // Save to localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-      showToast('success', 'Preferences saved successfully');
-    } catch (err: any) {
-      // If API fails, save to localStorage only
-      console.error('Failed to save preferences to API:', err);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-      showToast('success', 'Preferences saved locally');
+      
+      // Apply theme immediately
+      applyTheme(theme);
+      
+      // Try to sync with backend
+      try {
+        await api.put('/users/me/preferences', preferences);
+      } catch {
+        // Backend save failed, but localStorage works
+      }
+      
+      showToast('success', 'Preferences saved');
+    } catch (err) {
+      console.error('Failed to save preferences:', err);
+      showToast('error', 'Failed to save preferences');
     } finally {
       setSaving(false);
     }
+  }, [theme, language, timezone, showToast]);
+
+  // Handle theme change and apply immediately
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    applyTheme(newTheme);
   };
 
   const timezones = [
     { value: 'UTC', label: 'UTC' },
-    { value: 'America/New_York', label: 'Eastern Time (US)' },
-    { value: 'America/Chicago', label: 'Central Time (US)' },
-    { value: 'America/Denver', label: 'Mountain Time (US)' },
-    { value: 'America/Los_Angeles', label: 'Pacific Time (US)' },
+    { value: 'America/New_York', label: 'Eastern Time' },
+    { value: 'America/Chicago', label: 'Central Time' },
+    { value: 'America/Denver', label: 'Mountain Time' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time' },
     { value: 'Europe/London', label: 'London' },
     { value: 'Europe/Paris', label: 'Paris' },
     { value: 'Europe/Berlin', label: 'Berlin' },
@@ -112,11 +130,11 @@ export function PreferencesSection({ showToast }: Props) {
           <select
             className="form-select"
             value={theme}
-            onChange={(e) => setTheme(e.target.value)}
+            onChange={(e) => handleThemeChange(e.target.value)}
           >
-            <option value="system">System</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
+            <option value="system">System</option>
           </select>
         </div>
 
@@ -128,9 +146,6 @@ export function PreferencesSection({ showToast }: Props) {
             onChange={(e) => setLanguage(e.target.value)}
           >
             <option value="en">English</option>
-            <option value="es" disabled>Spanish (Coming Soon)</option>
-            <option value="fr" disabled>French (Coming Soon)</option>
-            <option value="de" disabled>German (Coming Soon)</option>
           </select>
           <span className="form-hint">Additional languages coming soon</span>
         </div>
@@ -145,19 +160,6 @@ export function PreferencesSection({ showToast }: Props) {
             {timezones.map(tz => (
               <option key={tz.value} value={tz.value}>{tz.label}</option>
             ))}
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Date Format</label>
-          <select
-            className="form-select"
-            value={dateFormat}
-            onChange={(e) => setDateFormat(e.target.value)}
-          >
-            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
           </select>
         </div>
 

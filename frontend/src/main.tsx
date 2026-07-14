@@ -5,6 +5,21 @@ import { App } from './app/App';
 import { AuthProvider } from './auth/AuthContext';
 import './styles.css';
 
+// Apply saved theme on load
+const savedPrefs = localStorage.getItem('infraops_preferences');
+if (savedPrefs) {
+  try {
+    const prefs = JSON.parse(savedPrefs);
+    if (prefs.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (prefs.theme === 'system') {
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    }
+  } catch {}
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>

@@ -3,11 +3,9 @@ import { useAuth } from '../auth/AuthContext';
 import { api } from '../services/api';
 import { MyProfileSection } from '../components/settings/MyProfileSection';
 import { PreferencesSection } from '../components/settings/PreferencesSection';
-import { NotificationsSection } from '../components/settings/NotificationsSection';
-import { SecuritySection } from '../components/settings/SecuritySection';
 import { Toast } from '../components/settings/Toast';
 
-type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'security';
+type SettingsTab = 'profile' | 'preferences';
 
 interface UserProfile {
   id: string;
@@ -19,15 +17,11 @@ interface UserProfile {
 }
 
 export function SettingsPage() {
-  const { user, hasPermission } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  // Determine user role level
-  const isSuperAdmin = hasPermission('sys:admin') || hasPermission('set:manage');
-  const isEmployee = !isSuperAdmin;
 
   // Fetch user profile
   const fetchProfile = useCallback(async () => {
@@ -62,9 +56,7 @@ export function SettingsPage() {
   // Navigation items
   const navItems: { id: SettingsTab; label: string; icon: string }[] = [
     { id: 'profile', label: 'My Profile', icon: '👤' },
-    { id: 'preferences', label: 'Preferences', icon: '⚙️' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' },
-    { id: 'security', label: 'Security', icon: '🔒' }
+    { id: 'preferences', label: 'Preferences', icon: '⚙️' }
   ];
 
   if (loading) {
@@ -117,12 +109,6 @@ export function SettingsPage() {
         )}
         {activeTab === 'preferences' && (
           <PreferencesSection showToast={showToast} />
-        )}
-        {activeTab === 'notifications' && (
-          <NotificationsSection showToast={showToast} />
-        )}
-        {activeTab === 'security' && (
-          <SecuritySection showToast={showToast} />
         )}
       </div>
 

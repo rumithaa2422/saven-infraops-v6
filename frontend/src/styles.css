@@ -12,6 +12,21 @@
   --success: #197a4b;
 }
 
+/* Dark Mode */
+:root.dark {
+  --bg: #0f1117;
+  --panel: #1a1d26;
+  --panel-soft: #252a38;
+  --text: #e8eaed;
+  --muted: #8b92a5;
+  --line: #2d3344;
+  --brand: #6b7fff;
+  --brand-soft: #2a3050;
+  --danger: #e05a4a;
+  --warning: #d4a02a;
+  --success: #2eb87a;
+}
+
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Inter, Segoe UI, Arial, sans-serif; background: var(--bg); color: var(--text); }
 button, input { font: inherit; }
