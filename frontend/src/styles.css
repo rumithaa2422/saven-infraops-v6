@@ -4659,3 +4659,58 @@ input:disabled {
     bottom: 16px;
   }
 }
+
+
+/* RBAC Unauthorized Page Styles */
+.unauthorized-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+}
+
+.unauthorized-content {
+  text-align: center;
+  padding: 2rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  max-width: 400px;
+}
+
+.unauthorized-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.unauthorized-content h2,
+.unauthorized-content h3 {
+  color: #991b1b;
+  margin: 0 0 0.5rem 0;
+}
+
+.unauthorized-content p {
+  color: #7f1d1d;
+  margin: 0;
+}
+
+/* Drawer Unauthorized */
+.drawer .unauthorized-content {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.drawer .unauthorized-content h3 {
+  font-size: 1.125rem;
+  margin: 0.5rem 0;
+}
+
+.drawer .unauthorized-content p {
+  font-size: 0.875rem;
+}

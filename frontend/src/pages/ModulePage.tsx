@@ -446,7 +446,7 @@ function getInitialForm(fields: Field[]) {
 
 export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const config = configs[moduleKey] || configs['reports-analytics'];
-  const { hasPermission } = useAuth();
+  const { hasPermission, hasAnyPermission } = useAuth();
   const [items, setItems] = useState<RecordItem[]>([]);
   const [selected, setSelected] = useState<RecordItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -1694,8 +1694,9 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 }
                 return <th key={column.key}>{column.label}</th>;
               })}
-              {config.isDocumentRepository && <th>Actions</th>}
-              {!config.isDocumentRepository && <th>Action</th>}
+              {/* RBAC: Only show Actions column header if there are visible actions */}
+              {config.isDocumentRepository && hasAnyPermission([config.permissions.export || "", config.permissions.delete || ""].filter(Boolean)) && <th>Actions</th>}
+              {!config.isDocumentRepository && hasAnyPermission([config.permissions.view || "", config.permissions.write || "", config.permissions.create || "", config.permissions.delete || ""].filter(Boolean)) && <th>Action</th>}
             </tr>
           </thead>
           <tbody>
@@ -1712,7 +1713,9 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   }
                   return <td key={column.key}>{formatValue(item[column.key])}</td>;
                 })}
+                {/* RBAC: Only show action cells if there are visible actions */}
                 {config.isDocumentRepository ? (
+                  hasAnyPermission([config.permissions.export || "", config.permissions.delete || ""].filter(Boolean)) && (
                   /* Document Repository Actions */
                   <td>
                     <div className="action-buttons">
@@ -1737,7 +1740,14 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                       )}
                     </div>
                   </td>
+                  )
                 ) : (
+                  hasAnyPermission([
+                    config.permissions.view || "",
+                    config.permissions.write || "",
+                    config.permissions.create || "",
+                    config.permissions.delete || ""
+                  ].filter(Boolean)) && (
                   /* Regular Module Actions */
                   <td>
                     <div className="action-buttons">
@@ -1752,6 +1762,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                       )}
                     </div>
                   </td>
+                  )
                 )}
               </tr>
             ))}
@@ -1905,7 +1916,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
       )}
 
-      {selected && (
+      {/* RBAC: Check if user has any view/create/write permission to see the detail */}
+      {selected && hasAnyPermission([
+        config.permissions.view || '',
+        config.permissions.write || '',
+        config.permissions.create || '',
+        config.permissions.delete || ''
+      ].filter(Boolean)) && (
         <div className="drawer">
           <button className="close" onClick={() => setSelected(null)}>Close</button>
           <span className="eyebrow">{formatValue(selected[config.referenceKey])}</span>
@@ -1919,13 +1936,33 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               return <p key={column.key}><strong>{column.label}:</strong> {formatValue(selected[column.key])}</p>;
             })}
           </div>
-          {config.statusKey && statusActions.length > 0 && config.permissions.write && hasPermission(config.permissions.write) && (
+          {/* RBAC: Status actions require write permission */}
+          {config.statusKey && statusActions.length > 0 && hasAnyPermission([
+            config.permissions.write || '',
+            config.permissions.create || ''
+          ].filter(Boolean)) && (
             <div className="drawer-actions">
               {statusActions.map((action) => (
                 <button key={action.value} onClick={() => updateStatus(action.value)}>{action.label}</button>
               ))}
             </div>
           )}
+        </div>
+      )}
+      {/* RBAC: Show 403 Unauthorized if user reaches detail without permission */}
+      {selected && !hasAnyPermission([
+        config.permissions.view || '',
+        config.permissions.write || '',
+        config.permissions.create || '',
+        config.permissions.delete || ''
+      ].filter(Boolean)) && (
+        <div className="drawer">
+          <button className="close" onClick={() => setSelected(null)}>Close</button>
+          <div className="unauthorized-content">
+            <span className="unauthorized-icon">🔒</span>
+            <h3>403 - Unauthorized</h3>
+            <p>You do not have permission to view this record.</p>
+          </div>
         </div>
       )}
 
