@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { api } from '../../services/api';
 import { useAuth } from '../../auth/AuthContext';
 
@@ -124,6 +124,7 @@ function SelectSetting({
 // Main ManagerSettings component
 export function ManagerSettings() {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -156,6 +157,51 @@ export function ManagerSettings() {
     confirmPassword: ''
   });
 
+  // Fetch user profile and preferences
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, prefsRes] = await Promise.all([
+          api.get('/users/me'),
+          api.get('/users/me/preferences')
+        ]);
+        
+        const profileData = profileRes.data;
+        setProfile({
+          name: profileData.name || user?.name || '',
+          email: profileData.email || user?.email || '',
+          phone: profileData.phoneNumber || ''
+        });
+        
+        const prefsData = prefsRes.data;
+        setPreferences({
+          theme: prefsData.theme || 'light',
+          language: prefsData.language || 'en',
+          timezone: prefsData.timezone || 'UTC'
+        });
+        
+        setNotifications({
+          incidentAssigned: prefsData.notifyIncidentAssigned ?? true,
+          changeApproval: prefsData.notifyChangeApproval ?? true,
+          accessRequests: prefsData.notifyAccessRequests ?? true,
+          slaAlerts: prefsData.notifySlaAlerts ?? true
+        });
+      } catch (err) {
+        console.error('Failed to fetch user data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [user]);
+
+  // Show message helper
+  const showMessage = (type: 'success' | 'error', text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 5000);
+  };
+
   // Save profile
   const saveProfile = useCallback(async () => {
     setSaving(true);
@@ -165,10 +211,10 @@ export function ManagerSettings() {
         name: profile.name,
         phoneNumber: profile.phone
       });
-      setMessage({ type: 'success', text: 'Profile updated successfully' });
-    } catch (err) {
+      showMessage('success', 'Profile updated successfully');
+    } catch (err: any) {
       console.error('Failed to update profile:', err);
-      setMessage({ type: 'error', text: 'Failed to update profile' });
+      showMessage('error', err.response?.data?.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -179,29 +225,58 @@ export function ManagerSettings() {
     setSaving(true);
     setMessage(null);
     try {
-      await api.put('/settings/user-preferences', {
+      await api.put('/users/me/preferences', {
         theme: preferences.theme,
         language: preferences.language,
-        timezone: preferences.timezone
+        timezone: preferences.timezone,
+        notifyIncidentAssigned: notifications.incidentAssigned,
+        notifyChangeApproval: notifications.changeApproval,
+        notifyAccessRequests: notifications.accessRequests,
+        notifySlaAlerts: notifications.slaAlerts
       });
-      setMessage({ type: 'success', text: 'Preferences saved' });
-    } catch (err) {
+      showMessage('success', 'Preferences saved successfully');
+    } catch (err: any) {
       console.error('Failed to save preferences:', err);
-      setMessage({ type: 'error', text: 'Failed to save preferences' });
+      showMessage('error', err.response?.data?.message || 'Failed to save preferences');
     } finally {
       setSaving(false);
     }
-  }, [preferences]);
+  }, [preferences, notifications]);
+
+  // Save notifications only
+  const saveNotifications = useCallback(async () => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      await api.put('/users/me/preferences', {
+        notifyIncidentAssigned: notifications.incidentAssigned,
+        notifyChangeApproval: notifications.changeApproval,
+        notifyAccessRequests: notifications.accessRequests,
+        notifySlaAlerts: notifications.slaAlerts
+      });
+      showMessage('success', 'Notification settings saved');
+    } catch (err: any) {
+      console.error('Failed to save notifications:', err);
+      showMessage('error', err.response?.data?.message || 'Failed to save notifications');
+    } finally {
+      setSaving(false);
+    }
+  }, [notifications]);
 
   // Change password
   const changePassword = useCallback(async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setMessage({ type: 'error', text: 'Passwords do not match' });
+      showMessage('error', 'Passwords do not match');
       return;
     }
     
     if (passwordForm.newPassword.length < 8) {
-      setMessage({ type: 'error', text: 'Password must be at least 8 characters' });
+      showMessage('error', 'Password must be at least 8 characters');
+      return;
+    }
+    
+    if (!passwordForm.currentPassword) {
+      showMessage('error', 'Current password is required');
       return;
     }
 
@@ -213,14 +288,31 @@ export function ManagerSettings() {
         newPassword: passwordForm.newPassword
       });
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setMessage({ type: 'success', text: 'Password changed successfully' });
+      showMessage('success', 'Password changed successfully');
     } catch (err: any) {
       console.error('Failed to change password:', err);
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to change password' });
+      showMessage('error', err.response?.data?.message || 'Failed to change password');
     } finally {
       setSaving(false);
     }
   }, [passwordForm]);
+
+  if (loading) {
+    return (
+      <div className="settings-page">
+        <div className="settings-header">
+          <div>
+            <span className="eyebrow">My Settings</span>
+            <h2>Manager Settings</h2>
+          </div>
+        </div>
+        <div className="settings-loading">
+          <div className="loading-spinner"></div>
+          <span>Loading settings...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-page">
@@ -356,6 +448,13 @@ export function ManagerSettings() {
               checked={notifications.slaAlerts}
               onChange={(v) => setNotifications(prev => ({ ...prev, slaAlerts: v }))}
             />
+            <button 
+              className="settings-save-btn"
+              onClick={saveNotifications}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Notifications'}
+            </button>
           </div>
         </SettingsSection>
 
