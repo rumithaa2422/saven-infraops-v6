@@ -17,9 +17,6 @@ import {
 import { normalizeValue } from '../importFramework/importFramework.parser.js';
 import { createKnowledgeBaseArticle } from '../knowledgeBase.service.js';
 
-// Status options
-const VALID_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED', 'REVIEW'];
-
 // ============================================================================
 // Knowledge Base Validator
 // ============================================================================
@@ -30,7 +27,6 @@ class KnowledgeBaseImportValidator extends BaseImportValidator {
       title: ['title', 'subject', 'article title', 'article name', 'topic'],
       category: ['category', 'type', 'kind', 'section', 'folder', 'group'],
       body: ['body', 'content', 'description', 'details', 'text', 'article body'],
-      status: ['status', 'state', 'stage'],
       authorName: ['author', 'author name', 'author_name', 'created by', 'writer']
     };
   }
@@ -53,19 +49,7 @@ class KnowledgeBaseImportValidator extends BaseImportValidator {
     _context: import('../importFramework/importFramework.types.js').ValidationContext,
     columnMap: Record<string, string | undefined>
   ): import('../importFramework/importFramework.types.js').FieldError[] {
-    const errors: import('../importFramework/importFramework.types.js').FieldError[] = [];
-
-    const status = normalizeValue(columnMap['status'] ? row[columnMap['status']] : row['Status']);
-
-    if (status && !VALID_STATUSES.includes(status.toUpperCase())) {
-      errors.push({
-        row: rowNumber,
-        field: 'Status',
-        message: `Invalid status. Allowed: ${VALID_STATUSES.join(', ')}`
-      });
-    }
-
-    return errors;
+    return [];
   }
 
   protected normalizeRowData(
@@ -76,14 +60,12 @@ class KnowledgeBaseImportValidator extends BaseImportValidator {
     const title = normalizeValue(columnMap['title'] ? row[columnMap['title']] : row['Title']);
     const category = normalizeValue(columnMap['category'] ? row[columnMap['category']] : row['Category']);
     const body = normalizeValue(columnMap['body'] ? row[columnMap['body']] : row['Body']);
-    const status = normalizeValue(columnMap['status'] ? row[columnMap['status']] : row['Status']);
     const authorName = normalizeValue(columnMap['authorName'] ? row[columnMap['authorName']] : row['AuthorName']);
 
     return {
       title,
       category,
       body: body || undefined,
-      status: status || 'DRAFT',
       authorName: authorName || undefined,
       importedRow: rowNumber
     };
@@ -105,7 +87,6 @@ class KnowledgeBaseImportExecutor extends BaseImportExecutor {
         title: input.title as string,
         category: input.category as string,
         body: input.body as string | undefined,
-        status: input.status as string | undefined,
         authorName: input.authorName as string | null | undefined
       });
 
@@ -121,11 +102,9 @@ class KnowledgeBaseImportExecutor extends BaseImportExecutor {
 // Module Registration
 // ============================================================================
 
-const knowledgeBaseValidator = new KnowledgeBaseImportValidator();
-const knowledgeBaseExecutor = new KnowledgeBaseImportExecutor();
+export const knowledgeBaseValidator = new KnowledgeBaseImportValidator();
+export const knowledgeBaseExecutor = new KnowledgeBaseImportExecutor();
 
 export function registerKnowledgeBaseImport(): void {
   registerImportModule('knowledge-base', () => knowledgeBaseValidator, () => knowledgeBaseExecutor);
 }
-
-export { knowledgeBaseValidator, knowledgeBaseExecutor };

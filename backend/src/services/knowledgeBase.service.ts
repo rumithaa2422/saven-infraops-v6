@@ -4,7 +4,6 @@ export interface CreateKnowledgeBaseArticleInput {
   title: string;
   category: string;
   body?: string;
-  status?: string;
   authorName?: string | null;
   actorId?: string | null;
   actorEmail?: string | null;
@@ -17,7 +16,6 @@ export async function createKnowledgeBaseArticle(data: CreateKnowledgeBaseArticl
       title: data.title,
       category: data.category,
       body: data.body || '',
-      status: data.status || 'DRAFT',
       authorName: data.authorName || null
     }
   });
@@ -52,7 +50,6 @@ export async function updateKnowledgeBaseArticle(
       title: data.title,
       category: data.category,
       body: data.body,
-      status: data.status,
       authorName: data.authorName !== undefined ? (data.authorName || null) : undefined
     }
   });

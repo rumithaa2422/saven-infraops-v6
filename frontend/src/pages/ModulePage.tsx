@@ -233,7 +233,6 @@ const configs: Record<string, ModuleConfig> = {
     referenceKey: 'category',
     titleKey: 'title',
     ownerKey: 'authorName',
-    statusKey: 'status',
     dateKey: 'createdAt',
     fields: [
       { key: 'title', label: 'Article Title', required: true },
@@ -245,10 +244,9 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'title', label: 'Article Title' },
       { key: 'category', label: 'Category' },
       { key: 'authorName', label: 'Author' },
-      { key: 'body', label: 'Body' },
-      { key: 'status', label: 'Status' }
+      { key: 'body', label: 'Body' }
     ],
-    permissions: { create: 'settings:manage', write: 'settings:manage', export: 'kb:export', import: 'settings:write' },
+    permissions: { view: 'kb:view', create: 'kb:create', write: 'kb:manage', delete: 'kb:manage', export: 'kb:export', import: 'kb:import' },
     moduleType: 'knowledge-base'
   },
   'users-teams': {
@@ -342,14 +340,6 @@ function getStatusActions(moduleKey: string, currentStatus?: string): StatusActi
       { label: 'Mark Available', value: 'AVAILABLE' },
       { label: 'Mark Assigned', value: 'ASSIGNED' },
       { label: 'Under Repair', value: 'UNDER_REPAIR' }
-    ];
-  }
-
-  // Knowledge Base - custom workflow
-  if (moduleKey === 'knowledge-base') {
-    return [
-      { label: 'Publish', value: 'PUBLISHED' },
-      { label: 'Archive', value: 'ARCHIVED' }
     ];
   }
 
