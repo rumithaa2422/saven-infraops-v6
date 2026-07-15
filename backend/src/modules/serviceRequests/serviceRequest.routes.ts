@@ -135,6 +135,38 @@ function canDeleteAttachment(user: Express.Request['user']): boolean {
   return user.roles.includes('Super Admin');
 }
 
+// Helper to check if user can view attachments
+function canViewAttachments(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can view all
+  if (user.roles.includes('Super Admin')) return true;
+  
+  // Admin can view if ticket is assigned to them
+  if (user.roles.includes('Admin')) {
+    return request.assigneeId === user.id;
+  }
+  
+  // Regular users can view their own requests
+  return request.requesterId === user.id;
+}
+
+// Helper to check if user can view timeline
+function canViewTimeline(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can view all
+  if (user.roles.includes('Super Admin')) return true;
+  
+  // Admin can view if ticket is assigned to them
+  if (user.roles.includes('Admin')) {
+    return request.assigneeId === user.id;
+  }
+  
+  // Regular users cannot view timeline
+  return false;
+}
+
 serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
   try {
     const status = req.query.status as string | undefined;
@@ -425,6 +457,10 @@ serviceRequestRouter.get('/:id/attachments', requireAuth, requirePermissionOr(['
     const request = await prisma.serviceRequest.findUnique({ where: { id } });
     if (!request) throw new HttpError(404, 'Service request not found');
     
+    if (!canViewAttachments(req.user, request)) {
+      throw new HttpError(403, 'You do not have permission to view attachments');
+    }
+    
     const attachments = await prisma.serviceRequestAttachment.findMany({
       where: { requestId: id },
       orderBy: { uploadedAt: 'desc' }
@@ -688,6 +724,10 @@ serviceRequestRouter.get('/:id/timeline', requireAuth, requirePermissionOr(['tic
     
     const request = await prisma.serviceRequest.findUnique({ where: { id } });
     if (!request) throw new HttpError(404, 'Service request not found');
+    
+    if (!canViewTimeline(req.user, request)) {
+      throw new HttpError(403, 'You do not have permission to view the timeline');
+    }
     
     // Fetch timeline entries ordered by creation time
     const timeline = await prisma.serviceRequestTimeline.findMany({

@@ -41,7 +41,7 @@ export async function loginWithPassword(email: string, password: string) {
   const roles = user.roles.map((ur) => ur.role.name);
   const permissions = [...new Set(user.roles.flatMap((ur) => ur.role.permissions.map((rp) => rp.permission.code)))];
 
-  const token = jwt.sign({ id: user.id, email: user.email, roles, permissions }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
+  const token = jwt.sign({ id: user.id, name: user.name, email: user.email, roles, permissions }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 
   return {
     token,

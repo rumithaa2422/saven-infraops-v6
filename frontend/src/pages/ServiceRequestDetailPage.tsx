@@ -184,6 +184,11 @@ export function ServiceRequestDetailPage() {
   }
 
   useEffect(() => {
+    // Scroll to top of page when component mounts
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  useEffect(() => {
     load();
     loadAdmins();
   }, [id]);
@@ -196,10 +201,7 @@ export function ServiceRequestDetailPage() {
     }
   }, [request?.id]);
 
-  // Auto scroll to bottom when new comments arrive
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [comments]);
+  // Note: Removed auto-scroll to bottom when new comments arrive to prevent page jumping
 
   async function updateStatus(payload: Partial<ServiceRequest>) {
     if (!request) return;
