@@ -15,6 +15,8 @@ type Incident = {
   ownerName?: string;
   resolutionDocUploadedAt?: string;
   resolutionDocReplacedAt?: string;
+  statusChangedAt?: string;
+  statusChangedBy?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -51,6 +53,7 @@ export function IncidentDetailPage() {
   const [message, setMessage] = useState('');
   const [takingOwnership, setTakingOwnership] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
@@ -71,6 +74,30 @@ export function IncidentDetailPage() {
   
   // Can upload resolution document: owner only (Admin or Super Admin)
   const canUploadResolutionDoc = isOwner;
+  
+  // Can change status: owner only (Admin or Super Admin who is the assigned owner)
+  const canChangeStatus = isOwner;
+  
+  // Get next status based on current status
+  function getNextStatus(): string | null {
+    if (!incident) return null;
+    switch (incident.status) {
+      case 'OPEN': return 'IN_PROGRESS';
+      case 'IN_PROGRESS': return 'RESOLVED';
+      case 'RESOLVED': return 'CLOSED';
+      default: return null;
+    }
+  }
+  
+  // Get button label for next status
+  function getStatusButtonLabel(): string {
+    switch (getNextStatus()) {
+      case 'IN_PROGRESS': return 'Move to In Progress';
+      case 'RESOLVED': return 'Mark as Resolved';
+      case 'CLOSED': return 'Close Incident';
+      default: return '';
+    }
+  }
 
   // Build timeline from incident data
   function buildTimeline(): TimelineEntry[] {
@@ -116,6 +143,16 @@ export function IncidentDetailPage() {
       });
     }
     
+    // Status Changed entry
+    if (incident.statusChangedAt) {
+      entries.push({
+        action: 'Status Changed',
+        description: `Status changed to ${incident.status.replace(/_/g, ' ')}`,
+        performedByName: incident.statusChangedBy || null,
+        createdAt: incident.statusChangedAt
+      });
+    }
+    
     return entries;
   }
 
@@ -156,6 +193,25 @@ export function IncidentDetailPage() {
       setMessage('Failed to take ownership.');
     } finally {
       setTakingOwnership(false);
+    }
+  }
+
+  async function changeStatus() {
+    if (!incident) return;
+    const newStatus = getNextStatus();
+    if (!newStatus) return;
+    
+    setChangingStatus(true);
+    try {
+      const response = await api.patch(`/incidents/${incident.id}/status`, {
+        status: newStatus
+      });
+      setIncident(response.data.item);
+      setMessage(`Status changed to ${newStatus.replace(/_/g, ' ')} successfully.`);
+    } catch (err: any) {
+      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to change status.');
+    } finally {
+      setChangingStatus(false);
     }
   }
 
@@ -573,10 +629,35 @@ export function IncidentDetailPage() {
               <h3>Status</h3>
             </div>
             <div className="detail-card-body">
-              <div className="status-display">
-                <span className={`status-badge ${getStatusClass(incident.status)}`}>
-                  {incident.status.replace(/_/g, ' ')}
-                </span>
+              <div className="status-workflow">
+                <div className="status-current">
+                  <span className="status-label">Current Status</span>
+                  <span className={`status-badge ${getStatusClass(incident.status)}`}>
+                    {incident.status.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                
+                {getNextStatus() ? (
+                  <div className="status-action">
+                    {canChangeStatus ? (
+                      <button
+                        className="btn-status-action"
+                        onClick={changeStatus}
+                        disabled={changingStatus}
+                      >
+                        {changingStatus ? 'Updating...' : getStatusButtonLabel()}
+                      </button>
+                    ) : (
+                      <p className="status-action-hint">
+                        {isOwned ? 'Only the assigned owner can change the status' : 'Take ownership to change the status'}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="status-closed-message">
+                    <span>Incident Closed</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -559,6 +559,75 @@ genericModuleRouter.get('/incidents/:id/timeline', requireAuth, async (req, res,
   }
 });
 
+// PATCH /incidents/:id/status - Update incident status (owner only, forward transitions only)
+genericModuleRouter.patch('/incidents/:id/status', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const { status } = req.body;
+    
+    if (!status) {
+      throw new HttpError(400, 'Status is required');
+    }
+    
+    const incident = await prisma.incident.findUnique({ where: { id } });
+    if (!incident) throw new HttpError(404, 'Incident not found');
+    
+    // Check if user is the assigned owner
+    const isOwner = incident.ownerName === req.user?.name;
+    
+    if (!isOwner) {
+      throw new HttpError(403, 'Only the assigned owner can change the status');
+    }
+    
+    const newStatus = status.toUpperCase();
+    const currentStatus = incident.status;
+    
+    // Valid status transitions (forward only)
+    const validTransitions: Record<string, string[]> = {
+      'OPEN': ['IN_PROGRESS'],
+      'IN_PROGRESS': ['RESOLVED'],
+      'RESOLVED': ['CLOSED'],
+      'CLOSED': [] // No transitions from CLOSED
+    };
+    
+    const allowedNextStatuses = validTransitions[currentStatus] || [];
+    
+    if (!allowedNextStatuses.includes(newStatus)) {
+      throw new HttpError(400, `Invalid status transition. From ${currentStatus}, you can only move to: ${allowedNextStatuses.join(', ') || 'none'}`);
+    }
+    
+    const now = new Date();
+    
+    // Update incident with new status and tracking fields
+    const updatedIncident = await prisma.incident.update({
+      where: { id },
+      data: {
+        status: newStatus as 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED',
+        statusChangedAt: now,
+        statusChangedBy: req.user?.name || null
+      }
+    });
+    
+    // Create audit log entry
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id || null,
+        actorEmail: req.user?.email || null,
+        action: 'STATUS_CHANGE',
+        entityType: 'Incident',
+        entityId: incident.id,
+        oldValue: { status: currentStatus },
+        newValue: { status: newStatus },
+        ipAddress: req.ip || null
+      }
+    });
+    
+    res.json({ item: updatedIncident });
+  } catch (error) {
+    next(error instanceof Error ? error : new HttpError(400, 'Status update failed'));
+  }
+});
+
 // ============================================
 // Incident Resolution Document Routes
 // ============================================

@@ -6192,6 +6192,73 @@ input:disabled {
 .status-closed::before { background: var(--muted); }
 
 /* ============================================
+   Status Workflow Styles
+   ============================================ */
+.status-workflow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-current {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-action {
+  margin-top: 4px;
+}
+
+.btn-status-action {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-status-action:hover {
+  background: #4360ff;
+}
+
+.btn-status-action:disabled {
+  background: var(--muted);
+  cursor: not-allowed;
+}
+
+.status-action-hint {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.status-closed-message {
+  padding: 12px 0;
+}
+
+.status-closed-message span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ============================================
    Priority Badges (Professional)
    ============================================ */
 
