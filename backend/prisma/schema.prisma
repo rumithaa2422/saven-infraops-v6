@@ -139,6 +139,20 @@ model ServiceRequest {
   updatedAt     DateTime       @updatedAt
   requester     User?          @relation("RequesterTickets", fields: [requesterId], references: [id])
   assignee      User?          @relation("AssigneeTickets", fields: [assigneeId], references: [id])
+  attachments   ServiceRequestAttachment[]
+}
+
+model ServiceRequestAttachment {
+  id           String   @id @default(cuid())
+  requestId    String
+  fileName     String
+  storedName   String   @unique
+  fileSize     Int
+  mimeType     String
+  uploadedBy   String?
+  uploadedByName String?
+  uploadedAt   DateTime @default(now())
+  request      ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 }
 
 model Incident {

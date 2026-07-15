@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
@@ -28,6 +28,8 @@ const initialForm = {
   projectName: ''
 };
 
+const ALLOWED_FILE_TYPES = '.png,.jpg,.jpeg,.pdf,.docx,.xlsx,.txt';
+
 export function ServiceRequestsPage() {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
@@ -41,6 +43,9 @@ export function ServiceRequestsPage() {
   const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [message, setMessage] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Permission checks
   const canCreate = hasPermission('tickets:create');
@@ -64,12 +69,49 @@ export function ServiceRequestsPage() {
   async function createRequest(event: FormEvent) {
     event.preventDefault();
     try {
-      await api.post('/service-requests', form);
+      const response = await api.post('/service-requests', form);
+      const requestId = response.data.item.id;
+      
+      // Upload attachments if any
+      if (selectedFiles && selectedFiles.length > 0) {
+        setUploading(true);
+        const formData = new FormData();
+        for (let i = 0; i < selectedFiles.length; i++) {
+          formData.append('files', selectedFiles[i]);
+        }
+        try {
+          await api.post(`/service-requests/${requestId}/attachments`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        } catch {
+          // Continue even if attachment upload fails
+          console.error('Attachment upload failed');
+        }
+        setUploading(false);
+      }
+      
       setCreateOpen(false);
       setForm(initialForm);
+      setSelectedFiles(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       await load();
     } catch {
       setMessage('Create request failed. Check mandatory fields and backend logs.');
+    }
+  }
+  
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSelectedFiles(e.target.files);
+  }
+  
+  function clearCreateForm() {
+    setCreateOpen(false);
+    setForm(initialForm);
+    setSelectedFiles(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   }
 
@@ -226,7 +268,7 @@ export function ServiceRequestsPage() {
           <form className="modal" onSubmit={createRequest}>
             <div className="page-title-row">
               <h3>Create Service Request</h3>
-              <button type="button" className="close" onClick={() => setCreateOpen(false)}>Close</button>
+              <button type="button" className="close" onClick={clearCreateForm}>Close</button>
             </div>
             <label>Title *<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></label>
             <label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
@@ -239,7 +281,28 @@ export function ServiceRequestsPage() {
             </label>
             <label>Requester *<input value={form.requesterName} onChange={(e) => setForm({ ...form, requesterName: e.target.value })} required /></label>
             <label>Project<input value={form.projectName} onChange={(e) => setForm({ ...form, projectName: e.target.value })} /></label>
-            <button className="primary" type="submit">Save Request</button>
+            <div className="file-upload-section">
+              <label className="file-upload-label">Attachments</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ALLOWED_FILE_TYPES}
+                multiple
+                onChange={handleFileChange}
+                className="file-input"
+              />
+              <div className="file-upload-hint">
+                Allowed: png, jpg, jpeg, pdf, docx, xlsx, txt (max 25MB per file)
+              </div>
+              {selectedFiles && selectedFiles.length > 0 && (
+                <div className="selected-files">
+                  {selectedFiles.length} file(s) selected
+                </div>
+              )}
+            </div>
+            <button className="primary" type="submit" disabled={uploading}>
+              {uploading ? 'Saving...' : 'Save Request'}
+            </button>
           </form>
         </div>
       )}

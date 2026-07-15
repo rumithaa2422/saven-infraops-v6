@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
@@ -16,8 +16,20 @@ type ServiceRequest = {
   assigneeName?: string;
   assigneeId?: string;
   projectName?: string;
+  requesterId?: string;
   createdAt?: string;
   updatedAt?: string;
+};
+
+type Attachment = {
+  id: string;
+  requestId: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedBy: string | null;
+  uploadedByName: string | null;
+  uploadedAt: string;
 };
 
 type AdminUser = {
@@ -25,23 +37,32 @@ type AdminUser = {
   name: string;
 };
 
+const ALLOWED_FILE_TYPES = '.png,.jpg,.jpeg,.pdf,.docx,.xlsx,.txt';
+
 export function ServiceRequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { hasPermission, user } = useAuth();
   const [request, setRequest] = useState<ServiceRequest | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
   const [comment, setComment] = useState('');
   const [message, setMessage] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canManage = hasPermission('tickets:manage');
-  const canAssign = hasPermission('tickets:assign');
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
   const canPerformActions = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id);
+  
+  // Check if user can upload attachments (own request or admin)
+  const canUpload = isSuperAdmin || isAdmin || request?.requesterId === user?.id;
+  // Only Super Admin can delete attachments
+  const canDeleteAttachment = isSuperAdmin;
 
   async function load() {
     if (!id) return;
@@ -54,6 +75,16 @@ export function ServiceRequestDetailPage() {
       setError('Failed to load service request details.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadAttachments() {
+    if (!id) return;
+    try {
+      const res = await api.get(`/service-requests/${id}/attachments`);
+      setAttachments(res.data.attachments);
+    } catch {
+      setAttachments([]);
     }
   }
 
@@ -70,6 +101,12 @@ export function ServiceRequestDetailPage() {
     load();
     loadAdmins();
   }, [id]);
+
+  useEffect(() => {
+    if (request) {
+      loadAttachments();
+    }
+  }, [request?.id]);
 
   async function updateStatus(payload: Partial<ServiceRequest>) {
     if (!request) return;
@@ -91,6 +128,70 @@ export function ServiceRequestDetailPage() {
     } catch {
       setMessage('Failed to add comment. Check backend logs.');
     }
+  }
+
+  async function uploadAttachments(files: FileList) {
+    if (!request || files.length === 0) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+      await api.post(`/service-requests/${request.id}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      await loadAttachments();
+      setMessage('Attachments uploaded successfully.');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch {
+      setMessage('Failed to upload attachments.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function deleteAttachment(attachmentId: string) {
+    if (!request) return;
+    if (!confirm('Are you sure you want to delete this attachment?')) return;
+    try {
+      await api.delete(`/service-requests/${request.id}/attachments/${attachmentId}`);
+      await loadAttachments();
+      setMessage('Attachment deleted successfully.');
+    } catch {
+      setMessage('Failed to delete attachment.');
+    }
+  }
+
+  function downloadAttachment(attachmentId: string, fileName: string) {
+    if (!request) return;
+    const token = localStorage.getItem('token');
+    const downloadUrl = `/api/service-requests/${request.id}/attachments/${attachmentId}/download`;
+    
+    fetch(downloadUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Download failed');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        setMessage('Failed to download attachment.');
+      });
   }
 
   async function assignTicket() {
@@ -142,6 +243,14 @@ export function ServiceRequestDetailPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
   if (loading) {
@@ -251,15 +360,72 @@ export function ServiceRequestDetailPage() {
               <h3>Attachments</h3>
             </div>
             <div className="detail-card-body">
-              <div className="detail-placeholder">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="8" y="12" width="32" height="28" rx="4" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M16 8V16C16 18.2091 17.7909 20 20 20H28C30.2091 20 32 18.2091 32 16V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M24 26L20 30M24 26L28 30M24 26V34" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <p>No attachments</p>
-                <span>Files will appear here when added.</span>
-              </div>
+              {attachments.length > 0 ? (
+                <div className="attachment-list">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="attachment-item">
+                      <div className="attachment-icon">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M4 4V16C4 17.1046 4.89543 18 6 18H14C15.1046 18 16 17.1046 16 16V8L12 4H6C4.89543 4 4 4.89543 4 6V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 4V8H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      <div className="attachment-info">
+                        <span className="attachment-name" title={attachment.fileName}>{attachment.fileName}</span>
+                        <span className="attachment-meta">
+                          {formatFileSize(attachment.fileSize)} - Uploaded {formatDate(attachment.uploadedAt)}
+                          {attachment.uploadedByName && ` by ${attachment.uploadedByName}`}
+                        </span>
+                      </div>
+                      <div className="attachment-actions">
+                        <button 
+                          className="btn-attachment-download"
+                          onClick={() => downloadAttachment(attachment.id, attachment.fileName)}
+                          title="Download"
+                        >
+                          Download
+                        </button>
+                        {canDeleteAttachment && (
+                          <button 
+                            className="btn-attachment-delete"
+                            onClick={() => deleteAttachment(attachment.id)}
+                            title="Delete"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="detail-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8" y="12" width="32" height="28" rx="4" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M16 8V16C16 18.2091 17.7909 20 20 20H28C30.2091 20 32 18.2091 32 16V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M24 26L20 30M24 26L28 30M24 26V34" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p>No attachments</p>
+                  <span>Files will appear here when added.</span>
+                </div>
+              )}
+              {canUpload && (
+                <div className="attachment-upload">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ALLOWED_FILE_TYPES}
+                    multiple
+                    onChange={(e) => e.target.files && uploadAttachments(e.target.files)}
+                    className="file-input"
+                    id="attachment-upload"
+                  />
+                  <label htmlFor="attachment-upload" className="btn-upload">
+                    {uploading ? 'Uploading...' : 'Upload Files'}
+                  </label>
+                  <span className="upload-hint">png, jpg, pdf, docx, xlsx, txt</span>
+                </div>
+              )}
             </div>
           </div>
 

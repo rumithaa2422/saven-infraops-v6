@@ -1,5 +1,7 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
+import path from 'path';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
@@ -10,8 +12,98 @@ import {
   updateServiceRequest,
   assignServiceRequest
 } from '../../services/serviceRequest.service.js';
+import { env } from '../../config/env.js';
+import { promises as fs } from 'fs';
 
 export const serviceRequestRouter = Router();
+
+// Ensure upload directory exists
+async function ensureAttachmentDir() {
+  const dir = path.join(process.cwd(), 'uploads', 'attachments');
+  try {
+    await fs.mkdir(dir, { recursive: true });
+  } catch {}
+  return dir;
+}
+
+// Configure multer for attachment uploads
+const storage = multer.diskStorage({
+  destination: async (_req, _file, cb) => {
+    const dir = await ensureAttachmentDir();
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `attachment-${uniqueSuffix}${ext}`);
+  }
+});
+
+const ALLOWED_MIME_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain'
+];
+
+const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.pdf', '.docx', '.xlsx', '.txt'];
+
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ALLOWED_EXTENSIONS.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('File type not allowed. Allowed: png, jpg, jpeg, pdf, docx, xlsx, txt'));
+  }
+};
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: env.PDF_MAX_FILE_SIZE_MB * 1024 * 1024,
+    files: 10
+  },
+  fileFilter
+});
+
+// Helper to check if user can download attachment
+function canDownloadAttachment(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can download any
+  if (user.roles.includes('Super Admin')) return true;
+  
+  // Admin can download if ticket is assigned to them
+  if (user.roles.includes('Admin')) {
+    return request.assigneeId === user.id;
+  }
+  
+  // Regular users can download their own requests
+  return request.requesterId === user.id;
+}
+
+// Helper to check if user can upload attachment
+function canUploadAttachment(user: Express.Request['user'], request: { requesterId?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can upload to any
+  if (user.roles.includes('Super Admin')) return true;
+  
+  // Admin can upload to any request
+  if (user.roles.includes('Admin')) return true;
+  
+  // Regular users can upload to their own requests
+  return request.requesterId === user.id;
+}
+
+// Helper to check if user can delete attachment
+function canDeleteAttachment(user: Express.Request['user']): boolean {
+  if (!user) return false;
+  return user.roles.includes('Super Admin');
+}
 
 serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
   try {
@@ -193,6 +285,159 @@ serviceRequestRouter.delete('/:id', requireAuth, requirePermissionOr(['tickets:m
     });
 
     res.json({ success: true, deleted: existing });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// Attachment Routes
+// ============================================
+
+// GET /service-requests/:id/attachments - List attachments for a request
+serviceRequestRouter.get('/:id/attachments', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) throw new HttpError(404, 'Service request not found');
+    
+    const attachments = await prisma.serviceRequestAttachment.findMany({
+      where: { requestId: id },
+      orderBy: { uploadedAt: 'desc' }
+    });
+    
+    res.json({ attachments });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /service-requests/:id/attachments - Upload attachment(s)
+serviceRequestRouter.post('/:id/attachments', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req: Request, res: Response, next) => {
+  try {
+    const id = req.params.id as string;
+    
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) throw new HttpError(404, 'Service request not found');
+    
+    if (!canUploadAttachment(req.user, request)) {
+      throw new HttpError(403, 'You can only upload attachments to your own requests');
+    }
+    
+    upload.array('files', 10)(req, res, async (err) => {
+      if (err) {
+        if (err.message && err.message.includes('File type not allowed')) {
+          return res.status(400).json({ error: err.message });
+        }
+        if (err.message && err.message.includes('File too large')) {
+          return res.status(400).json({ 
+            error: `File too large. Maximum size is ${env.PDF_MAX_FILE_SIZE_MB}MB.` 
+          });
+        }
+        return res.status(400).json({ error: 'File upload failed' });
+      }
+      
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+      
+      // Create attachment records
+      const attachments = await Promise.all(
+        files.map(async (file) => {
+          return prisma.serviceRequestAttachment.create({
+            data: {
+              requestId: id,
+              fileName: file.originalname,
+              storedName: file.filename,
+              fileSize: file.size,
+              mimeType: file.mimetype,
+              uploadedBy: req.user?.id || null,
+              uploadedByName: req.user?.name || null
+            }
+          });
+        })
+      );
+      
+      res.status(201).json({ attachments });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /service-requests/:requestId/attachments/:attachmentId/download - Download attachment
+serviceRequestRouter.get('/:requestId/attachments/:attachmentId/download', requireAuth, async (req, res, next) => {
+  try {
+    const { requestId, attachmentId } = req.params;
+    
+    const request = await prisma.serviceRequest.findUnique({ where: { id: requestId } });
+    if (!request) throw new HttpError(404, 'Service request not found');
+    
+    if (!canDownloadAttachment(req.user, request)) {
+      throw new HttpError(403, 'You do not have permission to download this attachment');
+    }
+    
+    const attachment = await prisma.serviceRequestAttachment.findUnique({
+      where: { id: attachmentId }
+    });
+    
+    if (!attachment || attachment.requestId !== requestId) {
+      throw new HttpError(404, 'Attachment not found');
+    }
+    
+    const filePath = path.join(process.cwd(), 'uploads', 'attachments', attachment.storedName);
+    
+    try {
+      await fs.access(filePath);
+    } catch {
+      throw new HttpError(404, 'File not found on server');
+    }
+    
+    res.setHeader('Content-Type', attachment.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.fileName}"`);
+    res.setHeader('Content-Length', attachment.fileSize);
+    
+    const fileStream = await fs.readFile(filePath);
+    res.send(fileStream);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /service-requests/:requestId/attachments/:attachmentId - Delete attachment
+serviceRequestRouter.delete('/:requestId/attachments/:attachmentId', requireAuth, async (req, res, next) => {
+  try {
+    const { requestId, attachmentId } = req.params;
+    
+    if (!canDeleteAttachment(req.user)) {
+      throw new HttpError(403, 'Only Super Admin can delete attachments');
+    }
+    
+    const request = await prisma.serviceRequest.findUnique({ where: { id: requestId } });
+    if (!request) throw new HttpError(404, 'Service request not found');
+    
+    const attachment = await prisma.serviceRequestAttachment.findUnique({
+      where: { id: attachmentId }
+    });
+    
+    if (!attachment || attachment.requestId !== requestId) {
+      throw new HttpError(404, 'Attachment not found');
+    }
+    
+    // Delete file from disk
+    const filePath = path.join(process.cwd(), 'uploads', 'attachments', attachment.storedName);
+    try {
+      await fs.unlink(filePath);
+    } catch {
+      // File might not exist, continue with database deletion
+    }
+    
+    // Delete from database
+    await prisma.serviceRequestAttachment.delete({ where: { id: attachmentId } });
+    
+    res.json({ success: true, deleted: attachment });
   } catch (error) {
     next(error);
   }
