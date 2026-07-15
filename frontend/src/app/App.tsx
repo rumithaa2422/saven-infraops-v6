@@ -6,6 +6,7 @@ import { ModulePage } from '../pages/ModulePage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ServiceRequestsPage } from '../pages/ServiceRequestsPage';
 import { ServiceRequestDetailPage } from '../pages/ServiceRequestDetailPage';
+import { IncidentDetailPage } from '../pages/IncidentDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
@@ -117,6 +118,14 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['incidents']}>
               <ModulePage moduleKey="incidents" title="Incidents" />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="incidents/:id" 
+          element={
+            <PermissionRoute permission={modulePermissions['incidents']}>
+              <IncidentDetailPage />
             </PermissionRoute>
           } 
         />

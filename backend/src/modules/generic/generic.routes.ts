@@ -483,3 +483,63 @@ genericModuleRouter.patch('/:module/:id/status', requireAuth, async (req, res, n
     next(error instanceof Error ? error : new HttpError(400, 'Status update failed'));
   }
 });
+
+// ============================================
+// Incident-Specific Routes
+// ============================================
+
+// GET /incidents/:id - Get single incident
+genericModuleRouter.get('/incidents/:id', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const item = await prisma.incident.findUnique({ where: { id } });
+    if (!item) throw new HttpError(404, 'Incident not found');
+    res.json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PATCH /incidents/:id/ownership - Take ownership
+genericModuleRouter.patch('/incidents/:id/ownership', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const { ownerName } = req.body;
+    
+    if (!ownerName) {
+      throw new HttpError(400, 'Owner name is required');
+    }
+    
+    const existing = await prisma.incident.findUnique({ where: { id } });
+    if (!existing) throw new HttpError(404, 'Incident not found');
+    
+    if (existing.ownerName) {
+      throw new HttpError(400, 'Incident is already assigned to someone');
+    }
+    
+    const item = await prisma.incident.update({
+      where: { id },
+      data: { ownerName }
+    });
+    
+    res.json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /incidents/:id/timeline - Get incident timeline (returns basic info from incident record)
+// Timeline entries are generated on the frontend based on incident state
+genericModuleRouter.get('/incidents/:id/timeline', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    
+    const incident = await prisma.incident.findUnique({ where: { id } });
+    if (!incident) throw new HttpError(404, 'Incident not found');
+    
+    // Return empty timeline - frontend will build timeline from incident data
+    res.json({ timeline: [] });
+  } catch (error) {
+    next(error);
+  }
+});

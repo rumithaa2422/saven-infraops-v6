@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState, useRef, useCallback, useId } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
@@ -444,6 +445,7 @@ function getInitialForm(fields: Field[]) {
 export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const config = configs[moduleKey] || configs['reports-analytics'];
   const { hasPermission, hasAnyPermission } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<RecordItem[]>([]);
   const [selected, setSelected] = useState<RecordItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -1791,7 +1793,15 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                   <td>
                     <div className="action-buttons">
                       {hasPermission((config.permissions.view || config.permissions.create) || '') && (
-                        <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">Open</button>
+                        <button className="link-button" onClick={(event) => { 
+                          event.stopPropagation(); 
+                          // For incidents, navigate to detail page instead of opening panel
+                          if (moduleKey === 'incidents') {
+                            navigate(`/incidents/${item.id}`);
+                          } else {
+                            setSelected(item);
+                          }
+                        }} title="Open">Open</button>
                       )}
                       {hasPermission(config.permissions.delete || '') && (
                         <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>
