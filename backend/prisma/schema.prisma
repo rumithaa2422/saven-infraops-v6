@@ -119,14 +119,14 @@ model RolePermission {
 }
 
 model ServiceRequest {
-  id            String         @id @default(cuid())
-  ticketNo      String         @unique
+  id            String                     @id @default(cuid())
+  ticketNo      String                     @unique
   title         String
-  description   String?        @db.Text
+  description   String?                    @db.Text
   category      String
   subCategory   String?
-  priority      TicketPriority @default(MEDIUM)
-  status        WorkStatus     @default(OPEN)
+  priority      TicketPriority             @default(MEDIUM)
+  status        WorkStatus                 @default(OPEN)
   requesterId   String?
   assigneeId    String?
   requesterName String
@@ -135,34 +135,39 @@ model ServiceRequest {
   dueAt         DateTime?
   resolvedAt    DateTime?
   closedAt      DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  requester     User?          @relation("RequesterTickets", fields: [requesterId], references: [id])
-  assignee      User?          @relation("AssigneeTickets", fields: [assigneeId], references: [id])
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  requester     User?                      @relation("RequesterTickets", fields: [requesterId], references: [id])
+  assignee      User?                      @relation("AssigneeTickets", fields: [assigneeId], references: [id])
   attachments   ServiceRequestAttachment[]
+  comments      ServiceRequestComment[]
 }
 
 model ServiceRequestAttachment {
-  id           String   @id @default(cuid())
-  requestId    String
-  fileName     String
-  storedName   String   @unique
-  fileSize     Int
-  mimeType     String
-  uploadedBy   String?
+  id             String         @id @default(cuid())
+  requestId      String
+  fileName       String
+  storedName     String         @unique
+  fileSize       Int
+  mimeType       String
+  uploadedBy     String?
   uploadedByName String?
-  uploadedAt   DateTime @default(now())
-  request      ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  uploadedAt     DateTime       @default(now())
+  request        ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
 }
 
 model ServiceRequestComment {
-  id         String   @id @default(cuid())
-  requestId  String
-  userId     String?
-  userName   String
-  message    String   @db.Text
-  createdAt  DateTime @default(now())
-  request    ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  id        String         @id @default(cuid())
+  requestId String
+  userId    String?
+  userName  String
+  message   String         @db.Text
+  createdAt DateTime       @default(now())
+  request   ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
 }
 
 model Incident {
