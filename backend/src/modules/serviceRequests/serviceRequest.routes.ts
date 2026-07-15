@@ -442,3 +442,94 @@ serviceRequestRouter.delete('/:requestId/attachments/:attachmentId', requireAuth
     next(error);
   }
 });
+
+// ============================================
+// Comment Routes
+// ============================================
+
+// Helper to check if user can view comments
+function canViewComments(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can view all
+  if (user.roles.includes('Super Admin')) return true;
+  
+  // Admin can view if ticket is assigned to them
+  if (user.roles.includes('Admin')) {
+    return request.assigneeId === user.id;
+  }
+  
+  // Regular users can view their own requests
+  return request.requesterId === user.id;
+}
+
+// Helper to check if user can post comments
+function canPostComment(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can post to any
+  if (user.roles.includes('Super Admin')) return true;
+  
+  // Admin can post if ticket is assigned to them
+  if (user.roles.includes('Admin')) {
+    return request.assigneeId === user.id;
+  }
+  
+  // Regular users can post to their own requests
+  return request.requesterId === user.id;
+}
+
+// GET /service-requests/:id/comments - List comments for a request
+serviceRequestRouter.get('/:id/comments', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) throw new HttpError(404, 'Service request not found');
+    
+    if (!canViewComments(req.user, request)) {
+      throw new HttpError(403, 'You do not have permission to view comments');
+    }
+    
+    const comments = await prisma.serviceRequestComment.findMany({
+      where: { requestId: id },
+      orderBy: { createdAt: 'asc' }
+    });
+    
+    res.json({ comments });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /service-requests/:id/comments - Create a new comment
+const commentSchema = z.object({
+  message: z.string().min(1).max(5000)
+});
+
+serviceRequestRouter.post('/:id/comments', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const { message } = commentSchema.parse(req.body);
+    
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) throw new HttpError(404, 'Service request not found');
+    
+    if (!canPostComment(req.user, request)) {
+      throw new HttpError(403, 'You do not have permission to post comments');
+    }
+    
+    const comment = await prisma.serviceRequestComment.create({
+      data: {
+        requestId: id,
+        userId: req.user?.id || null,
+        userName: req.user?.name || 'Unknown',
+        message: message.trim()
+      }
+    });
+    
+    res.status(201).json({ comment });
+  } catch (error) {
+    next(error);
+  }
+});

@@ -155,6 +155,16 @@ model ServiceRequestAttachment {
   request      ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 }
 
+model ServiceRequestComment {
+  id         String   @id @default(cuid())
+  requestId  String
+  userId     String?
+  userName   String
+  message    String   @db.Text
+  createdAt  DateTime @default(now())
+  request    ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
 model Incident {
   id               String           @id @default(cuid())
   incidentNo       String           @unique

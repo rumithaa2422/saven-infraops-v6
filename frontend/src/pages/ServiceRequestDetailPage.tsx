@@ -32,6 +32,15 @@ type Attachment = {
   uploadedAt: string;
 };
 
+type Comment = {
+  id: string;
+  requestId: string;
+  userId: string | null;
+  userName: string;
+  message: string;
+  createdAt: string;
+};
+
 type AdminUser = {
   id: string;
   name: string;
@@ -45,14 +54,17 @@ export function ServiceRequestDetailPage() {
   const { hasPermission, user } = useAuth();
   const [request, setRequest] = useState<ServiceRequest | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
-  const [comment, setComment] = useState('');
+  const [chatMessage, setChatMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const canManage = hasPermission('tickets:manage');
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
@@ -63,6 +75,11 @@ export function ServiceRequestDetailPage() {
   const canUpload = isSuperAdmin || isAdmin || request?.requesterId === user?.id;
   // Only Super Admin can delete attachments
   const canDeleteAttachment = isSuperAdmin;
+  
+  // Check if user can view chat (Super Admin or assigned Admin or own request)
+  const canViewChat = isSuperAdmin || isAdmin || request?.requesterId === user?.id;
+  // Check if user can post chat messages (Super Admin, assigned Admin, or own request)
+  const canPostChat = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || request?.requesterId === user?.id;
 
   async function load() {
     if (!id) return;
@@ -88,6 +105,16 @@ export function ServiceRequestDetailPage() {
     }
   }
 
+  async function loadComments() {
+    if (!id) return;
+    try {
+      const res = await api.get(`/service-requests/${id}/comments`);
+      setComments(res.data.comments);
+    } catch {
+      setComments([]);
+    }
+  }
+
   async function loadAdmins() {
     try {
       const res = await api.get('/users/admins');
@@ -105,8 +132,14 @@ export function ServiceRequestDetailPage() {
   useEffect(() => {
     if (request) {
       loadAttachments();
+      loadComments();
     }
   }, [request?.id]);
+
+  // Auto scroll to bottom when new comments arrive
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [comments]);
 
   async function updateStatus(payload: Partial<ServiceRequest>) {
     if (!request) return;
@@ -119,14 +152,19 @@ export function ServiceRequestDetailPage() {
     }
   }
 
-  async function addComment(commentText: string) {
-    if (!request || !commentText.trim()) return;
+  async function sendChatMessage() {
+    if (!request || !chatMessage.trim()) return;
+    setSendingMessage(true);
     try {
-      await api.patch(`/service-requests/${request.id}`, { comment: commentText });
-      setComment('');
-      setMessage('Comment added successfully.');
+      await api.post(`/service-requests/${request.id}/comments`, {
+        message: chatMessage.trim()
+      });
+      setChatMessage('');
+      await loadComments();
     } catch {
-      setMessage('Failed to add comment. Check backend logs.');
+      setMessage('Failed to send message.');
+    } finally {
+      setSendingMessage(false);
     }
   }
 
@@ -251,6 +289,27 @@ export function ServiceRequestDetailPage() {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  function formatChatTime(dateStr?: string): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    
+    if (isToday) {
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   if (loading) {
@@ -434,15 +493,60 @@ export function ServiceRequestDetailPage() {
             <div className="detail-card-header">
               <h3>Conversation</h3>
             </div>
-            <div className="detail-card-body">
-              <div className="detail-placeholder">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 12C8 9.79086 9.79086 8 12 8H36C38.2091 8 40 9.79086 40 12V30C40 32.2091 38.2091 34 36 34H16L8 40V12Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M14 18H34M14 26H26" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <p>No conversations</p>
-                <span>Comments and updates will appear here.</span>
-              </div>
+            <div className="detail-card-body conversation-body">
+              {!canViewChat ? (
+                <div className="conversation-no-access">
+                  <p>You do not have access to view this conversation.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="conversation-messages">
+                    {comments.length === 0 ? (
+                      <div className="conversation-empty">
+                        <p>No messages yet. Start the conversation.</p>
+                      </div>
+                    ) : (
+                      comments.map((comment) => (
+                        <div 
+                          key={comment.id} 
+                          className={`conversation-message ${comment.userId === user?.id ? 'own-message' : ''}`}
+                        >
+                          <div className="message-header">
+                            <span className="message-sender">{comment.userName}</span>
+                            <span className="message-time">{formatChatTime(comment.createdAt)}</span>
+                          </div>
+                          <div className="message-content">
+                            {comment.message}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                  {canPostChat ? (
+                    <div className="conversation-input">
+                      <input
+                        type="text"
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
+                        placeholder="Type a message..."
+                        disabled={sendingMessage}
+                      />
+                      <button 
+                        onClick={sendChatMessage}
+                        disabled={sendingMessage || !chatMessage.trim()}
+                      >
+                        {sendingMessage ? 'Sending...' : 'Send'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="conversation-input-disabled">
+                      <span>You cannot reply to this conversation.</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -523,31 +627,6 @@ export function ServiceRequestDetailPage() {
                     Close
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Comment Section */}
-          {canPerformActions && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Add Comment</h3>
-              </div>
-              <div className="detail-card-body">
-                <textarea
-                  className="detail-textarea"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Enter your comment..."
-                  rows={4}
-                />
-                <button
-                  className="btn-comment"
-                  onClick={() => addComment(comment)}
-                  disabled={!comment.trim()}
-                >
-                  Save Comment
-                </button>
               </div>
             </div>
           )}
