@@ -141,6 +141,7 @@ model ServiceRequest {
   assignee      User?                      @relation("AssigneeTickets", fields: [assigneeId], references: [id])
   attachments   ServiceRequestAttachment[]
   comments      ServiceRequestComment[]
+  timeline      ServiceRequestTimeline[]
 }
 
 model ServiceRequestAttachment {
@@ -166,6 +167,19 @@ model ServiceRequestComment {
   message   String         @db.Text
   createdAt DateTime       @default(now())
   request   ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+}
+
+model ServiceRequestTimeline {
+  id              String         @id @default(cuid())
+  requestId       String
+  action          String
+  description     String         @db.Text
+  performedBy     String?
+  performedByName String?
+  createdAt       DateTime       @default(now())
+  request         ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
 }

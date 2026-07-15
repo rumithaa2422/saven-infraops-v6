@@ -17,6 +17,36 @@ import { promises as fs } from 'fs';
 
 export const serviceRequestRouter = Router();
 
+// Timeline action types
+const TimelineAction = {
+  CREATED: 'Created',
+  STATUS_CHANGED: 'Status Changed',
+  ASSIGNED: 'Assigned',
+  UNASSIGNED: 'Unassigned',
+  ATTACHMENT_UPLOADED: 'Attachment Uploaded',
+  COMMENT_ADDED: 'Comment Added',
+  PRIORITY_CHANGED: 'Priority Changed',
+  UPDATED: 'Updated'
+} as const;
+
+// Helper function to add timeline entry
+async function addTimelineEntry(
+  requestId: string,
+  action: string,
+  description: string,
+  user?: Express.Request['user']
+) {
+  await prisma.serviceRequestTimeline.create({
+    data: {
+      requestId,
+      action,
+      description,
+      performedBy: user?.id || null,
+      performedByName: user?.name || null
+    }
+  });
+}
+
 // Ensure upload directory exists
 async function ensureAttachmentDir() {
   const dir = path.join(process.cwd(), 'uploads', 'attachments');
@@ -162,6 +192,15 @@ serviceRequestRouter.post('/', requireAuth, requirePermissionOr(['tickets:write'
       actorEmail: req.user?.email,
       ipAddress: req.ip
     });
+    
+    // Add timeline entry for ticket creation
+    await addTimelineEntry(
+      item.id,
+      TimelineAction.CREATED,
+      `Service request created with title: ${item.title}`,
+      req.user
+    );
+    
     res.status(201).json({ item });
   } catch (error) {
     next(error);
@@ -210,6 +249,27 @@ serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:wr
       actorEmail: req.user?.email,
       ipAddress: req.ip
     });
+    
+    // Add timeline entry for status change
+    if (payload.status && payload.status !== existing.status) {
+      await addTimelineEntry(
+        id,
+        TimelineAction.STATUS_CHANGED,
+        `Status changed from ${existing.status} to ${payload.status}`,
+        req.user
+      );
+    }
+    
+    // Add timeline entry for priority change
+    if (payload.priority && payload.priority !== existing.priority) {
+      await addTimelineEntry(
+        id,
+        TimelineAction.PRIORITY_CHANGED,
+        `Priority changed from ${existing.priority} to ${payload.priority}`,
+        req.user
+      );
+    }
+    
     res.json({ item });
   } catch (error) {
     next(error);
@@ -228,6 +288,9 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) =>
       throw new HttpError(403, 'Only Super Admin can assign tickets');
     }
 
+    const existing = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!existing) throw new HttpError(404, 'Service request not found');
+
     const { assigneeId } = assignSchema.parse(req.body);
 
     const item = await assignServiceRequest(id, {
@@ -236,6 +299,15 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) =>
       actorEmail: req.user?.email,
       ipAddress: req.ip
     });
+    
+    // Add timeline entry for assignment
+    await addTimelineEntry(
+      id,
+      TimelineAction.ASSIGNED,
+      `Assigned to ${item.assigneeName}`,
+      req.user
+    );
+    
     res.json({ item });
   } catch (error) {
     next(error);
@@ -358,6 +430,15 @@ serviceRequestRouter.post('/:id/attachments', requireAuth, requirePermissionOr([
             }
           });
         })
+      );
+      
+      // Add timeline entry for attachment upload
+      const fileNames = files.map(f => f.originalname).join(', ');
+      await addTimelineEntry(
+        id,
+        TimelineAction.ATTACHMENT_UPLOADED,
+        `Uploaded attachment(s): ${fileNames}`,
+        req.user
       );
       
       res.status(201).json({ attachments });
@@ -528,7 +609,40 @@ serviceRequestRouter.post('/:id/comments', requireAuth, requirePermissionOr(['ti
       }
     });
     
+    // Add timeline entry for comment
+    const messagePreview = message.trim().substring(0, 50) + (message.trim().length > 50 ? '...' : '');
+    await addTimelineEntry(
+      id,
+      TimelineAction.COMMENT_ADDED,
+      `Added comment: "${messagePreview}"`,
+      req.user
+    );
+    
     res.status(201).json({ comment });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// Timeline Routes
+// ============================================
+
+// GET /service-requests/:id/timeline - Get timeline for a service request
+serviceRequestRouter.get('/:id/timeline', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    
+    const request = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!request) throw new HttpError(404, 'Service request not found');
+    
+    // Fetch timeline entries ordered by creation time
+    const timeline = await prisma.serviceRequestTimeline.findMany({
+      where: { requestId: id },
+      orderBy: { createdAt: 'asc' }
+    });
+    
+    res.json({ timeline });
   } catch (error) {
     next(error);
   }

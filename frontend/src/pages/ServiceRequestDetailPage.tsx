@@ -41,6 +41,16 @@ type Comment = {
   createdAt: string;
 };
 
+type TimelineEntry = {
+  id: string;
+  requestId: string;
+  action: string;
+  description: string;
+  performedBy: string | null;
+  performedByName: string | null;
+  createdAt: string;
+};
+
 type AdminUser = {
   id: string;
   name: string;
@@ -55,6 +65,7 @@ export function ServiceRequestDetailPage() {
   const [request, setRequest] = useState<ServiceRequest | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -115,6 +126,16 @@ export function ServiceRequestDetailPage() {
     }
   }
 
+  async function loadTimeline() {
+    if (!id) return;
+    try {
+      const res = await api.get(`/service-requests/${id}/timeline`);
+      setTimeline(res.data.timeline);
+    } catch {
+      setTimeline([]);
+    }
+  }
+
   async function loadAdmins() {
     try {
       const res = await api.get('/users/admins');
@@ -133,6 +154,7 @@ export function ServiceRequestDetailPage() {
     if (request) {
       loadAttachments();
       loadComments();
+      loadTimeline();
     }
   }, [request?.id]);
 
@@ -555,15 +577,42 @@ export function ServiceRequestDetailPage() {
             <div className="detail-card-header">
               <h3>Timeline</h3>
             </div>
-            <div className="detail-card-body">
-              <div className="detail-placeholder">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="24" cy="24" r="16" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M24 16V24L28 28" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <p>No timeline events</p>
-                <span>Activity history will appear here.</span>
-              </div>
+            <div className="detail-card-body timeline-body">
+              {timeline.length === 0 ? (
+                <div className="detail-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="24" cy="24" r="16" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M24 16V24L28 28" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <p>No timeline events</p>
+                  <span>Activity history will appear here.</span>
+                </div>
+              ) : (
+                <div className="timeline-list">
+                  {timeline.map((entry) => (
+                    <div key={entry.id} className="timeline-item">
+                      <div className="timeline-marker">
+                        <div className="timeline-dot"></div>
+                        <div className="timeline-line"></div>
+                      </div>
+                                              <div className="timeline-content">
+                        <div className="timeline-header">
+                          <span className="timeline-action">{entry.action}</span>
+                          <span className="timeline-time">
+                            {formatDate(entry.createdAt)}
+                          </span>
+                        </div>
+                        <p className="timeline-description">{entry.description}</p>
+                        {entry.performedByName && (
+                          <span className="timeline-user">
+                            by {entry.performedByName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
