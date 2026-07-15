@@ -537,13 +537,13 @@ export function IncidentDetailPage() {
                 {isOwned ? (
                   <div className="ownership-info">
                     <p className="ownership-text">
-                      Already assigned to <strong>{incident.ownerName}</strong>
+                      Owned by <strong>{incident.ownerName}</strong>
                     </p>
                   </div>
                 ) : (
                   <div className="ownership-action">
-                    <p className="ownership-text">
-                      This incident is not assigned to anyone.
+                    <p className="ownership-text ownership-unassigned">
+                      Unassigned
                     </p>
                     <button 
                       className="btn-primary"

@@ -508,10 +508,21 @@ genericModuleRouter.get('/incidents/:id', requireAuth, async (req, res, next) =>
 genericModuleRouter.patch('/incidents/:id/ownership', requireAuth, async (req, res, next) => {
   try {
     const id = req.params.id;
-    const { ownerName } = req.body;
+    const userRoles = req.user?.roles || [];
+    
+    // Only Admin and Super Admin can take ownership
+    const isAdmin = userRoles.includes('Admin');
+    const isSuperAdmin = userRoles.includes('Super Admin');
+    
+    if (!isAdmin && !isSuperAdmin) {
+      throw new HttpError(403, 'Only Admin and Super Admin can take ownership');
+    }
+    
+    // Use the current logged-in user's name as the owner
+    const ownerName = req.user?.name;
     
     if (!ownerName) {
-      throw new HttpError(400, 'Owner name is required');
+      throw new HttpError(400, 'Unable to determine user name for ownership');
     }
     
     const existing = await prisma.incident.findUnique({ where: { id } });

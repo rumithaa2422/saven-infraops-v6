@@ -5181,6 +5181,28 @@ input:disabled {
   cursor: not-allowed;
 }
 
+/* Incident Ownership Styles */
+.ownership-info {
+  padding: 4px 0;
+}
+
+.ownership-text {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.ownership-unassigned {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.ownership-action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Action Buttons */
 .detail-actions {
   display: flex;

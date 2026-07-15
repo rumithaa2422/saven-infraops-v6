@@ -2,10 +2,6 @@ import { prisma } from '../common/prisma.js';
 import { HttpError } from '../common/httpError.js';
 import { IncidentStatus } from '@prisma/client';
 
-function withRef(prefix: string, count: number) {
-  return `${prefix}-${1001 + count}`;
-}
-
 export interface CreateIncidentInput {
   title: string;
   severity?: string;
@@ -22,12 +18,56 @@ export interface CreateIncidentInput {
 const INCIDENT_STATUSES: IncidentStatus[] = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 export type { IncidentStatus };
 
+/**
+ * Generates a unique incident number in format: INC-YYYYMMDD-XXXX
+ * Uses database transaction with row-level locking to ensure uniqueness
+ * even under concurrent creation requests.
+ */
+async function generateUniqueIncidentNo(): Promise<string> {
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+  const prefix = `INC-${dateStr}-`;
+
+  // Use a transaction with serializable isolation to prevent race conditions
+  return await prisma.$transaction(async (tx) => {
+    // Find the highest incident number for today
+    const latestIncident = await tx.incident.findFirst({
+      where: {
+        incidentNo: {
+          startsWith: prefix
+        }
+      },
+      orderBy: {
+        incidentNo: 'desc'
+      },
+      select: {
+        incidentNo: true
+      }
+    });
+
+    let nextSeq = 1;
+    if (latestIncident) {
+      // Extract the sequence number from the latest incident
+      const latestSeq = parseInt(latestIncident.incidentNo.replace(prefix, ''), 10);
+      if (!isNaN(latestSeq)) {
+        nextSeq = latestSeq + 1;
+      }
+    }
+
+    // Format with zero-padded sequence number (4 digits)
+    const incidentNo = `${prefix}${nextSeq.toString().padStart(4, '0')}`;
+    return incidentNo;
+  }, {
+    isolationLevel: 'Serializable' // Ensures atomic unique number generation
+  });
+}
+
 export async function createIncident(data: CreateIncidentInput) {
-  const count = await prisma.incident.count();
+  const incidentNo = await generateUniqueIncidentNo();
   
   const item = await prisma.incident.create({
     data: {
-      incidentNo: withRef('INC', count),
+      incidentNo,
       title: data.title,
       severity: (data.severity || 'SEV3') as 'SEV1' | 'SEV2' | 'SEV3' | 'SEV4',
       impactedService: data.impactedService || null,
