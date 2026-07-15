@@ -1,8 +1,12 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
+import { env } from '../../config/env.js';
+import { promises as fs } from 'fs';
+import multer from 'multer';
+import path from 'path';
 import {
   createIncident,
   updateIncident,
@@ -539,6 +543,245 @@ genericModuleRouter.get('/incidents/:id/timeline', requireAuth, async (req, res,
     
     // Return empty timeline - frontend will build timeline from incident data
     res.json({ timeline: [] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// Incident Resolution Document Routes
+// ============================================
+
+// Ensure resolution document directory exists
+async function ensureResolutionDocDir() {
+  const dir = path.join(process.cwd(), 'uploads', 'resolution-docs');
+  try {
+    await fs.mkdir(dir, { recursive: true });
+  } catch {}
+  return dir;
+}
+
+// Configure multer for resolution document uploads
+const resolutionStorage = multer.diskStorage({
+  destination: async (_req, _file, cb) => {
+    const dir = await ensureResolutionDocDir();
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `resolution-${uniqueSuffix}${ext}`);
+  }
+});
+
+const ALLOWED_RESOLUTION_DOC_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'image/png',
+  'image/jpeg',
+  'image/jpg'
+];
+
+const ALLOWED_RESOLUTION_DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xlsx', '.ppt', '.pptx', '.txt', '.png', '.jpg', '.jpeg'];
+
+const resolutionDocFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ALLOWED_RESOLUTION_DOC_EXTENSIONS.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('File type not allowed. Allowed: pdf, doc, docx, xlsx, ppt, pptx, txt, png, jpg, jpeg'));
+  }
+};
+
+const resolutionUpload = multer({
+  storage: resolutionStorage,
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25 MB
+    files: 1
+  },
+  fileFilter: resolutionDocFilter
+});
+
+// Helper to check if user can upload resolution document
+function canUploadResolutionDoc(user: Express.Request['user'], incident: { ownerName?: string | null }): boolean {
+  if (!user) return false;
+  
+  // Super Admin can upload only if they own the incident
+  if (user.roles.includes('Super Admin')) {
+    return incident.ownerName === user.name;
+  }
+  
+  // Admin can upload only if they own the incident
+  if (user.roles.includes('Admin')) {
+    return incident.ownerName === user.name;
+  }
+  
+  // Employees cannot upload
+  return false;
+}
+
+// GET /incidents/:id/resolution-document - Get resolution document
+genericModuleRouter.get('/incidents/:id/resolution-document', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    
+    const incident = await prisma.incident.findUnique({ where: { id } });
+    if (!incident) throw new HttpError(404, 'Incident not found');
+    
+    const document = await prisma.incidentResolutionDocument.findUnique({
+      where: { incidentId: id }
+    });
+    
+    if (!document) {
+      return res.json({ document: null });
+    }
+    
+    res.json({ document });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /incidents/:id/resolution-document - Upload resolution document
+genericModuleRouter.post('/incidents/:id/resolution-document', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    
+    const incident = await prisma.incident.findUnique({ where: { id } });
+    if (!incident) throw new HttpError(404, 'Incident not found');
+    
+    if (!canUploadResolutionDoc(req.user, incident)) {
+      throw new HttpError(403, 'Only the assigned owner can upload the resolution document');
+    }
+    
+    resolutionUpload.single('file')(req, res, async (err) => {
+      if (err) {
+        if (err.message && err.message.includes('File type not allowed')) {
+          return res.status(400).json({ error: err.message });
+        }
+        if (err.message && err.message.includes('File too large')) {
+          return res.status(400).json({ error: 'File too large. Maximum size is 25MB.' });
+        }
+        return res.status(400).json({ error: 'File upload failed' });
+      }
+      
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      // Delete existing resolution document if any
+      const existing = await prisma.incidentResolutionDocument.findUnique({
+        where: { incidentId: id }
+      });
+      
+      if (existing) {
+        // Delete old file from disk
+        const oldFilePath = path.join(process.cwd(), 'uploads', 'resolution-docs', existing.storedName);
+        try {
+          await fs.unlink(oldFilePath);
+        } catch {}
+        
+        // Delete old record
+        await prisma.incidentResolutionDocument.delete({
+          where: { id: existing.id }
+        });
+      }
+      
+      // Create new resolution document record
+      const document = await prisma.incidentResolutionDocument.create({
+        data: {
+          incidentId: id,
+          fileName: file.originalname,
+          storedName: file.filename,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+          uploadedBy: req.user?.id || null,
+          uploadedByName: req.user?.name || null
+        }
+      });
+      
+      res.status(201).json({ document });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /incidents/:id/resolution-document/download - Download resolution document
+genericModuleRouter.get('/incidents/:id/resolution-document/download', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    
+    const incident = await prisma.incident.findUnique({ where: { id } });
+    if (!incident) throw new HttpError(404, 'Incident not found');
+    
+    const document = await prisma.incidentResolutionDocument.findUnique({
+      where: { incidentId: id }
+    });
+    
+    if (!document) {
+      throw new HttpError(404, 'Resolution document not found');
+    }
+    
+    const filePath = path.join(process.cwd(), 'uploads', 'resolution-docs', document.storedName);
+    
+    try {
+      await fs.access(filePath);
+    } catch {
+      throw new HttpError(404, 'File not found on server');
+    }
+    
+    res.setHeader('Content-Type', document.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+    res.setHeader('Content-Length', document.fileSize);
+    
+    const fileStream = await fs.readFile(filePath);
+    res.send(fileStream);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /incidents/:id/resolution-document - Delete resolution document
+genericModuleRouter.delete('/incidents/:id/resolution-document', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    
+    const incident = await prisma.incident.findUnique({ where: { id } });
+    if (!incident) throw new HttpError(404, 'Incident not found');
+    
+    // Only the owner can delete
+    if (!canUploadResolutionDoc(req.user, incident)) {
+      throw new HttpError(403, 'Only the assigned owner can delete the resolution document');
+    }
+    
+    const document = await prisma.incidentResolutionDocument.findUnique({
+      where: { incidentId: id }
+    });
+    
+    if (!document) {
+      throw new HttpError(404, 'Resolution document not found');
+    }
+    
+    // Delete file from disk
+    const filePath = path.join(process.cwd(), 'uploads', 'resolution-docs', document.storedName);
+    try {
+      await fs.unlink(filePath);
+    } catch {}
+    
+    // Delete from database
+    await prisma.incidentResolutionDocument.delete({
+      where: { id: document.id }
+    });
+    
+    res.json({ success: true });
   } catch (error) {
     next(error);
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
@@ -17,6 +17,18 @@ type Incident = {
   updatedAt?: string;
 };
 
+type ResolutionDocument = {
+  id: string;
+  incidentId: string;
+  fileName: string;
+  storedName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy: string | null;
+  uploadedByName: string | null;
+  uploadedAt: string;
+};
+
 type TimelineEntry = {
   action: string;
   description: string;
@@ -24,15 +36,21 @@ type TimelineEntry = {
   createdAt: string;
 };
 
+const ALLOWED_FILE_TYPES = '.pdf,.doc,.docx,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg';
+
 export function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [incident, setIncident] = useState<Incident | null>(null);
+  const [resolutionDoc, setResolutionDoc] = useState<ResolutionDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [takingOwnership, setTakingOwnership] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [docUploadTime, setDocUploadTime] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
@@ -46,8 +64,14 @@ export function IncidentDetailPage() {
   
   // Is already owned
   const isOwned = !!incident?.ownerName;
+  
+  // Is the owner of the incident (for resolution document upload)
+  const isOwner = isOwned && incident?.ownerName === user?.name;
+  
+  // Can upload resolution document: owner only (Admin or Super Admin)
+  const canUploadResolutionDoc = isOwner;
 
-  // Build timeline from incident data (without database timeline table)
+  // Build timeline from incident data
   function buildTimeline(): TimelineEntry[] {
     if (!incident) return [];
     
@@ -60,6 +84,26 @@ export function IncidentDetailPage() {
       performedByName: null,
       createdAt: incident.createdAt || ''
     });
+    
+    // Ownership Taken entry
+    if (incident.ownerName) {
+      entries.push({
+        action: 'Ownership Taken',
+        description: `${incident.ownerName} took ownership of this incident`,
+        performedByName: incident.ownerName,
+        createdAt: incident.updatedAt || incident.createdAt || ''
+      });
+    }
+    
+    // Resolution Document Uploaded entry
+    if (docUploadTime) {
+      entries.push({
+        action: 'Resolution Document Uploaded',
+        description: `Resolution document was uploaded`,
+        performedByName: resolutionDoc?.uploadedByName || null,
+        createdAt: docUploadTime
+      });
+    }
     
     return entries;
   }
@@ -75,6 +119,19 @@ export function IncidentDetailPage() {
       setError('Failed to load incident details.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadResolutionDocument() {
+    if (!id) return;
+    try {
+      const res = await api.get(`/incidents/${id}/resolution-document`);
+      setResolutionDoc(res.data.document);
+      if (res.data.document?.uploadedAt) {
+        setDocUploadTime(res.data.document.uploadedAt);
+      }
+    } catch {
+      setResolutionDoc(null);
     }
   }
 
@@ -94,6 +151,67 @@ export function IncidentDetailPage() {
     }
   }
 
+  async function uploadResolutionDocument(files: FileList) {
+    if (!incident || files.length === 0) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', files[0]);
+      
+      await api.post(`/incidents/${incident.id}/resolution-document`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      setMessage('Resolution document uploaded successfully.');
+      await loadResolutionDocument();
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err: any) {
+      setMessage(err.response?.data?.error || 'Failed to upload resolution document.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function downloadResolutionDocument() {
+    if (!incident) return;
+    const token = localStorage.getItem('token');
+    const downloadUrl = `/api/incidents/${incident.id}/resolution-document/download`;
+    
+    fetch(downloadUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Download failed');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = resolutionDoc?.fileName || 'resolution-document';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        setMessage('Failed to download resolution document.');
+      });
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
   useEffect(() => {
     // Scroll to top of page when component mounts
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -102,6 +220,12 @@ export function IncidentDetailPage() {
   useEffect(() => {
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (incident) {
+      loadResolutionDocument();
+    }
+  }, [incident?.id]);
 
   function handleBack() {
     navigate('/incidents');
@@ -274,12 +398,68 @@ export function IncidentDetailPage() {
               <h3>Resolution Document</h3>
             </div>
             <div className="detail-card-body">
-              <div className="empty-state">
-                <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <p className="empty-state-title">No resolution document uploaded.</p>
-              </div>
+              {resolutionDoc ? (
+                <div className="resolution-doc-info">
+                  <div className="detail-field">
+                    <label>Filename</label>
+                    <span className="detail-field-value">{resolutionDoc.fileName}</span>
+                  </div>
+                  <div className="detail-field">
+                    <label>Uploaded By</label>
+                    <span className="detail-field-value">{resolutionDoc.uploadedByName || 'Unknown'}</span>
+                  </div>
+                  <div className="detail-field">
+                    <label>Uploaded Date</label>
+                    <span className="detail-field-value">{formatDate(resolutionDoc.uploadedAt)}</span>
+                  </div>
+                  <div className="detail-field">
+                    <label>File Size</label>
+                    <span className="detail-field-value">{formatFileSize(resolutionDoc.fileSize)}</span>
+                  </div>
+                  <div className="resolution-doc-actions">
+                    <button 
+                      className="btn-attachment-download"
+                      onClick={downloadResolutionDocument}
+                    >
+                      Download
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="empty-state-title">No resolution document uploaded.</p>
+                </div>
+              )}
+              
+              {/* Show upload info if another owner exists but not current user */}
+              {!canUploadResolutionDoc && isOwned && incident.ownerName !== user?.name && (
+                <div className="resolution-doc-owner-info">
+                  <p className="owner-note">
+                    This incident is handled by <strong>{incident.ownerName}</strong>
+                  </p>
+                </div>
+              )}
+              
+              {/* Upload section for owner */}
+              {canUploadResolutionDoc && (
+                <div className="resolution-doc-upload">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ALLOWED_FILE_TYPES}
+                    onChange={(e) => e.target.files && uploadResolutionDocument(e.target.files)}
+                    className="file-input"
+                    id="resolution-doc-upload"
+                  />
+                  <label htmlFor="resolution-doc-upload" className="btn-upload">
+                    {uploading ? 'Uploading...' : (resolutionDoc ? 'Replace' : 'Upload')}
+                  </label>
+                  <span className="upload-hint">pdf, doc, docx, xlsx, ppt, pptx, txt, png, jpg, jpeg (max 25MB)</span>
+                </div>
+              )}
             </div>
           </div>
 

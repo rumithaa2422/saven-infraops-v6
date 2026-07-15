@@ -210,22 +210,38 @@ model ServiceRequestTimeline {
 }
 
 model Incident {
-  id               String           @id @default(cuid())
-  incidentNo       String           @unique
-  title            String
-  description      String?          @db.Text
-  severity         IncidentSeverity @default(SEV3)
-  status           IncidentStatus   @default(OPEN)
-  impactedService  String?
-  impactedProject  String?
-  startedAt        DateTime?
-  resolvedAt       DateTime?
-  rca              String?          @db.Text
-  correctiveAction String?          @db.Text
-  preventiveAction String?          @db.Text
-  ownerName        String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                  String           @id @default(cuid())
+  incidentNo          String           @unique
+  title               String
+  description         String?          @db.Text
+  severity            IncidentSeverity @default(SEV3)
+  status              IncidentStatus   @default(OPEN)
+  impactedService     String?
+  impactedProject     String?
+  startedAt           DateTime?
+  resolvedAt          DateTime?
+  rca                 String?          @db.Text
+  correctiveAction    String?          @db.Text
+  preventiveAction    String?          @db.Text
+  ownerName           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  resolutionDocument  IncidentResolutionDocument?
+}
+
+model IncidentResolutionDocument {
+  id           String    @id @default(cuid())
+  incidentId   String    @unique
+  fileName     String
+  storedName  String    @unique
+  mimeType     String
+  fileSize     Int
+  uploadedBy   String?
+  uploadedByName String?
+  uploadedAt   DateTime  @default(now())
+  incident     Incident  @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
 }
 
 model Problem {

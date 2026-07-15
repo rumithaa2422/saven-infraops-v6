@@ -5558,6 +5558,47 @@ input:disabled {
 }
 
 /* ============================================
+   Resolution Document Styles
+   ============================================ */
+
+.resolution-doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resolution-doc-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.resolution-doc-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+
+.resolution-doc-upload .file-input {
+  display: none;
+}
+
+.resolution-doc-owner-info {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+
+.owner-note {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ============================================
    Conversation / Chat Styles
    ============================================ */
 
