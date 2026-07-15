@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
@@ -17,11 +18,6 @@ type ServiceRequest = {
   projectName?: string;
 };
 
-type AdminUser = {
-  id: string;
-  name: string;
-};
-
 const initialForm = {
   title: '',
   description: '',
@@ -33,9 +29,9 @@ const initialForm = {
 };
 
 export function ServiceRequestsPage() {
-  const { hasPermission, user } = useAuth();
+  const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [items, setItems] = useState<ServiceRequest[]>([]);
-  const [selected, setSelected] = useState<ServiceRequest | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<ServiceRequest | null>(null);
@@ -44,24 +40,11 @@ export function ServiceRequestsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState(initialForm);
-  const [comment, setComment] = useState('');
   const [message, setMessage] = useState('');
-  const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [selectedAssignee, setSelectedAssignee] = useState<string>('');
 
   // Permission checks
   const canCreate = hasPermission('tickets:create');
   const canDelete = hasPermission('tickets:manage');
-  const canManage = hasPermission('tickets:manage');
-  const canAssign = hasPermission('tickets:assign');
-  
-  // Role checks
-  const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
-  const isAdmin = user?.roles.includes('Admin') ?? false;
-  
-  // Ownership check: Admin can only perform actions on tickets assigned to them
-  // Super Admin can do everything; Admin must own the ticket
-  const canPerformActions = isSuperAdmin || (isAdmin && selected?.assigneeId === user?.id);
 
   async function load() {
     try {
@@ -74,18 +57,8 @@ export function ServiceRequestsPage() {
     }
   }
 
-  async function loadAdmins() {
-    try {
-      const res = await api.get('/users/admins');
-      setAdmins(res.data);
-    } catch {
-      setAdmins([]);
-    }
-  }
-
   useEffect(() => {
     load();
-    loadAdmins();
   }, []);
 
   async function createRequest(event: FormEvent) {
@@ -97,32 +70,6 @@ export function ServiceRequestsPage() {
       await load();
     } catch {
       setMessage('Create request failed. Check mandatory fields and backend logs.');
-    }
-  }
-
-  async function updateSelected(payload: Partial<ServiceRequest> & { comment?: string }) {
-    if (!selected) return;
-    try {
-      const response = await api.patch(`/service-requests/${selected.id}`, payload);
-      setSelected(response.data.item);
-      setComment('');
-      await load();
-    } catch {
-      setMessage('Action failed. Check backend logs and user permission.');
-    }
-  }
-
-  async function assignTicket() {
-    if (!selected || !selectedAssignee) return;
-    try {
-      const response = await api.patch(`/service-requests/${selected.id}/assign`, {
-        assigneeId: selectedAssignee
-      });
-      setSelected(response.data.item);
-      setSelectedAssignee('');
-      await load();
-    } catch {
-      setMessage('Assignment failed. Check backend logs and user permission.');
     }
   }
 
@@ -180,7 +127,6 @@ export function ServiceRequestsPage() {
       await api.delete(`/service-requests/${deletingRequest.id}`);
       setDeleteOpen(false);
       setDeletingRequest(null);
-      setSelected(null);
       await load();
       setMessage('Request deleted successfully.');
     } catch (err: any) {
@@ -252,7 +198,7 @@ export function ServiceRequestsPage() {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} onClick={() => setSelected(item)}>
+              <tr key={item.id}>
                 <td>{item.ticketNo}</td>
                 <td>{item.title}</td>
                 <td>{item.category}</td>
@@ -262,7 +208,7 @@ export function ServiceRequestsPage() {
                 <td>{item.assigneeName || 'Unassigned'}</td>
                 <td>
                   <div className="action-buttons">
-                    <button className="link-button" onClick={(event) => { event.stopPropagation(); setSelected(item); }} title="Open">Open</button>
+                    <button className="link-button" onClick={() => navigate(`/service-requests/${item.id}`)} title="Open">Open</button>
                     {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
                   </div>
                 </td>
@@ -364,70 +310,6 @@ export function ServiceRequestsPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {selected && (
-        <div className="drawer">
-          <button className="close" onClick={() => setSelected(null)}>Close</button>
-          <span className="eyebrow">{selected.ticketNo}</span>
-          <h3>{selected.title}</h3>
-          <p>Category: {selected.category}</p>
-          <p>Priority: {selected.priority}</p>
-          <p>Status: {selected.status}</p>
-          <p>Requester: {selected.requesterName}</p>
-          <p>Assignee: {selected.assigneeName || 'Unassigned'}</p>
-          <p>Description: {selected.description || '-'}</p>
-          
-          {/* Assignment section - Only visible to Super Admin */}
-          {isSuperAdmin && (
-            <div className="assignment-section">
-              <h4>Assigned To</h4>
-              <select
-                value={selectedAssignee}
-                onChange={(e) => setSelectedAssignee(e.target.value)}
-              >
-                <option value="">Select Admin...</option>
-                {admins.map((admin) => (
-                  <option key={admin.id} value={admin.id}>
-                    {admin.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="primary"
-                onClick={assignTicket}
-                disabled={!selectedAssignee}
-              >
-                Assign
-              </button>
-            </div>
-          )}
-          
-          {/* Action buttons - shown based on ownership logic */}
-          {canPerformActions && (
-            <div className="drawer-actions">
-              <button onClick={() => updateSelected({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}>Escalate</button>
-              <button onClick={() => updateSelected({ status: 'WAITING_FOR_USER' })}>Wait for User</button>
-              <button onClick={() => updateSelected({ status: 'CLOSED' })}>Close</button>
-            </div>
-          )}
-          
-          {/* Comment box - shown only when user can perform actions */}
-          {canPerformActions && (
-            <div className="comment-box">
-              <label>Add Comment<textarea value={comment} onChange={(e) => setComment(e.target.value)} /></label>
-              <button className="secondary" onClick={() => updateSelected({ comment })} disabled={!comment.trim()}>Save Comment</button>
-            </div>
-          )}
-          
-          {/* Show message to Admin if ticket is not assigned to them */}
-          {isAdmin && !isSuperAdmin && !canPerformActions && selected && (
-            <div className="notice info">
-              This ticket is assigned to another admin or is unassigned. 
-              You can only perform actions on tickets assigned to you.
-            </div>
-          )}
         </div>
       )}
     </div>

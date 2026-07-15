@@ -5,6 +5,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { ModulePage } from '../pages/ModulePage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ServiceRequestsPage } from '../pages/ServiceRequestsPage';
+import { ServiceRequestDetailPage } from '../pages/ServiceRequestDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
@@ -100,6 +101,14 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['service-requests']}>
               <ServiceRequestsPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="service-requests/:id" 
+          element={
+            <PermissionRoute permission={modulePermissions['service-requests']}>
+              <ServiceRequestDetailPage />
             </PermissionRoute>
           } 
         />
