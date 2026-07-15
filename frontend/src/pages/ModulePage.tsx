@@ -52,7 +52,6 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'severity', label: 'Severity', type: 'select', options: ['SEV1', 'SEV2', 'SEV3', 'SEV4'] },
       { key: 'impactedService', label: 'Impacted Service' },
       { key: 'impactedProject', label: 'Impacted Project' },
-      { key: 'ownerName', label: 'Owner' },
       { key: 'description', label: 'Description', type: 'textarea' }
     ],
     columns: [
@@ -1742,7 +1741,14 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <tr key={String(item.id || index)} onClick={() => !config.isDocumentRepository && setSelected(item)}>
+              <tr key={String(item.id || index)} onClick={() => {
+                // For incidents, navigate to detail page instead of opening sidebar
+                if (moduleKey === 'incidents' && item.id) {
+                  navigate(`/incidents/${item.id}`);
+                } else if (!config.isDocumentRepository) {
+                  setSelected(item);
+                }
+              }}>
                 {config.columns.map((column) => {
                   // Special handling for role column in users-teams
                   if (moduleKey === 'users-teams' && column.key === 'role') {

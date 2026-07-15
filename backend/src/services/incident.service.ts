@@ -32,7 +32,8 @@ export async function createIncident(data: CreateIncidentInput) {
       severity: (data.severity || 'SEV3') as 'SEV1' | 'SEV2' | 'SEV3' | 'SEV4',
       impactedService: data.impactedService || null,
       impactedProject: data.impactedProject || null,
-      ownerName: data.ownerName || null,
+      // Incidents are always created without an owner - ownership happens via Take Ownership
+      ownerName: null,
       description: data.description || null
     }
   });
