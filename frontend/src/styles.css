@@ -5599,6 +5599,88 @@ input:disabled {
 }
 
 /* ============================================
+   Service Request Assignment Styles
+   ============================================ */
+
+.assignment-display {
+  padding: 8px 0;
+}
+
+.assignment-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.assignment-unassigned {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.btn-change-assignment {
+  width: 100%;
+  padding: 8px 16px;
+  margin-top: 12px;
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-change-assignment:hover {
+  background: rgba(67, 96, 255, 0.08);
+}
+
+.assignment-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-save-assignment {
+  flex: 1;
+  padding: 8px 16px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-save-assignment:hover {
+  background: #4360ff;
+}
+
+.btn-save-assignment:disabled {
+  background: var(--muted);
+  cursor: not-allowed;
+}
+
+.btn-cancel-assignment {
+  flex: 1;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-cancel-assignment:hover {
+  background: var(--line);
+}
+
+/* ============================================
    Conversation / Chat Styles
    ============================================ */
 

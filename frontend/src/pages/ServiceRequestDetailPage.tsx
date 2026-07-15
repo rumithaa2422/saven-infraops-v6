@@ -74,6 +74,8 @@ export function ServiceRequestDetailPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [isChangingAssignment, setIsChangingAssignment] = useState(false);
+  const [pendingAssignee, setPendingAssignee] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -303,8 +305,38 @@ export function ServiceRequestDetailPage() {
       setRequest(response.data.item);
       setSelectedAssignee('');
       setMessage('Ticket assigned successfully.');
+      await loadTimeline();
     } catch {
       setMessage('Assignment failed. Check backend logs.');
+    }
+  }
+
+  function startChangeAssignment() {
+    setPendingAssignee(request?.assigneeId || '');
+    setIsChangingAssignment(true);
+  }
+
+  function cancelChangeAssignment() {
+    setIsChangingAssignment(false);
+    setPendingAssignee('');
+  }
+
+  async function saveAssignmentChange() {
+    if (!request || !pendingAssignee || pendingAssignee === request.assigneeId) {
+      cancelChangeAssignment();
+      return;
+    }
+    try {
+      const response = await api.patch(`/service-requests/${request.id}/assign`, {
+        assigneeId: pendingAssignee
+      });
+      setRequest(response.data.item);
+      setIsChangingAssignment(false);
+      setPendingAssignee('');
+      setMessage('Assignment changed successfully.');
+      await loadTimeline();
+    } catch {
+      setMessage('Failed to change assignment. Check backend logs.');
     }
   }
 
@@ -748,34 +780,97 @@ export function ServiceRequestDetailPage() {
         {/* Right Column - Actions */}
         <div className="detail-sidebar">
           {/* Assignment Section */}
-          {isSuperAdmin && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Assigned To</h3>
-              </div>
-              <div className="detail-card-body">
-                <select
-                  className="detail-select"
-                  value={selectedAssignee}
-                  onChange={(e) => setSelectedAssignee(e.target.value)}
-                >
-                  <option value="">Select Admin...</option>
-                  {admins.map((admin) => (
-                    <option key={admin.id} value={admin.id}>
-                      {admin.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="btn-assign"
-                  onClick={assignTicket}
-                  disabled={!selectedAssignee}
-                >
-                  Assign
-                </button>
-              </div>
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>Assigned To</h3>
             </div>
-          )}
+            <div className="detail-card-body">
+              {/* When not changing assignment */}
+              {!isChangingAssignment ? (
+                <>
+                  {/* Read-only display for assigned tickets or when user cannot assign */}
+                  {request?.assigneeName ? (
+                    <>
+                      <div className="assignment-display">
+                        <span className="assignment-value">{request.assigneeName}</span>
+                      </div>
+                      {/* Change Assignment button - only for Super Admin when ticket is assigned */}
+                      {isSuperAdmin && (
+                        <button
+                          className="btn-change-assignment"
+                          onClick={startChangeAssignment}
+                        >
+                          Change Assignment
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Unassigned - show dropdown only for Super Admin */}
+                      {isSuperAdmin ? (
+                        <>
+                          <select
+                            className="detail-select"
+                            value={selectedAssignee}
+                            onChange={(e) => setSelectedAssignee(e.target.value)}
+                          >
+                            <option value="">Select Admin...</option>
+                            {admins.map((admin) => (
+                              <option key={admin.id} value={admin.id}>
+                                {admin.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            className="btn-assign"
+                            onClick={assignTicket}
+                            disabled={!selectedAssignee}
+                          >
+                            Assign
+                          </button>
+                        </>
+                      ) : (
+                        <div className="assignment-display">
+                          <span className="assignment-value assignment-unassigned">Unassigned</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Change assignment mode */}
+                  <select
+                    className="detail-select"
+                    value={pendingAssignee}
+                    onChange={(e) => setPendingAssignee(e.target.value)}
+                  >
+                    <option value="">Select Admin...</option>
+                    {admins.map((admin) => (
+                      <option key={admin.id} value={admin.id}>
+                        {admin.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="assignment-actions">
+                    <button
+                      className="btn-save-assignment"
+                      onClick={saveAssignmentChange}
+                      disabled={!pendingAssignee || pendingAssignee === request?.assigneeId}
+                    >
+                      Save Assignment
+                    </button>
+                    <button
+                      className="btn-cancel-assignment"
+                      onClick={cancelChangeAssignment}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
 
           {/* Action Buttons */}
           {(isSuperAdmin || canPerformActions) && (

@@ -23,6 +23,7 @@ const TimelineAction = {
   STATUS_CHANGED: 'Status Changed',
   ASSIGNED: 'Assigned',
   UNASSIGNED: 'Unassigned',
+  ASSIGNMENT_CHANGED: 'Assignment Changed',
   ATTACHMENT_UPLOADED: 'Attachment Uploaded',
   COMMENT_ADDED: 'Comment Added',
   PRIORITY_CHANGED: 'Priority Changed',
@@ -388,13 +389,26 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) =>
 
     const item = await assignServiceRequest(id, { assigneeId });
     
-    // Add timeline entry for assignment
-    await addTimelineEntry(
-      id,
-      TimelineAction.ASSIGNED,
-      `Assigned to ${item.assigneeName}`,
-      req.user
-    );
+    // Determine if this is a new assignment or a change
+    const isNewAssignment = !existing.assigneeId;
+    
+    if (isNewAssignment) {
+      // Add timeline entry for new assignment
+      await addTimelineEntry(
+        id,
+        TimelineAction.ASSIGNED,
+        `Assigned to ${item.assigneeName}`,
+        req.user
+      );
+    } else {
+      // Add timeline entry for assignment change
+      await addTimelineEntry(
+        id,
+        TimelineAction.ASSIGNMENT_CHANGED,
+        `Assignment changed from ${existing.assigneeName} to ${item.assigneeName}`,
+        req.user
+      );
+    }
     
     res.json({ item });
   } catch (error) {
