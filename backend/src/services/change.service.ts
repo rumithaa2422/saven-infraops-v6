@@ -1,5 +1,6 @@
 import { prisma } from '../common/prisma.js';
 import { HttpError } from '../common/httpError.js';
+import { ChangeRequestStatus } from '@prisma/client';
 
 function withRef(prefix: string, count: number) {
   return `${prefix}-${1001 + count}`;
@@ -17,9 +18,9 @@ export interface CreateChangeRequestInput {
   ipAddress?: string | null;
 }
 
-// Valid status values for change requests (WorkStatus enum)
-const CHANGE_STATUSES = ['PENDING_APPROVAL', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'WAITING_FOR_VENDOR', 'RESOLVED', 'CLOSED'] as const;
-type ChangeStatus = typeof CHANGE_STATUSES[number];
+// Valid status values for change requests (ChangeRequestStatus enum)
+const CHANGE_STATUSES: ChangeRequestStatus[] = ['OPEN', 'PENDING_APPROVAL', 'APPROVED', 'IMPLEMENTING', 'COMPLETED', 'CLOSED'];
+export type { ChangeRequestStatus };
 
 export async function createChangeRequest(data: CreateChangeRequestInput) {
   const count = await prisma.changeRequest.count();
@@ -103,13 +104,13 @@ export async function updateChangeStatus(id: string, data: UpdateChangeStatusInp
   }
 
   const newStatus = data.status.toUpperCase();
-  if (!CHANGE_STATUSES.includes(newStatus as ChangeStatus)) {
+  if (!CHANGE_STATUSES.includes(newStatus as ChangeRequestStatus)) {
     throw new HttpError(400, `Invalid status. Must be one of: ${CHANGE_STATUSES.join(', ')}`);
   }
 
   const item = await prisma.changeRequest.update({
     where: { id },
-    data: { status: newStatus as ChangeStatus }
+    data: { status: newStatus as ChangeRequestStatus }
   });
 
   await prisma.auditLog.create({

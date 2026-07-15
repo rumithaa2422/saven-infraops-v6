@@ -6,6 +6,7 @@ import { HttpError } from '../common/httpError.js';
 export type AuthUser = {
   id: string;
   email: string;
+  name: string;
   roles: string[];
   permissions: string[];
 };

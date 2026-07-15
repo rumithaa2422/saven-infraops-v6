@@ -1,14 +1,15 @@
 import { prisma } from '../common/prisma.js';
+import { ServiceRequestStatus } from '@prisma/client';
 
 function withRef(prefix: string, count: number) {
   return `${prefix}-${1001 + count}`;
 }
 
-// Status transition types
-export type WorkStatus = 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'WAITING_FOR_USER' | 'COMPLETED' | 'CLOSED';
+// Status transition types - using Prisma enum
+export type ServiceRequestStatusType = ServiceRequestStatus;
 
 // Valid status transitions for assigned admin
-const ADMIN_STATUS_TRANSITIONS: Record<WorkStatus, WorkStatus[]> = {
+const ADMIN_STATUS_TRANSITIONS: Record<ServiceRequestStatusType, ServiceRequestStatusType[]> = {
   'OPEN': [],
   'ASSIGNED': ['IN_PROGRESS'],
   'IN_PROGRESS': ['WAITING_FOR_USER', 'COMPLETED'],
@@ -18,7 +19,7 @@ const ADMIN_STATUS_TRANSITIONS: Record<WorkStatus, WorkStatus[]> = {
 };
 
 // Valid status transitions for super admin (can move to any status)
-const SUPER_ADMIN_STATUS_TRANSITIONS: Record<WorkStatus, WorkStatus[]> = {
+const SUPER_ADMIN_STATUS_TRANSITIONS: Record<ServiceRequestStatusType, ServiceRequestStatusType[]> = {
   'OPEN': ['ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'COMPLETED', 'CLOSED'],
   'ASSIGNED': ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'COMPLETED', 'CLOSED'],
   'IN_PROGRESS': ['OPEN', 'ASSIGNED', 'WAITING_FOR_USER', 'COMPLETED', 'CLOSED'],
@@ -79,7 +80,7 @@ export interface UpdateServiceRequestInput {
   category?: string;
   subCategory?: string | null;
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  status?: WorkStatus;
+  status?: ServiceRequestStatusType;
   requesterName?: string;
   assigneeName?: string | null;
   projectName?: string | null;
@@ -125,8 +126,8 @@ export async function updateServiceRequest(
 
 // Validate status transition based on user role
 export function validateStatusTransition(
-  currentStatus: WorkStatus,
-  newStatus: WorkStatus,
+  currentStatus: ServiceRequestStatusType,
+  newStatus: ServiceRequestStatusType,
   isSuperAdmin: boolean,
   isAdmin: boolean,
   isAssignedToUser: boolean

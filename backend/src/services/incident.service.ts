@@ -1,5 +1,6 @@
 import { prisma } from '../common/prisma.js';
 import { HttpError } from '../common/httpError.js';
+import { IncidentStatus } from '@prisma/client';
 
 function withRef(prefix: string, count: number) {
   return `${prefix}-${1001 + count}`;
@@ -17,9 +18,9 @@ export interface CreateIncidentInput {
   ipAddress?: string | null;
 }
 
-// Valid status values for incidents (WorkStatus enum)
-const INCIDENT_STATUSES = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'WAITING_FOR_VENDOR', 'PENDING_APPROVAL', 'RESOLVED', 'CLOSED', 'REOPENED'] as const;
-type IncidentStatus = typeof INCIDENT_STATUSES[number];
+// Valid status values for incidents (IncidentStatus enum)
+const INCIDENT_STATUSES: IncidentStatus[] = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+export type { IncidentStatus };
 
 export async function createIncident(data: CreateIncidentInput) {
   const count = await prisma.incident.count();

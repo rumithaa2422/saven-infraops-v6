@@ -2,12 +2,25 @@ import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
-import { WorkStatus, UserStatus, AccessStatus, TicketPriority, IncidentSeverity } from '@prisma/client';
+import { 
+  ServiceRequestStatus, 
+  IncidentStatus, 
+  ProblemStatus, 
+  ChangeRequestStatus,
+  UserStatus, 
+  AccessStatus, 
+  TicketPriority, 
+  IncidentSeverity,
+  AssetStatus 
+} from '@prisma/client';
 
 export const dashboardRouter = Router();
 
-// Terminal statuses - records with these statuses are considered closed/resolved
-const CLOSED_STATUSES: WorkStatus[] = [WorkStatus.CLOSED, WorkStatus.RESOLVED];
+// Terminal statuses for each module - records with these statuses are considered closed/resolved
+const CLOSED_SERVICE_REQUEST_STATUSES: ServiceRequestStatus[] = [ServiceRequestStatus.CLOSED];
+const CLOSED_INCIDENT_STATUSES: IncidentStatus[] = [IncidentStatus.CLOSED, IncidentStatus.RESOLVED];
+const CLOSED_PROBLEM_STATUSES: ProblemStatus[] = [ProblemStatus.CLOSED, ProblemStatus.RESOLVED];
+const CLOSED_CHANGE_STATUSES: ChangeRequestStatus[] = [ChangeRequestStatus.CLOSED, ChangeRequestStatus.COMPLETED];
 
 // Helper function to truncate text
 const truncateText = (text: string, maxLength: number = 50): string => {
@@ -52,34 +65,34 @@ dashboardRouter.get('/summary', requireAuth, requirePermissionOr(['dashboard:rea
       // Roles - count all roles
       prisma.role.count(),
       // Open Service Requests (Tickets) - not closed or resolved
-      prisma.serviceRequest.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
+      prisma.serviceRequest.count({ where: { status: { notIn: CLOSED_SERVICE_REQUEST_STATUSES } } }),
       // Unassigned tickets - no assignee
-      prisma.serviceRequest.count({ where: { status: { notIn: CLOSED_STATUSES }, assigneeName: null } }),
+      prisma.serviceRequest.count({ where: { status: { notIn: CLOSED_SERVICE_REQUEST_STATUSES }, assigneeName: null } }),
       // High priority tickets
       prisma.serviceRequest.count({ 
         where: { 
-          status: { notIn: CLOSED_STATUSES }, 
+          status: { notIn: CLOSED_SERVICE_REQUEST_STATUSES }, 
           priority: { in: [TicketPriority.HIGH, TicketPriority.CRITICAL] } 
         } 
       }),
       // SLA Breaches - overdue tickets
-      prisma.serviceRequest.count({ where: { dueAt: { lt: new Date() }, status: { notIn: CLOSED_STATUSES } } }),
+      prisma.serviceRequest.count({ where: { dueAt: { lt: new Date() }, status: { notIn: CLOSED_SERVICE_REQUEST_STATUSES } } }),
       // Total Incidents - all incidents
       prisma.incident.count(),
       // Critical Incidents - SEV1 and open
-      prisma.incident.count({ where: { severity: 'SEV1', status: { notIn: CLOSED_STATUSES } } }),
+      prisma.incident.count({ where: { severity: 'SEV1', status: { notIn: CLOSED_INCIDENT_STATUSES } } }),
       // SEV2 Incidents - open
-      prisma.incident.count({ where: { severity: 'SEV2', status: { notIn: CLOSED_STATUSES } } }),
+      prisma.incident.count({ where: { severity: 'SEV2', status: { notIn: CLOSED_INCIDENT_STATUSES } } }),
       // Open Incidents - not closed
-      prisma.incident.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
+      prisma.incident.count({ where: { status: { notIn: CLOSED_INCIDENT_STATUSES } } }),
       // Open Problems - not resolved
-      prisma.problem.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
+      prisma.problem.count({ where: { status: { notIn: CLOSED_PROBLEM_STATUSES } } }),
       // Pending Changes - not closed or resolved
-      prisma.changeRequest.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
+      prisma.changeRequest.count({ where: { status: { notIn: CLOSED_CHANGE_STATUSES } } }),
       // Overdue Changes - past change window
       prisma.changeRequest.count({ 
         where: { 
-          status: { notIn: CLOSED_STATUSES },
+          status: { notIn: CLOSED_CHANGE_STATUSES },
           changeWindow: { lt: new Date() }
         } 
       }),
@@ -184,13 +197,13 @@ dashboardRouter.get('/my-tasks', requireAuth, requirePermissionOr(['dashboard:re
     ] = await Promise.all([
       prisma.incident.count({
         where: {
-          status: { notIn: CLOSED_STATUSES },
+          status: { notIn: CLOSED_INCIDENT_STATUSES },
           ownerName: userName
         }
       }),
       prisma.changeRequest.count({
         where: {
-          status: { notIn: CLOSED_STATUSES },
+          status: { notIn: CLOSED_CHANGE_STATUSES },
           ownerName: userName
         }
       }),
@@ -202,21 +215,21 @@ dashboardRouter.get('/my-tasks', requireAuth, requirePermissionOr(['dashboard:re
       }),
       prisma.problem.count({
         where: {
-          status: { notIn: CLOSED_STATUSES },
+          status: { notIn: CLOSED_PROBLEM_STATUSES },
           ownerName: userName
         }
       }),
       // Tickets assigned to this user
       prisma.serviceRequest.count({
         where: {
-          status: { notIn: CLOSED_STATUSES },
+          status: { notIn: CLOSED_SERVICE_REQUEST_STATUSES },
           assigneeName: userName
         }
       }),
       // Tickets requested by this user
       prisma.serviceRequest.count({
         where: {
-          status: { notIn: CLOSED_STATUSES },
+          status: { notIn: CLOSED_SERVICE_REQUEST_STATUSES },
           requesterName: userName
         }
       })
@@ -452,8 +465,8 @@ dashboardRouter.get('/kpi', requireAuth, requirePermissionOr(['dashboard:read', 
   try {
     const [totalIncidents, openProblems, pendingChanges, complianceDocuments] = await Promise.all([
       prisma.incident.count(),
-      prisma.problem.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
-      prisma.changeRequest.count({ where: { status: { notIn: CLOSED_STATUSES } } }),
+      prisma.problem.count({ where: { status: { notIn: CLOSED_PROBLEM_STATUSES } } }),
+      prisma.changeRequest.count({ where: { status: { notIn: CLOSED_CHANGE_STATUSES } } }),
       prisma.complianceDocument.count()
     ]);
 

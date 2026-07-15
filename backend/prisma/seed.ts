@@ -1,4 +1,4 @@
-import { PrismaClient, TicketPriority, WorkStatus, IncidentSeverity, AssetStatus } from '@prisma/client';
+import { PrismaClient, TicketPriority, ServiceRequestStatus, IncidentStatus, ProblemStatus, ChangeRequestStatus, IncidentSeverity, AssetStatus, AccessStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -275,7 +275,7 @@ async function main() {
       category: 'Network',
       subCategory: 'VPN',
       priority: TicketPriority.HIGH,
-      status: WorkStatus.OPEN,
+      status: ServiceRequestStatus.OPEN,
       requesterName: 'Vaishnavi Kavali',
       assigneeName: 'Infra Team',
       projectName: 'Federal'
@@ -291,7 +291,7 @@ async function main() {
       category: 'Asset',
       subCategory: 'Laptop',
       priority: TicketPriority.MEDIUM,
-      status: WorkStatus.ASSIGNED,
+      status: ServiceRequestStatus.ASSIGNED,
       requesterName: 'HR Team',
       assigneeName: 'Admin Team'
     }
@@ -304,7 +304,7 @@ async function main() {
       incidentNo: 'INC-1001',
       title: 'UAT API timeout for payment service',
       severity: IncidentSeverity.SEV2,
-      status: WorkStatus.IN_PROGRESS,
+      status: ServiceRequestStatus.IN_PROGRESS,
       impactedService: 'Payment API',
       impactedProject: 'Federal',
       ownerName: 'DevOps Team'

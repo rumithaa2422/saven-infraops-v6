@@ -6,6 +6,8 @@
  */
 
 import { Tool, ToolContext, ToolResult, AiCard } from '../../types.js';
+import { prisma } from '../../../../../common/prisma.js';
+import { ServiceRequestStatus } from '@prisma/client';
 
 /**
  * Tool definition for Service Requests
@@ -141,7 +143,7 @@ export const serviceRequestTool: Tool = {
           where: {
             ...where,
             dueAt: { lt: new Date() },
-            status: { notIn: ['CLOSED', 'RESOLVED'] }
+            status: { notIn: [ServiceRequestStatus.CLOSED] }
           }
         });
       }

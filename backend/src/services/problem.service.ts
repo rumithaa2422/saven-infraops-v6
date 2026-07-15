@@ -1,5 +1,6 @@
 import { prisma } from '../common/prisma.js';
 import { HttpError } from '../common/httpError.js';
+import { ProblemStatus } from '@prisma/client';
 
 function withRef(prefix: string, count: number) {
   return `${prefix}-${1001 + count}`;
@@ -16,9 +17,9 @@ export interface CreateProblemInput {
   ipAddress?: string | null;
 }
 
-// Valid status values for problems (WorkStatus enum)
-const PROBLEM_STATUSES = ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'WAITING_FOR_VENDOR', 'PENDING_APPROVAL', 'RESOLVED', 'CLOSED'] as const;
-type ProblemStatus = typeof PROBLEM_STATUSES[number];
+// Valid status values for problems (ProblemStatus enum)
+const PROBLEM_STATUSES: ProblemStatus[] = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+export type { ProblemStatus };
 
 export async function createProblem(data: CreateProblemInput) {
   const count = await prisma.problem.count();

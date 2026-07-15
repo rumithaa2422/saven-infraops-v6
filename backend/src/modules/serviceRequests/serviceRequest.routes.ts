@@ -6,7 +6,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import { requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
-import { WorkStatus } from '@prisma/client';
+import { ServiceRequestStatus } from '@prisma/client';
 import {
   createServiceRequest,
   updateServiceRequest,
@@ -142,9 +142,9 @@ serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 
 
     const isPrivileged = userRoles.includes('Super Admin') || userRoles.includes('Admin');
 
-    const where: { status?: WorkStatus; requesterId?: string } = {};
-    if (status && status in WorkStatus) {
-      where.status = status as WorkStatus;
+    const where: { status?: ServiceRequestStatus; requesterId?: string } = {};
+    if (status && status in ServiceRequestStatus) {
+      where.status = status as ServiceRequestStatus;
     }
     if (!isPrivileged) {
       where.requesterId = req.user?.id;
@@ -207,19 +207,22 @@ serviceRequestRouter.post('/', requireAuth, requirePermissionOr(['tickets:write'
   }
 });
 
+// Service Request status values
+const ServiceRequestStatusValues = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'COMPLETED', 'CLOSED'] as const;
+
 const updateSchema = z.object({
   title: z.string().min(3).optional(),
   description: z.string().optional(),
   category: z.string().min(2).optional(),
   subCategory: z.string().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
-  status: z.enum(['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'COMPLETED', 'CLOSED']).optional(),
+  status: z.enum(ServiceRequestStatusValues).optional(),
   requesterName: z.string().min(2).optional(),
   assigneeName: z.string().optional(),
   projectName: z.string().optional()
 });
 
-// Status transition validation
+// Status transition validation for Service Request
 const ADMIN_STATUS_TRANSITIONS: Record<string, string[]> = {
   'OPEN': [],
   'ASSIGNED': ['IN_PROGRESS'],
@@ -499,7 +502,8 @@ serviceRequestRouter.post('/:id/attachments', requireAuth, requirePermissionOr([
 // GET /service-requests/:requestId/attachments/:attachmentId/download - Download attachment
 serviceRequestRouter.get('/:requestId/attachments/:attachmentId/download', requireAuth, async (req, res, next) => {
   try {
-    const { requestId, attachmentId } = req.params;
+    const requestId = req.params.requestId as string;
+    const attachmentId = req.params.attachmentId as string;
     
     const request = await prisma.serviceRequest.findUnique({ where: { id: requestId } });
     if (!request) throw new HttpError(404, 'Service request not found');
@@ -538,7 +542,8 @@ serviceRequestRouter.get('/:requestId/attachments/:attachmentId/download', requi
 // DELETE /service-requests/:requestId/attachments/:attachmentId - Delete attachment
 serviceRequestRouter.delete('/:requestId/attachments/:attachmentId', requireAuth, async (req, res, next) => {
   try {
-    const { requestId, attachmentId } = req.params;
+    const requestId = req.params.requestId as string;
+    const attachmentId = req.params.attachmentId as string;
     
     if (!canDeleteAttachment(req.user)) {
       throw new HttpError(403, 'Only Super Admin can delete attachments');

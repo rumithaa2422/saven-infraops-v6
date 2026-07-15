@@ -346,13 +346,13 @@ function getStatusActions(moduleKey: string, currentStatus?: string): StatusActi
 
   if (moduleKey === 'users-teams') return [];
 
-  // Incidents, Changes, Problems use WorkStatus enum
+  // Incidents use IncidentStatus: OPEN -> ASSIGNED -> IN_PROGRESS -> RESOLVED -> CLOSED
   const status = currentStatus?.toUpperCase();
   
   // If already closed, no actions available
   if (status === 'CLOSED') return [];
   
-  // Incidents: OPEN -> IN_PROGRESS -> PENDING_APPROVAL -> RESOLVED -> CLOSED
+  // Incidents: OPEN -> ASSIGNED -> IN_PROGRESS -> RESOLVED -> CLOSED
   if (moduleKey === 'incidents') {
     if (status === 'OPEN' || status === 'ASSIGNED') {
       return [
@@ -362,13 +362,7 @@ function getStatusActions(moduleKey: string, currentStatus?: string): StatusActi
     }
     if (status === 'IN_PROGRESS') {
       return [
-        { label: 'Mark Pending Approval', value: 'PENDING_APPROVAL' },
-        { label: 'Close', value: 'CLOSED' }
-      ];
-    }
-    if (status === 'PENDING_APPROVAL') {
-      return [
-        { label: 'Mark In Progress', value: 'IN_PROGRESS' },
+        { label: 'Mark Resolved', value: 'RESOLVED' },
         { label: 'Close', value: 'CLOSED' }
       ];
     }
@@ -382,13 +376,42 @@ function getStatusActions(moduleKey: string, currentStatus?: string): StatusActi
     ];
   }
 
-  // Changes: PENDING_APPROVAL -> OPEN -> IN_PROGRESS -> RESOLVED -> CLOSED
+  // Changes use ChangeRequestStatus: OPEN -> PENDING_APPROVAL -> APPROVED -> IMPLEMENTING -> COMPLETED -> CLOSED
   if (moduleKey === 'changes') {
-    if (status === 'PENDING_APPROVAL' || status === 'OPEN') {
+    if (status === 'OPEN') {
       return [
-        { label: 'Approve', value: 'OPEN' },
+        { label: 'Request Approval', value: 'PENDING_APPROVAL' },
         { label: 'Close', value: 'CLOSED' }
       ];
+    }
+    if (status === 'PENDING_APPROVAL') {
+      return [
+        { label: 'Approve', value: 'APPROVED' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'APPROVED') {
+      return [
+        { label: 'Start Implementation', value: 'IMPLEMENTING' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'IMPLEMENTING') {
+      return [
+        { label: 'Mark Completed', value: 'COMPLETED' },
+        { label: 'Close', value: 'CLOSED' }
+      ];
+    }
+    if (status === 'COMPLETED') {
+      return [{ label: 'Close', value: 'CLOSED' }];
+    }
+    return [];
+  }
+
+  // Problems use ProblemStatus: OPEN -> ASSIGNED -> IN_PROGRESS -> RESOLVED -> CLOSED
+  if (moduleKey === 'problems') {
+    if (status === 'OPEN' || status === 'ASSIGNED') {
+      return [{ label: 'Mark In Progress', value: 'IN_PROGRESS' }];
     }
     if (status === 'IN_PROGRESS') {
       return [
@@ -402,27 +425,10 @@ function getStatusActions(moduleKey: string, currentStatus?: string): StatusActi
     return [];
   }
 
-  // Problems: OPEN -> IN_PROGRESS -> PENDING_APPROVAL -> RESOLVED -> CLOSED
-  if (moduleKey === 'problems') {
-    if (status === 'OPEN' || status === 'ASSIGNED') {
-      return [{ label: 'Mark In Progress', value: 'IN_PROGRESS' }];
-    }
-    if (status === 'IN_PROGRESS') {
-      return [
-        { label: 'Mark Pending Approval', value: 'PENDING_APPROVAL' },
-        { label: 'Close', value: 'CLOSED' }
-      ];
-    }
-    if (status === 'PENDING_APPROVAL') {
-      return [
-        { label: 'Mark In Progress', value: 'IN_PROGRESS' },
-        { label: 'Close', value: 'CLOSED' }
-      ];
-    }
-    if (status === 'RESOLVED') {
-      return [{ label: 'Close', value: 'CLOSED' }];
-    }
-    return [];
+  // Service Requests use ServiceRequestStatus: OPEN -> ASSIGNED -> IN_PROGRESS -> WAITING_FOR_USER -> COMPLETED -> CLOSED
+  // For service requests, we let the backend handle the state machine
+  if (moduleKey === 'tickets' || moduleKey === 'service-requests') {
+    return []; // Backend handles status transitions
   }
 
   return [];

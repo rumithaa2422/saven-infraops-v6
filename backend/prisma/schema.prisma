@@ -14,11 +14,40 @@ enum TicketPriority {
   CRITICAL
 }
 
-enum WorkStatus {
+// Service Request Status - Sequential workflow
+enum ServiceRequestStatus {
   OPEN
   ASSIGNED
   IN_PROGRESS
   WAITING_FOR_USER
+  COMPLETED
+  CLOSED
+}
+
+// Incident Status - Simple workflow
+enum IncidentStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// Problem Status - Simple workflow
+enum ProblemStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// Change Request Status - Approval workflow
+enum ChangeRequestStatus {
+  OPEN
+  PENDING_APPROVAL
+  APPROVED
+  IMPLEMENTING
   COMPLETED
   CLOSED
 }
@@ -123,14 +152,13 @@ model ServiceRequest {
   category      String
   subCategory   String?
   priority      TicketPriority             @default(MEDIUM)
-  status        WorkStatus                 @default(OPEN)
+  status        ServiceRequestStatus       @default(OPEN)
   requesterId   String?
   assigneeId    String?
   requesterName String
   assigneeName  String?
   projectName   String?
   dueAt         DateTime?
-  resolvedAt    DateTime?
   closedAt      DateTime?
   createdAt     DateTime                   @default(now())
   updatedAt     DateTime                   @updatedAt
@@ -187,7 +215,7 @@ model Incident {
   title            String
   description      String?          @db.Text
   severity         IncidentSeverity @default(SEV3)
-  status           WorkStatus       @default(OPEN)
+  status           IncidentStatus   @default(OPEN)
   impactedService  String?
   impactedProject  String?
   startedAt        DateTime?
@@ -201,29 +229,29 @@ model Incident {
 }
 
 model Problem {
-  id          String     @id @default(cuid())
-  problemNo   String     @unique
+  id          String        @id @default(cuid())
+  problemNo   String        @unique
   title       String
-  description String?    @db.Text
-  status      WorkStatus @default(OPEN)
-  rootCause   String?    @db.Text
+  description String?       @db.Text
+  status      ProblemStatus @default(OPEN)
+  rootCause   String?       @db.Text
   ownerName   String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model ChangeRequest {
-  id           String     @id @default(cuid())
-  changeNo     String     @unique
+  id           String              @id @default(cuid())
+  changeNo     String              @unique
   title        String
-  description  String?    @db.Text
-  riskLevel    String     @default("MEDIUM")
-  status       WorkStatus @default(OPEN)
+  description  String?             @db.Text
+  riskLevel    String              @default("MEDIUM")
+  status       ChangeRequestStatus @default(OPEN)
   changeWindow DateTime?
-  rollbackPlan String?    @db.Text
+  rollbackPlan String?             @db.Text
   ownerName    String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
 
 model Asset {
