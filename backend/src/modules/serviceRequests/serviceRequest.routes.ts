@@ -213,12 +213,21 @@ const updateSchema = z.object({
   category: z.string().min(2).optional(),
   subCategory: z.string().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
-  status: z.enum(['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'WAITING_FOR_VENDOR', 'PENDING_APPROVAL', 'RESOLVED', 'CLOSED', 'REOPENED']).optional(),
+  status: z.enum(['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'COMPLETED', 'CLOSED']).optional(),
   requesterName: z.string().min(2).optional(),
   assigneeName: z.string().optional(),
-  projectName: z.string().optional(),
-  comment: z.string().optional()
+  projectName: z.string().optional()
 });
+
+// Status transition validation
+const ADMIN_STATUS_TRANSITIONS: Record<string, string[]> = {
+  'OPEN': [],
+  'ASSIGNED': ['IN_PROGRESS'],
+  'IN_PROGRESS': ['WAITING_FOR_USER', 'COMPLETED'],
+  'WAITING_FOR_USER': ['IN_PROGRESS', 'COMPLETED'],
+  'COMPLETED': ['CLOSED'],
+  'CLOSED': []
+};
 
 function canPerformAction(user: Express.Request['user'], ticket: { assigneeId?: string | null }): boolean {
   if (!user) return false;
@@ -232,6 +241,47 @@ function canPerformAction(user: Express.Request['user'], ticket: { assigneeId?: 
   return false;
 }
 
+// Validate status transition based on user role
+function validateStatusTransition(
+  currentStatus: string,
+  newStatus: string,
+  userRoles: string[],
+  assigneeId?: string | null
+): { valid: boolean; error?: string } {
+  const isSuperAdmin = userRoles.includes('Super Admin');
+  const isAdmin = userRoles.includes('Admin');
+  const isAssignedToUser = assigneeId === assigneeId; // Already checked in canPerformAction
+
+  // Super Admin can move to any status
+  if (isSuperAdmin) {
+    return { valid: true };
+  }
+
+  // Employees cannot change status
+  if (!isAdmin) {
+    return { valid: false, error: 'Employees cannot change ticket status' };
+  }
+
+  // Admin must be assigned to the ticket to change status
+  if (!isAssignedToUser) {
+    return { valid: false, error: 'You can only change status on tickets assigned to you' };
+  }
+
+  // Check admin allowed transitions
+  const allowedTransitions = ADMIN_STATUS_TRANSITIONS[currentStatus] || [];
+  if (!allowedTransitions.includes(newStatus)) {
+    const validOptions = allowedTransitions.length > 0 
+      ? allowedTransitions.join(', ') 
+      : 'No transitions allowed from this status';
+    return { 
+      valid: false, 
+      error: `Invalid status transition. Allowed transitions: ${validOptions}` 
+    };
+  }
+
+  return { valid: true };
+}
+
 serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
@@ -243,12 +293,20 @@ serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:wr
       throw new HttpError(403, 'You can only perform actions on tickets assigned to you');
     }
 
-    const item = await updateServiceRequest(id, {
-      ...payload,
-      actorId: req.user?.id,
-      actorEmail: req.user?.email,
-      ipAddress: req.ip
-    });
+    // Validate status transition
+    if (payload.status && payload.status !== existing.status) {
+      const validation = validateStatusTransition(
+        existing.status,
+        payload.status,
+        req.user?.roles || [],
+        existing.assigneeId
+      );
+      if (!validation.valid) {
+        throw new HttpError(400, validation.error || 'Invalid status transition');
+      }
+    }
+
+    const item = await updateServiceRequest(id, payload);
     
     // Add timeline entry for status change
     if (payload.status && payload.status !== existing.status) {
@@ -265,7 +323,7 @@ serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:wr
       await addTimelineEntry(
         id,
         TimelineAction.PRIORITY_CHANGED,
-        `Priority changed from ${existing.priority} to ${payload.priority}`,
+        `Priority changed to ${payload.priority}`,
         req.user
       );
     }
@@ -293,12 +351,7 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) =>
 
     const { assigneeId } = assignSchema.parse(req.body);
 
-    const item = await assignServiceRequest(id, {
-      assigneeId,
-      actorId: req.user?.id,
-      actorEmail: req.user?.email,
-      ipAddress: req.ip
-    });
+    const item = await assignServiceRequest(id, { assigneeId });
     
     // Add timeline entry for assignment
     await addTimelineEntry(
@@ -322,12 +375,7 @@ serviceRequestRouter.put('/:id', requireAuth, requirePermissionOr(['tickets:writ
     const existing = await prisma.serviceRequest.findUnique({ where: { id } });
     if (!existing) throw new HttpError(404, 'Service request not found');
 
-    const item = await updateServiceRequest(id, {
-      ...payload,
-      actorId: req.user?.id,
-      actorEmail: req.user?.email,
-      ipAddress: req.ip
-    });
+    const item = await updateServiceRequest(id, payload);
     res.json({ item });
   } catch (error) {
     next(error);

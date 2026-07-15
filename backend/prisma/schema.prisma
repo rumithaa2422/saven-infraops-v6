@@ -19,11 +19,8 @@ enum WorkStatus {
   ASSIGNED
   IN_PROGRESS
   WAITING_FOR_USER
-  WAITING_FOR_VENDOR
-  PENDING_APPROVAL
-  RESOLVED
+  COMPLETED
   CLOSED
-  REOPENED
 }
 
 enum IncidentSeverity {
@@ -221,7 +218,7 @@ model ChangeRequest {
   title        String
   description  String?    @db.Text
   riskLevel    String     @default("MEDIUM")
-  status       WorkStatus @default(PENDING_APPROVAL)
+  status       WorkStatus @default(OPEN)
   changeWindow DateTime?
   rollbackPlan String?    @db.Text
   ownerName    String?

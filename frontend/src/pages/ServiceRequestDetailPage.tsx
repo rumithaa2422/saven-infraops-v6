@@ -80,24 +80,62 @@ export function ServiceRequestDetailPage() {
   const canManage = hasPermission('tickets:manage');
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
+  const isEmployee = !isSuperAdmin && !isAdmin;
+  
+  // Check if user can access full details
+  // Super Admin: can access all
+  // Admin: can access only if assigned to them
+  // Employee: can access only their own requests
+  const canAccessFullDetails = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
+  
+  // Check if Admin has restricted access (can see but not full details)
+  const isAdminWithRestrictedAccess = isAdmin && request?.assigneeId !== user?.id && !isSuperAdmin;
+  
   const canPerformActions = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id);
   
-  // Check if user can upload attachments (own request or admin)
-  const canUpload = isSuperAdmin || isAdmin || request?.requesterId === user?.id;
+  // Check if user can upload attachments (own request or admin with full access)
+  const canUpload = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
   // Only Super Admin can delete attachments
   const canDeleteAttachment = isSuperAdmin;
   
   // Check if user can view chat (Super Admin or assigned Admin or own request)
-  const canViewChat = isSuperAdmin || isAdmin || request?.requesterId === user?.id;
+  const canViewChat = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
   // Check if user can post chat messages (Super Admin, assigned Admin, or own request)
-  const canPostChat = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || request?.requesterId === user?.id;
+  const canPostChat = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
+  
+  // Check if user can view timeline (Super Admin or assigned Admin)
+  const canViewTimeline = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id);
+  
+  // Check if user can view attachments
+  const canViewAttachments = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
 
   async function load() {
     if (!id) return;
     try {
       setLoading(true);
       const res = await api.get(`/service-requests/${id}`);
-      setRequest(res.data.item);
+      const loadedRequest = res.data.item;
+      
+      // Check access permissions
+      const requestIsSuperAdmin = user?.roles.includes('Super Admin') ?? false;
+      const requestIsAdmin = user?.roles.includes('Admin') ?? false;
+      const requestIsEmployee = !requestIsSuperAdmin && !requestIsAdmin;
+      
+      // Employee can only access their own requests
+      if (requestIsEmployee && loadedRequest.requesterId !== user?.id) {
+        setError('Access Restricted. You can only view your own service requests.');
+        setLoading(false);
+        return;
+      }
+      
+      // Admin can only access assigned requests (Super Admin can access all)
+      if (requestIsAdmin && !requestIsSuperAdmin && loadedRequest.assigneeId !== user?.id) {
+        setError('Access Restricted. You can only view service requests assigned to you.');
+        setLoading(false);
+        return;
+      }
+      
+      setRequest(loadedRequest);
       setError('');
     } catch {
       setError('Failed to load service request details.');
@@ -337,8 +375,38 @@ export function ServiceRequestDetailPage() {
   if (loading) {
     return (
       <div className="page-stack">
-        <div className="detail-loading">
-          <span>Loading service request details...</span>
+        <div className="detail-header">
+          <div className="skeleton skeleton-title"></div>
+          <div className="detail-header-info">
+            <div className="detail-title-row">
+              <div className="skeleton skeleton-badge"></div>
+              <div className="skeleton skeleton-badge"></div>
+            </div>
+            <div className="detail-meta-row" style={{ marginTop: '12px' }}>
+              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
+              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
+              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="detail-content-grid">
+          <div className="detail-main">
+            <div className="detail-card">
+              <div className="detail-card-body">
+                <div className="skeleton skeleton-title"></div>
+                <div className="skeleton skeleton-text" style={{ marginTop: '16px' }}></div>
+                <div className="skeleton skeleton-text"></div>
+                <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
+              </div>
+            </div>
+          </div>
+          <div className="detail-sidebar">
+            <div className="detail-card">
+              <div className="detail-card-body">
+                <div className="skeleton" style={{ width: '100%', height: '36px' }}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -348,6 +416,10 @@ export function ServiceRequestDetailPage() {
     return (
       <div className="page-stack">
         <div className="detail-error">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
           <p>{error || 'Service request not found.'}</p>
           <button className="btn-back" onClick={handleBack}>
             Back to Service Requests
@@ -360,38 +432,40 @@ export function ServiceRequestDetailPage() {
   return (
     <div className="page-stack">
       {message && (
-        <div className="notice">{message}</div>
+        <div className="notice notice-info">{message}</div>
       )}
 
       {/* Header */}
       <div className="detail-header">
-        <button className="btn-back" onClick={handleBack}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+          <button className="btn-back" onClick={handleBack}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Back
+          </button>
+        </div>
         <div className="detail-header-info">
           <div className="detail-title-row">
             <span className="detail-ticket-no">{request.ticketNo}</span>
-            <span className={`detail-badge ${getStatusClass(request.status)}`}>
+            <span className={`status-badge status-${request.status.toLowerCase()}`}>
               {request.status.replace(/_/g, ' ')}
             </span>
-            <span className={`detail-badge ${getPriorityClass(request.priority)}`}>
+            <span className={`priority-badge priority-${request.priority.toLowerCase()}`}>
               {request.priority}
             </span>
           </div>
           <div className="detail-meta-row">
             <span className="detail-meta-item">
-              <span className="detail-meta-label">Requester:</span>
+              <span className="detail-meta-label">Requester</span>
               <span className="detail-meta-value">{request.requesterName}</span>
             </span>
             <span className="detail-meta-item">
-              <span className="detail-meta-label">Assigned:</span>
+              <span className="detail-meta-label">Assigned</span>
               <span className="detail-meta-value">{request.assigneeName || 'Unassigned'}</span>
             </span>
             <span className="detail-meta-item">
-              <span className="detail-meta-label">Created:</span>
+              <span className="detail-meta-label">Created</span>
               <span className="detail-meta-value">{formatDate(request.createdAt)}</span>
             </span>
           </div>
@@ -412,12 +486,21 @@ export function ServiceRequestDetailPage() {
                 <label>Title</label>
                 <span className="detail-field-value">{request.title}</span>
               </div>
-              <div className="detail-field">
-                <label>Description</label>
-                <span className="detail-field-value detail-field-text">
-                  {request.description || 'No description provided.'}
-                </span>
-              </div>
+              {canAccessFullDetails ? (
+                <div className="detail-field">
+                  <label>Description</label>
+                  <span className="detail-field-value detail-field-text">
+                    {request.description || 'No description provided.'}
+                  </span>
+                </div>
+              ) : (
+                <div className="detail-field">
+                  <label>Description</label>
+                  <span className="detail-field-value detail-field-text restricted-text">
+                    Access Restricted
+                  </span>
+                </div>
+              )}
               <div className="detail-field-row">
                 <div className="detail-field">
                   <label>Category</label>
@@ -436,96 +519,107 @@ export function ServiceRequestDetailPage() {
           </div>
 
           {/* Attachments Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Attachments</h3>
-            </div>
-            <div className="detail-card-body">
-              {attachments.length > 0 ? (
-                <div className="attachment-list">
-                  {attachments.map((attachment) => (
-                    <div key={attachment.id} className="attachment-item">
-                      <div className="attachment-icon">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M4 4V16C4 17.1046 4.89543 18 6 18H14C15.1046 18 16 17.1046 16 16V8L12 4H6C4.89543 4 4 4.89543 4 6V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M12 4V8H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                      <div className="attachment-info">
-                        <span className="attachment-name" title={attachment.fileName}>{attachment.fileName}</span>
-                        <span className="attachment-meta">
-                          {formatFileSize(attachment.fileSize)} - Uploaded {formatDate(attachment.uploadedAt)}
-                          {attachment.uploadedByName && ` by ${attachment.uploadedByName}`}
-                        </span>
-                      </div>
-                      <div className="attachment-actions">
-                        <button 
-                          className="btn-attachment-download"
-                          onClick={() => downloadAttachment(attachment.id, attachment.fileName)}
-                          title="Download"
-                        >
-                          Download
-                        </button>
-                        {canDeleteAttachment && (
+          {canViewAttachments ? (
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Attachments</h3>
+              </div>
+              <div className="detail-card-body">
+                {attachments.length > 0 ? (
+                  <div className="attachment-list">
+                    {attachments.map((attachment) => (
+                      <div key={attachment.id} className="attachment-item">
+                        <div className="attachment-icon">
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 4V16C4 17.1046 4.89543 18 6 18H14C15.1046 18 16 17.1046 16 16V8L12 4H6C4.89543 4 4 4.89543 4 6V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 4V8H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                        <div className="attachment-info">
+                          <span className="attachment-name" title={attachment.fileName}>{attachment.fileName}</span>
+                          <span className="attachment-meta">
+                            {formatFileSize(attachment.fileSize)} - Uploaded {formatDate(attachment.uploadedAt)}
+                            {attachment.uploadedByName && ` by ${attachment.uploadedByName}`}
+                          </span>
+                        </div>
+                        <div className="attachment-actions">
                           <button 
-                            className="btn-attachment-delete"
-                            onClick={() => deleteAttachment(attachment.id)}
-                            title="Delete"
+                            className="btn-attachment-download"
+                            onClick={() => downloadAttachment(attachment.id, attachment.fileName)}
+                            title="Download"
                           >
-                            Delete
+                            Download
                           </button>
-                        )}
+                          {canDeleteAttachment && (
+                            <button 
+                              className="btn-attachment-delete"
+                              onClick={() => deleteAttachment(attachment.id)}
+                              title="Delete"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="detail-placeholder">
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="8" y="12" width="32" height="28" rx="4" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M16 8V16C16 18.2091 17.7909 20 20 20H28C30.2091 20 32 18.2091 32 16V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M24 26L20 30M24 26L28 30M24 26V34" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p>No attachments</p>
-                  <span>Files will appear here when added.</span>
-                </div>
-              )}
-              {canUpload && (
-                <div className="attachment-upload">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={ALLOWED_FILE_TYPES}
-                    multiple
-                    onChange={(e) => e.target.files && uploadAttachments(e.target.files)}
-                    className="file-input"
-                    id="attachment-upload"
-                  />
-                  <label htmlFor="attachment-upload" className="btn-upload">
-                    {uploading ? 'Uploading...' : 'Upload Files'}
-                  </label>
-                  <span className="upload-hint">png, jpg, pdf, docx, xlsx, txt</span>
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="empty-state-title">No attachments</p>
+                    <p className="empty-state-description">Files uploaded to this request will appear here.</p>
+                  </div>
+                )}
+                {canUpload && (
+                  <div className="attachment-upload">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={ALLOWED_FILE_TYPES}
+                      multiple
+                      onChange={(e) => e.target.files && uploadAttachments(e.target.files)}
+                      className="file-input"
+                      id="attachment-upload"
+                    />
+                    <label htmlFor="attachment-upload" className="btn-upload">
+                      {uploading ? 'Uploading...' : 'Upload Files'}
+                    </label>
+                    <span className="upload-hint">png, jpg, pdf, docx, xlsx, txt</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Attachments</h3>
+              </div>
+              <div className="detail-card-body">
+                <div className="detail-placeholder">
+                  <p>Attachments not available</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Conversation Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Conversation</h3>
-            </div>
-            <div className="detail-card-body conversation-body">
-              {!canViewChat ? (
-                <div className="conversation-no-access">
-                  <p>You do not have access to view this conversation.</p>
-                </div>
-              ) : (
+          {canViewChat ? (
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Conversation</h3>
+              </div>
+              <div className="detail-card-body conversation-body">
                 <>
                   <div className="conversation-messages">
                     {comments.length === 0 ? (
-                      <div className="conversation-empty">
-                        <p>No messages yet. Start the conversation.</p>
+                      <div className="empty-state">
+                        <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <p className="empty-state-title">No messages yet</p>
+                        <p className="empty-state-description">Start the conversation to discuss this request.</p>
                       </div>
                     ) : (
                       comments.map((comment) => (
@@ -568,53 +662,85 @@ export function ServiceRequestDetailPage() {
                     </div>
                   )}
                 </>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Conversation</h3>
+              </div>
+              <div className="detail-card-body">
+                <div className="empty-state">
+                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="empty-state-title">Conversation restricted</p>
+                  <p className="empty-state-description">You do not have permission to view this conversation.</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Timeline Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Timeline</h3>
-            </div>
-            <div className="detail-card-body timeline-body">
-              {timeline.length === 0 ? (
-                <div className="detail-placeholder">
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="24" cy="24" r="16" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M24 16V24L28 28" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  <p>No timeline events</p>
-                  <span>Activity history will appear here.</span>
-                </div>
-              ) : (
-                <div className="timeline-list">
-                  {timeline.map((entry) => (
-                    <div key={entry.id} className="timeline-item">
-                      <div className="timeline-marker">
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-line"></div>
-                      </div>
-                                              <div className="timeline-content">
-                        <div className="timeline-header">
-                          <span className="timeline-action">{entry.action}</span>
-                          <span className="timeline-time">
-                            {formatDate(entry.createdAt)}
-                          </span>
+          {canViewTimeline ? (
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Timeline</h3>
+              </div>
+              <div className="detail-card-body timeline-body">
+                {timeline.length === 0 ? (
+                  <div className="empty-state">
+                    <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <p className="empty-state-title">No activity yet</p>
+                    <p className="empty-state-description">Timeline events will appear as actions are taken on this request.</p>
+                  </div>
+                ) : (
+                  <div className="timeline-list">
+                    {timeline.map((entry) => (
+                      <div key={entry.id} className="timeline-item">
+                        <div className="timeline-marker">
+                          <div className="timeline-dot"></div>
+                          <div className="timeline-line"></div>
                         </div>
-                        <p className="timeline-description">{entry.description}</p>
-                        {entry.performedByName && (
-                          <span className="timeline-user">
-                            by {entry.performedByName}
-                          </span>
-                        )}
+                        <div className="timeline-content">
+                          <div className="timeline-header">
+                            <span className="timeline-action">{entry.action}</span>
+                            <span className="timeline-time">
+                              {formatDate(entry.createdAt)}
+                            </span>
+                          </div>
+                          <p className="timeline-description">{entry.description}</p>
+                          {entry.performedByName && (
+                            <span className="timeline-user">
+                              by {entry.performedByName}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Timeline</h3>
+              </div>
+              <div className="detail-card-body">
+                <div className="empty-state">
+                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p className="empty-state-title">Timeline restricted</p>
+                  <p className="empty-state-description">You do not have permission to view the timeline.</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column - Actions */}
@@ -650,43 +776,178 @@ export function ServiceRequestDetailPage() {
           )}
 
           {/* Action Buttons */}
-          {canPerformActions && (
+          {(isSuperAdmin || canPerformActions) && (
             <div className="detail-card">
               <div className="detail-card-header">
                 <h3>Actions</h3>
               </div>
               <div className="detail-card-body">
                 <div className="detail-actions">
-                  <button
-                    className="btn-action btn-escalate"
-                    onClick={() => updateStatus({ priority: 'CRITICAL', status: 'IN_PROGRESS' })}
-                  >
-                    Escalate
-                  </button>
-                  <button
-                    className="btn-action btn-waiting"
-                    onClick={() => updateStatus({ status: 'WAITING_FOR_USER' })}
-                  >
-                    Wait for User
-                  </button>
-                  <button
-                    className="btn-action btn-close"
-                    onClick={() => updateStatus({ status: 'CLOSED' })}
-                  >
-                    Close
-                  </button>
+                  {/* Super Admin: Show all status options */}
+                  {isSuperAdmin ? (
+                    <>
+                      {request.status === 'OPEN' && (
+                        <>
+                          <button
+                            className="btn-action btn-assign"
+                            onClick={() => updateStatus({ status: 'ASSIGNED' })}
+                          >
+                            Assign
+                          </button>
+                          <button
+                            className="btn-action btn-progress"
+                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
+                          >
+                            Start Progress
+                          </button>
+                        </>
+                      )}
+                      {request.status === 'ASSIGNED' && (
+                        <>
+                          <button
+                            className="btn-action btn-progress"
+                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
+                          >
+                            Start Progress
+                          </button>
+                          <button
+                            className="btn-action btn-close"
+                            onClick={() => updateStatus({ status: 'CLOSED' })}
+                          >
+                            Close
+                          </button>
+                        </>
+                      )}
+                      {request.status === 'IN_PROGRESS' && (
+                        <>
+                          <button
+                            className="btn-action btn-waiting"
+                            onClick={() => updateStatus({ status: 'WAITING_FOR_USER' })}
+                          >
+                            Wait for User
+                          </button>
+                          <button
+                            className="btn-action btn-complete"
+                            onClick={() => updateStatus({ status: 'COMPLETED' })}
+                          >
+                            Mark Complete
+                          </button>
+                        </>
+                      )}
+                      {request.status === 'WAITING_FOR_USER' && (
+                        <>
+                          <button
+                            className="btn-action btn-progress"
+                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
+                          >
+                            Resume Progress
+                          </button>
+                          <button
+                            className="btn-action btn-complete"
+                            onClick={() => updateStatus({ status: 'COMPLETED' })}
+                          >
+                            Mark Complete
+                          </button>
+                        </>
+                      )}
+                      {request.status === 'COMPLETED' && (
+                        <button
+                          className="btn-action btn-close"
+                          onClick={() => updateStatus({ status: 'CLOSED' })}
+                        >
+                          Close
+                        </button>
+                      )}
+                      {request.status === 'CLOSED' && (
+                        <button
+                          className="btn-action btn-reopen"
+                          onClick={() => updateStatus({ status: 'OPEN' })}
+                        >
+                          Reopen
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    /* Admin: Show workflow-based actions */
+                    <>
+                      {request.status === 'ASSIGNED' && (
+                        <button
+                          className="btn-action btn-progress"
+                          onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
+                        >
+                          Start Progress
+                        </button>
+                      )}
+                      {request.status === 'IN_PROGRESS' && (
+                        <>
+                          <button
+                            className="btn-action btn-waiting"
+                            onClick={() => updateStatus({ status: 'WAITING_FOR_USER' })}
+                          >
+                            Wait for User
+                          </button>
+                          <button
+                            className="btn-action btn-complete"
+                            onClick={() => updateStatus({ status: 'COMPLETED' })}
+                          >
+                            Mark Complete
+                          </button>
+                        </>
+                      )}
+                      {request.status === 'WAITING_FOR_USER' && (
+                        <>
+                          <button
+                            className="btn-action btn-progress"
+                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
+                          >
+                            Resume Progress
+                          </button>
+                          <button
+                            className="btn-action btn-complete"
+                            onClick={() => updateStatus({ status: 'COMPLETED' })}
+                          >
+                            Mark Complete
+                          </button>
+                        </>
+                      )}
+                      {request.status === 'COMPLETED' && (
+                        <button
+                          className="btn-action btn-close"
+                          onClick={() => updateStatus({ status: 'CLOSED' })}
+                        >
+                          Close Ticket
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Access Notice for Admins */}
+          {/* Access Notice for Admins without permission */}
           {isAdmin && !isSuperAdmin && !canPerformActions && (
             <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Access Notice</h3>
+              </div>
               <div className="detail-card-body">
-                <div className="detail-access-notice">
-                  <p>This ticket is assigned to another admin or is unassigned.</p>
-                  <p>You can only perform actions on tickets assigned to you.</p>
+                <div className="notice notice-warning">
+                  This ticket is assigned to another admin. You can only perform actions on tickets assigned to you.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Employee Notice */}
+          {isEmployee && (
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Status</h3>
+              </div>
+              <div className="detail-card-body">
+                <div className="notice notice-info">
+                  Status changes are managed by the assigned administrator.
                 </div>
               </div>
             </div>

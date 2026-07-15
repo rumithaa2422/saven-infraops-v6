@@ -32,7 +32,7 @@ const ALLOWED_FILE_TYPES = '.png,.jpg,.jpeg,.pdf,.docx,.xlsx,.txt';
 
 export function ServiceRequestsPage() {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -50,6 +50,24 @@ export function ServiceRequestsPage() {
   // Permission checks
   const canCreate = hasPermission('tickets:create');
   const canDelete = hasPermission('tickets:manage');
+  const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
+  const isAdmin = user?.roles.includes('Admin') ?? false;
+
+  // Check if Admin can open a specific ticket
+  function canAdminOpenTicket(item: ServiceRequest): boolean {
+    if (isSuperAdmin) return true;
+    if (isAdmin) return item.assigneeId === user?.id;
+    return true; // Employees can always try to open their own
+  }
+
+  // Handle opening a ticket with permission check
+  function handleOpenTicket(item: ServiceRequest) {
+    if (!canAdminOpenTicket(item)) {
+      setMessage('Access Restricted. You can only open tickets assigned to you.');
+      return;
+    }
+    navigate(`/service-requests/${item.id}`);
+  }
 
   async function load() {
     try {
@@ -222,45 +240,66 @@ export function ServiceRequestsPage() {
         </div>
       </div>
 
-      {message && <div className="notice">{message}</div>}
+      {message && <div className={`notice ${message.includes('Failed') || message.includes('Error') ? 'notice-error' : 'notice-success'}`}>{message}</div>}
 
       <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Ticket</th>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Requester</th>
-              <th>Assignee</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>{item.ticketNo}</td>
-                <td>{item.title}</td>
-                <td>{item.category}</td>
-                <td><span className={`pill ${item.priority.toLowerCase()}`}>{item.priority}</span></td>
-                <td>{item.status}</td>
-                <td>{item.requesterName}</td>
-                <td>{item.assigneeName || 'Unassigned'}</td>
-                <td>
-                  <div className="action-buttons">
-                    <button className="link-button" onClick={() => navigate(`/service-requests/${item.id}`)} title="Open">Open</button>
-                    {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!items.length && (
-              <tr><td colSpan={8}>No records loaded. Check backend and database seed.</td></tr>
+        {items.length === 0 ? (
+          <div className="empty-state">
+            <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <p className="empty-state-title">No service requests</p>
+            <p className="empty-state-description">Create a new service request to get started.</p>
+            {canCreate && (
+              <div className="empty-state-action">
+                <button className="primary" onClick={() => setCreateOpen(true)}>Create Request</button>
+              </div>
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Requester</th>
+                <th>Assignee</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => {
+                const isRestricted = isAdmin && !canAdminOpenTicket(item);
+                return (
+                  <tr key={item.id} className={isRestricted ? 'restricted-row' : ''}>
+                    <td style={{ fontWeight: 600 }}>{item.ticketNo}</td>
+                    <td>{item.title}</td>
+                    <td>{item.category}</td>
+                    <td><span className={`priority-badge priority-${item.priority.toLowerCase()}`}>{item.priority}</span></td>
+                    <td><span className={`status-badge status-${item.status.toLowerCase()}`}>{item.status.replace(/_/g, ' ')}</span></td>
+                    <td>{item.requesterName}</td>
+                    <td>{item.assigneeName || '—'}</td>
+                    <td>
+                      <div className="action-buttons">
+                        {isRestricted ? (
+                          <span className="restricted-badge">Restricted</span>
+                        ) : (
+                          <>
+                            <button className="link-button" onClick={() => handleOpenTicket(item)} title="Open">Open</button>
+                            {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {createOpen && (
