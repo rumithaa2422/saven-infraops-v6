@@ -210,23 +210,25 @@ model ServiceRequestTimeline {
 }
 
 model Incident {
-  id                  String           @id @default(cuid())
-  incidentNo          String           @unique
-  title               String
-  description         String?          @db.Text
-  severity            IncidentSeverity @default(SEV3)
-  status              IncidentStatus   @default(OPEN)
-  impactedService     String?
-  impactedProject     String?
-  startedAt           DateTime?
-  resolvedAt          DateTime?
-  rca                 String?          @db.Text
-  correctiveAction    String?          @db.Text
-  preventiveAction    String?          @db.Text
-  ownerName           String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  resolutionDocument  IncidentResolutionDocument?
+  id                       String           @id @default(cuid())
+  incidentNo               String           @unique
+  title                    String
+  description              String?          @db.Text
+  severity                 IncidentSeverity @default(SEV3)
+  status                   IncidentStatus   @default(OPEN)
+  impactedService          String?
+  impactedProject          String?
+  startedAt                DateTime?
+  resolvedAt               DateTime?
+  rca                      String?          @db.Text
+  correctiveAction         String?          @db.Text
+  preventiveAction         String?          @db.Text
+  ownerName                String?
+  resolutionDocUploadedAt  DateTime?
+  resolutionDocReplacedAt  DateTime?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  resolutionDocument       IncidentResolutionDocument?
 }
 
 model IncidentResolutionDocument {

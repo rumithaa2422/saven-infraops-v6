@@ -589,24 +589,17 @@ const ALLOWED_RESOLUTION_DOC_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain',
-  'image/png',
-  'image/jpeg',
-  'image/jpg'
+  'text/plain'
 ];
 
-const ALLOWED_RESOLUTION_DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xlsx', '.ppt', '.pptx', '.txt', '.png', '.jpg', '.jpeg'];
+const ALLOWED_RESOLUTION_DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt'];
 
 const resolutionDocFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const ext = path.extname(file.originalname).toLowerCase();
   if (ALLOWED_RESOLUTION_DOC_EXTENSIONS.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('File type not allowed. Allowed: pdf, doc, docx, xlsx, ppt, pptx, txt, png, jpg, jpeg'));
+    cb(new Error('File type not allowed. Allowed: pdf, doc, docx, txt'));
   }
 };
 
@@ -692,6 +685,8 @@ genericModuleRouter.post('/incidents/:id/resolution-document', requireAuth, asyn
         where: { incidentId: id }
       });
       
+      const now = new Date();
+      
       if (existing) {
         // Delete old file from disk
         const oldFilePath = path.join(process.cwd(), 'uploads', 'resolution-docs', existing.storedName);
@@ -702,6 +697,18 @@ genericModuleRouter.post('/incidents/:id/resolution-document', requireAuth, asyn
         // Delete old record
         await prisma.incidentResolutionDocument.delete({
           where: { id: existing.id }
+        });
+        
+        // Update incident to track replacement
+        await prisma.incident.update({
+          where: { id },
+          data: { resolutionDocReplacedAt: now }
+        });
+      } else {
+        // First upload - track initial upload time
+        await prisma.incident.update({
+          where: { id },
+          data: { resolutionDocUploadedAt: now }
         });
       }
       

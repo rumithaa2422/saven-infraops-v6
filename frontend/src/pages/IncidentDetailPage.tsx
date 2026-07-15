@@ -13,6 +13,8 @@ type Incident = {
   impactedService?: string;
   impactedProject?: string;
   ownerName?: string;
+  resolutionDocUploadedAt?: string;
+  resolutionDocReplacedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -36,7 +38,7 @@ type TimelineEntry = {
   createdAt: string;
 };
 
-const ALLOWED_FILE_TYPES = '.pdf,.doc,.docx,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg';
+const ALLOWED_FILE_TYPES = '.pdf,.doc,.docx,.txt';
 
 export function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -49,7 +51,6 @@ export function IncidentDetailPage() {
   const [message, setMessage] = useState('');
   const [takingOwnership, setTakingOwnership] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [docUploadTime, setDocUploadTime] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
@@ -96,12 +97,22 @@ export function IncidentDetailPage() {
     }
     
     // Resolution Document Uploaded entry
-    if (docUploadTime) {
+    if (incident.resolutionDocUploadedAt) {
       entries.push({
         action: 'Resolution Document Uploaded',
         description: `Resolution document was uploaded`,
         performedByName: resolutionDoc?.uploadedByName || null,
-        createdAt: docUploadTime
+        createdAt: incident.resolutionDocUploadedAt
+      });
+    }
+    
+    // Resolution Document Replaced entry
+    if (incident.resolutionDocReplacedAt) {
+      entries.push({
+        action: 'Resolution Document Replaced',
+        description: `Resolution document was replaced`,
+        performedByName: resolutionDoc?.uploadedByName || null,
+        createdAt: incident.resolutionDocReplacedAt
       });
     }
     
@@ -127,9 +138,6 @@ export function IncidentDetailPage() {
     try {
       const res = await api.get(`/incidents/${id}/resolution-document`);
       setResolutionDoc(res.data.document);
-      if (res.data.document?.uploadedAt) {
-        setDocUploadTime(res.data.document.uploadedAt);
-      }
     } catch {
       setResolutionDoc(null);
     }
@@ -164,6 +172,7 @@ export function IncidentDetailPage() {
       
       setMessage('Resolution document uploaded successfully.');
       await loadResolutionDocument();
+      await load(); // Reload incident to update timeline entries
       
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -457,7 +466,7 @@ export function IncidentDetailPage() {
                   <label htmlFor="resolution-doc-upload" className="btn-upload">
                     {uploading ? 'Uploading...' : (resolutionDoc ? 'Replace' : 'Upload')}
                   </label>
-                  <span className="upload-hint">pdf, doc, docx, xlsx, ppt, pptx, txt, png, jpg, jpeg (max 25MB)</span>
+                  <span className="upload-hint">pdf, doc, docx, txt (max 25MB)</span>
                 </div>
               )}
             </div>
