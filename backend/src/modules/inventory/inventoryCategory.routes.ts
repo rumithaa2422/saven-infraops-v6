@@ -58,7 +58,21 @@ inventoryCategoryRouter.get('/categories', requireAuth, async (req, res, next) =
       orderBy: { name: 'asc' }
     });
 
-    res.json({ categories });
+    // Get inventory counts for each category
+    const categoriesWithCounts = await Promise.all(
+      categories.map(async (category) => {
+        const inventoryCount = await prisma.inventoryMaster.count({
+          where: { categoryId: category.id }
+        });
+        return {
+          ...category,
+          inventoryCount,
+          subcategoryCount: category.subcategories.length
+        };
+      })
+    );
+
+    res.json({ categories: categoriesWithCounts });
   } catch (error) {
     next(error);
   }
@@ -201,6 +215,24 @@ inventoryCategoryRouter.delete('/categories/:id', requireAuth, async (req, res, 
 
     if (assetCount > 0) {
       throw new HttpError(400, 'Cannot delete category that has associated assets. Please reassign or remove assets first.');
+    }
+
+    // Check if category has inventory items
+    const inventoryCount = await prisma.inventoryMaster.count({
+      where: { categoryId: id }
+    });
+
+    if (inventoryCount > 0) {
+      throw new HttpError(400, 'Cannot delete category that has inventory items. Please remove or reassign the items first.');
+    }
+
+    // Check if category has subcategories
+    const subcategoryCount = await prisma.inventorySubCategory.count({
+      where: { categoryId: id }
+    });
+
+    if (subcategoryCount > 0) {
+      throw new HttpError(400, 'Cannot delete category that has subcategories. Please remove the subcategories first.');
     }
 
     await prisma.inventoryCategory.delete({

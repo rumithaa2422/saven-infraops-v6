@@ -25,6 +25,10 @@ type InventoryItem = {
   brand?: string;
   model?: string;
   vendor?: string;
+  invoiceNo?: string;
+  purchaseCost?: number;
+  gst?: number;
+  warrantyMonths?: number;
   location?: string;
   currentQty: number;
   minStock?: number;
@@ -429,18 +433,42 @@ export function InventoryCategoryPage() {
   }
 
   function handleExport() {
-    const headers = ['Item No', 'Item Name', 'Subcategory', 'Brand', 'Vendor', 'Current Qty', 'Min Stock', 'Location', 'Status', 'Warranty Expiry'];
+    const headers = [
+      'Category',
+      'Sub Category',
+      'Item Name',
+      'Brand',
+      'Model',
+      'Vendor',
+      'Invoice Number',
+      'Purchase Cost',
+      'GST',
+      'Purchase Date',
+      'Warranty',
+      'Warranty Expiry',
+      'Location',
+      'Minimum Stock',
+      'Current Quantity',
+      'Status'
+    ];
+    
     const rows = filteredItems.map(item => [
-      item.itemNo,
-      item.itemName,
+      category?.name || '',
       item.subcategory?.name || '',
+      item.itemName,
       item.brand || '',
+      item.model || '',
       item.vendor || '',
-      item.currentQty.toString(),
-      item.minStock?.toString() || '',
+      item.invoiceNo || '',
+      item.purchaseCost?.toString() || '',
+      item.gst?.toString() || '',
+      item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString() : '',
+      item.warrantyMonths ? `${item.warrantyMonths} months` : '',
+      item.warrantyExpiry ? new Date(item.warrantyExpiry).toLocaleDateString() : '',
       item.location || '',
-      item.status,
-      item.warrantyExpiry ? new Date(item.warrantyExpiry).toLocaleDateString() : ''
+      item.minStock?.toString() || '',
+      item.currentQty.toString(),
+      item.status
     ]);
 
     const csvContent = [

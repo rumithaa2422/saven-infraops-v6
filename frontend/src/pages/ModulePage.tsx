@@ -38,6 +38,8 @@ type Category = {
   createdAt: string;
   updatedAt: string;
   subcategories: SubCategory[];
+  inventoryCount?: number;
+  subcategoryCount?: number;
 };
 
 // Phase 4C: Extended permissions type for action-level RBAC
@@ -1602,7 +1604,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               />
             </>
           )}
-          {config.permissions.export && hasPermission(config.permissions.export) && (
+          {config.permissions.export && hasPermission(config.permissions.export) && !config.isCategoryManagement && (
             <button className="secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
               {config.isDocumentRepository ? '📥 Export All' : 'Export CSV'}
             </button>
@@ -1963,7 +1965,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 <div 
                   key={category.id} 
                   className="category-card"
-                  onClick={() => navigate(`/inventory/${category.id}`)}
                 >
                   <div className="category-card-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1971,18 +1972,51 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                       <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
                     </svg>
                   </div>
-                  <div className="category-card-content">
+                  <div 
+                    className="category-card-content"
+                    onClick={() => navigate(`/inventory/${category.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <h3 className="category-card-name">{category.name}</h3>
                     <div className="category-card-stats">
                       <span className="category-card-stat">
-                        <strong>{category.subcategories.length}</strong> Subcategories
+                        <strong>{category.inventoryCount ?? category.subcategories.length}</strong> Inventories
                       </span>
                       <span className="category-card-stat">
-                        <strong>0</strong> Inventories
+                        <strong>{category.subcategoryCount ?? category.subcategories.length}</strong> Subcategories
                       </span>
                     </div>
                   </div>
-                  <div className="category-card-arrow">
+                  {isSuperAdmin && (
+                    <div className="category-card-actions">
+                      <button 
+                        className="btn-icon-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCategoryForm(category);
+                        }}
+                        title="Edit"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M18.5 2.5C19.3284 1.67157 20.6716 1.67157 21.5 2.5C22.3284 3.32843 22.3284 4.67157 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      </button>
+                      <button 
+                        className="btn-icon-sm btn-icon-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCategoryDeleteItem({ item: category, type: 'category' });
+                        }}
+                        title="Delete"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 6H21M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  <div className="category-card-arrow" onClick={() => navigate(`/inventory/${category.id}`)}>
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
