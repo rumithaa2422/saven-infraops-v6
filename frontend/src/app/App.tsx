@@ -214,51 +214,27 @@ export function App() {
         />
         <Route 
           path="access-management" 
-          element={
-            <PermissionRoute permission={modulePermissions['access-management']}>
-              <AccessManagementPage />
-            </PermissionRoute>
-          } 
+          element={<AccessManagementPage />} 
         />
         <Route 
           path="access-management/assignment" 
-          element={
-            <PermissionRoute permission={modulePermissions['access-management']}>
-              <AccessManagementAssignmentPage />
-            </PermissionRoute>
-          } 
+          element={<AccessManagementAssignmentPage />} 
         />
         <Route 
           path="access-management/transfer" 
-          element={
-            <PermissionRoute permission={modulePermissions['access-management']}>
-              <AccessManagementTransferPage />
-            </PermissionRoute>
-          } 
+          element={<AccessManagementTransferPage />} 
         />
         <Route 
           path="access-management/return" 
-          element={
-            <PermissionRoute permission={modulePermissions['access-management']}>
-              <AccessManagementReturnPage />
-            </PermissionRoute>
-          } 
+          element={<AccessManagementReturnPage />} 
         />
         <Route 
           path="access-management/repair" 
-          element={
-            <PermissionRoute permission={modulePermissions['access-management']}>
-              <AccessManagementRepairPage />
-            </PermissionRoute>
-          } 
+          element={<AccessManagementRepairPage />} 
         />
         <Route 
           path="access-management/retired" 
-          element={
-            <PermissionRoute permission={modulePermissions['access-management']}>
-              <AccessManagementRetiredPage />
-            </PermissionRoute>
-          } 
+          element={<AccessManagementRetiredPage />} 
         />
         <Route 
           path="compliance" 
