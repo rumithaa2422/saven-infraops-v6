@@ -15,6 +15,12 @@ import { InventoryMasterDetailPage } from '../pages/InventoryMasterDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
+import { AccessManagementPage } from '../pages/AccessManagementPage';
+import { AccessManagementAssignmentPage } from '../pages/AccessManagementAssignmentPage';
+import { AccessManagementTransferPage } from '../pages/AccessManagementTransferPage';
+import { AccessManagementReturnPage } from '../pages/AccessManagementReturnPage';
+import { AccessManagementRepairPage } from '../pages/AccessManagementRepairPage';
+import { AccessManagementRetiredPage } from '../pages/AccessManagementRetiredPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -210,7 +216,47 @@ export function App() {
           path="access-management" 
           element={
             <PermissionRoute permission={modulePermissions['access-management']}>
-              <ModulePage moduleKey="access-management" title="Access Management" />
+              <AccessManagementPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="access-management/assignment" 
+          element={
+            <PermissionRoute permission={modulePermissions['access-management']}>
+              <AccessManagementAssignmentPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="access-management/transfer" 
+          element={
+            <PermissionRoute permission={modulePermissions['access-management']}>
+              <AccessManagementTransferPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="access-management/return" 
+          element={
+            <PermissionRoute permission={modulePermissions['access-management']}>
+              <AccessManagementReturnPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="access-management/repair" 
+          element={
+            <PermissionRoute permission={modulePermissions['access-management']}>
+              <AccessManagementRepairPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="access-management/retired" 
+          element={
+            <PermissionRoute permission={modulePermissions['access-management']}>
+              <AccessManagementRetiredPage />
             </PermissionRoute>
           } 
         />
