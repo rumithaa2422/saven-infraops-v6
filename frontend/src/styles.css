@@ -7648,6 +7648,76 @@ input:disabled {
   border-color: var(--brand);
 }
 
+/* Sort Dropdown */
+.sort-dropdown {
+  position: relative;
+}
+
+.sort-select {
+  padding: 8px 32px 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+/* Filter Chips */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0 0 12px 12px;
+  margin-top: -12px;
+  margin-bottom: 16px;
+  border-top: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.filter-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--brand);
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+
+.filter-chip-remove:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
 /* Sortable columns */
 .sortable {
   cursor: pointer;

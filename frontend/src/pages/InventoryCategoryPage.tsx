@@ -44,6 +44,8 @@ type FilterState = {
   location: string;
   warranty: string;
   status: string;
+  stock: string;
+  purchaseYear: string;
 };
 
 export function InventoryCategoryPage() {
@@ -70,7 +72,9 @@ export function InventoryCategoryPage() {
     brand: '',
     location: '',
     warranty: '',
-    status: ''
+    status: '',
+    stock: '',
+    purchaseYear: ''
   });
 
   const [showFilters, setShowFilters] = useState(false);
@@ -190,6 +194,24 @@ export function InventoryCategoryPage() {
       result = result.filter(item => item.status === filters.status);
     }
 
+    // Filter by stock
+    if (filters.stock) {
+      if (filters.stock === 'low') {
+        result = result.filter(item => item.minStock && item.currentQty < item.minStock);
+      } else if (filters.stock === 'in') {
+        result = result.filter(item => item.currentQty > 0);
+      }
+    }
+
+    // Filter by purchase year
+    if (filters.purchaseYear) {
+      result = result.filter(item => {
+        if (!item.purchaseDate) return false;
+        const year = new Date(item.purchaseDate).getFullYear().toString();
+        return year === filters.purchaseYear;
+      });
+    }
+
     // Sort
     result.sort((a, b) => {
       let comparison = 0;
@@ -255,6 +277,81 @@ export function InventoryCategoryPage() {
     return counts;
   }, [items]);
 
+  // Get unique vendors from items
+  const uniqueVendors = useMemo(() => {
+    const vendors = new Set<string>();
+    items.forEach(item => {
+      if (item.vendor) vendors.add(item.vendor);
+    });
+    return Array.from(vendors).sort();
+  }, [items]);
+
+  // Get unique brands from items
+  const uniqueBrands = useMemo(() => {
+    const brands = new Set<string>();
+    items.forEach(item => {
+      if (item.brand) brands.add(item.brand);
+    });
+    return Array.from(brands).sort();
+  }, [items]);
+
+  // Get unique purchase years
+  const uniqueYears = useMemo(() => {
+    const years = new Set<string>();
+    items.forEach(item => {
+      if (item.purchaseDate) {
+        years.add(new Date(item.purchaseDate).getFullYear().toString());
+      }
+    });
+    return Array.from(years).sort().reverse();
+  }, [items]);
+
+  // Get active filter chips
+  const activeFilterChips = useMemo(() => {
+    const chips: { key: string; label: string; value: string }[] = [];
+    
+    if (selectedSubcategory) {
+      const sub = category?.subcategories.find(s => s.id === selectedSubcategory);
+      chips.push({ key: 'subcategory', label: sub?.name || 'Subcategory', value: selectedSubcategory });
+    }
+    
+    if (filters.warranty) {
+      const labels: Record<string, string> = {
+        active: 'Warranty Active',
+        expiring: 'Warranty Expiring',
+        expired: 'Warranty Expired',
+        none: 'No Warranty'
+      };
+      chips.push({ key: 'warranty', label: labels[filters.warranty] || filters.warranty, value: filters.warranty });
+    }
+    
+    if (filters.status) {
+      chips.push({ key: 'status', label: `Status: ${filters.status}`, value: filters.status });
+    }
+    
+    if (filters.stock) {
+      const labels: Record<string, string> = {
+        low: 'Low Stock',
+        in: 'In Stock'
+      };
+      chips.push({ key: 'stock', label: labels[filters.stock] || filters.stock, value: filters.stock });
+    }
+    
+    if (filters.vendor) {
+      chips.push({ key: 'vendor', label: `Vendor: ${filters.vendor}`, value: filters.vendor });
+    }
+    
+    if (filters.brand) {
+      chips.push({ key: 'brand', label: `Brand: ${filters.brand}`, value: filters.brand });
+    }
+    
+    if (filters.purchaseYear) {
+      chips.push({ key: 'purchaseYear', label: `Year: ${filters.purchaseYear}`, value: filters.purchaseYear });
+    }
+    
+    return chips;
+  }, [selectedSubcategory, filters, category]);
+
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     setSearch(value);
@@ -272,9 +369,46 @@ export function InventoryCategoryPage() {
   function handleRefresh() {
     setRefreshing(true);
     setSearch('');
-    setFilters({ subcategory: '', vendor: '', brand: '', location: '', warranty: '', status: '' });
+    setFilters({
+      subcategory: '',
+      vendor: '',
+      brand: '',
+      location: '',
+      warranty: '',
+      status: '',
+      stock: '',
+      purchaseYear: ''
+    });
     setSelectedSubcategory(null);
     loadData();
+  }
+
+  function handleClearFilters() {
+    setFilters({
+      subcategory: '',
+      vendor: '',
+      brand: '',
+      location: '',
+      warranty: '',
+      status: '',
+      stock: '',
+      purchaseYear: ''
+    });
+    setSelectedSubcategory(null);
+  }
+
+  function removeFilterChip(key: string) {
+    if (key === 'subcategory') {
+      setSelectedSubcategory(null);
+    } else {
+      setFilters(prev => ({ ...prev, [key]: '' }));
+    }
+  }
+
+  function handleSortChange(value: string) {
+    const [field, order] = value.split('_');
+    setSortBy(field);
+    setSortOrder(order as 'asc' | 'desc');
   }
 
   function handleRowClick(item: InventoryItem) {
@@ -740,6 +874,27 @@ export function InventoryCategoryPage() {
               <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
+          <div className="sort-dropdown">
+            <select 
+              value={`${sortBy}_${sortOrder}`}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="sort-select"
+            >
+              <option value="itemName_asc">Name A-Z</option>
+              <option value="itemName_desc">Name Z-A</option>
+              <option value="currentQty_desc">Qty High-Low</option>
+              <option value="currentQty_asc">Qty Low-High</option>
+              <option value="purchaseDate_desc">Purchase Newest</option>
+              <option value="purchaseDate_asc">Purchase Oldest</option>
+              <option value="warrantyExpiry_asc">Warranty Earliest</option>
+              <option value="warrantyExpiry_desc">Warranty Latest</option>
+            </select>
+          </div>
+          {activeFilterChips.length > 0 && (
+            <button className="secondary" onClick={handleClearFilters}>
+              Clear Filters
+            </button>
+          )}
           <button className="icon-btn" onClick={handleRefresh} disabled={loading || refreshing} title="Refresh">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={refreshing ? 'spinning' : ''}>
               <path d="M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C10.2091 2 12.1174 3.22621 13.1248 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -756,6 +911,23 @@ export function InventoryCategoryPage() {
           )}
         </div>
       </div>
+
+      {/* Active Filter Chips */}
+      {activeFilterChips.length > 0 && (
+        <div className="filter-chips">
+          {activeFilterChips.map(chip => (
+            <span key={chip.key} className="filter-chip">
+              {chip.label}
+              <button 
+                className="filter-chip-remove"
+                onClick={() => removeFilterChip(chip.key)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Filters Panel */}
       {showFilters && (
@@ -776,48 +948,6 @@ export function InventoryCategoryPage() {
               </div>
             )}
             <div className="filter-group">
-              <label>Vendor</label>
-              <input
-                type="text"
-                placeholder="Filter by vendor"
-                value={filters.vendor}
-                onChange={(e) => setFilters({ ...filters, vendor: e.target.value })}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Brand</label>
-              <input
-                type="text"
-                placeholder="Filter by brand"
-                value={filters.brand}
-                onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Location</label>
-              <input
-                type="text"
-                placeholder="Filter by location"
-                value={filters.location}
-                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="filters-row">
-            <div className="filter-group">
-              <label>Warranty</label>
-              <select
-                value={filters.warranty}
-                onChange={(e) => setFilters({ ...filters, warranty: e.target.value })}
-              >
-                <option value="">All</option>
-                <option value="active">Active</option>
-                <option value="expiring">Expiring Soon</option>
-                <option value="expired">Expired</option>
-                <option value="none">No Warranty</option>
-              </select>
-            </div>
-            <div className="filter-group">
               <label>Status</label>
               <select
                 value={filters.status}
@@ -826,6 +956,68 @@ export function InventoryCategoryPage() {
                 <option value="">All</option>
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Stock</label>
+              <select
+                value={filters.stock}
+                onChange={(e) => setFilters({ ...filters, stock: e.target.value })}
+              >
+                <option value="">All</option>
+                <option value="low">Low Stock</option>
+                <option value="in">In Stock</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Warranty</label>
+              <select
+                value={filters.warranty}
+                onChange={(e) => setFilters({ ...filters, warranty: e.target.value })}
+              >
+                <option value="">All</option>
+                <option value="active">Active</option>
+                <option value="expiring">Expiring in 30 Days</option>
+                <option value="expired">Expired</option>
+                <option value="none">No Warranty</option>
+              </select>
+            </div>
+          </div>
+          <div className="filters-row">
+            <div className="filter-group">
+              <label>Vendor</label>
+              <select
+                value={filters.vendor}
+                onChange={(e) => setFilters({ ...filters, vendor: e.target.value })}
+              >
+                <option value="">All Vendors</option>
+                {uniqueVendors.map(vendor => (
+                  <option key={vendor} value={vendor}>{vendor}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Brand</label>
+              <select
+                value={filters.brand}
+                onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
+              >
+                <option value="">All Brands</option>
+                {uniqueBrands.map(brand => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Purchase Year</label>
+              <select
+                value={filters.purchaseYear}
+                onChange={(e) => setFilters({ ...filters, purchaseYear: e.target.value })}
+              >
+                <option value="">All Years</option>
+                {uniqueYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -845,7 +1037,7 @@ export function InventoryCategoryPage() {
               <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
               <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
             </svg>
-            <p>{search || filters.vendor || filters.brand || filters.location || filters.warranty || filters.status ? 'No matching items found' : 'No inventory items in this category'}</p>
+            <p>{search || filters.vendor || filters.brand || filters.location || filters.warranty || filters.status || filters.stock || filters.purchaseYear || selectedSubcategory ? 'No matching items found' : 'No inventory items in this category'}</p>
             {search && <p className="empty-hint">Try adjusting your search</p>}
           </div>
         ) : (
