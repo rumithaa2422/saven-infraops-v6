@@ -9896,3 +9896,262 @@ input:disabled {
     padding: 8px;
   }
 }
+
+/* Asset Management Styles */
+.asset-id {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--brand);
+  font-weight: 500;
+}
+
+.asset-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.asset-type {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.asset-model {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.summary-card-icon.assigned {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.summary-card-icon.maintenance {
+  background: rgba(234, 179, 8, 0.1);
+  color: #eab308;
+}
+
+.summary-card-icon.retired {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.btn-open {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-open:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-strong);
+}
+
+/* Asset Detail Page */
+.detail-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-summary-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-summary-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.detail-summary-value.warranty-expired {
+  color: var(--danger);
+}
+
+.detail-summary-value.warranty-warning {
+  color: var(--warning);
+}
+
+.detail-summary-value.warranty-active {
+  color: var(--success);
+}
+
+/* Detail Page Form */
+.detail-form {
+  max-width: 800px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group.required label::after {
+  content: ' *';
+  color: var(--danger);
+}
+
+.detail-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.status-active {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.status-badge.status-assigned {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.status-badge.status-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.status-badge.status-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.status-badge.status-inactive {
+  background: var(--bg-secondary);
+  color: var(--muted);
+}
+
+/* Timeline */
+.detail-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brand);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-title {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.timeline-date {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Detail Warranty Status */
+.detail-warranty-status {
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.detail-warranty-status.warranty-expired {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.detail-warranty-status.warranty-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.detail-warranty-status.warranty-active {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+/* Access Restricted */
+.access-restricted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 32px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.access-restricted svg {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.access-restricted h2 {
+  font-size: 20px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.access-restricted p {
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .detail-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
