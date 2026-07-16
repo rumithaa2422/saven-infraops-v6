@@ -15,9 +15,6 @@ import { InventoryMasterDetailPage } from '../pages/InventoryMasterDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
-import { AssetManagementPage } from '../pages/AssetManagementPage';
-import { AssetDetailPage } from '../pages/AssetDetailPage';
-import { AssetCreatePage } from '../pages/AssetCreatePage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -81,7 +78,6 @@ const modulePermissions: Record<string, string> = {
   'problems': 'problems:view',
   'changes': 'changes:view',
   'inventory': 'inventory:view',
-  'assets': 'inventory:view',
   'access-management': 'access:view',
   'compliance': 'compliance:view',
   'projects-environments': 'projects:view',
@@ -207,30 +203,6 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['inventory']}>
               <InventoryDetailPage />
-            </PermissionRoute>
-          } 
-        />
-        <Route 
-          path="assets" 
-          element={
-            <PermissionRoute permission={modulePermissions['assets']}>
-              <AssetManagementPage />
-            </PermissionRoute>
-          } 
-        />
-        <Route 
-          path="assets/create" 
-          element={
-            <PermissionRoute permission={modulePermissions['assets']}>
-              <AssetCreatePage />
-            </PermissionRoute>
-          } 
-        />
-        <Route 
-          path="assets/:id" 
-          element={
-            <PermissionRoute permission={modulePermissions['assets']}>
-              <AssetDetailPage />
             </PermissionRoute>
           } 
         />

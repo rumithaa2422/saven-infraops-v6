@@ -21,7 +21,6 @@ import { inventoryCategoryRouter } from './modules/inventory/inventoryCategory.r
 import { inventoryMasterRouter } from './modules/inventory/inventoryMaster.routes.js';
 import { inventoryHistoryRouter } from './modules/inventory/inventoryHistory.routes.js';
 import { inventoryAnalyticsRouter } from './modules/inventory/inventoryAnalytics.routes.js';
-import { assetRouter } from './modules/assets/asset.routes.js';
 
 export function createApp() {
   const app = express();
@@ -50,7 +49,6 @@ export function createApp() {
   app.use('/api/inventory', inventoryAnalyticsRouter);
   app.use('/api/inventory-master', inventoryMasterRouter);
   app.use('/api/inventory-master', inventoryHistoryRouter);
-  app.use('/api/assets', assetRouter);
   app.use('/api', genericModuleRouter);
 
   app.use(errorHandler);
