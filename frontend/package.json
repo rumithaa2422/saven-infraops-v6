@@ -15,7 +15,8 @@
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",
-    "saven-infraops-enterprise-v5": "file:.."
+    "saven-infraops-enterprise-v5": "file:..",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "latest",

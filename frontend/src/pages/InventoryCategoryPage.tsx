@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import * as XLSX from 'xlsx';
 
 type Subcategory = {
   id: string;
@@ -94,6 +95,16 @@ export function InventoryCategoryPage() {
   const [subcategoryError, setSubcategoryError] = useState('');
   const [subcategorySaving, setSubcategorySaving] = useState(false);
   const [subcategoryDeleting, setSubcategoryDeleting] = useState<string | null>(null);
+
+  // Import State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<Record<number, string[]>>({});
+  const [importValidRows, setImportValidRows] = useState<any[]>([]);
+  const [importProcessing, setImportProcessing] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Load category and items
   async function loadData() {
@@ -481,6 +492,212 @@ export function InventoryCategoryPage() {
     link.href = URL.createObjectURL(blob);
     link.download = `${category?.name || 'inventory'}-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+  }
+
+  // Import Functions
+  function handleImportClick() {
+    importInputRef.current?.click();
+  }
+
+  function handleImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportProcessing(true);
+    setImportResult(null);
+    setImportErrors({});
+    setImportValidRows([]);
+    setShowImportModal(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        setImportData(jsonData);
+        validateImportData(jsonData);
+      } catch (err) {
+        alert('Failed to parse Excel file');
+        setShowImportModal(false);
+      }
+      setImportProcessing(false);
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  async function validateImportData(data: any[]) {
+    if (!category) return;
+
+    const errors: Record<number, string[]> = {};
+    const validRows: any[] = [];
+    const existingInvoiceNos = new Set(items.map(i => i.invoiceNo).filter(Boolean));
+    const existingItemNos = new Set(items.map(i => i.itemNo));
+    const subcategoryMap = new Map(category.subcategories.map(s => [s.name.toLowerCase(), s.id]));
+    
+    const seenInvoiceNos = new Set<string>();
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowErrors: string[] = [];
+      const rowNum = i + 2; // Excel row number (1 is header)
+
+      // Required fields
+      if (!row['Item Name'] && !row['ItemName'] && !row['itemName']) {
+        rowErrors.push('Item Name is required');
+      }
+
+      // Check for required Subcategory
+      const subcategoryName = row['Sub Category'] || row['SubCategory'] || row['subcategory'] || '';
+      if (!subcategoryName) {
+        rowErrors.push('Sub Category is required');
+      } else if (!subcategoryMap.has(subcategoryName.toLowerCase())) {
+        rowErrors.push(`Subcategory "${subcategoryName}" does not exist`);
+      }
+
+      // Validate Invoice Number for duplicates
+      const invoiceNo = row['Invoice Number'] || row['InvoiceNumber'] || row['invoiceNo'] || '';
+      if (invoiceNo) {
+        if (existingInvoiceNos.has(invoiceNo)) {
+          rowErrors.push(`Invoice Number "${invoiceNo}" already exists in inventory`);
+        }
+        if (seenInvoiceNos.has(invoiceNo)) {
+          rowErrors.push(`Duplicate Invoice Number "${invoiceNo}" in file`);
+        }
+        seenInvoiceNos.add(invoiceNo);
+      }
+
+      // Validate numeric fields
+      const purchaseCost = row['Purchase Cost'] || row['PurchaseCost'] || row['purchaseCost'];
+      if (purchaseCost !== undefined && purchaseCost !== '' && isNaN(parseFloat(purchaseCost))) {
+        rowErrors.push('Purchase Cost must be a number');
+      }
+
+      const gst = row['GST'] || row['gst'];
+      if (gst !== undefined && gst !== '' && isNaN(parseFloat(gst))) {
+        rowErrors.push('GST must be a number');
+      }
+
+      const currentQty = row['Current Quantity'] || row['CurrentQuantity'] || row['currentQty'] || row['Quantity'];
+      if (currentQty !== undefined && currentQty !== '' && isNaN(parseInt(currentQty))) {
+        rowErrors.push('Current Quantity must be a number');
+      }
+
+      const minStock = row['Minimum Stock'] || row['MinimumStock'] || row['minStock'];
+      if (minStock !== undefined && minStock !== '' && isNaN(parseInt(minStock))) {
+        rowErrors.push('Minimum Stock must be a number');
+      }
+
+      // Validate date formats
+      const purchaseDate = row['Purchase Date'] || row['PurchaseDate'] || row['purchaseDate'];
+      if (purchaseDate && purchaseDate !== '') {
+        const parsedDate = new Date(purchaseDate);
+        if (isNaN(parsedDate.getTime())) {
+          rowErrors.push('Invalid Purchase Date format');
+        }
+      }
+
+      const warrantyExpiry = row['Warranty Expiry'] || row['WarrantyExpiry'] || row['warrantyExpiry'];
+      if (warrantyExpiry && warrantyExpiry !== '') {
+        const parsedDate = new Date(warrantyExpiry);
+        if (isNaN(parsedDate.getTime())) {
+          rowErrors.push('Invalid Warranty Expiry format');
+        }
+      }
+
+      // Validate Status
+      const status = row['Status'] || row['status'] || 'ACTIVE';
+      const validStatuses = ['ACTIVE', 'INACTIVE', 'ARCHIVED', 'ASSIGNED', 'AVAILABLE', 'MAINTENANCE'];
+      if (status && !validStatuses.includes(status.toUpperCase())) {
+        rowErrors.push(`Invalid Status "${status}". Valid values: ${validStatuses.join(', ')}`);
+      }
+
+      if (rowErrors.length > 0) {
+        errors[i] = rowErrors;
+      } else {
+        // Build valid row object
+        const validRow: any = {
+          itemName: row['Item Name'] || row['ItemName'] || row['itemName'],
+          subcategoryId: subcategoryMap.get(subcategoryName.toLowerCase()),
+          subcategoryName: subcategoryName,
+          brand: row['Brand'] || row['brand'] || '',
+          model: row['Model'] || row['model'] || '',
+          vendor: row['Vendor'] || row['vendor'] || '',
+          invoiceNo: invoiceNo,
+          purchaseCost: purchaseCost ? parseFloat(purchaseCost) : null,
+          gst: gst ? parseFloat(gst) : null,
+          purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
+          warrantyMonths: row['Warranty'] || row['warranty'] || null,
+          warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry).toISOString() : null,
+          location: row['Location'] || row['location'] || '',
+          minStock: minStock ? parseInt(minStock) : null,
+          currentQty: currentQty ? parseInt(currentQty) : 0,
+          status: (status || 'ACTIVE').toUpperCase()
+        };
+        validRows.push(validRow);
+      }
+    }
+
+    setImportErrors(errors);
+    setImportValidRows(validRows);
+  }
+
+  async function handleImportConfirm() {
+    if (importValidRows.length === 0) return;
+
+    setImportProcessing(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const row of importValidRows) {
+      try {
+        await api.post('/inventory-master', {
+          ...row,
+          categoryId: categoryId
+        });
+        successCount++;
+      } catch (err: any) {
+        failCount++;
+        console.error('Import error:', err);
+      }
+    }
+
+    setImportResult({ success: successCount, failed: failCount });
+    setImportProcessing(false);
+
+    if (successCount > 0) {
+      loadData();
+    }
+  }
+
+  function downloadValidationReport() {
+    const errors: string[] = ['Row,Error'];
+    
+    Object.entries(importErrors).forEach(([rowIdx, rowErrors]) => {
+      rowErrors.forEach(error => {
+        errors.push(`${parseInt(rowIdx) + 2},"${error}"`);
+      });
+    });
+
+    const csvContent = errors.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `import-validation-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  }
+
+  function closeImportModal() {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportErrors({});
+    setImportValidRows([]);
+    setImportResult(null);
   }
 
   function handleSort(column: string) {
@@ -933,10 +1150,22 @@ export function InventoryCategoryPage() {
             Export
           </button>
           {isSuperAdmin && (
+            <button className="secondary" onClick={handleImportClick}>
+              Import
+            </button>
+          )}
+          {isSuperAdmin && (
             <button className="primary" onClick={handleCreateInventory}>
               + Create Inventory
             </button>
           )}
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleImportFileChange}
+            style={{ display: 'none' }}
+          />
         </div>
       </div>
 
@@ -1144,6 +1373,211 @@ export function InventoryCategoryPage() {
           </table>
         )}
       </div>
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && !importResult && closeImportModal()}>
+          <div className="modal" style={{ maxWidth: '900px' }}>
+            <div className="modal-header">
+              <h2>Import Inventory</h2>
+              <button className="modal-close" onClick={closeImportModal}>×</button>
+            </div>
+
+            <div className="modal-body">
+              {/* File Info */}
+              {importFile && (
+                <div className="import-file-info">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  <span>{importFile.name}</span>
+                </div>
+              )}
+
+              {importProcessing && !importResult && (
+                <div className="import-loading">
+                  <div className="spinner"></div>
+                  <span>Validating data...</span>
+                </div>
+              )}
+
+              {/* Validation Summary */}
+              {!importProcessing && !importResult && (
+                <>
+                  <div className="import-summary">
+                    <div className="import-summary-card">
+                      <div className="import-summary-icon total">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5C15 6.10457 14.1046 7 13 7H11C9.89543 7 9 6.10457 9 5Z" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      </div>
+                      <div className="import-summary-content">
+                        <span className="import-summary-value">{importData.length}</span>
+                        <span className="import-summary-label">Total Rows</span>
+                      </div>
+                    </div>
+                    <div className="import-summary-card">
+                      <div className="import-summary-icon valid">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      </div>
+                      <div className="import-summary-content">
+                        <span className="import-summary-value">{importValidRows.length}</span>
+                        <span className="import-summary-label">Valid Rows</span>
+                      </div>
+                    </div>
+                    <div className="import-summary-card">
+                      <div className="import-summary-icon invalid">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                      <div className="import-summary-content">
+                        <span className="import-summary-value">{Object.keys(importErrors).length}</span>
+                        <span className="import-summary-label">Invalid Rows</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Preview Table */}
+                  {importData.length > 0 && (
+                    <div className="import-preview">
+                      <h4>Preview</h4>
+                      <div className="import-preview-table-container">
+                        <table className="import-preview-table">
+                          <thead>
+                            <tr>
+                              <th>Row</th>
+                              <th>Item Name</th>
+                              <th>Subcategory</th>
+                              <th>Brand</th>
+                              <th>Vendor</th>
+                              <th>Status</th>
+                              <th>Valid</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importData.slice(0, 10).map((row, idx) => {
+                              const hasError = importErrors[idx];
+                              return (
+                                <tr key={idx} className={hasError ? 'invalid-row' : 'valid-row'}>
+                                  <td>{idx + 2}</td>
+                                  <td>{row['Item Name'] || row['ItemName'] || row['itemName'] || '-'}</td>
+                                  <td>{row['Sub Category'] || row['SubCategory'] || '-'}</td>
+                                  <td>{row['Brand'] || '-'}</td>
+                                  <td>{row['Vendor'] || '-'}</td>
+                                  <td>{row['Status'] || 'ACTIVE'}</td>
+                                  <td>
+                                    {hasError ? (
+                                      <span className="badge badge-danger">Invalid</span>
+                                    ) : (
+                                      <span className="badge badge-success">Valid</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {importData.length > 10 && (
+                        <p className="import-preview-note">Showing first 10 of {importData.length} rows</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Invalid Rows Detail */}
+                  {Object.keys(importErrors).length > 0 && (
+                    <div className="import-errors">
+                      <h4>Validation Errors</h4>
+                      <div className="import-errors-list">
+                        {Object.entries(importErrors).slice(0, 5).map(([rowIdx, errors]) => (
+                          <div key={rowIdx} className="import-error-item">
+                            <strong>Row {parseInt(rowIdx) + 2}:</strong>
+                            <ul>
+                              {errors.map((error, eIdx) => (
+                                <li key={eIdx}>{error}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                        {Object.keys(importErrors).length > 5 && (
+                          <p className="import-errors-note">
+                            And {Object.keys(importErrors).length - 5} more errors. Download the validation report for full details.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Import Result */}
+              {importResult && (
+                <div className="import-result">
+                  <div className="import-result-icon success">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                  </div>
+                  <h3>Import Complete</h3>
+                  <div className="import-result-stats">
+                    <div className="import-result-stat">
+                      <span className="value success">{importResult.success}</span>
+                      <span className="label">Imported</span>
+                    </div>
+                    <div className="import-result-stat">
+                      <span className="value danger">{importResult.failed}</span>
+                      <span className="label">Failed</span>
+                    </div>
+                  </div>
+                  {importResult.failed > 0 && (
+                    <p className="import-result-note">
+                      Some items could not be imported. Please check the errors and try again.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              {!importResult && (
+                <>
+                  {Object.keys(importErrors).length > 0 && (
+                    <button className="secondary" onClick={downloadValidationReport}>
+                      Download Report
+                    </button>
+                  )}
+                  <div style={{ flex: 1 }}></div>
+                  <button className="secondary" onClick={closeImportModal}>
+                    Cancel
+                  </button>
+                  {importValidRows.length > 0 && (
+                    <button 
+                      className="primary" 
+                      onClick={handleImportConfirm}
+                      disabled={importProcessing}
+                    >
+                      {importProcessing ? 'Importing...' : `Import ${importValidRows.length} Items`}
+                    </button>
+                  )}
+                </>
+              )}
+              {importResult && (
+                <button className="primary" onClick={closeImportModal}>
+                  Done
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
