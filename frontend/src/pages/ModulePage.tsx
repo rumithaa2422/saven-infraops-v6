@@ -443,7 +443,8 @@ function getInitialForm(fields: Field[]) {
 
 export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const config = configs[moduleKey] || configs['reports-analytics'];
-  const { hasPermission, hasAnyPermission } = useAuth();
+  const { hasPermission, hasAnyPermission, user } = useAuth();
+  const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const navigate = useNavigate();
   const [items, setItems] = useState<RecordItem[]>([]);
   const [selected, setSelected] = useState<RecordItem | null>(null);
@@ -1397,6 +1398,15 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           {config.permissions.create && hasPermission(config.permissions.create) && (
             <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
               {config.isDocumentRepository ? '📤 Upload' : 'Create'}
+            </button>
+          )}
+          {/* Category Management button for inventory module - Super Admin only */}
+          {moduleKey === 'inventory' && isSuperAdmin && (
+            <button 
+              className="secondary" 
+              onClick={() => navigate('/inventory-categories')}
+            >
+              ⚙️ Manage Categories
             </button>
           )}
         </div>

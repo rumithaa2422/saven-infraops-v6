@@ -287,6 +287,35 @@ model Asset {
   warrantyEndAt  DateTime?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+  categoryId     String?
+  subcategoryId  String?
+  category       InventoryCategory?    @relation(fields: [categoryId], references: [id])
+  subcategory    InventorySubCategory? @relation(fields: [subcategoryId], references: [id])
+}
+
+model InventoryCategory {
+  id          String                @id @default(cuid())
+  name        String                @unique
+  description String?
+  status      String                @default("ACTIVE")
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  subcategories InventorySubCategory[]
+  assets      Asset[]
+}
+
+model InventorySubCategory {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  status      String           @default("ACTIVE")
+  categoryId  String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  category    InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  assets      Asset[]
+
+  @@unique([categoryId, name])
 }
 
 model AccessRequest {

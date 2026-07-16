@@ -17,6 +17,7 @@ import { rolesRouter } from './modules/roles/roles.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { complianceRouter } from './modules/compliance/compliance.routes.js';
 import { reportsRouter } from './modules/reports/reports.routes.js';
+import { inventoryCategoryRouter } from './modules/inventory/inventoryCategory.routes.js';
 
 export function createApp() {
   const app = express();
@@ -41,6 +42,7 @@ export function createApp() {
   app.use('/api/users', usersRouter);
   app.use('/api/compliance', complianceRouter);
   app.use('/api/reports', reportsRouter);
+  app.use('/api/inventory', inventoryCategoryRouter);
   app.use('/api', genericModuleRouter);
 
   app.use(errorHandler);
