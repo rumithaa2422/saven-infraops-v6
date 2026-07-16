@@ -25,6 +25,7 @@ class ProjectsImportValidator extends BaseImportValidator {
   getColumnMappings(): ColumnMapping {
     return {
       projectName: ['project name', 'project_name', 'project', 'program'],
+      projectCode: ['project code', 'project_code', 'code', 'proj code', 'proj_code'],
       environmentName: ['environment name', 'environment_name', 'environment', 'env', 'stage'],
       serviceName: ['service name', 'service_name', 'service', 'application'],
       serverName: ['server name', 'server_name', 'server', 'hostname', 'host'],
@@ -34,7 +35,7 @@ class ProjectsImportValidator extends BaseImportValidator {
   }
 
   getRequiredFields(): string[] {
-    return ['projectName', 'environmentName'];
+    return ['projectName', 'projectCode'];
   }
 
   protected getEntityName(): string {
@@ -91,6 +92,7 @@ class ProjectsImportExecutor extends BaseImportExecutor {
     try {
       const project = await createProjectEnvironment({
         projectName: input.projectName as string,
+        projectCode: input.projectCode as string,
         environmentName: input.environmentName as string,
         serviceName: input.serviceName as string | null | undefined,
         serverName: input.serverName as string | null | undefined,

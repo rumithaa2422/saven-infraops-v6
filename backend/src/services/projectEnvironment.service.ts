@@ -1,5 +1,4 @@
 import { prisma } from '../common/prisma.js';
-import { HttpError } from '../common/httpError.js';
 
 export interface CreateProjectEnvironmentInput {
   projectName: string;
@@ -35,7 +34,9 @@ export async function createProjectEnvironment(
     where: { projectCode: data.projectCode }
   });
   if (existingByCode) {
-    throw HttpError.conflict('Project code already exists');
+    const error: any = new Error('Project code already exists');
+    error.statusCode = 409;
+    throw error;
   }
 
   // Check for duplicate project name
@@ -43,7 +44,9 @@ export async function createProjectEnvironment(
     where: { projectName: data.projectName }
   });
   if (existingByName) {
-    throw HttpError.conflict('Project name already exists');
+    const error: any = new Error('Project name already exists');
+    error.statusCode = 409;
+    throw error;
   }
 
   const item = await prisma.projectEnvironment.create({
@@ -92,7 +95,9 @@ export async function updateProjectEnvironment(
 ) {
   const existing = await prisma.projectEnvironment.findUnique({ where: { id } });
   if (!existing) {
-    throw HttpError.notFound('Project not found');
+    const error: any = new Error('Project not found');
+    error.statusCode = 404;
+    throw error;
   }
 
   // Check for duplicate project name (excluding current project)
@@ -104,7 +109,9 @@ export async function updateProjectEnvironment(
       }
     });
     if (existingByName) {
-      throw HttpError.conflict('Project name already exists');
+      const error: any = new Error('Project name already exists');
+      error.statusCode = 409;
+      throw error;
     }
   }
 
