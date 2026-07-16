@@ -2082,7 +2082,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 if (moduleKey === 'incidents' && item.id) {
                   navigate(`/incidents/${item.id}`);
                 } else if (moduleKey === 'inventory' && item.id) {
-                  navigate(`/inventory/${item.id}`);
+                  navigate(`/inventory/details/${item.id}`);
                 } else if (!config.isDocumentRepository) {
                   setSelected(item);
                 }
@@ -2143,7 +2143,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                           if (moduleKey === 'incidents') {
                             navigate(`/incidents/${item.id}`);
                           } else if (moduleKey === 'inventory') {
-                            navigate(`/inventory/${item.id}`);
+                            navigate(`/inventory/details/${item.id}`);
                           } else {
                             setSelected(item);
                           }
@@ -2310,7 +2310,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       )}
 
       {/* RBAC: Check if user has any view/create/write permission to see the detail */}
-      {selected && hasAnyPermission([
+      {/* Note: For inventory module, we navigate to detail page instead of showing drawer */}
+      {selected && moduleKey !== 'inventory' && hasAnyPermission([
         config.permissions.view || '',
         config.permissions.write || '',
         config.permissions.create || '',
@@ -2343,7 +2344,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
       )}
       {/* RBAC: Show 403 Unauthorized if user reaches detail without permission */}
-      {selected && !hasAnyPermission([
+      {selected && moduleKey !== 'inventory' && !hasAnyPermission([
         config.permissions.view || '',
         config.permissions.write || '',
         config.permissions.create || '',

@@ -15,6 +15,7 @@ import { InventoryMasterDetailPage } from '../pages/InventoryMasterDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
+import { AssetDetailPage } from '../pages/AssetDetailPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -202,7 +203,7 @@ export function App() {
           path="inventory/details/:id" 
           element={
             <PermissionRoute permission={modulePermissions['inventory']}>
-              <InventoryDetailPage />
+              <AssetDetailPage />
             </PermissionRoute>
           } 
         />
