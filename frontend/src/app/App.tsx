@@ -8,7 +8,6 @@ import { ServiceRequestsPage } from '../pages/ServiceRequestsPage';
 import { ServiceRequestDetailPage } from '../pages/ServiceRequestDetailPage';
 import { IncidentDetailPage } from '../pages/IncidentDetailPage';
 import { InventoryDetailPage } from '../pages/InventoryDetailPage';
-import { CategoryManagementPage } from '../pages/CategoryManagementPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
@@ -160,14 +159,6 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['inventory']}>
               <InventoryDetailPage />
-            </PermissionRoute>
-          } 
-        />
-        <Route 
-          path="inventory-categories" 
-          element={
-            <PermissionRoute permission={modulePermissions['inventory']}>
-              <CategoryManagementPage />
             </PermissionRoute>
           } 
         />
