@@ -2081,8 +2081,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 // For incidents and inventory, navigate to detail page instead of opening sidebar
                 if (moduleKey === 'incidents' && item.id) {
                   navigate(`/incidents/${item.id}`);
-                } else if (moduleKey === 'inventory' && item.id) {
-                  navigate(`/inventory/details/${item.id}`);
                 } else if (!config.isDocumentRepository) {
                   setSelected(item);
                 }
@@ -2142,8 +2140,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                           // For incidents and inventory, navigate to detail page instead of opening panel
                           if (moduleKey === 'incidents') {
                             navigate(`/incidents/${item.id}`);
-                          } else if (moduleKey === 'inventory') {
-                            navigate(`/inventory/details/${item.id}`);
                           } else {
                             setSelected(item);
                           }
@@ -2310,8 +2306,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       )}
 
       {/* RBAC: Check if user has any view/create/write permission to see the detail */}
-      {/* Note: For inventory module, we navigate to detail page instead of showing drawer */}
-      {selected && moduleKey !== 'inventory' && hasAnyPermission([
+      {selected && hasAnyPermission([
         config.permissions.view || '',
         config.permissions.write || '',
         config.permissions.create || '',
@@ -2344,7 +2339,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
       )}
       {/* RBAC: Show 403 Unauthorized if user reaches detail without permission */}
-      {selected && moduleKey !== 'inventory' && !hasAnyPermission([
+      {selected && !hasAnyPermission([
         config.permissions.view || '',
         config.permissions.write || '',
         config.permissions.create || '',
