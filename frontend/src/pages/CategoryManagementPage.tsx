@@ -462,36 +462,38 @@ export function CategoryManagementPage() {
                   ) : (
                     category.subcategories.map((subcategory) => (
                       <div key={subcategory.id} className="subcategory-item">
-                        <div className="subcategory-info">
-                          <span className="subcategory-name">{subcategory.name}</span>
-                          <span className={`status-badge status-sm ${getStatusBadgeClass(subcategory.status)}`}>
-                            {subcategory.status}
-                          </span>
+                        <div className="subcategory-item-row">
+                          <div className="subcategory-info">
+                            <span className="subcategory-name">{subcategory.name}</span>
+                            <span className={`status-badge status-sm ${getStatusBadgeClass(subcategory.status)}`}>
+                              {subcategory.status}
+                            </span>
+                          </div>
+                          {isSuperAdmin && (
+                            <div className="subcategory-actions">
+                              <button
+                                className="btn-icon btn-icon-sm"
+                                title="Edit"
+                                onClick={() => openSubcategoryModal(category.id, subcategory)}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M10 2l2 2-7 7H3v-2l7-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </button>
+                              <button
+                                className="btn-icon btn-icon-sm btn-icon-danger"
+                                title="Delete"
+                                onClick={() => openDeleteConfirm('subcategory', subcategory, category.id)}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M1.5 3.5h11M4.5 3.5V2a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1.5M11 3.5v8a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </button>
+                            </div>
+                          )}
                         </div>
                         {subcategory.description && (
                           <p className="subcategory-description">{subcategory.description}</p>
-                        )}
-                        {isSuperAdmin && (
-                          <div className="subcategory-actions">
-                            <button
-                              className="btn-icon btn-icon-sm"
-                              title="Edit"
-                              onClick={() => openSubcategoryModal(category.id, subcategory)}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 2l2 2-7 7H3v-2l7-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                            <button
-                              className="btn-icon btn-icon-sm btn-icon-danger"
-                              title="Delete"
-                              onClick={() => openDeleteConfirm('subcategory', subcategory, category.id)}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M1.5 3.5h11M4.5 3.5V2a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1.5M11 3.5v8a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                          </div>
                         )}
                       </div>
                     ))

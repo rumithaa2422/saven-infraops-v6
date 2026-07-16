@@ -6687,9 +6687,10 @@ input:disabled {
 
 .subcategory-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -6703,6 +6704,14 @@ input:disabled {
 
 .subcategory-item:hover {
   background: var(--panel-soft);
+}
+
+.subcategory-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
 }
 
 .subcategory-info {
@@ -6720,10 +6729,10 @@ input:disabled {
 }
 
 .subcategory-description {
-  margin: 4px 0 0 0;
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
-  flex-basis: 100%;
+  line-height: 1.4;
 }
 
 .status-badge.status-sm {
@@ -6737,6 +6746,7 @@ input:disabled {
   gap: 4px;
   opacity: 0;
   transition: opacity 0.15s ease;
+  margin-left: auto;
 }
 
 .subcategory-item:hover .subcategory-actions {
