@@ -287,6 +287,59 @@ genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
   }
 });
 
+// GET /:module/:id - Get single record by ID
+genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
+  try {
+    const moduleName = req.params.module as string;
+    const config = moduleMap[moduleName];
+    if (!config) return next();
+
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr([config.permission, config.viewPermission || config.permission])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const id = req.params.id as string;
+    let item;
+
+    switch (moduleName) {
+      case 'incidents':
+        item = await prisma.incident.findUnique({ where: { id } });
+        break;
+      case 'problems':
+        item = await prisma.problem.findUnique({ where: { id } });
+        break;
+      case 'changes':
+        item = await prisma.changeRequest.findUnique({ where: { id } });
+        break;
+      case 'inventory':
+        item = await prisma.asset.findUnique({ where: { id } });
+        break;
+      case 'access-management':
+        item = await prisma.accessRequest.findUnique({ where: { id } });
+        break;
+      case 'projects-environments':
+        item = await prisma.projectEnvironment.findUnique({ where: { id } });
+        break;
+      case 'vendors-licenses':
+        item = await prisma.vendorLicense.findUnique({ where: { id } });
+        break;
+      case 'knowledge-base':
+        item = await prisma.knowledgeBaseArticle.findUnique({ where: { id } });
+        break;
+      default:
+        return next();
+    }
+
+    if (!item) {
+      throw new HttpError(404, `${moduleName.slice(0, -1)} not found`);
+    }
+
+    res.json({ item });
+  } catch (error) {
+    next(error instanceof Error ? error : new HttpError(500, 'Failed to fetch record'));
+  }
+});
+
 // POST - Create record (create permission)
 genericModuleRouter.post('/:module', requireAuth, async (req, res, next) => {
   try {
