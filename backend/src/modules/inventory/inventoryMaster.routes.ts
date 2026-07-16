@@ -101,6 +101,13 @@ inventoryMasterRouter.get('/:id', requireAuth, async (req, res, next) => {
         },
         subcategory: {
           select: { id: true, name: true }
+        },
+        history: {
+          orderBy: { createdAt: 'desc' },
+          take: 50
+        },
+        documents: {
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
@@ -241,6 +248,17 @@ inventoryMasterRouter.post('/', requireAuth, async (req, res, next) => {
       }
     });
 
+    // Add creation history entry
+    await prisma.inventoryHistory.create({
+      data: {
+        inventoryId: item.id,
+        action: 'Created',
+        description: `Inventory item "${itemName}" was created`,
+        performedBy: req.user?.name || 'System',
+        userId: req.user?.id
+      }
+    });
+
     res.status(201).json({ item });
   } catch (error) {
     next(error);
@@ -286,6 +304,15 @@ inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
       return res.status(400).json({ message: 'Purchase Cost cannot be negative' });
     }
 
+    // Get current item for comparison
+    const currentItem = await prisma.inventoryMaster.findUnique({
+      where: { id }
+    });
+
+    if (!currentItem) {
+      return res.status(404).json({ message: 'Inventory item not found' });
+    }
+
     // Calculate warranty expiry
     let warrantyExpiry = req.body.warrantyExpiry;
     if (purchaseDate && warrantyMonths) {
@@ -323,6 +350,48 @@ inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
         }
       }
     });
+
+    // Add history entries for changes
+    const historyEntries: { action: string; description: string }[] = [];
+
+    if (itemName !== undefined && itemName !== currentItem.itemName) {
+      historyEntries.push({ action: 'Updated', description: `Item name changed from "${currentItem.itemName}" to "${itemName}"` });
+    }
+
+    if (warrantyExpiry !== undefined) {
+      const oldExpiry = currentItem.warrantyExpiry ? new Date(currentItem.warrantyExpiry).toLocaleDateString() : 'None';
+      const newExpiry = warrantyExpiry ? new Date(warrantyExpiry).toLocaleDateString() : 'None';
+      if (oldExpiry !== newExpiry) {
+        historyEntries.push({ action: 'Warranty Changed', description: `Warranty expiry changed from ${oldExpiry} to ${newExpiry}` });
+      }
+    }
+
+    if (currentQty !== undefined && currentQty !== currentItem.currentQty) {
+      const diff = currentQty - currentItem.currentQty;
+      const action = diff > 0 ? 'Quantity Increased' : 'Quantity Reduced';
+      historyEntries.push({ action, description: `Quantity changed from ${currentItem.currentQty} to ${currentQty} (${diff > 0 ? '+' : ''}${diff})` });
+    }
+
+    if (location !== undefined && location !== currentItem.location) {
+      historyEntries.push({ action: 'Moved Location', description: `Location changed from "${currentItem.location || 'None'}" to "${location || 'None'}"` });
+    }
+
+    if (status !== undefined && status !== currentItem.status) {
+      historyEntries.push({ action: 'Status Changed', description: `Status changed from "${currentItem.status}" to "${status}"` });
+    }
+
+    // Add all history entries
+    for (const entry of historyEntries) {
+      await prisma.inventoryHistory.create({
+        data: {
+          inventoryId: id,
+          action: entry.action,
+          description: entry.description,
+          performedBy: req.user?.name || 'System',
+          userId: req.user?.id
+        }
+      });
+    }
 
     res.json({ item });
   } catch (error) {

@@ -1,190 +1,291 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
-type Asset = {
+type HistoryEntry = {
   id: string;
-  assetNo: string;
-  assetType: string;
-  make?: string | null;
-  model?: string | null;
-  serialNo?: string | null;
-  status: string;
-  assignedToName?: string | null;
-  location?: string | null;
-  warrantyEndAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
+  action: string;
+  description?: string;
+  performedBy: string;
+  createdAt: string;
 };
 
-type TimelineEntry = {
-  action: string;
-  description: string;
-  performedByName: string | null;
+type Document = {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  url: string;
+  documentType: string;
+  uploadedBy?: string;
   createdAt: string;
+};
+
+type InventoryItem = {
+  id: string;
+  itemNo: string;
+  itemName: string;
+  brand?: string;
+  model?: string;
+  vendor?: string;
+  invoiceNo?: string;
+  purchaseDate?: string;
+  purchaseCost?: number;
+  gst?: number;
+  warrantyExpiry?: string;
+  location?: string;
+  status: string;
+  currentQty: number;
+  minStock?: number;
+  createdAt: string;
+  updatedAt: string;
+  category: { id: string; name: string };
+  subcategory: { id: string; name: string };
+  history?: HistoryEntry[];
+  documents?: Document[];
 };
 
 export function InventoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [asset, setAsset] = useState<Asset | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
   const isEmployee = !isSuperAdmin && !isAdmin;
 
-  // Calculate available and allocated quantities (placeholder logic)
-  // In a real implementation, this would come from the backend
-  const availableQuantity = asset?.status === 'AVAILABLE' ? 1 : 0;
-  const allocatedQuantity = asset?.status === 'ASSIGNED' ? 1 : 0;
+  const [item, setItem] = useState<InventoryItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
+  const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
 
-  // Build timeline from asset data
-  function buildTimeline(): TimelineEntry[] {
-    if (!asset) return [];
-    
-    const entries: TimelineEntry[] = [];
-    
-    // Asset Created entry
-    entries.push({
-      action: 'Inventory Created',
-      description: `Asset ${asset.assetNo} was added to inventory`,
-      performedByName: null,
-      createdAt: asset.createdAt || ''
-    });
-    
-    // Status changed entries would go here in future enhancements
-    
-    return entries;
-  }
+  useEffect(() => {
+    loadItem();
+  }, [id]);
 
-  const timeline = asset ? buildTimeline() : [];
-
-  async function load() {
+  async function loadItem() {
     if (!id) return;
     try {
       setLoading(true);
-      const res = await api.get(`/inventory/${id}`);
-      setAsset(res.data.item);
+      const res = await api.get(`/inventory-master/${id}`);
+      setItem(res.data.item);
       setError('');
-    } catch {
-      setError('Failed to load inventory details.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load inventory item');
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    // Scroll to top of page when component mounts
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [id]);
-
-  function handleBack() {
-    navigate('/inventory');
-  }
-
-  function getStatusClass(status: string): string {
-    switch (status.toUpperCase()) {
-      case 'AVAILABLE': return 'status-open';
-      case 'ASSIGNED': return 'status-progress';
-      case 'UNDER_REPAIR': return 'status-waiting';
-      case 'DAMAGED': return 'status-cancelled';
-      case 'LOST': return 'status-cancelled';
-      case 'RETIRED': return 'status-closed';
-      case 'DISPOSED': return 'status-closed';
-      default: return 'status-open';
-    }
-  }
-
-  function getWarrantyStatus(): { label: string; class: string } {
-    if (!asset?.warrantyEndAt) {
-      return { label: 'N/A', class: 'pill-medium' };
-    }
-    
-    const warrantyEnd = new Date(asset.warrantyEndAt);
-    const now = new Date();
-    
-    if (warrantyEnd < now) {
-      return { label: 'Expired', class: 'pill-critical' };
-    }
-    
-    // Check if expiring within 30 days
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    
-    if (warrantyEnd < thirtyDaysFromNow) {
-      return { label: 'Expiring Soon', class: 'pill-high' };
-    }
-    
-    return { label: 'Active', class: 'pill-low' };
-  }
-
-  function formatDate(dateStr?: string | null): string {
+  function formatDate(dateStr?: string): string {
     if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   }
 
-  if (loading) {
+  function formatDateTime(dateStr: string): string {
+    return new Date(dateStr).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function formatCurrency(value?: number): string {
+    if (value === undefined || value === null) return '-';
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function getFileIcon(fileType: string): React.ReactNode {
+    if (fileType.includes('pdf')) {
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M9 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M9 11H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      );
+    }
+    if (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('xlsx')) {
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 13H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M8 17H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      );
+    }
     return (
-      <div className="page-stack">
-        <div className="detail-header">
-          <div className="skeleton skeleton-title"></div>
-          <div className="detail-header-info">
-            <div className="detail-title-row">
-              <div className="skeleton skeleton-badge"></div>
-              <div className="skeleton skeleton-badge"></div>
-            </div>
-            <div className="detail-meta-row" style={{ marginTop: '12px' }}>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-            </div>
-          </div>
-        </div>
-        <div className="detail-content-grid">
-          <div className="detail-main">
-            <div className="detail-card">
-              <div className="detail-card-body">
-                <div className="skeleton skeleton-title"></div>
-                <div className="skeleton skeleton-text" style={{ marginTop: '16px' }}></div>
-                <div className="skeleton skeleton-text"></div>
-                <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
-              </div>
-            </div>
-          </div>
-          <div className="detail-sidebar">
-            <div className="detail-card">
-              <div className="detail-card-body">
-                <div className="skeleton" style={{ width: '100%', height: '36px' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
     );
   }
 
-  if (error || !asset) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+
+    // Validate file size (25 MB)
+    if (file.size > 25 * 1024 * 1024) {
+      setUploadError('File size exceeds 25 MB limit');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Invalid file type. Allowed: PDF, DOC, DOCX, XLSX');
+      return;
+    }
+
+    setUploading(true);
+    setUploadError('');
+    setUploadSuccess('');
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        try {
+          await api.post(`/inventory-master/${id}/documents`, {
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            url: reader.result as string,
+            documentType: 'Document'
+          });
+          setUploadSuccess('Document uploaded successfully!');
+          loadItem();
+          e.target.value = '';
+        } catch (err: any) {
+          setUploadError(err.response?.data?.message || 'Failed to upload document');
+        } finally {
+          setUploading(false);
+        }
+      };
+      reader.onerror = () => {
+        setUploadError('Failed to read file');
+        setUploading(false);
+      };
+    } catch (err: any) {
+      setUploadError(err.response?.data?.message || 'Failed to upload document');
+      setUploading(false);
+    }
+  }
+
+  async function handleDeleteDocument(doc: Document) {
+    if (!confirm(`Delete "${doc.fileName}"?`)) return;
+    setDeletingDoc(doc.id);
+    try {
+      await api.delete(`/inventory-master/${id}/documents/${doc.id}`);
+      loadItem();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete document');
+    } finally {
+      setDeletingDoc(null);
+    }
+  }
+
+  function getHistoryIcon(action: string): React.ReactNode {
+    if (action === 'Created') {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      );
+    }
+    if (action.includes('Quantity')) {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      );
+    }
+    if (action.includes('Warranty')) {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+          <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      );
+    }
+    if (action.includes('Location')) {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2"/>
+          <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      );
+    }
+    if (action.includes('Status')) {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      );
+    }
+    if (action.includes('Document')) {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/>
+          <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      );
+    }
     return (
-      <div className="page-stack">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 20H21M3 20H21M12 4H21M3 4H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    );
+  }
+
+  function getHistoryColor(action: string): string {
+    if (action === 'Created') return 'success';
+    if (action.includes('Quantity')) return 'warning';
+    if (action.includes('Warranty')) return 'info';
+    if (action.includes('Location')) return 'primary';
+    if (action.includes('Status')) return 'default';
+    if (action.includes('Document')) return 'primary';
+    return 'default';
+  }
+
+  if (isEmployee) {
+    return (
+      <div className="detail-page">
         <div className="detail-error">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
-          <p>{error || 'Inventory item not found.'}</p>
-          <button className="btn-back" onClick={handleBack}>
+          <p>Access Restricted. You do not have permission to view this page.</p>
+          <button className="btn-back" onClick={() => navigate('/inventory')}>
             Back to Inventory
           </button>
         </div>
@@ -192,50 +293,90 @@ export function InventoryDetailPage() {
     );
   }
 
-  const warrantyStatus = getWarrantyStatus();
+  if (loading) {
+    return (
+      <div className="detail-page">
+        <div className="detail-header">
+          <div className="detail-breadcrumb">
+            <Link to="/inventory">Inventory</Link>
+            <span>/</span>
+            <span>Loading...</span>
+          </div>
+        </div>
+        <div className="detail-skeleton">
+          <div className="skeleton" style={{ height: '200px', borderRadius: '12px' }}></div>
+        </div>
+      </div>
+    );
+  }
 
-  return (
-    <div className="page-stack">
-      {/* Header */}
-      <div className="detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <button className="btn-back" onClick={handleBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
+  if (error || !item) {
+    return (
+      <div className="detail-page">
+        <div className="detail-error">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <p>{error || 'Inventory item not found'}</p>
+          <button className="btn-back" onClick={() => navigate('/inventory')}>
+            Back to Inventory
           </button>
         </div>
-        <div className="detail-header-info">
-          <div className="detail-title-row">
-            <span className="detail-ticket-no">{asset.assetNo}</span>
-            <span className={`status-badge ${getStatusClass(asset.status)}`}>
-              {asset.status.replace(/_/g, ' ')}
-            </span>
-            <span className={`priority-badge ${warrantyStatus.class}`}>
-              Warranty: {warrantyStatus.label}
+      </div>
+    );
+  }
+
+  return (
+    <div className="detail-page">
+      {/* Header */}
+      <div className="detail-header">
+        <div className="detail-breadcrumb">
+          <Link to="/inventory">Inventory</Link>
+          <span>/</span>
+          <Link to={`/inventory/${item.category.id}`}>{item.category.name}</Link>
+          <span>/</span>
+          <span>{item.itemName}</span>
+        </div>
+        <button className="btn-back" onClick={() => navigate(`/inventory/${item.category.id}`)}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Back
+        </button>
+      </div>
+
+      {/* Title Section */}
+      <div className="detail-title-section">
+        <div className="detail-title-left">
+          <div className="detail-ticket-id">{item.itemNo}</div>
+          <h1 className="detail-title">{item.itemName}</h1>
+          <div className="detail-meta">
+            <span className={`status-badge status-${item.status.toLowerCase()}`}>{item.status}</span>
+            <span className="detail-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              {item.category.name} / {item.subcategory.name}
             </span>
           </div>
-          <div className="detail-meta-row">
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Category</span>
-              <span className="detail-meta-value">{asset.assetType}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Location</span>
-              <span className="detail-meta-value">{asset.location || 'Unassigned'}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Created</span>
-              <span className="detail-meta-value">{formatDate(asset.createdAt)}</span>
-            </span>
-          </div>
+        </div>
+        <div className="detail-title-right">
+          {isSuperAdmin && (
+            <button className="btn-secondary" onClick={() => navigate(`/inventory/master/${item.id}/edit`)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13" stroke="currentColor" strokeWidth="2"/>
+                <path d="M18.5 2.5C19.3284 1.67157 20.6716 1.67157 21.5 2.5C22.3284 3.32843 22.3284 4.67157 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              Edit
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="detail-content-grid">
-        {/* Left Column */}
+      <div className="detail-content">
+        {/* Left Column - Main Information */}
         <div className="detail-main">
           {/* Inventory Information Card */}
           <div className="detail-card">
@@ -243,151 +384,101 @@ export function InventoryDetailPage() {
               <h3>Inventory Information</h3>
             </div>
             <div className="detail-card-body">
-              <div className="detail-field">
-                <label>Item Name</label>
-                <span className="detail-field-value">{asset.assetType}</span>
-              </div>
-              <div className="detail-field-row">
+              <div className="detail-grid">
+                <div className="detail-field">
+                  <label>Item Name</label>
+                  <span className="detail-field-value">{item.itemName}</span>
+                </div>
                 <div className="detail-field">
                   <label>Category</label>
-                  <span className="detail-field-value">{asset.assetType}</span>
+                  <span className="detail-field-value">{item.category.name}</span>
                 </div>
                 <div className="detail-field">
-                  <label>Sub Category</label>
-                  <span className="detail-field-value">-</span>
+                  <label>Subcategory</label>
+                  <span className="detail-field-value">{item.subcategory.name}</span>
                 </div>
-              </div>
-              <div className="detail-field-row">
                 <div className="detail-field">
                   <label>Brand</label>
-                  <span className="detail-field-value">{asset.make || '-'}</span>
+                  <span className="detail-field-value">{item.brand || '-'}</span>
                 </div>
                 <div className="detail-field">
                   <label>Model</label>
-                  <span className="detail-field-value">{asset.model || '-'}</span>
+                  <span className="detail-field-value">{item.model || '-'}</span>
                 </div>
-              </div>
-              <div className="detail-field-row">
                 <div className="detail-field">
                   <label>Vendor</label>
-                  <span className="detail-field-value">-</span>
+                  <span className="detail-field-value">{item.vendor || '-'}</span>
                 </div>
-                <div className="detail-field">
-                  <label>Serial No</label>
-                  <span className="detail-field-value">{asset.serialNo || '-'}</span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Purchase Date</label>
-                  <span className="detail-field-value">-</span>
-                </div>
-                <div className="detail-field">
-                  <label>Warranty Expiry</label>
-                  <span className="detail-field-value">{formatDate(asset.warrantyEndAt)}</span>
-                </div>
-              </div>
-              <div className="detail-field-row">
                 <div className="detail-field">
                   <label>Location</label>
-                  <span className="detail-field-value">{asset.location || '-'}</span>
+                  <span className="detail-field-value">{item.location || '-'}</span>
                 </div>
                 <div className="detail-field">
                   <label>Status</label>
-                  <span className={`status-badge ${getStatusClass(asset.status)}`}>
-                    {asset.status.replace(/_/g, ' ')}
-                  </span>
+                  <span className={`status-badge status-${item.status.toLowerCase()}`}>{item.status}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Current Allocation Card */}
+          {/* Quantity Card */}
           <div className="detail-card">
             <div className="detail-card-header">
-              <h3>Current Allocation</h3>
+              <h3>Quantity</h3>
             </div>
             <div className="detail-card-body">
-              <div className="empty-state">
-                <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <p className="empty-state-title">No assets have been allocated.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Purchase Information Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Purchase Information</h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-field-row">
+              <div className="detail-grid">
                 <div className="detail-field">
-                  <label>Invoice Number</label>
-                  <span className="detail-field-value">-</span>
+                  <label>Current Quantity</label>
+                  <span className="detail-field-value large">{item.currentQty}</span>
                 </div>
                 <div className="detail-field">
-                  <label>Purchase Cost</label>
-                  <span className="detail-field-value">-</span>
+                  <label>Minimum Stock</label>
+                  <span className="detail-field-value">{item.minStock ?? '-'}</span>
                 </div>
               </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>GST</label>
-                  <span className="detail-field-value">-</span>
-                </div>
-                <div className="detail-field">
-                  <label>AMC</label>
-                  <span className="detail-field-value">-</span>
-                </div>
-              </div>
-              <div className="detail-field">
-                <label>Vendor</label>
-                <span className="detail-field-value">-</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Timeline Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Timeline</h3>
-            </div>
-            <div className="detail-card-body timeline-body">
-              {timeline.length === 0 ? (
-                <div className="empty-state">
-                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
-                    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              {item.minStock && item.currentQty < item.minStock && (
+                <div className="detail-alert warning">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18C1.64 18.3 1.55 18.64 1.55 19C1.55 19.36 1.64 19.7 1.82 20C2 20.3 2.26 20.56 2.57 20.74C2.88 20.92 3.23 21.01 3.59 21.01H20.41C20.77 21.01 21.12 20.92 21.43 20.74C21.74 20.56 22 20.3 22.18 20C22.36 19.7 22.45 19.36 22.45 19C22.45 18.64 22.36 18.3 22.18 18L13.71 3.86C13.53 3.56 13.27 3.3 12.96 3.12C12.65 2.94 12.3 2.85 11.94 2.85C11.58 2.85 11.23 2.94 10.92 3.12C10.61 3.3 10.35 3.56 10.17 3.86L10.29 3.86Z" stroke="currentColor" strokeWidth="2"/>
                   </svg>
-                  <p className="empty-state-title">No activity yet</p>
-                  <p className="empty-state-description">Timeline events will appear as actions are taken on this inventory item.</p>
+                  Low Stock Alert
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* History Card */}
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>History</h3>
+              <span className="detail-card-count">{item.history?.length || 0}</span>
+            </div>
+            <div className="detail-card-body">
+              {!item.history || item.history.length === 0 ? (
+                <div className="detail-empty">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <p>No history available</p>
                 </div>
               ) : (
-                <div className="timeline-list">
-                  {timeline.map((entry, index) => (
-                    <div key={index} className="timeline-item">
-                      <div className="timeline-marker">
-                        <div className="timeline-dot"></div>
-                        {index < timeline.length - 1 && <div className="timeline-line"></div>}
+                <div className="timeline">
+                  {item.history.map((entry) => (
+                    <div key={entry.id} className="timeline-item">
+                      <div className={`timeline-icon ${getHistoryColor(entry.action)}`}>
+                        {getHistoryIcon(entry.action)}
                       </div>
                       <div className="timeline-content">
                         <div className="timeline-header">
                           <span className="timeline-action">{entry.action}</span>
-                          <span className="timeline-time">
-                            {formatDate(entry.createdAt)}
-                          </span>
+                          <span className="timeline-date">{formatDateTime(entry.createdAt)}</span>
                         </div>
-                        <p className="timeline-description">{entry.description}</p>
-                        {entry.performedByName && (
-                          <span className="timeline-user">
-                            by {entry.performedByName}
-                          </span>
+                        {entry.description && (
+                          <p className="timeline-description">{entry.description}</p>
                         )}
+                        <span className="timeline-user">by {entry.performedBy}</span>
                       </div>
                     </div>
                   ))}
@@ -397,66 +488,136 @@ export function InventoryDetailPage() {
           </div>
         </div>
 
-        {/* Right Column - Summary Cards */}
+        {/* Right Column - Sidebar */}
         <div className="detail-sidebar">
-          {/* Inventory Summary Card */}
+          {/* Purchase Information */}
           <div className="detail-card">
             <div className="detail-card-header">
-              <h3>Inventory Summary</h3>
+              <h3>Purchase Information</h3>
             </div>
             <div className="detail-card-body">
-              <div className="summary-stat">
-                <label>Category</label>
-                <span className="summary-value">{asset.assetType}</span>
+              <div className="detail-sidebar-field">
+                <label>Invoice Number</label>
+                <span>{item.invoiceNo || '-'}</span>
               </div>
-              <div className="summary-stat">
-                <label>Available Quantity</label>
-                <span className="summary-value">{availableQuantity}</span>
+              <div className="detail-sidebar-field">
+                <label>Purchase Date</label>
+                <span>{formatDate(item.purchaseDate)}</span>
               </div>
-              <div className="summary-stat">
-                <label>Allocated Quantity</label>
-                <span className="summary-value">{allocatedQuantity}</span>
+              <div className="detail-sidebar-field">
+                <label>Purchase Cost</label>
+                <span>{formatCurrency(item.purchaseCost)}</span>
               </div>
-              <div className="summary-stat">
-                <label>Warranty Status</label>
-                <span className={`priority-badge ${warrantyStatus.class}`}>
-                  {warrantyStatus.label}
-                </span>
+              <div className="detail-sidebar-field">
+                <label>GST</label>
+                <span>{item.gst ? `${item.gst}%` : '-'}</span>
               </div>
-              <div className="summary-stat">
-                <label>Location</label>
-                <span className="summary-value">{asset.location || '-'}</span>
+              <div className="detail-sidebar-field">
+                <label>Vendor</label>
+                <span>{item.vendor || '-'}</span>
               </div>
             </div>
           </div>
 
-          {/* Access Notice for Admins without permission */}
-          {isAdmin && !isSuperAdmin && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Access Notice</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="notice notice-info">
-                  You have view-only access to this inventory item.
-                </div>
-              </div>
+          {/* Warranty Information */}
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>Warranty</h3>
             </div>
-          )}
+            <div className="detail-card-body">
+              <div className="detail-sidebar-field">
+                <label>Warranty Expiry</label>
+                <span className={!item.warrantyExpiry ? '' : new Date(item.warrantyExpiry) < new Date() ? 'text-danger' : ''}>
+                  {formatDate(item.warrantyExpiry)}
+                </span>
+              </div>
+              {item.warrantyExpiry && (
+                <div className={`warranty-status ${new Date(item.warrantyExpiry) < new Date() ? 'expired' : 'active'}`}>
+                  {new Date(item.warrantyExpiry) < new Date() ? 'Expired' : 'Active'}
+                </div>
+              )}
+            </div>
+          </div>
 
-          {/* Employee Notice */}
-          {isEmployee && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Access Notice</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="notice notice-warning">
-                  You do not have access to view inventory details.
-                </div>
-              </div>
+          {/* Documents */}
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>Documents</h3>
+              <span className="detail-card-count">{item.documents?.length || 0}</span>
             </div>
-          )}
+            <div className="detail-card-body">
+              {isSuperAdmin && (
+                <div className="upload-section">
+                  <label className="upload-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Upload Document
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xlsx"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <p className="upload-hint">PDF, DOC, DOCX, XLSX (max 25MB)</p>
+                  {uploadError && <div className="upload-error">{uploadError}</div>}
+                  {uploadSuccess && <div className="upload-success">{uploadSuccess}</div>}
+                </div>
+              )}
+
+              {!item.documents || item.documents.length === 0 ? (
+                <div className="detail-empty small">
+                  <p>No documents uploaded</p>
+                </div>
+              ) : (
+                <div className="documents-list">
+                  {item.documents.map((doc) => (
+                    <div key={doc.id} className="document-item">
+                      <div className="document-icon">
+                        {getFileIcon(doc.fileType)}
+                      </div>
+                      <div className="document-info">
+                        <span className="document-name">{doc.fileName}</span>
+                        <span className="document-meta">
+                          {formatFileSize(doc.fileSize)} • {formatDate(doc.createdAt)}
+                        </span>
+                      </div>
+                      <div className="document-actions">
+                        <a
+                          href={doc.url}
+                          download={doc.fileName}
+                          className="btn-icon-sm"
+                          title="Download"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                        </a>
+                        {isSuperAdmin && (
+                          <button
+                            className="btn-icon-sm btn-icon-danger"
+                            onClick={() => handleDeleteDocument(doc)}
+                            disabled={deletingDoc === doc.id}
+                            title="Delete"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M3 6H21M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

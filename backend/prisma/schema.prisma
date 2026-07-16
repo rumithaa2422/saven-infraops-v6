@@ -346,9 +346,42 @@ model InventoryMaster {
   subcategoryId   String
   category        InventoryCategory    @relation(fields: [categoryId], references: [id])
   subcategory     InventorySubCategory @relation(fields: [subcategoryId], references: [id])
+  history         InventoryHistory[]
+  documents       InventoryDocument[]
   
   @@index([categoryId])
   @@index([subcategoryId])
+}
+
+model InventoryHistory {
+  id           String         @id @default(cuid())
+  inventoryId  String
+  action       String
+  description  String?        @db.Text
+  performedBy  String
+  userId       String?
+  createdAt    DateTime       @default(now())
+  
+  inventory    InventoryMaster @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  
+  @@index([inventoryId])
+}
+
+model InventoryDocument {
+  id           String         @id @default(cuid())
+  inventoryId  String
+  fileName     String
+  fileType     String
+  fileSize     Int
+  url          String
+  documentType String         @default("Other")
+  uploadedBy   String?
+  userId       String?
+  createdAt    DateTime       @default(now())
+  
+  inventory    InventoryMaster @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  
+  @@index([inventoryId])
 }
 
 model AccessRequest {
