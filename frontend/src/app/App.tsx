@@ -15,6 +15,8 @@ import { InventoryMasterDetailPage } from '../pages/InventoryMasterDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
+import { ProjectDetailsPage } from '../pages/ProjectDetailsPage';
+import { ProjectDashboardPage } from '../pages/ProjectDashboardPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -226,7 +228,15 @@ export function App() {
           path="projects-environments" 
           element={
             <PermissionRoute permission={modulePermissions['projects-environments']}>
-              <ModulePage moduleKey="projects-environments" title="Projects & Environments" />
+              <ProjectDashboardPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="projects-environments/:id" 
+          element={
+            <PermissionRoute permission={modulePermissions['projects-environments']}>
+              <ProjectDetailsPage />
             </PermissionRoute>
           } 
         />

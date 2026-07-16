@@ -2078,9 +2078,11 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           <tbody>
             {items.map((item, index) => (
               <tr key={String(item.id || index)} onClick={() => {
-                // For incidents and inventory, navigate to detail page instead of opening sidebar
+                // For incidents, inventory, and projects-environments, navigate to detail page instead of opening sidebar
                 if (moduleKey === 'incidents' && item.id) {
                   navigate(`/incidents/${item.id}`);
+                } else if (moduleKey === 'projects-environments' && item.id) {
+                  navigate(`/projects-environments/${item.id}`);
                 } else if (!config.isDocumentRepository) {
                   setSelected(item);
                 }
@@ -2137,9 +2139,11 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                       {hasPermission((config.permissions.view || config.permissions.create) || '') && (
                         <button className="link-button" onClick={(event) => { 
                           event.stopPropagation(); 
-                          // For incidents and inventory, navigate to detail page instead of opening panel
+                          // For incidents, inventory, and projects-environments, navigate to detail page instead of opening panel
                           if (moduleKey === 'incidents') {
                             navigate(`/incidents/${item.id}`);
+                          } else if (moduleKey === 'projects-environments') {
+                            navigate(`/projects-environments/${item.id}`);
                           } else {
                             setSelected(item);
                           }
