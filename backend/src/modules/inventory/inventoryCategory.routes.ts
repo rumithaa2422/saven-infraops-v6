@@ -378,13 +378,13 @@ inventoryCategoryRouter.delete('/subcategories/:id', requireAuth, async (req, re
       throw new HttpError(404, 'Subcategory not found');
     }
 
-    // Check if subcategory has assets
-    const assetCount = await prisma.asset.count({
+    // Check if subcategory has inventory items
+    const inventoryCount = await prisma.inventoryMaster.count({
       where: { subcategoryId: id }
     });
 
-    if (assetCount > 0) {
-      throw new HttpError(400, 'Cannot delete subcategory that has associated assets. Please reassign or remove assets first.');
+    if (inventoryCount > 0) {
+      throw new HttpError(400, 'Cannot delete. This subcategory contains inventory items. Please remove or reassign the items first.');
     }
 
     await prisma.inventorySubCategory.delete({

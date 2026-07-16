@@ -5167,6 +5167,18 @@ input:disabled {
   line-height: 1.5;
 }
 
+.detail-field-display {
+  padding: 10px 12px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
 .detail-field-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -7213,6 +7225,216 @@ input:disabled {
 /* ============================================
    Inventory Master Listing Page
    ============================================ */
+
+/* Subcategory Management Section */
+.subcategory-manage-section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.subcategory-manage-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.subcategory-manage-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.subcategory-manage-title h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.subcategory-error {
+  padding: 8px 12px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Subcategory Form */
+.subcategory-form-container {
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.subcategory-form h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 16px 0;
+}
+
+.subcategory-form .form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.subcategory-form .form-group {
+  flex: 1;
+}
+
+.subcategory-form .form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.subcategory-form .form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.subcategory-form .form-group input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.subcategory-form .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Subcategory List */
+.subcategory-list {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.subcategory-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.subcategory-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.subcategory-item:last-child {
+  border-bottom: none;
+}
+
+.subcategory-item:hover {
+  background: var(--panel-soft);
+}
+
+.subcategory-item.selected {
+  background: var(--brand-soft);
+}
+
+.subcategory-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subcategory-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.subcategory-item-name:hover {
+  color: var(--brand);
+}
+
+.subcategory-item-count {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.subcategory-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.subcategory-item:hover .subcategory-item-actions {
+  opacity: 1;
+}
+
+.btn-icon-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s ease;
+}
+
+.btn-icon-sm:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.btn-icon-sm.btn-icon-danger:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-icon-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--line);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.form-error {
+  padding: 8px 12px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
 
 /* Category Cards for Inventory Landing */
 .category-cards-grid {

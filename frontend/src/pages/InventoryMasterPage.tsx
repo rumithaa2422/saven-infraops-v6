@@ -65,6 +65,11 @@ export function InventoryMasterPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
+  // Check if coming from a category page (pre-selected category)
+  const preCategoryId = searchParams.get('categoryId');
+  const preSubcategoryId = searchParams.get('subcategoryId');
+  const isFromCategoryPage = Boolean(preCategoryId);
+
   // Form state
   const [form, setForm] = useState<InventoryItem>({
     itemName: '',
@@ -183,7 +188,8 @@ export function InventoryMasterPage() {
       newErrors.categoryId = 'Category is required';
     }
 
-    if (!form.subcategoryId) {
+    // When coming from category page, subcategory is mandatory
+    if (isFromCategoryPage && !form.subcategoryId) {
       newErrors.subcategoryId = 'Subcategory is required';
     }
 
@@ -391,25 +397,31 @@ export function InventoryMasterPage() {
                     <label className={errors.categoryId ? 'field-error' : ''}>
                       Category <span className="required">*</span>
                     </label>
-                    <select
-                      value={form.categoryId}
-                      onChange={(e) => {
-                        updateField('categoryId', e.target.value);
-                        updateField('subcategoryId', ''); // Reset subcategory
-                      }}
-                      disabled={!isSuperAdmin || categoriesLoading}
-                      className={errors.categoryId ? 'input-error' : ''}
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
+                    {isFromCategoryPage && form.categoryId ? (
+                      <div className="detail-field-display">
+                        {categories.find(c => c.id === form.categoryId)?.name || 'Loading...'}
+                      </div>
+                    ) : (
+                      <select
+                        value={form.categoryId}
+                        onChange={(e) => {
+                          updateField('categoryId', e.target.value);
+                          updateField('subcategoryId', ''); // Reset subcategory
+                        }}
+                        disabled={!isSuperAdmin || categoriesLoading}
+                        className={errors.categoryId ? 'input-error' : ''}
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    )}
                     {errors.categoryId && <span className="error-text">{errors.categoryId}</span>}
                   </div>
                   <div className="detail-field">
                     <label className={errors.subcategoryId ? 'field-error' : ''}>
-                      Subcategory <span className="required">*</span>
+                      Subcategory {isFromCategoryPage && <span className="required">*</span>}
                     </label>
                     <select
                       value={form.subcategoryId}

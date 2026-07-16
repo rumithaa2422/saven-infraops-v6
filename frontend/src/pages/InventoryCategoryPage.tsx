@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 type Subcategory = {
   id: string;
   name: string;
+  description?: string;
   status: string;
 };
 
@@ -77,6 +78,14 @@ export function InventoryCategoryPage() {
   // Sort
   const [sortBy, setSortBy] = useState<string>('itemName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Subcategory Management State
+  const [showSubcategoryForm, setShowSubcategoryForm] = useState(false);
+  const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
+  const [subcategoryForm, setSubcategoryForm] = useState({ name: '', description: '' });
+  const [subcategoryError, setSubcategoryError] = useState('');
+  const [subcategorySaving, setSubcategorySaving] = useState(false);
+  const [subcategoryDeleting, setSubcategoryDeleting] = useState<string | null>(null);
 
   // Load category and items
   async function loadData() {
@@ -353,6 +362,86 @@ export function InventoryCategoryPage() {
     }
   }
 
+  // Subcategory Management Functions
+  function openSubcategoryForm(sub?: Subcategory) {
+    if (sub) {
+      setEditingSubcategory(sub);
+      setSubcategoryForm({ name: sub.name, description: sub.description || '' });
+    } else {
+      setEditingSubcategory(null);
+      setSubcategoryForm({ name: '', description: '' });
+    }
+    setSubcategoryError('');
+    setShowSubcategoryForm(true);
+  }
+
+  function closeSubcategoryForm() {
+    setShowSubcategoryForm(false);
+    setEditingSubcategory(null);
+    setSubcategoryForm({ name: '', description: '' });
+    setSubcategoryError('');
+  }
+
+  async function handleSaveSubcategory(e: React.FormEvent) {
+    e.preventDefault();
+    
+    if (!subcategoryForm.name.trim()) {
+      setSubcategoryError('Subcategory name is required');
+      return;
+    }
+
+    try {
+      setSubcategorySaving(true);
+      setSubcategoryError('');
+
+      if (editingSubcategory) {
+        // Update existing subcategory
+        await api.patch(`/inventory/subcategories/${editingSubcategory.id}`, {
+          name: subcategoryForm.name.trim(),
+          description: subcategoryForm.description.trim() || null
+        });
+      } else {
+        // Create new subcategory
+        await api.post(`/inventory/categories/${categoryId}/subcategories`, {
+          name: subcategoryForm.name.trim(),
+          description: subcategoryForm.description.trim() || null
+        });
+      }
+
+      // Reload data
+      await loadData();
+      closeSubcategoryForm();
+    } catch (err: any) {
+      setSubcategoryError(err.response?.data?.message || `Failed to ${editingSubcategory ? 'update' : 'create'} subcategory`);
+    } finally {
+      setSubcategorySaving(false);
+    }
+  }
+
+  async function handleDeleteSubcategory(subId: string) {
+    const sub = category?.subcategories.find(s => s.id === subId);
+    const count = subcategoryCounts[subId] || 0;
+    
+    if (count > 0) {
+      setSubcategoryError(`Cannot delete. This subcategory contains ${count} inventory item${count > 1 ? 's' : ''}.`);
+      return;
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to delete "${sub?.name}"?`);
+    if (!confirmed) return;
+
+    try {
+      setSubcategoryDeleting(subId);
+      await api.delete(`/inventory/subcategories/${subId}`);
+      await loadData();
+      setSubcategoryError('');
+    } catch (err: any) {
+      setSubcategoryError(err.response?.data?.message || 'Failed to delete subcategory');
+    } finally {
+      setSubcategoryDeleting(null);
+    }
+  }
+
   if (isEmployee) {
     return (
       <div className="page-stack">
@@ -433,32 +522,129 @@ export function InventoryCategoryPage() {
         </div>
       </div>
 
-      {/* Subcategory Cards */}
-      <div className="subcategory-section">
-        <div className="subcategory-header">
-          <h3>Subcategories</h3>
-          {selectedSubcategory && (
-            <button 
-              className="btn-link-sm"
-              onClick={() => setSelectedSubcategory(null)}
-            >
-              Show All
-            </button>
+      {/* Subcategory Management Section */}
+      <div className="subcategory-manage-section">
+        <div className="subcategory-manage-header">
+          <div className="subcategory-manage-title">
+            <h3>Subcategories</h3>
+            {isSuperAdmin && (
+              <button 
+                className="btn-link-sm primary"
+                onClick={() => openSubcategoryForm()}
+              >
+                + Create Subcategory
+              </button>
+            )}
+          </div>
+          {subcategoryError && !showSubcategoryForm && (
+            <div className="subcategory-error">{subcategoryError}</div>
           )}
         </div>
-        <div className="subcategory-cards">
-          {category.subcategories.map(sub => (
-            <div
-              key={sub.id}
-              className={`subcategory-card ${selectedSubcategory === sub.id ? 'selected' : ''}`}
-              onClick={() => toggleSubcategory(sub.id)}
-            >
-              <span className="subcategory-name">{sub.name}</span>
-              <span className="subcategory-count">{subcategoryCounts[sub.id] || 0}</span>
+
+        {/* Create/Edit Subcategory Form */}
+        {showSubcategoryForm && (
+          <div className="subcategory-form-container">
+            <form onSubmit={handleSaveSubcategory} className="subcategory-form">
+              <h4>{editingSubcategory ? 'Edit Subcategory' : 'Create Subcategory'}</h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Subcategory Name *</label>
+                  <input
+                    type="text"
+                    value={subcategoryForm.name}
+                    onChange={(e) => setSubcategoryForm({ ...subcategoryForm, name: e.target.value })}
+                    placeholder="Enter subcategory name"
+                    disabled={subcategorySaving}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Description (optional)</label>
+                  <input
+                    type="text"
+                    value={subcategoryForm.description}
+                    onChange={(e) => setSubcategoryForm({ ...subcategoryForm, description: e.target.value })}
+                    placeholder="Enter description"
+                    disabled={subcategorySaving}
+                  />
+                </div>
+              </div>
+              {subcategoryError && (
+                <div className="form-error">{subcategoryError}</div>
+              )}
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="btn-secondary"
+                  onClick={closeSubcategoryForm}
+                  disabled={subcategorySaving}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary"
+                  disabled={subcategorySaving}
+                >
+                  {subcategorySaving ? 'Saving...' : editingSubcategory ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Subcategory List */}
+        <div className="subcategory-list">
+          {category.subcategories.length === 0 ? (
+            <p className="subcategory-empty">No subcategories yet. Click "Create Subcategory" to add one.</p>
+          ) : (
+            <div className="subcategory-items">
+              {category.subcategories.map(sub => (
+                <div
+                  key={sub.id}
+                  className={`subcategory-item ${selectedSubcategory === sub.id ? 'selected' : ''}`}
+                  onClick={() => toggleSubcategory(sub.id)}
+                >
+                  <div className="subcategory-item-info">
+                    <span 
+                      className="subcategory-item-name"
+                      onClick={(e) => { e.stopPropagation(); toggleSubcategory(sub.id); }}
+                    >
+                      {sub.name}
+                    </span>
+                    <span className="subcategory-item-count">
+                      {subcategoryCounts[sub.id] || 0} Inventories
+                    </span>
+                  </div>
+                  {isSuperAdmin && !showSubcategoryForm && (
+                    <div className="subcategory-item-actions" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className="btn-icon-sm"
+                        onClick={() => openSubcategoryForm(sub)}
+                        title="Edit"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M10 2l2 2-7 7H3v-2l7-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      <button 
+                        className="btn-icon-sm btn-icon-danger"
+                        onClick={() => handleDeleteSubcategory(sub.id)}
+                        disabled={subcategoryDeleting === sub.id}
+                        title="Delete"
+                      >
+                        {subcategoryDeleting === sub.id ? (
+                          <span className="spinner-sm"></span>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1.5 3.5h11M4.5 3.5V2a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1.5M11 3.5v8a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-          {category.subcategories.length === 0 && (
-            <p className="subcategory-empty">No subcategories defined</p>
           )}
         </div>
       </div>
