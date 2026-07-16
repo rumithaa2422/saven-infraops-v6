@@ -1645,6 +1645,12 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               + Create Inventory
             </button>
           )}
+          {/* Category Management: Inventory Master listing button */}
+          {config.isCategoryManagement && (
+            <button className="secondary" onClick={() => navigate('/inventory/master')}>
+              Inventory Master
+            </button>
+          )}
         </div>
       </div>
 

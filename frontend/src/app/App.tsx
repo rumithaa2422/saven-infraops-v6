@@ -9,6 +9,8 @@ import { ServiceRequestDetailPage } from '../pages/ServiceRequestDetailPage';
 import { IncidentDetailPage } from '../pages/IncidentDetailPage';
 import { InventoryDetailPage } from '../pages/InventoryDetailPage';
 import { InventoryMasterPage } from '../pages/InventoryMasterPage';
+import { InventoryMasterListingPage } from '../pages/InventoryMasterListingPage';
+import { InventoryMasterDetailPage } from '../pages/InventoryMasterDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
@@ -157,6 +159,30 @@ export function App() {
         />
         <Route 
           path="inventory/create" 
+          element={
+            <PermissionRoute permission={modulePermissions['inventory']}>
+              <InventoryMasterPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="inventory/master" 
+          element={
+            <PermissionRoute permission={modulePermissions['inventory']}>
+              <InventoryMasterListingPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="inventory/master/:id" 
+          element={
+            <PermissionRoute permission={modulePermissions['inventory']}>
+              <InventoryMasterDetailPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="inventory/master/:id/edit" 
           element={
             <PermissionRoute permission={modulePermissions['inventory']}>
               <InventoryMasterPage />

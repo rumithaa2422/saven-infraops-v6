@@ -7209,3 +7209,487 @@ input:disabled {
     margin-top: 8px;
   }
 }
+
+/* ============================================
+   Inventory Master Listing Page
+   ============================================ */
+
+.listing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.listing-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.listing-title h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.listing-count {
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--panel);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+}
+
+/* Summary Cards */
+.summary-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+  .summary-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--panel);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  transition: box-shadow 0.2s ease;
+}
+
+.summary-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.summary-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.summary-card-icon.total {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.summary-card-icon.available {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.summary-card-icon.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.summary-card-icon.info {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.summary-card-icon.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.summary-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-card-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.summary-card-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Listing Toolbar */
+.listing-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--panel);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.listing-toolbar .search-box {
+  flex: 1;
+  max-width: 400px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Listing Table */
+.listing-table-container {
+  background: var(--panel);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.listing-loading,
+.listing-empty,
+.listing-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.listing-loading {
+  gap: 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--line);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.listing-empty svg,
+.listing-error svg {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.listing-empty p,
+.listing-error p {
+  margin: 0;
+  font-size: 15px;
+}
+
+.empty-hint {
+  font-size: 13px !important;
+  color: var(--muted);
+  margin-top: 4px !important;
+}
+
+.listing-error {
+  gap: 16px;
+}
+
+.listing-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.listing-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--panel-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.listing-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.listing-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.listing-table tbody tr:hover {
+  background: var(--panel-soft);
+}
+
+.listing-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.listing-table tbody tr.low-stock-row {
+  background: var(--warning-soft);
+}
+
+.listing-table tbody tr.low-stock-row:hover {
+  background: #f5e6c8;
+}
+
+.item-id {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.qty-low {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.warranty-expired {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.warranty-warning {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.warranty-active {
+  color: var(--success);
+}
+
+.warranty-none {
+  color: var(--muted);
+}
+
+.btn-open {
+  padding: 6px 16px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-open:hover {
+  background: #4356e8;
+}
+
+/* ============================================
+   Inventory Master Detail Page
+   ============================================ */
+
+.warranty-label {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.warranty-label.warranty-expired {
+  background: var(--danger-soft);
+}
+
+.warranty-label.warranty-warning {
+  background: var(--warning-soft);
+}
+
+.warranty-label.warranty-active {
+  background: var(--success-soft);
+}
+
+.qty-low {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Timeline */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 20px;
+  bottom: -16px;
+  width: 2px;
+  background: var(--line);
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.timeline-action {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.timeline-date {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.timeline-description {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.timeline-empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+}
+
+/* Quick Stats */
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.quick-stat:last-child {
+  border-bottom: none;
+}
+
+.quick-stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.quick-stat-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* Danger button */
+.btn-danger-full {
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 12px;
+}
+
+.btn-danger-full:hover {
+  background: #a32f22;
+}
+
+.btn-danger-full:disabled {
+  background: #c4a0a0;
+  cursor: not-allowed;
+}
