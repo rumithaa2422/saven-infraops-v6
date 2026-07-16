@@ -15,12 +15,6 @@ import { InventoryMasterDetailPage } from '../pages/InventoryMasterDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
-import { AccessManagementPage } from '../pages/AccessManagementPage';
-import { AccessManagementAssignmentPage } from '../pages/AccessManagementAssignmentPage';
-import { AccessManagementTransferPage } from '../pages/AccessManagementTransferPage';
-import { AccessManagementReturnPage } from '../pages/AccessManagementReturnPage';
-import { AccessManagementRepairPage } from '../pages/AccessManagementRepairPage';
-import { AccessManagementRetiredPage } from '../pages/AccessManagementRetiredPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -214,27 +208,11 @@ export function App() {
         />
         <Route 
           path="access-management" 
-          element={<AccessManagementPage />} 
-        />
-        <Route 
-          path="access-management/assignment" 
-          element={<AccessManagementAssignmentPage />} 
-        />
-        <Route 
-          path="access-management/transfer" 
-          element={<AccessManagementTransferPage />} 
-        />
-        <Route 
-          path="access-management/return" 
-          element={<AccessManagementReturnPage />} 
-        />
-        <Route 
-          path="access-management/repair" 
-          element={<AccessManagementRepairPage />} 
-        />
-        <Route 
-          path="access-management/retired" 
-          element={<AccessManagementRetiredPage />} 
+          element={
+            <PermissionRoute permission={modulePermissions['access-management']}>
+              <ModulePage moduleKey="access-management" title="Access Management" />
+            </PermissionRoute>
+          } 
         />
         <Route 
           path="compliance" 
