@@ -18,6 +18,7 @@ import { usersRouter } from './modules/users/users.routes.js';
 import { complianceRouter } from './modules/compliance/compliance.routes.js';
 import { reportsRouter } from './modules/reports/reports.routes.js';
 import { inventoryCategoryRouter } from './modules/inventory/inventoryCategory.routes.js';
+import { inventoryMasterRouter } from './modules/inventory/inventoryMaster.routes.js';
 
 export function createApp() {
   const app = express();
@@ -43,6 +44,7 @@ export function createApp() {
   app.use('/api/compliance', complianceRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/inventory', inventoryCategoryRouter);
+  app.use('/api/inventory-master', inventoryMasterRouter);
   app.use('/api', genericModuleRouter);
 
   app.use(errorHandler);

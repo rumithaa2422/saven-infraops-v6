@@ -1639,6 +1639,12 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               + Create Category
             </button>
           )}
+          {/* Category Management: Create Inventory button for inventory */}
+          {config.isCategoryManagement && (isSuperAdmin || isAdmin) && (
+            <button className="secondary" onClick={() => navigate('/inventory/create')}>
+              + Create Inventory
+            </button>
+          )}
         </div>
       </div>
 

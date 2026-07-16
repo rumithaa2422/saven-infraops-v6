@@ -957,6 +957,77 @@ button.danger:disabled {
   line-height: 1;
 }
 
+/* Full-width buttons for forms */
+.btn-primary-full {
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 12px;
+}
+
+.btn-primary-full:hover {
+  background: #4356e8;
+}
+
+.btn-primary-full:disabled {
+  background: #a0a8e0;
+  cursor: not-allowed;
+}
+
+.btn-secondary-full {
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary-full:hover {
+  background: var(--panel-soft);
+  border-color: var(--brand);
+}
+
+/* Field error styles */
+.field-error {
+  color: var(--danger) !important;
+}
+
+.input-error {
+  border-color: var(--danger) !important;
+}
+
+.error-text {
+  display: block;
+  font-size: 12px;
+  color: var(--danger);
+  margin-top: 4px;
+}
+
+.required {
+  color: var(--danger);
+}
+
+.read-only-notice {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 12px;
+}
+
 .btn-danger {
   background: var(--danger);
   color: white;

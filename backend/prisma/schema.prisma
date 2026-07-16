@@ -302,6 +302,7 @@ model InventoryCategory {
   updatedAt   DateTime              @updatedAt
   subcategories InventorySubCategory[]
   assets      Asset[]
+  inventoryItems InventoryMaster[]
 }
 
 model InventorySubCategory {
@@ -314,8 +315,40 @@ model InventorySubCategory {
   updatedAt   DateTime         @updatedAt
   category    InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   assets      Asset[]
+  inventoryItems InventoryMaster[]
 
   @@unique([categoryId, name])
+}
+
+// Inventory Master - separate from Asset allocation
+model InventoryMaster {
+  id              String               @id @default(cuid())
+  itemNo          String               @unique
+  itemName        String
+  brand           String?
+  model           String?
+  vendor          String?
+  invoiceNo       String?
+  purchaseCost    Float?
+  gst             Float?
+  purchaseDate    DateTime?
+  warrantyMonths  Int?
+  warrantyExpiry  DateTime?
+  location        String?
+  minStock        Int?
+  currentQty      Int                  @default(0)
+  status          String               @default("ACTIVE")
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  
+  // Relations
+  categoryId      String
+  subcategoryId   String
+  category        InventoryCategory    @relation(fields: [categoryId], references: [id])
+  subcategory     InventorySubCategory @relation(fields: [subcategoryId], references: [id])
+  
+  @@index([categoryId])
+  @@index([subcategoryId])
 }
 
 model AccessRequest {
