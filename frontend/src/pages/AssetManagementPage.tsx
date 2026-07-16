@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
@@ -6,17 +6,34 @@ import { useAuth } from '../auth/AuthContext';
 type Asset = {
   id: string;
   assetNo: string;
-  assetType: string;
-  make?: string;
-  model?: string;
+  assetTag?: string;
   serialNo?: string;
+  remarks?: string;
   status: string;
   assignedToName?: string;
-  location?: string;
-  warrantyEndAt?: string;
   createdAt: string;
+  assetType?: string;
+  make?: string;
+  model?: string;
+  vendor?: string;
+  purchaseDate?: string;
+  warrantyMonths?: number;
+  warrantyEndAt?: string;
+  location?: string;
   category?: { id: string; name: string };
   subcategory?: { id: string; name: string };
+  inventoryItem?: {
+    id: string;
+    itemNo: string;
+    itemName: string;
+    brand?: string;
+    model?: string;
+    vendor?: string;
+    purchaseDate?: string;
+    warrantyMonths?: number;
+    warrantyExpiry?: string;
+    location?: string;
+  };
 };
 
 type AssetStats = {
@@ -25,8 +42,6 @@ type AssetStats = {
   assigned: number;
   underRepair: number;
   retired: number;
-  damaged: number;
-  lost: number;
 };
 
 export function AssetManagementPage() {
@@ -149,19 +164,19 @@ export function AssetManagementPage() {
   }
 
   function handleExport() {
-    const headers = ['Asset ID', 'Asset Name', 'Category', 'Sub Category', 'Make', 'Model', 'Serial Number', 'Status', 'Assigned To', 'Location', 'Warranty Expiry', 'Created Date'];
+    const headers = ['Asset Tag', 'Asset Name', 'Category', 'Sub Category', 'Brand', 'Model', 'Serial Number', 'Status', 'Assigned To', 'Location', 'Warranty Expiry', 'Created Date'];
     const rows = filteredAssets.map(asset => [
-      asset.assetNo,
-      asset.assetType,
-      asset.category?.name || '',
-      asset.subcategory?.name || '',
-      asset.make || '',
-      asset.model || '',
-      asset.serialNo || '',
+      asset.assetTag || asset.assetNo,
+      asset.assetType || '-',
+      asset.category?.name || '-',
+      asset.subcategory?.name || '-',
+      asset.make || '-',
+      asset.model || '-',
+      asset.serialNo || '-',
       asset.status,
-      asset.assignedToName || '',
-      asset.location || '',
-      asset.warrantyEndAt ? new Date(asset.warrantyEndAt).toLocaleDateString() : '',
+      asset.assignedToName || '-',
+      asset.location || '-',
+      asset.warrantyEndAt ? new Date(asset.warrantyEndAt).toLocaleDateString() : '-',
       new Date(asset.createdAt).toLocaleDateString()
     ]);
 
@@ -188,15 +203,15 @@ export function AssetManagementPage() {
 
   function getStatusClass(status: string): string {
     const statusMap: Record<string, string> = {
-      'AVAILABLE': 'status-active',
+      'AVAILABLE': 'status-available',
       'ASSIGNED': 'status-assigned',
-      'UNDER_REPAIR': 'status-warning',
-      'DAMAGED': 'status-danger',
-      'LOST': 'status-danger',
-      'RETIRED': 'status-inactive',
-      'DISPOSED': 'status-inactive'
+      'UNDER_REPAIR': 'status-maintenance',
+      'DAMAGED': 'status-damaged',
+      'LOST': 'status-lost',
+      'RETIRED': 'status-retired',
+      'DISPOSED': 'status-disposed'
     };
-    return statusMap[status] || '';
+    return statusMap[status] || 'status-available';
   }
 
   function getStatusLabel(status: string): string {
@@ -222,7 +237,8 @@ export function AssetManagementPage() {
       {/* Header */}
       <div className="detail-header">
         <div className="detail-title-section">
-          <h1 className="page-title">Asset Management</h1>
+          <h1 className="page-title">Assets</h1>
+          <p className="page-subtitle">Manage your organization's assets</p>
         </div>
       </div>
 
@@ -317,9 +333,7 @@ export function AssetManagementPage() {
             <option value="ASSIGNED">Assigned</option>
             <option value="UNDER_REPAIR">Under Repair</option>
             <option value="DAMAGED">Damaged</option>
-            <option value="LOST">Lost</option>
             <option value="RETIRED">Retired</option>
-            <option value="DISPOSED">Disposed</option>
           </select>
           <div className="sort-dropdown">
             <select 
@@ -369,38 +383,48 @@ export function AssetManagementPage() {
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 11H5M19 11C20.1046 11 21 11.8954 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C3 11.8954 3.89543 11 5 11M19 11V9C19 7.89543 18.1046 7 17 7M5 11V9C5 7.89543 5.89543 7 7 7M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V7M7 7H17" stroke="currentColor" strokeWidth="2"/>
           </svg>
-          <p>{search || statusFilter ? 'No assets found matching your filters' : 'No assets yet. Click "Create Asset" to add your first asset.'}</p>
+          <p>{search || statusFilter ? 'No assets found matching your filters' : 'No assets yet. Create your first asset from inventory.'}</p>
         </div>
       ) : (
         <div className="listing-table-container">
           <table className="listing-table">
             <thead>
               <tr>
-                <th>Asset ID</th>
+                <th>Asset Tag</th>
                 <th>Asset Name</th>
                 <th>Category</th>
                 <th>Sub Category</th>
+                <th>Inventory Source</th>
+                <th>Brand</th>
+                <th>Model</th>
                 <th>Serial Number</th>
                 <th>Status</th>
                 <th>Warranty Expiry</th>
-                <th>Created Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredAssets.map((asset) => (
                 <tr key={asset.id} onClick={() => handleOpen(asset)}>
-                  <td className="asset-id">{asset.assetNo}</td>
-                  <td className="asset-name">
-                    <div className="asset-name-cell">
-                      <span className="asset-type">{asset.assetType}</span>
-                      {asset.make && asset.model && (
-                        <span className="asset-model">{asset.make} {asset.model}</span>
-                      )}
-                    </div>
+                  <td className="asset-id-cell">
+                    {asset.assetTag ? (
+                      <span className="asset-tag">{asset.assetTag}</span>
+                    ) : (
+                      <span className="asset-no">{asset.assetNo}</span>
+                    )}
+                  </td>
+                  <td className="asset-name-cell">
+                    <span className="asset-type">{asset.assetType || '-'}</span>
                   </td>
                   <td>{asset.category?.name || '-'}</td>
                   <td>{asset.subcategory?.name || '-'}</td>
+                  <td className="inventory-source-cell">
+                    {asset.inventoryItem ? (
+                      <span className="inventory-ref">{asset.inventoryItem.itemNo}</span>
+                    ) : '-'}
+                  </td>
+                  <td>{asset.make || '-'}</td>
+                  <td>{asset.model || '-'}</td>
                   <td>{asset.serialNo || '-'}</td>
                   <td>
                     <span className={`status-badge ${getStatusClass(asset.status)}`}>
@@ -408,7 +432,6 @@ export function AssetManagementPage() {
                     </span>
                   </td>
                   <td>{formatDate(asset.warrantyEndAt)}</td>
-                  <td>{formatDate(asset.createdAt)}</td>
                   <td>
                     <button 
                       className="btn-open"

@@ -275,22 +275,33 @@ model ChangeRequest {
 }
 
 model Asset {
-  id             String      @id @default(cuid())
-  assetNo        String      @unique
-  assetType      String
-  make           String?
-  model          String?
-  serialNo       String?     @unique
-  status         AssetStatus @default(AVAILABLE)
-  assignedToName String?
-  location       String?
-  warrantyEndAt  DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  categoryId     String?
-  subcategoryId  String?
-  category       InventoryCategory?    @relation(fields: [categoryId], references: [id])
-  subcategory    InventorySubCategory? @relation(fields: [subcategoryId], references: [id])
+  id              String      @id @default(cuid())
+  assetNo         String      @unique
+  assetTag        String?
+  serialNo        String?     @unique
+  remarks         String?     @db.Text
+  status          AssetStatus @default(AVAILABLE)
+  assignedToName  String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Inventory source
+  inventoryItemId String?
+  inventoryItem   InventoryMaster? @relation(fields: [inventoryItemId], references: [id])
+  
+  // For display (denormalized for convenience)
+  assetType       String?
+  make            String?
+  model           String?
+  vendor          String?
+  purchaseDate    DateTime?
+  warrantyMonths  Int?
+  warrantyEndAt   DateTime?
+  location        String?
+  categoryId      String?
+  subcategoryId   String?
+  category        InventoryCategory?    @relation(fields: [categoryId], references: [id])
+  subcategory     InventorySubCategory? @relation(fields: [subcategoryId], references: [id])
 }
 
 model InventoryCategory {
@@ -348,6 +359,7 @@ model InventoryMaster {
   subcategory     InventorySubCategory @relation(fields: [subcategoryId], references: [id])
   history         InventoryHistory[]
   documents       InventoryDocument[]
+  assets          Asset[]
   
   @@index([categoryId])
   @@index([subcategoryId])

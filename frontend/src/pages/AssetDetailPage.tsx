@@ -6,18 +6,37 @@ import { useAuth } from '../auth/AuthContext';
 type Asset = {
   id: string;
   assetNo: string;
-  assetType: string;
-  make?: string;
-  model?: string;
+  assetTag?: string;
   serialNo?: string;
+  remarks?: string;
   status: string;
   assignedToName?: string;
-  location?: string;
-  warrantyEndAt?: string;
   createdAt: string;
   updatedAt: string;
+  assetType?: string;
+  make?: string;
+  model?: string;
+  vendor?: string;
+  purchaseDate?: string;
+  warrantyMonths?: number;
+  warrantyEndAt?: string;
+  location?: string;
   category?: { id: string; name: string };
   subcategory?: { id: string; name: string };
+  inventoryItem?: {
+    id: string;
+    itemNo: string;
+    itemName: string;
+    brand?: string;
+    model?: string;
+    vendor?: string;
+    purchaseDate?: string;
+    warrantyMonths?: number;
+    warrantyExpiry?: string;
+    location?: string;
+    category?: { id: string; name: string };
+    subcategory?: { id: string; name: string };
+  };
 };
 
 export function AssetDetailPage() {
@@ -32,6 +51,8 @@ export function AssetDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [statusDropdown, setStatusDropdown] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     loadAsset();
@@ -72,15 +93,15 @@ export function AssetDetailPage() {
 
   function getStatusClass(status: string): string {
     const statusMap: Record<string, string> = {
-      'AVAILABLE': 'status-active',
+      'AVAILABLE': 'status-available',
       'ASSIGNED': 'status-assigned',
-      'UNDER_REPAIR': 'status-warning',
-      'DAMAGED': 'status-danger',
-      'LOST': 'status-danger',
-      'RETIRED': 'status-inactive',
-      'DISPOSED': 'status-inactive'
+      'UNDER_REPAIR': 'status-maintenance',
+      'DAMAGED': 'status-damaged',
+      'LOST': 'status-lost',
+      'RETIRED': 'status-retired',
+      'DISPOSED': 'status-disposed'
     };
-    return statusMap[status] || '';
+    return statusMap[status] || 'status-available';
   }
 
   function getStatusLabel(status: string): string {
@@ -101,6 +122,21 @@ export function AssetDetailPage() {
       return { label: 'Expiring Soon', class: 'warranty-warning' };
     }
     return { label: 'Active', class: 'warranty-active' };
+  }
+
+  async function handleStatusChange(newStatus: string) {
+    if (!asset) return;
+    setUpdatingStatus(true);
+    setStatusDropdown(false);
+    
+    try {
+      await api.patch(`/assets/${asset.id}`, { status: newStatus });
+      loadAsset();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to update status');
+    } finally {
+      setUpdatingStatus(false);
+    }
   }
 
   async function handleDelete() {
@@ -180,12 +216,12 @@ export function AssetDetailPage() {
       <div className="detail-header">
         <div className="detail-title-section">
           <div className="detail-title-row">
-            <span className="detail-ticket-no">{asset.assetNo}</span>
+            <span className="detail-ticket-no">{asset.assetTag || asset.assetNo}</span>
             <span className={`status-badge ${getStatusClass(asset.status)}`}>
               {getStatusLabel(asset.status)}
             </span>
           </div>
-          <h2 className="detail-title">{asset.assetType}</h2>
+          <h2 className="detail-title">{asset.assetType || 'Asset'}</h2>
           {asset.make && asset.model && (
             <p className="detail-description">{asset.make} {asset.model}</p>
           )}
@@ -242,12 +278,16 @@ export function AssetDetailPage() {
         <div className="detail-card">
           <div className="detail-grid">
             <div className="detail-field">
-              <label>Asset ID</label>
-              <span>{asset.assetNo}</span>
+              <label>Asset Tag</label>
+              <span>{asset.assetTag || '-'}</span>
             </div>
             <div className="detail-field">
-              <label>Asset Type</label>
-              <span>{asset.assetType}</span>
+              <label>Asset ID</label>
+              <span className="detail-id">{asset.assetNo}</span>
+            </div>
+            <div className="detail-field">
+              <label>Asset Name</label>
+              <span>{asset.assetType || '-'}</span>
             </div>
             <div className="detail-field">
               <label>Make</label>
@@ -262,18 +302,57 @@ export function AssetDetailPage() {
               <span>{asset.serialNo || '-'}</span>
             </div>
             <div className="detail-field">
-              <label>Status</label>
-              <span className={`status-badge ${getStatusClass(asset.status)}`}>
-                {getStatusLabel(asset.status)}
-              </span>
-            </div>
-            <div className="detail-field">
               <label>Assigned To</label>
               <span>{asset.assignedToName || '-'}</span>
             </div>
             <div className="detail-field">
               <label>Location</label>
               <span>{asset.location || '-'}</span>
+            </div>
+            {asset.remarks && (
+              <div className="detail-field full-width">
+                <label>Remarks</label>
+                <span>{asset.remarks}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Inventory Information */}
+      <div className="detail-section">
+        <h3 className="detail-section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
+            <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+          Inventory Information
+        </h3>
+        <div className="detail-card">
+          <div className="detail-grid">
+            <div className="detail-field">
+              <label>Inventory Reference</label>
+              <span>{asset.inventoryItem?.itemNo || '-'}</span>
+            </div>
+            <div className="detail-field">
+              <label>Inventory Item</label>
+              <span>{asset.inventoryItem?.itemName || '-'}</span>
+            </div>
+            <div className="detail-field">
+              <label>Vendor</label>
+              <span>{asset.vendor || '-'}</span>
+            </div>
+            <div className="detail-field">
+              <label>Purchase Date</label>
+              <span>{formatDate(asset.purchaseDate)}</span>
+            </div>
+            <div className="detail-field">
+              <label>Category</label>
+              <span>{asset.inventoryItem?.category?.name || asset.category?.name || '-'}</span>
+            </div>
+            <div className="detail-field">
+              <label>Sub Category</label>
+              <span>{asset.inventoryItem?.subcategory?.name || asset.subcategory?.name || '-'}</span>
             </div>
           </div>
         </div>
@@ -286,10 +365,14 @@ export function AssetDetailPage() {
             <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
           </svg>
-          Warranty
+          Warranty Information
         </h3>
         <div className="detail-card">
           <div className="detail-grid">
+            <div className="detail-field">
+              <label>Warranty (Months)</label>
+              <span>{asset.warrantyMonths || '-'}</span>
+            </div>
             <div className="detail-field">
               <label>Warranty Expiry</label>
               <span>{formatDate(asset.warrantyEndAt)}</span>
@@ -304,24 +387,61 @@ export function AssetDetailPage() {
         </div>
       </div>
 
-      {/* Inventory Source */}
+      {/* Current Status */}
       <div className="detail-section">
         <h3 className="detail-section-title">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
-            <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+            <path d="M12 8V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="12" cy="16" r="1" fill="currentColor"/>
           </svg>
-          Inventory Source
+          Current Status
         </h3>
         <div className="detail-card">
           <div className="detail-grid">
             <div className="detail-field">
-              <label>Category</label>
-              <span>{asset.category?.name || '-'}</span>
+              <label>Status</label>
+              {isSuperAdmin ? (
+                <div className="status-dropdown-container">
+                  <span className={`status-badge ${getStatusClass(asset.status)}`}>
+                    {getStatusLabel(asset.status)}
+                  </span>
+                  <button 
+                    className="status-change-btn"
+                    onClick={() => setStatusDropdown(!statusDropdown)}
+                    disabled={updatingStatus}
+                  >
+                    Change
+                  </button>
+                  {statusDropdown && (
+                    <div className="status-dropdown">
+                      {['AVAILABLE', 'ASSIGNED', 'UNDER_REPAIR', 'DAMAGED', 'RETIRED', 'DISPOSED'].map(status => (
+                        <button
+                          key={status}
+                          className={`status-dropdown-item ${status === asset.status ? 'active' : ''}`}
+                          onClick={() => handleStatusChange(status)}
+                        >
+                          <span className={`status-badge ${getStatusClass(status)}`}>
+                            {getStatusLabel(status)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <span className={`status-badge ${getStatusClass(asset.status)}`}>
+                  {getStatusLabel(asset.status)}
+                </span>
+              )}
             </div>
             <div className="detail-field">
-              <label>Sub Category</label>
-              <span>{asset.subcategory?.name || '-'}</span>
+              <label>Assigned To</label>
+              {isSuperAdmin ? (
+                <span>{asset.assignedToName || '-'}</span>
+              ) : (
+                <span>{asset.assignedToName || '-'}</span>
+              )}
             </div>
           </div>
         </div>

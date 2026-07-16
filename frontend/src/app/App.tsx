@@ -81,7 +81,7 @@ const modulePermissions: Record<string, string> = {
   'problems': 'problems:view',
   'changes': 'changes:view',
   'inventory': 'inventory:view',
-  'assets': 'assets:view',
+  'assets': 'inventory:view',
   'access-management': 'access:view',
   'compliance': 'compliance:view',
   'projects-environments': 'projects:view',
