@@ -9807,6 +9807,81 @@ input:disabled {
   color: #ef4444;
 }
 
+.import-result-icon.partial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: rgba(234, 179, 8, 0.1);
+  border-radius: 50%;
+  color: #eab308;
+  margin-bottom: 16px;
+}
+
+.import-result-icon.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 50%;
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+
+.import-result-details {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(234, 179, 8, 0.05);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: 8px;
+  width: 100%;
+}
+
+.import-result-details h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.import-duplicates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.import-duplicate-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(234, 179, 8, 0.1);
+}
+
+.import-duplicate-item:last-child {
+  border-bottom: none;
+}
+
+.import-duplicate-item .dup-item {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.import-duplicate-item .dup-info {
+  color: var(--muted);
+}
+
+.import-duplicate-item .dup-existing {
+  margin-left: auto;
+  color: #eab308;
+  font-size: 11px;
+}
+
 @media (max-width: 640px) {
   .import-summary {
     grid-template-columns: 1fr;

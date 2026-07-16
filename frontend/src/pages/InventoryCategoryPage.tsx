@@ -103,7 +103,14 @@ export function InventoryCategoryPage() {
   const [importErrors, setImportErrors] = useState<Record<number, string[]>>({});
   const [importValidRows, setImportValidRows] = useState<any[]>([]);
   const [importProcessing, setImportProcessing] = useState(false);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ 
+    success: number; 
+    failed: number;
+    duplicates?: any[];
+    errors?: any[];
+    created?: any[];
+    error?: string;
+  } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   // Load category and items
@@ -531,15 +538,11 @@ export function InventoryCategoryPage() {
   }
 
   async function validateImportData(data: any[]) {
-    if (!category) return;
-
     const errors: Record<number, string[]> = {};
     const validRows: any[] = [];
     const existingInvoiceNos = new Set(items.map(i => i.invoiceNo).filter(Boolean));
-    const existingItemNos = new Set(items.map(i => i.itemNo));
-    const subcategoryMap = new Map(category.subcategories.map(s => [s.name.toLowerCase(), s.id]));
-    
     const seenInvoiceNos = new Set<string>();
+    const seenCombinations = new Set<string>();
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
@@ -551,13 +554,29 @@ export function InventoryCategoryPage() {
         rowErrors.push('Item Name is required');
       }
 
+      // Check for required Category
+      const categoryName = row['Category'] || row['category'] || '';
+      if (!categoryName) {
+        rowErrors.push('Category is required');
+      }
+
       // Check for required Subcategory
       const subcategoryName = row['Sub Category'] || row['SubCategory'] || row['subcategory'] || '';
       if (!subcategoryName) {
         rowErrors.push('Sub Category is required');
-      } else if (!subcategoryMap.has(subcategoryName.toLowerCase())) {
-        rowErrors.push(`Subcategory "${subcategoryName}" does not exist`);
       }
+
+      // Get Item Name, Brand, Model for duplicate detection
+      const itemName = row['Item Name'] || row['ItemName'] || row['itemName'] || '';
+      const brand = row['Brand'] || row['brand'] || '';
+      const model = row['Model'] || row['model'] || '';
+
+      // Check for duplicate combination: Category + Subcategory + Item Name + Brand + Model
+      const comboKey = `${categoryName.toLowerCase()}|${subcategoryName.toLowerCase()}|${itemName.toLowerCase()}|${brand.toLowerCase()}|${model.toLowerCase()}`;
+      if (seenCombinations.has(comboKey)) {
+        rowErrors.push(`Duplicate inventory "${itemName}" in same Category/Subcategory`);
+      }
+      seenCombinations.add(comboKey);
 
       // Validate Invoice Number for duplicates
       const invoiceNo = row['Invoice Number'] || row['InvoiceNumber'] || row['invoiceNo'] || '';
@@ -621,19 +640,20 @@ export function InventoryCategoryPage() {
       } else {
         // Build valid row object using the flexible parser
         const validRow: any = {
-          itemName: row['Item Name'] || row['ItemName'] || row['itemName'],
-          subcategoryId: subcategoryMap.get(subcategoryName.toLowerCase()),
-          subcategoryName: subcategoryName,
-          brand: row['Brand'] || row['brand'] || '',
-          model: row['Model'] || row['model'] || '',
-          vendor: row['Vendor'] || row['vendor'] || '',
-          invoiceNo: invoiceNo,
+          _rowIndex: rowNum,
+          categoryName: categoryName.trim(),
+          subcategoryName: subcategoryName.trim(),
+          itemName: itemName.trim(),
+          brand: brand.trim(),
+          model: model.trim(),
+          vendor: (row['Vendor'] || row['vendor'] || '').trim(),
+          invoiceNo: invoiceNo.trim(),
           purchaseCost: purchaseCost ? parseFloat(purchaseCost) : null,
           gst: gst ? parseFloat(gst) : null,
           purchaseDate: purchaseDate ? parseFlexibleDate(purchaseDate)?.toISOString() : null,
           warrantyMonths: row['Warranty'] || row['warranty'] || null,
           warrantyExpiry: warrantyExpiry ? parseFlexibleDate(warrantyExpiry)?.toISOString() : null,
-          location: row['Location'] || row['location'] || '',
+          location: (row['Location'] || row['location'] || '').trim(),
           minStock: minStock ? parseInt(minStock) : null,
           currentQty: currentQty ? parseInt(currentQty) : 0,
           status: (status || 'ACTIVE').toUpperCase()
@@ -713,27 +733,39 @@ export function InventoryCategoryPage() {
     if (importValidRows.length === 0) return;
 
     setImportProcessing(true);
-    let successCount = 0;
-    let failCount = 0;
 
-    for (const row of importValidRows) {
-      try {
-        await api.post('/inventory-master', {
-          ...row,
-          categoryId: categoryId
-        });
-        successCount++;
-      } catch (err: any) {
-        failCount++;
-        console.error('Import error:', err);
-      }
-    }
+    try {
+      const response = await api.post('/inventory-master/bulk-import', {
+        items: importValidRows
+      });
 
-    setImportResult({ success: successCount, failed: failCount });
-    setImportProcessing(false);
+      const { success, failed, duplicates, errors } = response.data;
 
-    if (successCount > 0) {
+      // Update result with detailed info
+      setImportResult({ 
+        success, 
+        failed,
+        duplicates,
+        errors,
+        created: response.data.created || []
+      });
+
+      // Refresh data to show new items and updated counts
       loadData();
+
+      // If there are new categories, refresh the page to show them
+      if (success > 0) {
+        // The loadData() will update items, categories will auto-update
+      }
+    } catch (err: any) {
+      console.error('Bulk import error:', err);
+      setImportResult({ 
+        success: 0, 
+        failed: importValidRows.length,
+        error: err.response?.data?.message || 'Import failed'
+      });
+    } finally {
+      setImportProcessing(false);
     }
   }
 
@@ -751,6 +783,38 @@ export function InventoryCategoryPage() {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `import-validation-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  }
+
+  function downloadImportReport() {
+    const lines: string[] = ['Type,Row,Category,Subcategory,Item Name,Brand,Model,Details'];
+    
+    // Add validation errors
+    Object.entries(importErrors).forEach(([rowIdx, rowErrors]) => {
+      rowErrors.forEach(error => {
+        lines.push(`"Validation Error",${parseInt(rowIdx) + 2},"","","","","","${error}"`);
+      });
+    });
+
+    // Add duplicates from import result
+    if (importResult?.duplicates) {
+      importResult.duplicates.forEach((dup: any) => {
+        lines.push(`"Duplicate",${dup.row},"${dup.categoryName}","${dup.subcategoryName}","${dup.itemName}","${dup.brand}","${dup.model}","Already exists as ${dup.existingItemNo}"`);
+      });
+    }
+
+    // Add errors from import result
+    if (importResult?.errors) {
+      importResult.errors.forEach((err: any) => {
+        lines.push(`"Import Error",${err.row},"","","${err.itemName}","","","${err.error}"`);
+      });
+    }
+
+    const csvContent = lines.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `import-report-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   }
 
@@ -1516,11 +1580,10 @@ export function InventoryCategoryPage() {
                           <thead>
                             <tr>
                               <th>Row</th>
-                              <th>Item Name</th>
+                              <th>Category</th>
                               <th>Subcategory</th>
+                              <th>Item Name</th>
                               <th>Brand</th>
-                              <th>Vendor</th>
-                              <th>Status</th>
                               <th>Valid</th>
                             </tr>
                           </thead>
@@ -1530,11 +1593,10 @@ export function InventoryCategoryPage() {
                               return (
                                 <tr key={idx} className={hasError ? 'invalid-row' : 'valid-row'}>
                                   <td>{idx + 2}</td>
-                                  <td>{row['Item Name'] || row['ItemName'] || row['itemName'] || '-'}</td>
+                                  <td>{row['Category'] || row['category'] || '-'}</td>
                                   <td>{row['Sub Category'] || row['SubCategory'] || '-'}</td>
+                                  <td>{row['Item Name'] || row['ItemName'] || row['itemName'] || '-'}</td>
                                   <td>{row['Brand'] || '-'}</td>
-                                  <td>{row['Vendor'] || '-'}</td>
-                                  <td>{row['Status'] || 'ACTIVE'}</td>
                                   <td>
                                     {hasError ? (
                                       <span className="badge badge-danger">Invalid</span>
@@ -1581,14 +1643,24 @@ export function InventoryCategoryPage() {
               )}
 
               {/* Import Result */}
-              {importResult && (
+              {importResult && !importResult.error && (
                 <div className="import-result">
-                  <div className="import-result-icon success">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                  </div>
+                  {importResult.success > 0 && importResult.failed === 0 ? (
+                    <div className="import-result-icon success">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="import-result-icon partial">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M12 7V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                      </svg>
+                    </div>
+                  )}
                   <h3>Import Complete</h3>
                   <div className="import-result-stats">
                     <div className="import-result-stat">
@@ -1597,14 +1669,52 @@ export function InventoryCategoryPage() {
                     </div>
                     <div className="import-result-stat">
                       <span className="value danger">{importResult.failed}</span>
-                      <span className="label">Failed</span>
+                      <span className="label">Skipped</span>
                     </div>
                   </div>
+                  
+                  {/* Show duplicates detail */}
+                  {importResult.duplicates && importResult.duplicates.length > 0 && (
+                    <div className="import-result-details">
+                      <h4>Skipped Duplicates</h4>
+                      <div className="import-duplicates-list">
+                        {importResult.duplicates.slice(0, 5).map((dup, idx) => (
+                          <div key={idx} className="import-duplicate-item">
+                            <span className="dup-item">{dup.itemName}</span>
+                            <span className="dup-info">({dup.categoryName} / {dup.subcategoryName})</span>
+                            <span className="dup-existing">Exists as {dup.existingItemNo}</span>
+                          </div>
+                        ))}
+                        {importResult.duplicates.length > 5 && (
+                          <p className="import-result-note">
+                            And {importResult.duplicates.length - 5} more duplicates. Download report for full details.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
                   {importResult.failed > 0 && (
                     <p className="import-result-note">
-                      Some items could not be imported. Please check the errors and try again.
+                      {(importResult.duplicates?.length ?? 0) > 0 
+                        ? `${importResult.duplicates?.length} duplicate(s) were skipped.`
+                        : 'Some items could not be imported.'}
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* Import Error */}
+              {importResult?.error && (
+                <div className="import-result">
+                  <div className="import-result-icon error">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <h3>Import Failed</h3>
+                  <p className="import-result-note">{importResult.error}</p>
                 </div>
               )}
             </div>
@@ -1633,9 +1743,16 @@ export function InventoryCategoryPage() {
                 </>
               )}
               {importResult && (
-                <button className="primary" onClick={closeImportModal}>
-                  Done
-                </button>
+                <>
+                  {((importResult.duplicates?.length ?? 0) > 0 || (importResult.errors?.length ?? 0) > 0) && (
+                    <button className="secondary" onClick={downloadImportReport}>
+                      Download Report
+                    </button>
+                  )}
+                  <button className="primary" onClick={closeImportModal}>
+                    Done
+                  </button>
+                </>
               )}
             </div>
           </div>

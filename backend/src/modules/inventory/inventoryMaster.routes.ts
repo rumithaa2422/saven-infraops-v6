@@ -265,6 +265,191 @@ inventoryMasterRouter.post('/', requireAuth, async (req, res, next) => {
   }
 });
 
+// POST /inventory-master/bulk-import - Bulk import inventory items
+inventoryMasterRouter.post('/bulk-import', requireAuth, async (req, res, next) => {
+  try {
+    if (!isSuperAdmin(req.user)) {
+      return res.status(403).json({ message: 'Only Super Admin can import inventory items' });
+    }
+
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Items array is required' });
+    }
+
+    const results = {
+      success: 0,
+      failed: 0,
+      duplicates: [] as any[],
+      errors: [] as any[],
+      created: [] as any[]
+    };
+
+    // Get existing inventory items for duplicate detection
+    const existingItems = await prisma.inventoryMaster.findMany({
+      select: {
+        id: true,
+        itemName: true,
+        brand: true,
+        model: true,
+        categoryId: true,
+        subcategoryId: true,
+        itemNo: true
+      }
+    });
+
+    // Create a map for quick lookup of existing items
+    const existingItemMap = new Map();
+    existingItems.forEach(item => {
+      const key = `${item.categoryId}|${item.subcategoryId}|${item.itemName.toLowerCase()}|${(item.brand || '').toLowerCase()}|${(item.model || '').toLowerCase()}`;
+      existingItemMap.set(key, item);
+    });
+
+    // Get all categories and subcategories for mapping
+    const allCategories = await prisma.inventoryCategory.findMany({
+      include: { subcategories: true }
+    });
+
+    const categoryMap = new Map(allCategories.map(c => [c.name.toLowerCase(), c]));
+    const subcategoryMap = new Map();
+    allCategories.forEach(c => {
+      c.subcategories.forEach(s => {
+        const key = `${c.id}|${s.name.toLowerCase()}`;
+        subcategoryMap.set(key, s);
+      });
+    });
+
+    // Process each item
+    for (const item of items) {
+      try {
+        const { categoryName, subcategoryName, itemName, brand, model, vendor, invoiceNo, purchaseCost, gst, purchaseDate, warrantyMonths, warrantyExpiry, location, minStock, currentQty, status } = item;
+
+        // Check if Category exists, create if not
+        let categoryId: string;
+        let category = categoryMap.get((categoryName || '').toLowerCase());
+
+        if (!category) {
+          category = await prisma.inventoryCategory.create({
+            data: {
+              name: categoryName.trim(),
+              status: 'ACTIVE'
+            }
+          });
+          categoryMap.set(category.name.toLowerCase(), category);
+        }
+        categoryId = category.id;
+
+        // Check if Subcategory exists under that Category, create if not
+        let subcategoryId: string;
+        let subcategoryKey = `${categoryId}|${(subcategoryName || '').toLowerCase()}`;
+        let subcategory = subcategoryMap.get(subcategoryKey);
+
+        if (!subcategory) {
+          subcategory = await prisma.inventorySubCategory.create({
+            data: {
+              name: subcategoryName.trim(),
+              categoryId: categoryId,
+              status: 'ACTIVE'
+            }
+          });
+          subcategoryMap.set(subcategoryKey, subcategory);
+        }
+        subcategoryId = subcategory.id;
+
+        // Check for duplicates using: Category + Subcategory + Item Name + Brand + Model
+        const duplicateKey = `${categoryId}|${subcategoryId}|${(itemName || '').toLowerCase()}|${(brand || '').toLowerCase()}|${(model || '').toLowerCase()}`;
+        
+        if (existingItemMap.has(duplicateKey)) {
+          const existingItem = existingItemMap.get(duplicateKey);
+          results.duplicates.push({
+            row: item._rowIndex,
+            itemName,
+            brand,
+            model,
+            categoryName,
+            subcategoryName,
+            existingItemNo: existingItem.itemNo
+          });
+          results.failed++;
+          continue;
+        }
+
+        // Check for duplicate invoice numbers
+        if (invoiceNo) {
+          const existingWithInvoice = existingItems.find(i => i.itemNo === invoiceNo);
+          if (existingWithInvoice) {
+            results.errors.push({
+              row: item._rowIndex,
+              itemName,
+              error: `Invoice Number "${invoiceNo}" already exists (${existingWithInvoice.itemNo})`
+            });
+            results.failed++;
+            continue;
+          }
+        }
+
+        // Generate item number and create
+        const itemNo = await generateItemNo();
+
+        const newItem = await prisma.inventoryMaster.create({
+          data: {
+            itemNo,
+            itemName: itemName.trim(),
+            brand: brand?.trim() || null,
+            model: model?.trim() || null,
+            vendor: vendor?.trim() || null,
+            invoiceNo: invoiceNo?.trim() || null,
+            purchaseCost: purchaseCost ? parseFloat(purchaseCost) : null,
+            gst: gst ? parseFloat(gst) : null,
+            purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
+            warrantyMonths: warrantyMonths ? parseInt(warrantyMonths) : null,
+            warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry) : null,
+            location: location?.trim() || null,
+            minStock: minStock !== undefined ? parseInt(minStock) : null,
+            currentQty: currentQty !== undefined ? parseInt(currentQty) : 0,
+            status: status || 'ACTIVE',
+            categoryId,
+            subcategoryId
+          },
+          include: {
+            category: { select: { id: true, name: true } },
+            subcategory: { select: { id: true, name: true } }
+          }
+        });
+
+        // Add to existing map for within-file duplicate detection
+        existingItemMap.set(duplicateKey, newItem);
+
+        // Add creation history
+        await prisma.inventoryHistory.create({
+          data: {
+            inventoryId: newItem.id,
+            action: 'Created',
+            description: `Inventory item "${itemName}" was created via bulk import`,
+            performedBy: req.user?.name || 'System',
+            userId: req.user?.id
+          }
+        });
+
+        results.created.push(newItem);
+        results.success++;
+      } catch (err: any) {
+        results.errors.push({
+          row: item._rowIndex,
+          itemName: item.itemName,
+          error: err.message || 'Unknown error'
+        });
+        results.failed++;
+      }
+    }
+
+    res.json(results);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // PATCH /inventory-master/:id - Update inventory item
 inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
   try {
