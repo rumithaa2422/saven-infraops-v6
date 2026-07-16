@@ -59,6 +59,7 @@ type ModuleConfig = {
   };
   moduleType?: string; // Module type for import framework (e.g., 'incidents', 'users-teams')
   isDocumentRepository?: boolean; // PDF document repository mode
+  isCategoryManagement?: boolean; // Category management mode (inventory module)
 };
 
 const configs: Record<string, ModuleConfig> = {
@@ -137,31 +138,15 @@ const configs: Record<string, ModuleConfig> = {
     moduleType: 'change-requests'
   },
   inventory: {
-    referenceKey: 'assetNo',
-    titleKey: 'assetType',
-    ownerKey: 'assignedToName',
+    referenceKey: 'name',
+    titleKey: 'name',
     statusKey: 'status',
     dateKey: 'createdAt',
-    fields: [
-      { key: 'assetType', label: 'Asset Type', required: true },
-      { key: 'make', label: 'Make' },
-      { key: 'model', label: 'Model' },
-      { key: 'serialNo', label: 'Serial No' },
-      { key: 'assignedToName', label: 'Assigned To' },
-      { key: 'location', label: 'Location' }
-    ],
-    columns: [
-      { key: 'assetNo', label: 'Asset No' },
-      { key: 'assetType', label: 'Asset Type' },
-      { key: 'make', label: 'Make' },
-      { key: 'model', label: 'Model' },
-      { key: 'serialNo', label: 'Serial No' },
-      { key: 'assignedToName', label: 'Assigned To' },
-      { key: 'location', label: 'Location' },
-      { key: 'status', label: 'Status' }
-    ],
-    permissions: { create: 'inventory:create', write: 'inventory:manage', delete: 'inventory:manage', export: 'inventory:export', import: 'settings:write' },
-    moduleType: 'inventory'
+    fields: [],
+    columns: [],
+    permissions: { view: 'inventory:view', create: 'inventory:manage', write: 'inventory:manage', delete: 'inventory:manage', export: 'inventory:export' },
+    moduleType: 'inventory',
+    isCategoryManagement: true
   },
   'access-management': {
     referenceKey: 'requestNo',
@@ -487,8 +472,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  // Category Management modal state
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  // Category Management state (for inventory module)
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
@@ -627,21 +611,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     } finally {
       setCategoriesLoading(false);
     }
-  }
-
-  function openCategoryModal() {
-    setCategoryModalOpen(true);
-    setCategorySearch('');
-    setExpandedCategoryId(null);
-    setCategoryMessage('');
-    loadCategories();
-  }
-
-  function closeCategoryModal() {
-    setCategoryModalOpen(false);
-    setCategories([]);
-    setExpandedCategoryId(null);
-    setCategoryMessage('');
   }
 
   function toggleCategory(categoryId: string) {
@@ -1069,6 +1038,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       }).catch(() => {
         setRoles([]);
       });
+    }
+  }, [moduleKey]);
+
+  // Load categories for inventory module (category management)
+  useEffect(() => {
+    if (moduleKey === 'inventory') {
+      loadCategories();
     }
   }, [moduleKey]);
 
@@ -1652,18 +1628,15 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               />
             </>
           )}
-          {config.permissions.create && hasPermission(config.permissions.create) && (
+          {config.permissions.create && hasPermission(config.permissions.create) && !config.isCategoryManagement && (
             <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
               {config.isDocumentRepository ? '📤 Upload' : 'Create'}
             </button>
           )}
-          {/* Category Management button for inventory module - Super Admin and Admin */}
-          {moduleKey === 'inventory' && (isSuperAdmin || isAdmin) && (
-            <button 
-              className="secondary" 
-              onClick={() => openCategoryModal()}
-            >
-              ⚙️ Manage Categories
+          {/* Category Management: Create Category button for inventory */}
+          {config.isCategoryManagement && isSuperAdmin && (
+            <button className="primary" onClick={() => openCategoryForm()}>
+              + Create Category
             </button>
           )}
         </div>
@@ -1960,42 +1933,171 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
 
       {message && <div className="notice">{message}</div>}
 
-      {!config.isDocumentRepository && (
-        <section className="grid cards-3">
-          <StatCard label="Active" value={String(openCount)} hint="Current working queue" />
-          <StatCard label="Tracked" value={String(items.length)} hint="Loaded records" />
-          <StatCard label="Risk / Due" value={String(riskCount || dueCount)} hint="Needs review" />
-        </section>
-      )}
+      {/* Category Management Content - Inline display for inventory */}
+      {config.isCategoryManagement ? (
+        <>
+          {/* Category search and list */}
+          <div className="cat-inline">
+            <div className="cat-inline-toolbar">
+              <div className="search-box">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/>
+                  <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search categories..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                />
+              </div>
+            </div>
 
-      {/* Document Repository Stats */}
-      {config.isDocumentRepository && (
-        <section className="grid cards-3">
-          <StatCard label="Documents" value={String(items.length)} hint="Uploaded files" />
-        </section>
-      )}
+            {categoryMessage && (
+              <div className={`notice ${categoryMessage.includes('Failed') ? 'notice-error' : 'notice-success'}`}>
+                {categoryMessage}
+                <button className="notice-close" onClick={() => setCategoryMessage('')}>×</button>
+              </div>
+            )}
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              {config.columns.map((column) => {
-                // Add sorting for document repository columns
-                if (config.isDocumentRepository && ['fileName', 'createdAt', 'fileSize'].includes(column.key)) {
-                  const isActive = docSortBy === column.key;
-                  const nextSortOrder = isActive && docSortOrder === 'asc' ? 'desc' : 'asc';
-                  return (
-                    <th 
-                      key={column.key} 
-                      className="sortable-header"
-                      onClick={() => {
-                        setDocSortBy(column.key as 'fileName' | 'createdAt' | 'fileSize');
-                        setDocSortOrder(nextSortOrder);
-                        loadComplianceDocuments();
-                      }}
-                    >
-                      {column.label}
-                      {isActive && <span className="sort-indicator">{docSortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
+            <div className="cat-inline-body">
+              {categoriesLoading ? (
+                <div className="cat-loading">
+                  <div className="spinner"></div>
+                  <p>Loading categories...</p>
+                </div>
+              ) : filteredCategories.length === 0 ? (
+                <div className="cat-empty">
+                  <p>{categorySearch ? 'No categories found' : 'No categories yet. Click "Create Category" to add your first category.'}</p>
+                </div>
+              ) : (
+                <div className="cat-list">
+                  {filteredCategories.map((category) => (
+                    <div key={category.id} className={`cat-item ${expandedCategoryId === category.id ? 'expanded' : ''}`}>
+                      <div className="cat-header" onClick={() => toggleCategory(category.id)}>
+                        <div className="cat-row">
+                          <div className="cat-expand">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
+                              style={{ transform: expandedCategoryId === category.id ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <div className="cat-info">
+                            <span className="cat-name">{category.name}</span>
+                            <span className={`status-badge ${getStatusBadgeClass(category.status)}`}>{category.status}</span>
+                          </div>
+                          <div className="cat-meta">
+                            <span>{category.description || '-'}</span>
+                            <span>•</span>
+                            <span>{formatDate(category.createdAt)}</span>
+                            <span>•</span>
+                            <span>{category.subcategories.length} subcategories</span>
+                          </div>
+                        </div>
+                        {isSuperAdmin && (
+                          <div className="cat-actions" onClick={(e) => e.stopPropagation()}>
+                            <button className="btn-icon" title="Edit" onClick={() => openCategoryForm(category)}>
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                            <button className="btn-icon btn-icon-danger" title="Delete" onClick={() => openCategoryDelete('category', category)}>
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 4h12M5.5 4V2.5a1 1 0 011-1h3a1 1 0 011 1V4M12.5 4v9.5a1 1 0 01-1 1h-7a1 1 0 01-1-1V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Subcategories */}
+                      {expandedCategoryId === category.id && (
+                        <div className="subcat-section">
+                          <div className="subcat-header">
+                            <span className="subcat-title">Subcategories</span>
+                            {isSuperAdmin && (
+                              <button className="btn-link-sm" onClick={() => openSubcategoryForm(category.id)}>
+                                + Add Subcategory
+                              </button>
+                            )}
+                          </div>
+                          {category.subcategories.length === 0 ? (
+                            <p className="subcat-empty">No subcategories</p>
+                          ) : (
+                            <div className="subcat-list">
+                              {category.subcategories.map((sub) => (
+                                <div key={sub.id} className="subcat-item">
+                                  <div className="subcat-info">
+                                    <span className="subcat-name">{sub.name}</span>
+                                    <span className={`status-badge status-sm ${getStatusBadgeClass(sub.status)}`}>{sub.status}</span>
+                                    <span className="subcat-desc">{sub.description || '-'}</span>
+                                  </div>
+                                  {isSuperAdmin && (
+                                    <div className="subcat-actions">
+                                      <button className="btn-icon btn-icon-sm" title="Edit" onClick={() => openSubcategoryForm(category.id, sub)}>
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M10 2l2 2-7 7H3v-2l7-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      </button>
+                                      <button className="btn-icon btn-icon-sm btn-icon-danger" title="Delete" onClick={() => openCategoryDelete('subcategory', sub)}>
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1.5 3.5h11M4.5 3.5V2a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1.5M11 3.5v8a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Regular Module Content */}
+          {!config.isDocumentRepository && (
+            <section className="grid cards-3">
+              <StatCard label="Active" value={String(openCount)} hint="Current working queue" />
+              <StatCard label="Tracked" value={String(items.length)} hint="Loaded records" />
+              <StatCard label="Risk / Due" value={String(riskCount || dueCount)} hint="Needs review" />
+            </section>
+          )}
+
+          {/* Document Repository Stats */}
+          {config.isDocumentRepository && (
+            <section className="grid cards-3">
+              <StatCard label="Documents" value={String(items.length)} hint="Uploaded files" />
+            </section>
+          )}
+
+          <div className="table-card">
+            <table>
+              <thead>
+                <tr>
+                  {config.columns.map((column) => {
+                    // Add sorting for document repository columns
+                    if (config.isDocumentRepository && ['fileName', 'createdAt', 'fileSize'].includes(column.key)) {
+                      const isActive = docSortBy === column.key;
+                      const nextSortOrder = isActive && docSortOrder === 'asc' ? 'desc' : 'asc';
+                      return (
+                        <th 
+                          key={column.key} 
+                          className="sortable-header"
+                          onClick={() => {
+                            setDocSortBy(column.key as 'fileName' | 'createdAt' | 'fileSize');
+                            setDocSortOrder(nextSortOrder);
+                            loadComplianceDocuments();
+                          }}
+                        >
+                          {column.label}
+                          {isActive && <span className="sort-indicator">{docSortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
                     </th>
                   );
                 }
@@ -2095,6 +2197,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           </tbody>
         </table>
       </div>
+        </>
+      )}
 
       {/* Create/Upload Modal - Different for document repository */}
       {createOpen && (
@@ -2332,268 +2436,131 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         </div>
       )}
 
-      {/* Category Management Modal */}
-      {categoryModalOpen && (
-        <div className="modal-backdrop cat-modal-backdrop">
-          <div className="modal cat-modal">
-            <div className="cat-modal-header">
-              <div className="cat-modal-title-row">
-                <h3>Category Management</h3>
-                <button type="button" className="close" onClick={closeCategoryModal}>×</button>
-              </div>
-              <div className="cat-modal-toolbar">
-                <div className="search-box">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/>
-                    <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search categories..."
-                    value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
-                  />
-                </div>
-                {isSuperAdmin && (
-                  <button className="primary" onClick={() => openCategoryForm()}>
-                    + Create Category
-                  </button>
-                )}
-              </div>
-              {categoryMessage && (
-                <div className={`notice ${categoryMessage.includes('Failed') ? 'notice-error' : 'notice-success'}`}>
-                  {categoryMessage}
-                  <button className="notice-close" onClick={() => setCategoryMessage('')}>×</button>
-                </div>
-              )}
+      {/* Category Form Modal */}
+      {categoryFormOpen && (
+        <div className="modal-backdrop">
+          <div className="modal" style={{ maxWidth: '500px' }}>
+            <div className="page-title-row">
+              <h3>{editingCategory ? 'Edit Category' : 'Create Category'}</h3>
+              <button type="button" className="close" onClick={closeCategoryForm}>×</button>
             </div>
-
-            <div className="cat-modal-body">
-              {categoriesLoading ? (
-                <div className="cat-loading">
-                  <div className="spinner"></div>
-                  <p>Loading categories...</p>
-                </div>
-              ) : filteredCategories.length === 0 ? (
-                <div className="cat-empty">
-                  <p>{categorySearch ? 'No categories found' : 'No categories yet'}</p>
-                </div>
-              ) : (
-                <div className="cat-list">
-                  {filteredCategories.map((category) => (
-                    <div key={category.id} className={`cat-item ${expandedCategoryId === category.id ? 'expanded' : ''}`}>
-                      <div className="cat-header" onClick={() => toggleCategory(category.id)}>
-                        <div className="cat-row">
-                          <div className="cat-expand">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
-                              style={{ transform: expandedCategoryId === category.id ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                          <div className="cat-info">
-                            <span className="cat-name">{category.name}</span>
-                            <span className={`status-badge ${getStatusBadgeClass(category.status)}`}>{category.status}</span>
-                          </div>
-                          <div className="cat-meta">
-                            <span>{category.description || '-'}</span>
-                            <span>•</span>
-                            <span>{formatDate(category.createdAt)}</span>
-                            <span>•</span>
-                            <span>{category.subcategories.length} subcategories</span>
-                          </div>
-                        </div>
-                        {isSuperAdmin && (
-                          <div className="cat-actions" onClick={(e) => e.stopPropagation()}>
-                            <button className="btn-icon" title="Edit" onClick={() => openCategoryForm(category)}>
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                            <button className="btn-icon btn-icon-danger" title="Delete" onClick={() => openCategoryDelete('category', category)}>
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M2 4h12M5.5 4V2.5a1 1 0 011-1h3a1 1 0 011 1V4M12.5 4v9.5a1 1 0 01-1 1h-7a1 1 0 01-1-1V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Subcategories */}
-                      {expandedCategoryId === category.id && (
-                        <div className="subcat-section">
-                          <div className="subcat-header">
-                            <span className="subcat-title">Subcategories</span>
-                            {isSuperAdmin && (
-                              <button className="btn-link-sm" onClick={() => openSubcategoryForm(category.id)}>
-                                + Add Subcategory
-                              </button>
-                            )}
-                          </div>
-                          {category.subcategories.length === 0 ? (
-                            <p className="subcat-empty">No subcategories</p>
-                          ) : (
-                            <div className="subcat-list">
-                              {category.subcategories.map((sub) => (
-                                <div key={sub.id} className="subcat-item">
-                                  <div className="subcat-info">
-                                    <span className="subcat-name">{sub.name}</span>
-                                    <span className={`status-badge status-sm ${getStatusBadgeClass(sub.status)}`}>{sub.status}</span>
-                                    <span className="subcat-desc">{sub.description || '-'}</span>
-                                  </div>
-                                  {isSuperAdmin && (
-                                    <div className="subcat-actions">
-                                      <button className="btn-icon btn-icon-sm" title="Edit" onClick={() => openSubcategoryForm(category.id, sub)}>
-                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M10 2l2 2-7 7H3v-2l7-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                        </svg>
-                                      </button>
-                                      <button className="btn-icon btn-icon-sm btn-icon-danger" title="Delete" onClick={() => openCategoryDelete('subcategory', sub)}>
-                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M1.5 3.5h11M4.5 3.5V2a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1.5M11 3.5v8a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                        </svg>
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="form-group">
+              <label>Category Name *</label>
+              <input
+                type="text"
+                value={categoryForm.name}
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                placeholder="e.g., Hardware"
+                autoFocus
+              />
             </div>
+            <div className="form-group">
+              <label>Description</label>
+              <textarea
+                value={categoryForm.description}
+                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                placeholder="Optional description..."
+                rows={3}
+              />
+            </div>
+            <div className="form-group">
+              <label>Status</label>
+              <select
+                value={categoryForm.status}
+                onChange={(e) => setCategoryForm({ ...categoryForm, status: e.target.value })}
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={closeCategoryForm}>Cancel</button>
+              <button type="button" className="primary" onClick={saveCategory} disabled={savingCategory || !categoryForm.name.trim()}>
+                {savingCategory ? 'Saving...' : (editingCategory ? 'Update' : 'Create')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Category Form Modal */}
-            {categoryFormOpen && (
-              <div className="modal-backdrop">
-                <div className="modal" style={{ maxWidth: '500px' }}>
-                  <div className="page-title-row">
-                    <h3>{editingCategory ? 'Edit Category' : 'Create Category'}</h3>
-                    <button type="button" className="close" onClick={closeCategoryForm}>×</button>
-                  </div>
-                  <div className="form-group">
-                    <label>Category Name *</label>
-                    <input
-                      type="text"
-                      value={categoryForm.name}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                      placeholder="e.g., Hardware"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Description</label>
-                    <textarea
-                      value={categoryForm.description}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                      placeholder="Optional description..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Status</label>
-                    <select
-                      value={categoryForm.status}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, status: e.target.value })}
-                    >
-                      <option value="ACTIVE">Active</option>
-                      <option value="INACTIVE">Inactive</option>
-                    </select>
-                  </div>
-                  <div className="form-actions">
-                    <button type="button" className="secondary" onClick={closeCategoryForm}>Cancel</button>
-                    <button type="button" className="primary" onClick={saveCategory} disabled={savingCategory || !categoryForm.name.trim()}>
-                      {savingCategory ? 'Saving...' : (editingCategory ? 'Update' : 'Create')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+      {/* Subcategory Form Modal */}
+      {subcategoryFormOpen && (
+        <div className="modal-backdrop">
+          <div className="modal" style={{ maxWidth: '500px' }}>
+            <div className="page-title-row">
+              <h3>{editingSubcategory ? 'Edit Subcategory' : 'Create Subcategory'}</h3>
+              <button type="button" className="close" onClick={closeSubcategoryForm}>×</button>
+            </div>
+            <div className="form-group">
+              <label>Subcategory Name *</label>
+              <input
+                type="text"
+                value={subcategoryForm.name}
+                onChange={(e) => setSubcategoryForm({ ...subcategoryForm, name: e.target.value })}
+                placeholder="e.g., Laptop"
+                autoFocus
+              />
+            </div>
+            <div className="form-group">
+              <label>Description</label>
+              <textarea
+                value={subcategoryForm.description}
+                onChange={(e) => setSubcategoryForm({ ...subcategoryForm, description: e.target.value })}
+                placeholder="Optional description..."
+                rows={3}
+              />
+            </div>
+            <div className="form-group">
+              <label>Status</label>
+              <select
+                value={subcategoryForm.status}
+                onChange={(e) => setSubcategoryForm({ ...subcategoryForm, status: e.target.value })}
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={closeSubcategoryForm}>Cancel</button>
+              <button type="button" className="primary" onClick={saveSubcategory} disabled={savingSubcategory || !subcategoryForm.name.trim()}>
+                {savingSubcategory ? 'Saving...' : (editingSubcategory ? 'Update' : 'Create')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Subcategory Form Modal */}
-            {subcategoryFormOpen && (
-              <div className="modal-backdrop">
-                <div className="modal" style={{ maxWidth: '500px' }}>
-                  <div className="page-title-row">
-                    <h3>{editingSubcategory ? 'Edit Subcategory' : 'Create Subcategory'}</h3>
-                    <button type="button" className="close" onClick={closeSubcategoryForm}>×</button>
-                  </div>
-                  <div className="form-group">
-                    <label>Subcategory Name *</label>
-                    <input
-                      type="text"
-                      value={subcategoryForm.name}
-                      onChange={(e) => setSubcategoryForm({ ...subcategoryForm, name: e.target.value })}
-                      placeholder="e.g., Laptop"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Description</label>
-                    <textarea
-                      value={subcategoryForm.description}
-                      onChange={(e) => setSubcategoryForm({ ...subcategoryForm, description: e.target.value })}
-                      placeholder="Optional description..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Status</label>
-                    <select
-                      value={subcategoryForm.status}
-                      onChange={(e) => setSubcategoryForm({ ...subcategoryForm, status: e.target.value })}
-                    >
-                      <option value="ACTIVE">Active</option>
-                      <option value="INACTIVE">Inactive</option>
-                    </select>
-                  </div>
-                  <div className="form-actions">
-                    <button type="button" className="secondary" onClick={closeSubcategoryForm}>Cancel</button>
-                    <button type="button" className="primary" onClick={saveSubcategory} disabled={savingSubcategory || !subcategoryForm.name.trim()}>
-                      {savingSubcategory ? 'Saving...' : (editingSubcategory ? 'Update' : 'Create')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Category Delete Confirmation */}
-            {categoryDeleteOpen && categoryDeleteItem && (
-              <div className="modal-backdrop">
-                <div className="modal" style={{ maxWidth: '500px' }}>
-                  <div className="page-title-row">
-                    <h3>Delete {categoryDeleteItem.type === 'category' ? 'Category' : 'Subcategory'}?</h3>
-                    <button type="button" className="close" onClick={closeCategoryDelete}>×</button>
-                  </div>
-                  <div className="warning-box">
-                    <p>Are you sure you want to delete <strong>{categoryDeleteItem.item.name}</strong>?</p>
-                    {categoryDeleteItem.type === 'category' && (
-                      <p>This will also delete all subcategories under this category.</p>
-                    )}
-                    <p>This action cannot be undone.</p>
-                  </div>
-                  <div className="form-group">
-                    <label>Type <strong>DELETE</strong> to confirm:</label>
-                    <input
-                      type="text"
-                      value={categoryDeleteText}
-                      onChange={(e) => setCategoryDeleteText(e.target.value)}
-                      placeholder="Type DELETE to confirm"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="form-actions">
-                    <button type="button" className="secondary" onClick={closeCategoryDelete}>Cancel</button>
-                    <button type="button" className="danger" onClick={confirmCategoryDelete} disabled={categoryDeleteText !== 'DELETE' || categoryDeleting}>
-                      {categoryDeleting ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+      {/* Category Delete Confirmation */}
+      {categoryDeleteOpen && categoryDeleteItem && (
+        <div className="modal-backdrop">
+          <div className="modal" style={{ maxWidth: '500px' }}>
+            <div className="page-title-row">
+              <h3>Delete {categoryDeleteItem.type === 'category' ? 'Category' : 'Subcategory'}?</h3>
+              <button type="button" className="close" onClick={closeCategoryDelete}>×</button>
+            </div>
+            <div className="warning-box">
+              <p>Are you sure you want to delete <strong>{categoryDeleteItem.item.name}</strong>?</p>
+              {categoryDeleteItem.type === 'category' && (
+                <p>This will also delete all subcategories under this category.</p>
+              )}
+              <p>This action cannot be undone.</p>
+            </div>
+            <div className="form-group">
+              <label>Type <strong>DELETE</strong> to confirm:</label>
+              <input
+                type="text"
+                value={categoryDeleteText}
+                onChange={(e) => setCategoryDeleteText(e.target.value)}
+                placeholder="Type DELETE to confirm"
+                autoFocus
+              />
+            </div>
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={closeCategoryDelete}>Cancel</button>
+              <button type="button" className="danger" onClick={confirmCategoryDelete} disabled={categoryDeleteText !== 'DELETE' || categoryDeleting}>
+                {categoryDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}
