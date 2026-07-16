@@ -1639,18 +1639,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               + Create Category
             </button>
           )}
-          {/* Category Management: Create Inventory button for inventory */}
-          {config.isCategoryManagement && (isSuperAdmin || isAdmin) && (
-            <button className="secondary" onClick={() => navigate('/inventory/create')}>
-              + Create Inventory
-            </button>
-          )}
-          {/* Category Management: Inventory Master listing button */}
-          {config.isCategoryManagement && (
-            <button className="secondary" onClick={() => navigate('/inventory/master')}>
-              Inventory Master
-            </button>
-          )}
         </div>
       </div>
 
@@ -1945,131 +1933,64 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
 
       {message && <div className="notice">{message}</div>}
 
-      {/* Category Management Content - Inline display for inventory */}
+      {/* Category Management Content - Inventory Categories as Cards */}
       {config.isCategoryManagement ? (
         <>
-          {/* Category search and list */}
-          <div className="cat-inline">
-            <div className="cat-inline-toolbar">
-              <div className="search-box">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/>
-                  <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search categories..."
-                  value={categorySearch}
-                  onChange={(e) => setCategorySearch(e.target.value)}
-                />
-              </div>
+          {/* Category cards grid */}
+          {categoryMessage && (
+            <div className={`notice ${categoryMessage.includes('Failed') ? 'notice-error' : 'notice-success'}`}>
+              {categoryMessage}
+              <button className="notice-close" onClick={() => setCategoryMessage('')}>×</button>
             </div>
+          )}
 
-            {categoryMessage && (
-              <div className={`notice ${categoryMessage.includes('Failed') ? 'notice-error' : 'notice-success'}`}>
-                {categoryMessage}
-                <button className="notice-close" onClick={() => setCategoryMessage('')}>×</button>
-              </div>
-            )}
-
-            <div className="cat-inline-body">
-              {categoriesLoading ? (
-                <div className="cat-loading">
-                  <div className="spinner"></div>
-                  <p>Loading categories...</p>
-                </div>
-              ) : filteredCategories.length === 0 ? (
-                <div className="cat-empty">
-                  <p>{categorySearch ? 'No categories found' : 'No categories yet. Click "Create Category" to add your first category.'}</p>
-                </div>
-              ) : (
-                <div className="cat-list">
-                  {filteredCategories.map((category) => (
-                    <div key={category.id} className={`cat-item ${expandedCategoryId === category.id ? 'expanded' : ''}`}>
-                      <div className="cat-header" onClick={() => toggleCategory(category.id)}>
-                        <div className="cat-row">
-                          <div className="cat-expand">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
-                              style={{ transform: expandedCategoryId === category.id ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                          <div className="cat-info">
-                            <span className="cat-name">{category.name}</span>
-                            <span className={`status-badge ${getStatusBadgeClass(category.status)}`}>{category.status}</span>
-                          </div>
-                          <div className="cat-meta">
-                            <span>{category.description || '-'}</span>
-                            <span>•</span>
-                            <span>{formatDate(category.createdAt)}</span>
-                            <span>•</span>
-                            <span>{category.subcategories.length} subcategories</span>
-                          </div>
-                        </div>
-                        {isSuperAdmin && (
-                          <div className="cat-actions" onClick={(e) => e.stopPropagation()}>
-                            <button className="btn-icon" title="Edit" onClick={() => openCategoryForm(category)}>
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                            <button className="btn-icon btn-icon-danger" title="Delete" onClick={() => openCategoryDelete('category', category)}>
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M2 4h12M5.5 4V2.5a1 1 0 011-1h3a1 1 0 011 1V4M12.5 4v9.5a1 1 0 01-1 1h-7a1 1 0 01-1-1V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Subcategories */}
-                      {expandedCategoryId === category.id && (
-                        <div className="subcat-section">
-                          <div className="subcat-header">
-                            <span className="subcat-title">Subcategories</span>
-                            {isSuperAdmin && (
-                              <button className="btn-link-sm" onClick={() => openSubcategoryForm(category.id)}>
-                                + Add Subcategory
-                              </button>
-                            )}
-                          </div>
-                          {category.subcategories.length === 0 ? (
-                            <p className="subcat-empty">No subcategories</p>
-                          ) : (
-                            <div className="subcat-list">
-                              {category.subcategories.map((sub) => (
-                                <div key={sub.id} className="subcat-item">
-                                  <div className="subcat-info">
-                                    <span className="subcat-name">{sub.name}</span>
-                                    <span className={`status-badge status-sm ${getStatusBadgeClass(sub.status)}`}>{sub.status}</span>
-                                    <span className="subcat-desc">{sub.description || '-'}</span>
-                                  </div>
-                                  {isSuperAdmin && (
-                                    <div className="subcat-actions">
-                                      <button className="btn-icon btn-icon-sm" title="Edit" onClick={() => openSubcategoryForm(category.id, sub)}>
-                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M10 2l2 2-7 7H3v-2l7-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                        </svg>
-                                      </button>
-                                      <button className="btn-icon btn-icon-sm btn-icon-danger" title="Delete" onClick={() => openCategoryDelete('subcategory', sub)}>
-                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M1.5 3.5h11M4.5 3.5V2a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1.5M11 3.5v8a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                        </svg>
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
+          {categoriesLoading ? (
+            <div className="listing-loading">
+              <div className="spinner"></div>
+              <span>Loading categories...</span>
+            </div>
+          ) : filteredCategories.length === 0 ? (
+            <div className="listing-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <p>{categorySearch ? 'No categories found' : 'No categories yet. Click "Create Category" to add your first category.'}</p>
+            </div>
+          ) : (
+            <div className="category-cards-grid">
+              {filteredCategories.map((category) => (
+                <div 
+                  key={category.id} 
+                  className="category-card"
+                  onClick={() => navigate(`/inventory/${category.id}`)}
+                >
+                  <div className="category-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                  </div>
+                  <div className="category-card-content">
+                    <h3 className="category-card-name">{category.name}</h3>
+                    <div className="category-card-stats">
+                      <span className="category-card-stat">
+                        <strong>{category.subcategories.length}</strong> Subcategories
+                      </span>
+                      <span className="category-card-stat">
+                        <strong>0</strong> Inventories
+                      </span>
                     </div>
-                  ))}
+                  </div>
+                  <div className="category-card-arrow">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
-          </div>
+          )}
         </>
       ) : (
         <>

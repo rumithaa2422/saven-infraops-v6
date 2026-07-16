@@ -91,7 +91,11 @@ export function InventoryMasterDetailPage() {
   }, [id, isEmployee]);
 
   function handleBack() {
-    navigate('/inventory/master');
+    if (item) {
+      navigate(`/inventory/${item.category.id}`);
+    } else {
+      navigate('/inventory');
+    }
   }
 
   function handleEdit() {
@@ -104,12 +108,14 @@ export function InventoryMasterDetailPage() {
     const confirmed = window.confirm('Are you sure you want to delete this inventory item? This action cannot be undone.');
     if (!confirmed) return;
 
+    const categoryId = item.category.id;
+    
     try {
       setDeleting(true);
       await api.delete(`/inventory-master/${item.id}`);
       setMessage('Inventory item deleted successfully.');
       setTimeout(() => {
-        navigate('/inventory/master');
+        navigate(`/inventory/${categoryId}`);
       }, 1500);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete inventory item.');

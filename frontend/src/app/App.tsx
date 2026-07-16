@@ -9,7 +9,7 @@ import { ServiceRequestDetailPage } from '../pages/ServiceRequestDetailPage';
 import { IncidentDetailPage } from '../pages/IncidentDetailPage';
 import { InventoryDetailPage } from '../pages/InventoryDetailPage';
 import { InventoryMasterPage } from '../pages/InventoryMasterPage';
-import { InventoryMasterListingPage } from '../pages/InventoryMasterListingPage';
+import { InventoryCategoryPage } from '../pages/InventoryCategoryPage';
 import { InventoryMasterDetailPage } from '../pages/InventoryMasterDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ActivateAccountPage } from '../pages/ActivateAccountPage';
@@ -166,10 +166,10 @@ export function App() {
           } 
         />
         <Route 
-          path="inventory/master" 
+          path="inventory/:categoryId" 
           element={
             <PermissionRoute permission={modulePermissions['inventory']}>
-              <InventoryMasterListingPage />
+              <InventoryCategoryPage />
             </PermissionRoute>
           } 
         />
@@ -190,7 +190,7 @@ export function App() {
           } 
         />
         <Route 
-          path="inventory/:id" 
+          path="inventory/details/:id" 
           element={
             <PermissionRoute permission={modulePermissions['inventory']}>
               <InventoryDetailPage />

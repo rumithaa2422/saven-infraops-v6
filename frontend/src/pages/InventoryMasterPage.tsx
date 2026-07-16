@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
@@ -48,6 +48,7 @@ type ValidationErrors = {
 
 export function InventoryMasterPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { hasPermission, user } = useAuth();
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
@@ -145,6 +146,16 @@ export function InventoryMasterPage() {
     if (isEditMode) {
       loadItem();
     } else {
+      // Set pre-selected category and subcategory from query params
+      const preCategoryId = searchParams.get('categoryId');
+      const preSubcategoryId = searchParams.get('subcategoryId');
+      
+      if (preCategoryId) {
+        setForm(prev => ({ ...prev, categoryId: preCategoryId }));
+      }
+      if (preSubcategoryId) {
+        setForm(prev => ({ ...prev, subcategoryId: preSubcategoryId }));
+      }
       setLoading(false);
     }
   }, [id, isEditMode]);
@@ -237,7 +248,11 @@ export function InventoryMasterPage() {
 
       // Navigate back after short delay
       setTimeout(() => {
-        navigate('/inventory');
+        if (form.categoryId) {
+          navigate(`/inventory/${form.categoryId}`);
+        } else {
+          navigate('/inventory');
+        }
       }, 1500);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save inventory item.');
@@ -247,7 +262,11 @@ export function InventoryMasterPage() {
   }
 
   function handleBack() {
-    navigate('/inventory');
+    if (form.categoryId) {
+      navigate(`/inventory/${form.categoryId}`);
+    } else {
+      navigate('/inventory');
+    }
   }
 
   function handleCancel() {

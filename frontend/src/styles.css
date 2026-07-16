@@ -7214,6 +7214,234 @@ input:disabled {
    Inventory Master Listing Page
    ============================================ */
 
+/* Category Cards for Inventory Landing */
+.category-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.category-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-card:hover {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.category-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: var(--brand-soft);
+  border-radius: 12px;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.category-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.category-card-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.category-card-stat strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.category-card-arrow {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.category-card:hover .category-card-arrow {
+  color: var(--brand);
+}
+
+/* Subcategory Section */
+.subcategory-section {
+  margin-bottom: 20px;
+}
+
+.subcategory-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.subcategory-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.subcategory-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.subcategory-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subcategory-card:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.subcategory-card.selected {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: white;
+}
+
+.subcategory-card.selected .subcategory-name {
+  color: white;
+}
+
+.subcategory-card.selected .subcategory-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.subcategory-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.subcategory-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--panel-soft);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.subcategory-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 12px;
+}
+
+/* Filters Panel */
+.filters-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.filters-row:last-child {
+  margin-bottom: 0;
+}
+
+.filters-panel .filter-group {
+  flex: 1;
+  min-width: 150px;
+}
+
+.filters-panel .filter-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.filters-panel .filter-group input,
+.filters-panel .filter-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.filters-panel .filter-group input:focus,
+.filters-panel .filter-group select:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.icon-btn.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+/* Sortable columns */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  color: var(--brand);
+}
+
+.detail-description {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 8px 0 0 0;
+}
+
 .listing-header {
   display: flex;
   align-items: center;
