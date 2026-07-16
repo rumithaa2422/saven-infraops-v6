@@ -595,16 +595,16 @@ export function InventoryCategoryPage() {
       // Validate date formats
       const purchaseDate = row['Purchase Date'] || row['PurchaseDate'] || row['purchaseDate'];
       if (purchaseDate && purchaseDate !== '') {
-        const parsedDate = new Date(purchaseDate);
-        if (isNaN(parsedDate.getTime())) {
+        const parsedDate = parseFlexibleDate(purchaseDate);
+        if (!parsedDate) {
           rowErrors.push('Invalid Purchase Date format');
         }
       }
 
       const warrantyExpiry = row['Warranty Expiry'] || row['WarrantyExpiry'] || row['warrantyExpiry'];
       if (warrantyExpiry && warrantyExpiry !== '') {
-        const parsedDate = new Date(warrantyExpiry);
-        if (isNaN(parsedDate.getTime())) {
+        const parsedDate = parseFlexibleDate(warrantyExpiry);
+        if (!parsedDate) {
           rowErrors.push('Invalid Warranty Expiry format');
         }
       }
@@ -619,7 +619,7 @@ export function InventoryCategoryPage() {
       if (rowErrors.length > 0) {
         errors[i] = rowErrors;
       } else {
-        // Build valid row object
+        // Build valid row object using the flexible parser
         const validRow: any = {
           itemName: row['Item Name'] || row['ItemName'] || row['itemName'],
           subcategoryId: subcategoryMap.get(subcategoryName.toLowerCase()),
@@ -630,9 +630,9 @@ export function InventoryCategoryPage() {
           invoiceNo: invoiceNo,
           purchaseCost: purchaseCost ? parseFloat(purchaseCost) : null,
           gst: gst ? parseFloat(gst) : null,
-          purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
+          purchaseDate: purchaseDate ? parseFlexibleDate(purchaseDate)?.toISOString() : null,
           warrantyMonths: row['Warranty'] || row['warranty'] || null,
-          warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry).toISOString() : null,
+          warrantyExpiry: warrantyExpiry ? parseFlexibleDate(warrantyExpiry)?.toISOString() : null,
           location: row['Location'] || row['location'] || '',
           minStock: minStock ? parseInt(minStock) : null,
           currentQty: currentQty ? parseInt(currentQty) : 0,
@@ -644,6 +644,69 @@ export function InventoryCategoryPage() {
 
     setImportErrors(errors);
     setImportValidRows(validRows);
+  }
+
+  // Helper function to parse dates in multiple formats
+  function parseFlexibleDate(value: string | number): Date | null {
+    if (!value || value === '') return null;
+
+    // If it's already a number (Excel serial date), convert it
+    if (typeof value === 'number' || (!isNaN(Number(value)) && Number(value) > 25569 && Number(value) < 50000)) {
+      // Excel serial date: days since Jan 1, 1900
+      const excelDate = Number(value);
+      const date = new Date((excelDate - 25569) * 86400 * 1000);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    const strValue = String(value).trim();
+
+    // Try ISO format first (yyyy-MM-dd)
+    let match = strValue.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (match) {
+      const date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+      if (!isNaN(date.getTime())) return date;
+    }
+
+    // Try MM/dd/yyyy format
+    match = strValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) {
+      const date = new Date(parseInt(match[3]), parseInt(match[1]) - 1, parseInt(match[2]));
+      if (!isNaN(date.getTime())) return date;
+    }
+
+    // Try dd/MM/yyyy format
+    match = strValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) {
+      const date = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+      if (!isNaN(date.getTime())) return date;
+    }
+
+    // Try dd-MM-yyyy format
+    match = strValue.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (match) {
+      const date = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+      if (!isNaN(date.getTime())) return date;
+    }
+
+    // Try dd-MMM-yyyy format (e.g., 05-Oct-2026)
+    const months: Record<string, number> = {
+      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+    };
+    match = strValue.match(/^(\d{1,2})-([a-zA-Z]{3})-(\d{4})$/);
+    if (match) {
+      const monthLower = match[2].toLowerCase();
+      if (months[monthLower] !== undefined) {
+        const date = new Date(parseInt(match[3]), months[monthLower], parseInt(match[1]));
+        if (!isNaN(date.getTime())) return date;
+      }
+    }
+
+    // Try native Date parsing as fallback
+    const nativeDate = new Date(strValue);
+    if (!isNaN(nativeDate.getTime())) return nativeDate;
+
+    return null;
   }
 
   async function handleImportConfirm() {
