@@ -7,13 +7,20 @@ type Project = {
   id: string;
   projectName: string;
   projectCode: string;
-  client: string;
-  ownerName: string;
-  status: string;
-  priority: string;
-  startDate?: string;
-  endDate?: string;
+  client?: string;
+  ownerName?: string;
   description?: string;
+  department?: string;
+  technologyStack?: string;
+  priority: string;
+  status: string;
+  budget?: number;
+  startDate?: string;
+  expectedEndDate?: string;
+  actualEndDate?: string;
+  projectType?: string;
+  projectLocation?: string;
+  remarks?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -26,6 +33,9 @@ export function ProjectDetailsPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     loadProject();
@@ -49,6 +59,20 @@ export function ProjectDetailsPage() {
     navigate('/projects-environments');
   }
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await api.delete(`/generic/projects/${id}`);
+      navigate('/projects-environments');
+    } catch (err: any) {
+      setDeleteError(err.response?.data?.message || 'Failed to delete project');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   function formatDate(dateStr?: string): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -66,6 +90,11 @@ export function ProjectDetailsPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  function formatCurrency(value?: number): string {
+    if (!value) return '-';
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   }
 
   if (loading) {
@@ -135,11 +164,28 @@ export function ProjectDetailsPage() {
               </svg>
               Back
             </button>
+            {isSuperAdmin && (
+              <>
+                <button className="btn-edit" onClick={() => navigate(`/projects-environments/${id}/edit`)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H19C20.1046 22 21 21.1046 21 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M18.5 2.50001C19.3284 1.67158 20.6716 1.67158 21.5 2.50001C22.3284 3.32844 22.3284 4.67158 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Edit
+                </button>
+                <button className="btn-delete" onClick={() => setShowDeleteConfirm(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6H21M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Delete
+                </button>
+              </>
+            )}
           </div>
           <div className="detail-header-info">
             <div className="detail-title-row">
               <span className="detail-ticket-no">{project.projectCode}</span>
-              <span className={`status-badge status-${project.status.toLowerCase()}`}>
+              <span className={`status-badge status-${project.status.toLowerCase().replace('_', '')}`}>
                 {project.status.replace(/_/g, ' ')}
               </span>
               <span className={`priority-badge priority-${project.priority.toLowerCase()}`}>
@@ -167,10 +213,10 @@ export function ProjectDetailsPage() {
         <div className="detail-content-grid">
           {/* Main Content */}
           <div className="detail-main">
-            {/* Project Overview */}
+            {/* Project Information */}
             <div className="detail-card">
               <div className="detail-card-header">
-                <h3>Project Overview</h3>
+                <h3>Project Information</h3>
               </div>
               <div className="detail-card-body">
                 <div className="detail-grid">
@@ -191,24 +237,36 @@ export function ProjectDetailsPage() {
                     <span>{project.ownerName || '-'}</span>
                   </div>
                   <div className="detail-field">
-                    <label>Status</label>
-                    <span className={`status-badge status-${project.status.toLowerCase()}`}>
-                      {project.status.replace(/_/g, ' ')}
-                    </span>
+                    <label>Department</label>
+                    <span>{project.department || '-'}</span>
                   </div>
                   <div className="detail-field">
-                    <label>Priority</label>
-                    <span className={`priority-badge priority-${project.priority.toLowerCase()}`}>
-                      {project.priority}
-                    </span>
+                    <label>Technology Stack</label>
+                    <span>{project.technologyStack || '-'}</span>
+                  </div>
+                  <div className="detail-field">
+                    <label>Project Type</label>
+                    <span>{project.projectType?.replace(/_/g, ' ') || '-'}</span>
+                  </div>
+                  <div className="detail-field">
+                    <label>Project Location</label>
+                    <span>{project.projectLocation || '-'}</span>
                   </div>
                   <div className="detail-field">
                     <label>Start Date</label>
                     <span>{formatDate(project.startDate)}</span>
                   </div>
                   <div className="detail-field">
-                    <label>End Date</label>
-                    <span>{formatDate(project.endDate)}</span>
+                    <label>Expected End Date</label>
+                    <span>{formatDate(project.expectedEndDate)}</span>
+                  </div>
+                  <div className="detail-field">
+                    <label>Actual End Date</label>
+                    <span>{formatDate(project.actualEndDate)}</span>
+                  </div>
+                  <div className="detail-field">
+                    <label>Budget</label>
+                    <span>{formatCurrency(project.budget)}</span>
                   </div>
                 </div>
               </div>
@@ -225,6 +283,18 @@ export function ProjectDetailsPage() {
                 </p>
               </div>
             </div>
+
+            {/* Remarks */}
+            {project.remarks && (
+              <div className="detail-card">
+                <div className="detail-card-header">
+                  <h3>Remarks</h3>
+                </div>
+                <div className="detail-card-body">
+                  <p className="detail-description">{project.remarks}</p>
+                </div>
+              </div>
+            )}
 
             {/* Timeline */}
             <div className="detail-card">
@@ -243,6 +313,18 @@ export function ProjectDetailsPage() {
                     <div className="timeline-content">
                       <span className="timeline-action">Project Created</span>
                       <span className="timeline-date">{formatDateTime(project.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div className="timeline-item">
+                    <div className="timeline-icon updated">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H19C20.1046 22 21 21.1046 21 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M18.5 2.50001C19.3284 1.67158 20.6716 1.67158 21.5 2.50001C22.3284 3.32844 22.3284 4.67158 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div className="timeline-content">
+                      <span className="timeline-action">Project Updated</span>
+                      <span className="timeline-date">{formatDateTime(project.updatedAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -288,6 +370,39 @@ export function ProjectDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="page-title-row">
+              <h3>Delete Project</h3>
+              <button type="button" className="close" onClick={() => setShowDeleteConfirm(false)}>Close</button>
+            </div>
+            
+            {deleteError && (
+              <div className="alert alert-error" style={{ marginBottom: '16px' }}>
+                {deleteError}
+              </div>
+            )}
+            
+            <div className="warning-box">
+              <p>Are you sure you want to delete this project?</p>
+              <p><strong>{project.projectName}</strong> ({project.projectCode})</p>
+              <p>This action cannot be undone.</p>
+            </div>
+            
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </button>
+              <button type="button" className="danger" onClick={handleDelete} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

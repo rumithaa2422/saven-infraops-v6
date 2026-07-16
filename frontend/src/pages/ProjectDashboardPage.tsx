@@ -11,9 +11,16 @@ type Project = {
   ownerName?: string;
   status: string;
   priority: string;
+  department?: string;
+  technologyStack?: string;
   startDate?: string;
-  endDate?: string;
+  expectedEndDate?: string;
+  actualEndDate?: string;
+  projectType?: string;
+  projectLocation?: string;
+  budget?: number;
   description?: string;
+  remarks?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -30,7 +37,6 @@ export function ProjectDashboardPage() {
   const navigate = useNavigate();
   const { user, isSuperAdmin } = useAuth();
   const isAdmin = user?.roles.includes('Admin') ?? false;
-  const isEmployee = !isSuperAdmin && !isAdmin;
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,26 +53,19 @@ export function ProjectDashboardPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
-  const [sortBy, setSortBy] = useState('projectName');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [technologyFilter, setTechnologyFilter] = useState('');
+  const [managerFilter, setManagerFilter] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Filter panel visibility
   const [showFilters, setShowFilters] = useState(false);
 
-  // Create modal
-  const [createOpen, setCreateOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    projectName: '',
-    projectCode: '',
-    client: '',
-    ownerName: '',
-    status: 'ACTIVE',
-    priority: 'MEDIUM',
-    startDate: '',
-    endDate: '',
-    description: ''
-  });
-  const [saving, setSaving] = useState(false);
+  // Unique values for filters
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [technologies, setTechnologies] = useState<string[]>([]);
+  const [managers, setManagers] = useState<string[]>([]);
 
   const fetchProjects = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -78,19 +77,22 @@ export function ProjectDashboardPage() {
           search: search || undefined,
           status: statusFilter || undefined,
           priority: priorityFilter || undefined,
+          department: departmentFilter || undefined,
+          technology: technologyFilter || undefined,
+          manager: managerFilter || undefined,
           sortBy,
           sortOrder
         }
       });
 
-      let projectList = res.data.records || res.data || [];
+      let projectList: Project[] = res.data.records || res.data || [];
       
       // Calculate summary
       const totalProjects = projectList.length;
-      const activeProjects = projectList.filter((p: Project) => p.status === 'ACTIVE').length;
-      const completedProjects = projectList.filter((p: Project) => p.status === 'COMPLETED').length;
-      const onHold = projectList.filter((p: Project) => p.status === 'ON_HOLD').length;
-      const delayed = projectList.filter((p: Project) => p.status === 'DELAYED').length;
+      const activeProjects = projectList.filter((p) => p.status === 'ACTIVE').length;
+      const completedProjects = projectList.filter((p) => p.status === 'COMPLETED').length;
+      const onHold = projectList.filter((p) => p.status === 'ON_HOLD').length;
+      const delayed = projectList.filter((p) => p.status === 'DELAYED').length;
 
       setSummary({
         totalProjects,
@@ -100,6 +102,11 @@ export function ProjectDashboardPage() {
         delayed
       });
 
+      // Extract unique filter values
+      setDepartments([...new Set(projectList.map(p => p.department).filter(Boolean))] as string[]);
+      setTechnologies([...new Set(projectList.map(p => p.technologyStack).filter(Boolean))] as string[]);
+      setManagers([...new Set(projectList.map(p => p.ownerName).filter(Boolean))] as string[]);
+
       setProjects(projectList);
     } catch (err) {
       console.error('Failed to fetch projects:', err);
@@ -107,7 +114,7 @@ export function ProjectDashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [search, statusFilter, priorityFilter, sortBy, sortOrder]);
+  }, [search, statusFilter, priorityFilter, departmentFilter, technologyFilter, managerFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchProjects();
@@ -127,7 +134,7 @@ export function ProjectDashboardPage() {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(field);
-      setSortOrder('asc');
+      setSortOrder('desc');
     }
   };
 
@@ -135,22 +142,40 @@ export function ProjectDashboardPage() {
     setSearch('');
     setStatusFilter('');
     setPriorityFilter('');
-    setSortBy('projectName');
-    setSortOrder('asc');
+    setDepartmentFilter('');
+    setTechnologyFilter('');
+    setManagerFilter('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
   };
 
   const handleExport = async () => {
     try {
-      const csvHeaders = ['Project Code', 'Project Name', 'Client', 'Project Manager', 'Status', 'Priority', 'Start Date', 'End Date'];
+      const csvHeaders = [
+        'Project Code', 'Project Name', 'Client', 'Project Manager', 'Department',
+        'Technology Stack', 'Status', 'Priority', 'Start Date', 'Expected End Date',
+        'Actual End Date', 'Budget', 'Project Type', 'Location', 'Description', 'Remarks',
+        'Created At', 'Updated At'
+      ];
       const csvRows = projects.map(p => [
         p.projectCode,
         p.projectName,
         p.client || '',
         p.ownerName || '',
+        p.department || '',
+        p.technologyStack || '',
         p.status,
         p.priority,
         p.startDate || '',
-        p.endDate || ''
+        p.expectedEndDate || '',
+        p.actualEndDate || '',
+        p.budget ? p.budget.toString() : '',
+        p.projectType || '',
+        p.projectLocation || '',
+        p.description || '',
+        p.remarks || '',
+        p.createdAt,
+        p.updatedAt
       ]);
 
       const csvContent = [csvHeaders, ...csvRows]
@@ -167,31 +192,6 @@ export function ProjectDashboardPage() {
     }
   };
 
-  const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await api.post('/generic/projects', formData);
-      setCreateOpen(false);
-      setFormData({
-        projectName: '',
-        projectCode: '',
-        client: '',
-        ownerName: '',
-        status: 'ACTIVE',
-        priority: 'MEDIUM',
-        startDate: '',
-        endDate: '',
-        description: ''
-      });
-      fetchProjects();
-    } catch (err) {
-      console.error('Failed to create project:', err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const formatDate = (dateStr?: string): string => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -201,7 +201,7 @@ export function ProjectDashboardPage() {
     });
   };
 
-  const hasActiveFilters = search || statusFilter || priorityFilter;
+  const hasActiveFilters = search || statusFilter || priorityFilter || departmentFilter || technologyFilter || managerFilter;
 
   return (
     <div className="workspace">
@@ -292,7 +292,7 @@ export function ProjectDashboardPage() {
               </svg>
               <input
                 type="text"
-                placeholder="Search projects..."
+                placeholder="Search by name, code, client, manager, technology..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="search-input"
@@ -322,14 +322,20 @@ export function ProjectDashboardPage() {
                 Sort
               </button>
               <div className="sort-dropdown-content">
+                <button className={sortBy === 'createdAt' && sortOrder === 'desc' ? 'active' : ''} onClick={() => { setSortBy('createdAt'); setSortOrder('desc'); }}>
+                  Newest {sortBy === 'createdAt' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
+                <button className={sortBy === 'createdAt' && sortOrder === 'asc' ? 'active' : ''} onClick={() => { setSortBy('createdAt'); setSortOrder('asc'); }}>
+                  Oldest {sortBy === 'createdAt' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
                 <button className={sortBy === 'projectName' ? 'active' : ''} onClick={() => handleSort('projectName')}>
                   Name {sortBy === 'projectName' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
-                <button className={sortBy === 'projectCode' ? 'active' : ''} onClick={() => handleSort('projectCode')}>
-                  Code {sortBy === 'projectCode' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                <button className={sortBy === 'startDate' ? 'active' : ''} onClick={() => handleSort('startDate')}>
+                  Start Date {sortBy === 'startDate' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
-                <button className={sortBy === 'status' ? 'active' : ''} onClick={() => handleSort('status')}>
-                  Status {sortBy === 'status' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                <button className={sortBy === 'expectedEndDate' ? 'active' : ''} onClick={() => handleSort('expectedEndDate')}>
+                  End Date {sortBy === 'expectedEndDate' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
                 <button className={sortBy === 'priority' ? 'active' : ''} onClick={() => handleSort('priority')}>
                   Priority {sortBy === 'priority' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
@@ -349,7 +355,7 @@ export function ProjectDashboardPage() {
               Refresh
             </button>
 
-            {isSuperAdmin && (
+            {(isSuperAdmin || isAdmin) && (
               <button type="button" className="toolbar-btn" onClick={handleExport}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -361,7 +367,7 @@ export function ProjectDashboardPage() {
             )}
 
             {isSuperAdmin && (
-              <button type="button" className="toolbar-btn primary" onClick={() => setCreateOpen(true)}>
+              <button type="button" className="toolbar-btn primary" onClick={() => navigate('/projects-environments/create')}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
@@ -396,6 +402,33 @@ export function ProjectDashboardPage() {
                   <option value="LOW">Low</option>
                 </select>
               </div>
+              <div className="filter-group">
+                <label>Department</label>
+                <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
+                  <option value="">All Departments</option>
+                  {departments.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label>Technology</label>
+                <select value={technologyFilter} onChange={(e) => setTechnologyFilter(e.target.value)}>
+                  <option value="">All Technologies</option>
+                  {technologies.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label>Project Manager</label>
+                <select value={managerFilter} onChange={(e) => setManagerFilter(e.target.value)}>
+                  <option value="">All Managers</option>
+                  {managers.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             {hasActiveFilters && (
               <div className="filters-actions">
@@ -422,17 +455,28 @@ export function ProjectDashboardPage() {
               <div className="loading-spinner"></div>
               <p>Loading projects...</p>
             </div>
+          ) : projects.length === 0 && !hasActiveFilters ? (
+            <div className="table-empty">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <p>No Projects Available</p>
+              {isSuperAdmin && (
+                <button type="button" className="primary" onClick={() => navigate('/projects-environments/create')}>
+                  Create Project
+                </button>
+              )}
+            </div>
           ) : projects.length === 0 ? (
             <div className="table-empty">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <p>No projects found</p>
-              {hasActiveFilters && (
-                <button type="button" className="secondary" onClick={clearFilters}>
-                  Clear Filters
-                </button>
-              )}
+              <p>No projects match your filters</p>
+              <button type="button" className="secondary" onClick={clearFilters}>
+                Clear Filters
+              </button>
             </div>
           ) : (
             <div className="table-wrapper">
@@ -445,8 +489,8 @@ export function ProjectDashboardPage() {
                     <th>Project Manager</th>
                     <th>Status</th>
                     <th>Priority</th>
+                    <th>Department</th>
                     <th>Start Date</th>
-                    <th>End Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -457,7 +501,7 @@ export function ProjectDashboardPage() {
                       <td>{project.client || '-'}</td>
                       <td>{project.ownerName || '-'}</td>
                       <td>
-                        <span className={`status-badge status-${project.status.toLowerCase()}`}>
+                        <span className={`status-badge status-${project.status.toLowerCase().replace('_', '_')}`}>
                           {project.status.replace(/_/g, ' ')}
                         </span>
                       </td>
@@ -466,8 +510,8 @@ export function ProjectDashboardPage() {
                           {project.priority}
                         </span>
                       </td>
+                      <td>{project.department || '-'}</td>
                       <td>{formatDate(project.startDate)}</td>
-                      <td>{formatDate(project.endDate)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -476,112 +520,6 @@ export function ProjectDashboardPage() {
           )}
         </div>
       </div>
-
-      {/* Create Project Modal */}
-      {createOpen && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <div className="page-title-row">
-              <h3>Create Project</h3>
-              <button type="button" className="close" onClick={() => setCreateOpen(false)}>Close</button>
-            </div>
-            <form onSubmit={handleCreateProject}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Project Name *</label>
-                  <input
-                    type="text"
-                    value={formData.projectName}
-                    onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Project Code *</label>
-                  <input
-                    type="text"
-                    value={formData.projectCode}
-                    onChange={(e) => setFormData({ ...formData, projectCode: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Client</label>
-                  <input
-                    type="text"
-                    value={formData.client}
-                    onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Project Manager</label>
-                  <input
-                    type="text"
-                    value={formData.ownerName}
-                    onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="ON_HOLD">On Hold</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="DELAYED">Delayed</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Priority</label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                    <option value="CRITICAL">Critical</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Start Date</label>
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>End Date</label>
-                  <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className="form-actions">
-                <button type="button" className="secondary" onClick={() => setCreateOpen(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="primary" disabled={saving}>
-                  {saving ? 'Creating...' : 'Create Project'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

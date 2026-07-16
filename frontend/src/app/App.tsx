@@ -17,6 +17,8 @@ import { ActivateAccountPage } from '../pages/ActivateAccountPage';
 import { RolesPermissionsPage } from '../pages/RolesPermissionsPage';
 import { ProjectDetailsPage } from '../pages/ProjectDetailsPage';
 import { ProjectDashboardPage } from '../pages/ProjectDashboardPage';
+import { ProjectCreatePage } from '../pages/ProjectCreatePage';
+import { ProjectEditPage } from '../pages/ProjectEditPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -233,10 +235,26 @@ export function App() {
           } 
         />
         <Route 
+          path="projects-environments/create" 
+          element={
+            <PermissionRoute permission={modulePermissions['projects-environments']}>
+              <ProjectCreatePage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
           path="projects-environments/:id" 
           element={
             <PermissionRoute permission={modulePermissions['projects-environments']}>
               <ProjectDetailsPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="projects-environments/:id/edit" 
+          element={
+            <PermissionRoute permission={modulePermissions['projects-environments']}>
+              <ProjectEditPage />
             </PermissionRoute>
           } 
         />

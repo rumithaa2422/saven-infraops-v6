@@ -413,13 +413,30 @@ model ComplianceDocument {
 model ProjectEnvironment {
   id              String   @id @default(cuid())
   projectName     String
-  environmentName String
+  projectCode     String   @unique
+  environmentName String?
   serviceName     String?
   serverName      String?
   databaseName    String?
   ownerName       String?
   monitoringUrl   String?
   backupEnabled   Boolean  @default(false)
+  
+  // Extended Project Fields
+  client          String?
+  description     String?
+  department      String?
+  technologyStack String?
+  priority        String   @default("MEDIUM")
+  status          String   @default("ACTIVE")
+  budget          Decimal? @db.Decimal(12, 2)
+  startDate       DateTime?
+  expectedEndDate DateTime?
+  actualEndDate   DateTime?
+  projectType     String?
+  projectLocation String?
+  remarks         String?
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
