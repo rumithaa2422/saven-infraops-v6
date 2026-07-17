@@ -846,9 +846,9 @@ function UserView() {
   async function loadUsers() {
     try {
       setLoading(true);
-      // Load users with their assignment counts
-      const res = await api.get('/inventory-assignments/users', { params: { pageSize: 1000 } });
-      const userList = res.data.users || [];
+      // Load users with their assignment counts from generic users endpoint
+      const res = await api.get('/generic/users', { params: { pageSize: 1000 } });
+      const userList = res.data || [];
       
       // Get assignment counts for each user
       const usersWithCounts = await Promise.all(
@@ -859,13 +859,16 @@ function UserView() {
             });
             const assignments = assignRes.data.assignments || [];
             const projectIds = new Set(assignments.map((a: any) => a.project?.id).filter(Boolean));
+            // Extract role from the roles array
+            const role = user.roles?.[0]?.role?.name || 'Employee';
             return {
               ...user,
+              role,
               assignedAssets: assignments.length,
               projectCount: projectIds.size
             };
           } catch {
-            return { ...user, assignedAssets: 0, projectCount: 0 };
+            return { ...user, role: 'Employee', assignedAssets: 0, projectCount: 0 };
           }
         })
       );
@@ -1023,8 +1026,8 @@ function ProjectView() {
   async function loadProjects() {
     try {
       setLoading(true);
-      const res = await api.get('/projects', { params: { pageSize: 1000 } });
-      const projectList = res.data.projects || [];
+      const res = await api.get('/generic/projects-environments', { params: { pageSize: 1000 } });
+      const projectList = res.data || [];
       
       // Get assignment counts for each project
       const projectsWithCounts = await Promise.all(

@@ -64,8 +64,12 @@ export function UserAssetsPage() {
   async function loadUser() {
     try {
       setLoading(true);
-      const res = await api.get(`/users/${userId}`);
-      setUserData(res.data.user);
+      // Use the generic users endpoint
+      const res = await api.get(`/generic/users/${userId}`);
+      const user = res.data;
+      // Extract role from the roles array
+      const role = user.roles?.[0]?.role?.name || user.roles?.[0]?.name || 'Employee';
+      setUserData({ ...user, role });
       setError('');
     } catch {
       setError('Failed to load user details.');
