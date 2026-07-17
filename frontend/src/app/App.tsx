@@ -19,6 +19,7 @@ import { ProjectDetailsPage } from '../pages/ProjectDetailsPage';
 import { ProjectDashboardPage } from '../pages/ProjectDashboardPage';
 import { ProjectCreatePage } from '../pages/ProjectCreatePage';
 import { ProjectEditPage } from '../pages/ProjectEditPage';
+import { AssetManagementPage } from '../pages/AssetManagementPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -214,7 +215,7 @@ export function App() {
           path="access-management" 
           element={
             <PermissionRoute permission={modulePermissions['access-management']}>
-              <ModulePage moduleKey="access-management" title="Access Management" />
+              <AssetManagementPage />
             </PermissionRoute>
           } 
         />
