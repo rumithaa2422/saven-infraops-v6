@@ -72,7 +72,7 @@ export function ProjectEditPage() {
   const fetchUsers = useCallback(async () => {
     try {
       setUsersLoading(true);
-      const response = await api.get('/generic/users-teams');
+      const response = await api.get('/users-teams');
       setUsers(response.data.items || []);
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -90,7 +90,7 @@ export function ProjectEditPage() {
     if (!id) return;
     try {
       setLoading(true);
-      const res = await api.get(`/generic/projects-environments/${id}`);
+      const res = await api.get(`/projects-environments/${id}`);
       const project = res.data.item;
       
       // Parse teamMemberIds from JSON string
@@ -221,7 +221,7 @@ export function ProjectEditPage() {
 
     try {
       const selectedManager = users.find(u => u.id === formData.managerId);
-      await api.patch(`/generic/projects-environments/${id}`, {
+      await api.patch(`/projects-environments/${id}`, {
         projectName: formData.projectName,
         client: formData.client || null,
         ownerName: selectedManager?.name || null,

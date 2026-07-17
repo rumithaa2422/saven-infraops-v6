@@ -57,7 +57,7 @@ export function ProjectDetailsPage() {
     if (!id) return;
     try {
       setLoading(true);
-      const res = await api.get(`/generic/projects-environments/${id}`);
+      const res = await api.get(`/projects-environments/${id}`);
       setProject(res.data.item);
       setError('');
     } catch (err: any) {
@@ -75,7 +75,7 @@ export function ProjectDetailsPage() {
     setDeleting(true);
     setDeleteError('');
     try {
-      await api.delete(`/generic/projects-environments/${id}`);
+      await api.delete(`/projects-environments/${id}`);
       navigate('/projects-environments');
     } catch (err: any) {
       setDeleteError(err.response?.data?.message || 'Failed to delete project');

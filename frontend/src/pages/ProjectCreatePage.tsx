@@ -45,7 +45,7 @@ export function ProjectCreatePage() {
   const fetchUsers = useCallback(async () => {
     try {
       setUsersLoading(true);
-      const response = await api.get('/generic/users-teams');
+      const response = await api.get('/users-teams');
       setUsers(response.data.items || []);
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -153,7 +153,7 @@ export function ProjectCreatePage() {
 
     try {
       const selectedManager = users.find(u => u.id === formData.managerId);
-      await api.post('/generic/projects-environments', {
+      await api.post('/projects-environments', {
         projectName: formData.projectName,
         projectCode: formData.projectCode,
         client: formData.client || null,
