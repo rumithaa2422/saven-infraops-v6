@@ -124,11 +124,17 @@ export function AssetManagementPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<'inventory' | 'user' | 'project'>('inventory');
 
-  // Load summary stats and all items on mount
+  // Load stats and categories on mount
   useEffect(() => {
     loadStatsAndItems();
-    loadCategories();
   }, []);
+
+  // Load categories after allItems is available (for subcategory counts)
+  useEffect(() => {
+    if (allItems.length > 0) {
+      loadCategories();
+    }
+  }, [allItems.length]);
 
   // Load items when search, filters, sort change
   useEffect(() => {
@@ -183,13 +189,13 @@ export function AssetManagementPage() {
       const res = await api.get('/inventory/categories');
       const cats: Category[] = res.data.categories || [];
       
-      // Use inventoryCount from API response directly
+      // Use inventoryCount from API for categories, calculate from allItems for subcategories
       const catsWithCounts: CategoryWithCount[] = cats.map(cat => ({
         ...cat,
         inventoryCount: (cat as any).inventoryCount || 0,
         subcategories: cat.subcategories.map(sub => ({
           ...sub,
-          inventoryCount: (sub as any).inventoryCount || 0
+          inventoryCount: allItems.filter(item => item.subcategoryId === sub.id).length
         }))
       }));
       
