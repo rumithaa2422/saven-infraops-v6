@@ -33,6 +33,7 @@ import {
   deleteUser
 } from '../../services/index.js';
 import { ProjectDocumentService } from '../../services/projectDocument.service.js';
+import { ProjectActivityService, PROJECT_ACTIVITY_TYPES } from '../../services/projectActivity.service.js';
 
 export const genericModuleRouter = Router();
 
@@ -1050,6 +1051,18 @@ genericModuleRouter.post('/projects-environments/:id/documents', requireAuth, re
 
     const document = await ProjectDocumentService.upload(projectId, file, uploadedBy, remarks);
 
+    // Create activity for document upload
+    await prisma.projectActivity.create({
+      data: {
+        projectId,
+        activityType: 'DOCUMENT_UPLOADED',
+        title: 'Document Uploaded',
+        description: `Document "${file.originalName}" was uploaded`,
+        performedBy: uploadedBy,
+        performedAt: new Date()
+      }
+    });
+
     res.json({ document, success: true });
   } catch (error) {
     next(error);
@@ -1093,6 +1106,9 @@ genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requir
     if (!document) throw new HttpError(404, 'Document not found');
     if (document.projectId !== projectId) throw new HttpError(404, 'Document not found');
 
+    const deletedBy = req.user?.name || req.user?.email || 'Unknown';
+    const deletedDocName = document.originalFileName;
+
     // Delete file from disk
     const filePath = path.join(process.cwd(), 'uploads', 'project-docs', projectId, document.fileName);
     try {
@@ -1102,7 +1118,41 @@ genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requir
     // Delete from database
     await ProjectDocumentService.delete(docId);
 
+    // Create activity for document deletion
+    await prisma.projectActivity.create({
+      data: {
+        projectId,
+        activityType: 'DOCUMENT_DELETED',
+        title: 'Document Deleted',
+        description: `Document "${deletedDocName}" was deleted`,
+        performedBy: deletedBy,
+        performedAt: new Date()
+      }
+    });
+
     res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /projects-environments/:id/activities - Get project activities (timeline)
+genericModuleRouter.get('/projects-environments/:id/activities', requireAuth, async (req, res, next) => {
+  try {
+    const projectId = req.params.id;
+    const { search, filter, sortBy, sortOrder } = req.query;
+
+    const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
+    if (!project) throw new HttpError(404, 'Project not found');
+
+    const result = await ProjectActivityService.list(projectId, {
+      search: search as string,
+      filter: filter as 'today' | 'this_week' | 'this_month' | 'all',
+      sortBy: sortBy as string,
+      sortOrder: sortOrder as string
+    });
+
+    res.json(result);
   } catch (error) {
     next(error);
   }

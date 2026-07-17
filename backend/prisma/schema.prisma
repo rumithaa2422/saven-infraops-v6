@@ -446,6 +446,9 @@ model ProjectEnvironment {
   
   // Documents
   documents       ProjectDocument[]
+  
+  // Activities
+  activities      ProjectActivity[]
 }
 
 model ProjectDocument {
@@ -463,6 +466,23 @@ model ProjectDocument {
   project           ProjectEnvironment @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   @@index([projectId])
+}
+
+model ProjectActivity {
+  id            String   @id @default(cuid())
+  projectId    String
+  activityType String
+  title        String
+  description  String?
+  performedBy  String?
+  performedAt  DateTime @default(now())
+  metadata     Json?
+  
+  // Relationship
+  project      ProjectEnvironment @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([performedAt])
 }
 
 model VendorLicense {

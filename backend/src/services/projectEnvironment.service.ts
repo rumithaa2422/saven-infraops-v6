@@ -117,6 +117,18 @@ export async function createProjectEnvironment(
     }
   });
 
+  // Create project activity
+  await prisma.projectActivity.create({
+    data: {
+      projectId: item.id,
+      activityType: 'PROJECT_CREATED',
+      title: 'Project Created',
+      description: `Project "${item.projectName}" (${item.projectCode}) was created`,
+      performedBy: data.actorEmail || data.actorId || 'System',
+      performedAt: new Date()
+    }
+  });
+
   return item;
 }
 
@@ -213,6 +225,77 @@ export async function updateProjectEnvironment(
       ipAddress: data.ipAddress || null
     }
   });
+
+  // Create project activity for updates
+  const performedBy = data.actorEmail || data.actorId || 'System';
+
+  // Check for specific changes
+  if (data.status && data.status !== existing.status) {
+    await prisma.projectActivity.create({
+      data: {
+        projectId: id,
+        activityType: 'PROJECT_STATUS_CHANGED',
+        title: 'Status Changed',
+        description: `Status changed from "${existing.status}" to "${data.status}"`,
+        performedBy,
+        performedAt: new Date()
+      }
+    });
+  }
+
+  if (data.priority && data.priority !== existing.priority) {
+    await prisma.projectActivity.create({
+      data: {
+        projectId: id,
+        activityType: 'PROJECT_PRIORITY_CHANGED',
+        title: 'Priority Changed',
+        description: `Priority changed from "${existing.priority}" to "${data.priority}"`,
+        performedBy,
+        performedAt: new Date()
+      }
+    });
+  }
+
+  if (data.managerId !== undefined && data.managerId !== existing.managerId) {
+    let description = 'Manager removed';
+    if (data.managerId) {
+      const newManager = await prisma.user.findUnique({ where: { id: data.managerId } });
+      description = `Manager changed to "${newManager?.name || newManager?.email || 'Unknown'}"`;
+    }
+    await prisma.projectActivity.create({
+      data: {
+        projectId: id,
+        activityType: 'PROJECT_MANAGER_CHANGED',
+        title: 'Manager Changed',
+        description,
+        performedBy,
+        performedAt: new Date()
+      }
+    });
+  }
+
+  // Always log general update if any other field changed
+  const hasGeneralUpdate = 
+    data.projectName !== undefined || data.projectName !== existing.projectName ||
+    data.client !== undefined || data.description !== undefined ||
+    data.department !== undefined || data.technologyStack !== undefined ||
+    data.budget !== undefined || data.startDate !== undefined ||
+    data.expectedEndDate !== undefined || data.projectType !== undefined ||
+    data.projectLocation !== undefined || data.remarks !== undefined;
+
+  if (hasGeneralUpdate && 
+      !data.status && !data.priority && data.managerId === undefined) {
+    await prisma.projectActivity.create({
+      data: {
+        projectId: id,
+        activityType: 'PROJECT_UPDATED',
+        title: 'Project Updated',
+        description: `Project details were updated`,
+        performedBy,
+        performedAt: new Date()
+      }
+    });
+  }
 
   return item;
 }

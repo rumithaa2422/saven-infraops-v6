@@ -62,6 +62,12 @@ export function ProjectDetailsPage() {
   const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
   const [deleteDocError, setDeleteDocError] = useState('');
 
+  // Activities state
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<'all' | 'today' | 'this_week' | 'this_month'>('all');
+  const [activitySearch, setActivitySearch] = useState('');
+
   type Document = {
     id: string;
     fileName: string;
@@ -73,6 +79,17 @@ export function ProjectDetailsPage() {
     remarks: string | null;
   };
 
+  type Activity = {
+    id: string;
+    projectId: string;
+    activityType: string;
+    title: string;
+    description: string | null;
+    performedBy: string | null;
+    performedAt: string;
+    metadata: any;
+  };
+
   useEffect(() => {
     loadProject();
   }, [id]);
@@ -80,8 +97,29 @@ export function ProjectDetailsPage() {
   useEffect(() => {
     if (project?.id) {
       loadDocuments();
+      loadActivities();
     }
   }, [project?.id]);
+
+  async function loadActivities() {
+    if (!id) return;
+    try {
+      setLoadingActivities(true);
+      const res = await api.get(`/projects-environments/${id}/activities`, {
+        params: {
+          filter: activityFilter,
+          search: activitySearch || undefined,
+          sortBy: 'performedAt',
+          sortOrder: 'desc'
+        }
+      });
+      setActivities(res.data.items || []);
+    } catch (err: any) {
+      console.error('Failed to load activities:', err);
+    } finally {
+      setLoadingActivities(false);
+    }
+  }
 
   async function loadDocuments() {
     if (!id) return;
@@ -334,6 +372,98 @@ export function ProjectDetailsPage() {
     doc.fileType.toLowerCase().includes(docSearch.toLowerCase()) ||
     (doc.uploadedBy?.toLowerCase().includes(docSearch.toLowerCase()) ?? false)
   );
+
+  // Activity helper functions
+  const getActivityIcon = (activityType: string) => {
+    switch (activityType) {
+      case 'PROJECT_CREATED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        );
+      case 'PROJECT_UPDATED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13" stroke="currentColor" strokeWidth="2"/>
+            <path d="M18.5 2.5C19.3284 1.67157 20.6716 1.67157 21.5 2.5C22.3284 3.32843 22.3284 4.67157 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        );
+      case 'PROJECT_STATUS_CHANGED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <path d="M12 8V12L15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        );
+      case 'PROJECT_PRIORITY_CHANGED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 15L6 17L12 11L18 17L20 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M4 9L6 11L12 5L18 11L20 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        );
+      case 'PROJECT_MANAGER_CHANGED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
+            <path d="M6 21V19C6 17.9391 6.42143 16.9217 7.17157 16.1716C7.92172 15.4214 8.93913 15 10 15H14C15.0609 15 16.0783 15.4214 16.8284 16.1716C17.5786 16.9217 18 17.9391 18 19V21" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        );
+      case 'TEAM_MEMBER_ADDED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+            <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15" stroke="currentColor" strokeWidth="2"/>
+            <path d="M19 13V21M16 16H22" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        );
+      case 'TEAM_MEMBER_REMOVED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+            <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15" stroke="currentColor" strokeWidth="2"/>
+            <path d="M19 13H22M16 16H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        );
+      case 'DOCUMENT_UPLOADED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2"/>
+            <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        );
+      case 'DOCUMENT_DELETED':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 6H21M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        );
+      default:
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <path d="M12 16V12M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        );
+    }
+  };
+
+  const getActivityIconColor = (activityType: string) => {
+    switch (activityType) {
+      case 'PROJECT_CREATED': return 'success';
+      case 'PROJECT_UPDATED': return 'info';
+      case 'PROJECT_STATUS_CHANGED': return 'warning';
+      case 'PROJECT_PRIORITY_CHANGED': return 'warning';
+      case 'PROJECT_MANAGER_CHANGED': return 'info';
+      case 'TEAM_MEMBER_ADDED': return 'success';
+      case 'TEAM_MEMBER_REMOVED': return 'danger';
+      case 'DOCUMENT_UPLOADED': return 'success';
+      case 'DOCUMENT_DELETED': return 'danger';
+      default: return 'default';
+    }
+  };
 
   return (
     <div className="detail-page">
@@ -649,7 +779,7 @@ export function ProjectDetailsPage() {
             </div>
           </div>
 
-          {/* Timeline Card */}
+          {/* Activity Timeline Card */}
           <div className="detail-card">
             <div className="detail-card-header">
               <h3>
@@ -657,37 +787,97 @@ export function ProjectDetailsPage() {
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
                   <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                Timeline
+                Activity Timeline
               </h3>
+              <div className="detail-card-actions">
+                <button className="btn-icon" onClick={loadActivities} title="Refresh">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div className="detail-card-body">
-              <div className="detail-timeline">
-                <div className="timeline-item">
-                  <div className="timeline-icon success">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div className="timeline-content">
-                    <span className="timeline-action">Project Created</span>
-                    <span className="timeline-date">{formatDateTime(project.createdAt)}</span>
-                  </div>
+              {/* Filters */}
+              <div className="activity-toolbar">
+                <div className="activity-search">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search activities..."
+                    value={activitySearch}
+                    onChange={(e) => setActivitySearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && loadActivities()}
+                  />
                 </div>
-                {project.updatedAt !== project.createdAt && (
-                  <div className="timeline-item">
-                    <div className="timeline-icon info">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13" stroke="currentColor" strokeWidth="2"/>
-                        <path d="M18.5 2.50001C19.3284 1.67158 20.6716 1.67158 21.5 2.50001C22.3284 3.32844 22.3284 4.67158 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                    </div>
-                    <div className="timeline-content">
-                      <span className="timeline-action">Project Updated</span>
-                      <span className="timeline-date">{formatDateTime(project.updatedAt)}</span>
-                    </div>
-                  </div>
-                )}
+                <div className="activity-filters">
+                  <button
+                    className={`filter-btn ${activityFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => { setActivityFilter('all'); loadActivities(); }}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={`filter-btn ${activityFilter === 'today' ? 'active' : ''}`}
+                    onClick={() => { setActivityFilter('today'); loadActivities(); }}
+                  >
+                    Today
+                  </button>
+                  <button
+                    className={`filter-btn ${activityFilter === 'this_week' ? 'active' : ''}`}
+                    onClick={() => { setActivityFilter('this_week'); loadActivities(); }}
+                  >
+                    This Week
+                  </button>
+                  <button
+                    className={`filter-btn ${activityFilter === 'this_month' ? 'active' : ''}`}
+                    onClick={() => { setActivityFilter('this_month'); loadActivities(); }}
+                  >
+                    This Month
+                  </button>
+                </div>
               </div>
+
+              {/* Timeline */}
+              {loadingActivities ? (
+                <div className="activity-loading">
+                  <div className="spinner"></div>
+                  <span>Loading activities...</span>
+                </div>
+              ) : activities.length > 0 ? (
+                <div className="activity-timeline">
+                  {activities.map((activity, index) => (
+                    <div key={activity.id} className="activity-item">
+                      <div className={`activity-icon ${getActivityIconColor(activity.activityType)}`}>
+                        {getActivityIcon(activity.activityType)}
+                      </div>
+                      <div className="activity-content">
+                        <div className="activity-header">
+                          <span className="activity-title">{activity.title}</span>
+                          <span className="activity-time">{formatDateTime(activity.performedAt)}</span>
+                        </div>
+                        {activity.description && (
+                          <p className="activity-description">{activity.description}</p>
+                        )}
+                        {activity.performedBy && (
+                          <span className="activity-performed-by">by {activity.performedBy}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="activity-empty">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <p>No project activities available.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
