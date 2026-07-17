@@ -57,6 +57,21 @@ type FilterState = {
   vendor: string;
 };
 
+type CategoryWithCount = {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+  subcategories: {
+    id: string;
+    name: string;
+    description?: string;
+    status: string;
+    inventoryCount: number;
+  }[];
+  inventoryCount: number;
+};
+
 export function AssetManagementPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -75,8 +90,12 @@ export function AssetManagementPage() {
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // Categories and items
-  const [categories, setCategories] = useState<Category[]>([]);
+  // All inventory items (for counting)
+  const [allItems, setAllItems] = useState<InventoryItem[]>([]);
+  const [loadingAllItems, setLoadingAllItems] = useState(true);
+
+  // Categories with counts
+  const [categories, setCategories] = useState<CategoryWithCount[]>([]);
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingItems, setLoadingItems] = useState(false);
@@ -105,39 +124,40 @@ export function AssetManagementPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<'inventory' | 'user' | 'project'>('inventory');
 
-  // Load summary stats
+  // Load summary stats and all items on mount
   useEffect(() => {
-    loadStats();
+    loadStatsAndItems();
   }, []);
 
   // Load categories when viewing by inventory tab
   useEffect(() => {
     if (activeTab === 'inventory') {
-      loadCategories();
+      loadCategoriesWithCounts();
     }
   }, [activeTab]);
 
-  // Load items when a subcategory is selected
+  // Load items when search, filters, sort change
   useEffect(() => {
-    if (selectedSubcategory) {
-      loadItems();
+    if (currentView === 'items') {
+      loadItemsForCurrentView();
     }
-  }, [selectedSubcategory, filters, sortBy, sortOrder]);
+  }, [search, filters, sortBy, sortOrder, selectedCategory, selectedSubcategory]);
 
-  async function loadStats() {
+  async function loadStatsAndItems() {
     try {
       setLoadingStats(true);
-      // Load all inventory items to calculate stats
+      setLoadingAllItems(true);
       const res = await api.get('/inventory-master', {
         params: { pageSize: 10000 }
       });
-      const allItems = res.data.items || [];
+      const items = res.data.items || [];
+      setAllItems(items);
       
       const now = new Date();
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       
       let warrantyExpiring = 0;
-      allItems.forEach((item: InventoryItem) => {
+      items.forEach((item: InventoryItem) => {
         if (item.warrantyExpiry) {
           const expiryDate = new Date(item.warrantyExpiry);
           if (expiryDate <= thirtyDaysFromNow && expiryDate >= now) {
@@ -147,26 +167,43 @@ export function AssetManagementPage() {
       });
 
       setStats({
-        totalInventory: allItems.length,
-        assigned: allItems.filter((i: InventoryItem) => i.status === 'ASSIGNED').length,
-        available: allItems.filter((i: InventoryItem) => i.status === 'AVAILABLE').length,
-        underRepair: allItems.filter((i: InventoryItem) => i.status === 'UNDER_REPAIR').length,
-        retired: allItems.filter((i: InventoryItem) => i.status === 'RETIRED').length,
-        lost: allItems.filter((i: InventoryItem) => i.status === 'LOST').length,
+        totalInventory: items.length,
+        assigned: items.filter((i: InventoryItem) => i.status === 'ASSIGNED').length,
+        available: items.filter((i: InventoryItem) => i.status === 'AVAILABLE').length,
+        underRepair: items.filter((i: InventoryItem) => i.status === 'UNDER_REPAIR').length,
+        retired: items.filter((i: InventoryItem) => i.status === 'RETIRED').length,
+        lost: items.filter((i: InventoryItem) => i.status === 'LOST').length,
         warrantyExpiring
       });
     } catch (err) {
       console.error('Failed to load stats:', err);
     } finally {
       setLoadingStats(false);
+      setLoadingAllItems(false);
     }
   }
 
-  async function loadCategories() {
+  async function loadCategoriesWithCounts() {
     try {
       setLoading(true);
       const res = await api.get('/inventory/categories');
-      setCategories(res.data.items || []);
+      const cats: Category[] = res.data.items || [];
+      
+      // Calculate counts from allItems
+      const catsWithCounts: CategoryWithCount[] = cats.map(cat => {
+        const categoryItems = allItems.filter(item => item.categoryId === cat.id);
+        const subcatsWithCounts = cat.subcategories.map(sub => ({
+          ...sub,
+          inventoryCount: allItems.filter(item => item.subcategoryId === sub.id).length
+        }));
+        return {
+          ...cat,
+          subcategories: subcatsWithCounts,
+          inventoryCount: categoryItems.length
+        };
+      });
+      
+      setCategories(catsWithCounts);
     } catch (err) {
       console.error('Failed to load categories:', err);
     } finally {
@@ -174,25 +211,75 @@ export function AssetManagementPage() {
     }
   }
 
-  async function loadItems() {
-    if (!selectedSubcategory) return;
+  function loadItemsForCurrentView() {
+    setLoadingItems(true);
+    
     try {
-      setLoadingItems(true);
-      const res = await api.get('/inventory-master', {
-        params: {
-          subcategoryId: selectedSubcategory,
-          pageSize: 10000,
-          search: search || undefined,
-          status: filters.status || undefined,
-          location: filters.location || undefined,
-          vendor: filters.vendor || undefined,
-          sortBy,
-          sortOrder
+      let filteredItems = [...allItems];
+      
+      // Filter by category if selected
+      if (selectedCategory) {
+        filteredItems = filteredItems.filter(item => item.categoryId === selectedCategory);
+      }
+      
+      // Filter by subcategory if selected
+      if (selectedSubcategory) {
+        filteredItems = filteredItems.filter(item => item.subcategoryId === selectedSubcategory);
+      }
+      
+      // Apply search
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredItems = filteredItems.filter(item =>
+          item.itemNo.toLowerCase().includes(searchLower) ||
+          item.itemName.toLowerCase().includes(searchLower) ||
+          (item.brand?.toLowerCase().includes(searchLower)) ||
+          (item.model?.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      // Apply status filter
+      if (filters.status) {
+        filteredItems = filteredItems.filter(item => item.status === filters.status);
+      }
+      
+      // Apply location filter
+      if (filters.location) {
+        const locationLower = filters.location.toLowerCase();
+        filteredItems = filteredItems.filter(item =>
+          item.location?.toLowerCase().includes(locationLower)
+        );
+      }
+      
+      // Apply vendor filter
+      if (filters.vendor) {
+        const vendorLower = filters.vendor.toLowerCase();
+        filteredItems = filteredItems.filter(item =>
+          item.vendor?.toLowerCase().includes(vendorLower)
+        );
+      }
+      
+      // Apply sorting
+      filteredItems.sort((a, b) => {
+        let aVal: any = a[sortBy as keyof InventoryItem];
+        let bVal: any = b[sortBy as keyof InventoryItem];
+        
+        if (sortBy === 'warrantyExpiry' || sortBy === 'purchaseDate' || sortBy === 'createdAt') {
+          aVal = aVal ? new Date(aVal).getTime() : 0;
+          bVal = bVal ? new Date(bVal).getTime() : 0;
         }
+        
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+          bVal = (bVal || '').toLowerCase();
+        }
+        
+        if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
       });
-      setItems(res.data.items || []);
-    } catch (err) {
-      console.error('Failed to load items:', err);
+      
+      setItems(filteredItems);
     } finally {
       setLoadingItems(false);
     }
@@ -200,63 +287,63 @@ export function AssetManagementPage() {
 
   function handleSearch(value: string) {
     setSearch(value);
-    if (searchTimeout) clearTimeout(searchTimeout);
-    const timeout = setTimeout(() => {
-      if (selectedSubcategory) {
-        loadItems();
-      }
-    }, 300);
-    setSearchTimeout(timeout);
   }
 
   function handleCategoryClick(categoryId: string) {
     setSelectedCategory(categoryId);
     setSelectedSubcategory(null);
     setCurrentView('subcategories');
+    setSearch('');
+    setFilters({ category: '', subcategory: '', status: '', location: '', vendor: '' });
   }
 
   function handleSubcategoryClick(subcategoryId: string) {
     setSelectedSubcategory(subcategoryId);
     setCurrentView('items');
+    setSearch('');
+    setFilters({ category: '', subcategory: '', status: '', location: '', vendor: '' });
   }
 
   function handleBreadcrumb() {
     if (currentView === 'items') {
       setCurrentView('subcategories');
       setSelectedSubcategory(null);
+      setItems([]);
     } else if (currentView === 'subcategories') {
       setCurrentView('categories');
       setSelectedCategory(null);
     }
+    setSearch('');
+    setFilters({ category: '', subcategory: '', status: '', location: '', vendor: '' });
   }
 
   function handleRefresh() {
+    loadStatsAndItems();
     if (activeTab === 'inventory') {
-      if (currentView === 'items') {
-        loadItems();
+      if (currentView === 'categories') {
+        loadCategoriesWithCounts();
       } else if (currentView === 'subcategories') {
-        loadCategories();
+        loadCategoriesWithCounts();
       } else {
-        loadCategories();
+        loadItemsForCurrentView();
       }
     }
-    loadStats();
   }
 
   function handleExport() {
-    const dataToExport = currentView === 'items' ? items : [];
-    if (dataToExport.length === 0) return;
+    if (items.length === 0) return;
     
-    const headers = ['Item No', 'Item Name', 'Brand', 'Model', 'Status', 'Location', 'Vendor', 'Warranty Expiry'];
-    const rows = dataToExport.map((item: InventoryItem) => [
+    const headers = ['Inventory ID', 'Item Name', 'Brand', 'Model', 'Current Qty', 'Status', 'Warranty Expiry', 'Location', 'Vendor'];
+    const rows = items.map((item: InventoryItem) => [
       item.itemNo,
       item.itemName,
       item.brand || '',
       item.model || '',
+      item.currentQty,
       item.status,
+      item.warrantyExpiry || '',
       item.location || '',
-      item.vendor || '',
-      item.warrantyExpiry || ''
+      item.vendor || ''
     ]);
     
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -267,6 +354,16 @@ export function AssetManagementPage() {
     a.download = `asset-management-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function handleSort(field: string, order: 'asc' | 'desc') {
+    setSortBy(field);
+    setSortOrder(order);
+  }
+
+  function handleFilterApply() {
+    loadItemsForCurrentView();
+    setShowFilters(false);
   }
 
   function formatDate(dateStr?: string) {
@@ -301,18 +398,6 @@ export function AssetManagementPage() {
     }
     return '';
   }, [selectedSubcategory, categories]);
-
-  // Filter items based on search
-  const filteredItems = useMemo(() => {
-    if (!search) return items;
-    const searchLower = search.toLowerCase();
-    return items.filter((item: InventoryItem) =>
-      item.itemNo.toLowerCase().includes(searchLower) ||
-      item.itemName.toLowerCase().includes(searchLower) ||
-      (item.brand?.toLowerCase().includes(searchLower)) ||
-      (item.model?.toLowerCase().includes(searchLower))
-    );
-  }, [items, search]);
 
   return (
     <div className="asset-management-page">
@@ -455,7 +540,7 @@ export function AssetManagementPage() {
           {/* Breadcrumb */}
           {currentView !== 'categories' && (
             <div className="asset-breadcrumb">
-              <button className="breadcrumb-item" onClick={() => { setCurrentView('categories'); setSelectedCategory(null); setSelectedSubcategory(null); }}>
+              <button className="breadcrumb-item" onClick={handleBreadcrumb}>
                 Categories
               </button>
               {currentView === 'subcategories' && selectedCategory && (
@@ -467,7 +552,7 @@ export function AssetManagementPage() {
               {currentView === 'items' && (
                 <>
                   <span className="breadcrumb-separator">/</span>
-                  <button className="breadcrumb-item" onClick={handleBreadcrumb}>
+                  <button className="breadcrumb-item" onClick={() => { setCurrentView('subcategories'); setSelectedSubcategory(null); }}>
                     {currentCategoryName}
                   </button>
                   <span className="breadcrumb-separator">/</span>
@@ -486,7 +571,7 @@ export function AssetManagementPage() {
               </svg>
               <input
                 type="text"
-                placeholder={currentView === 'items' ? 'Search by ID, Name, Brand, Model...' : 'Search categories...'}
+                placeholder={currentView === 'items' ? 'Search by ID, Name, Brand, Model...' : 'Search...'}
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
               />
@@ -498,7 +583,7 @@ export function AssetManagementPage() {
                   <path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 Filter
-                {Object.values(filters).some(f => f) && <span className="filter-indicator"></span>}
+                {(filters.status || filters.location || filters.vendor) && <span className="filter-indicator"></span>}
               </button>
 
               <div className="asset-sort-dropdown">
@@ -509,17 +594,20 @@ export function AssetManagementPage() {
                   Sort
                 </button>
                 <div className="asset-sort-menu">
-                  <button onClick={() => { setSortBy('createdAt'); setSortOrder('desc'); }}>
-                    Newest {sortBy === 'createdAt' && (sortOrder === 'desc' ? '✓' : '')}
+                  <button onClick={() => handleSort('createdAt', 'desc')}>
+                    Newest {sortBy === 'createdAt' && sortOrder === 'desc' ? '✓' : ''}
                   </button>
-                  <button onClick={() => { setSortBy('createdAt'); setSortOrder('asc'); }}>
-                    Oldest {sortBy === 'createdAt' && (sortOrder === 'asc' ? '✓' : '')}
+                  <button onClick={() => handleSort('createdAt', 'asc')}>
+                    Oldest {sortBy === 'createdAt' && sortOrder === 'asc' ? '✓' : ''}
                   </button>
-                  <button onClick={() => { setSortBy('warrantyExpiry'); setSortOrder('asc'); }}>
-                    Warranty {sortBy === 'warrantyExpiry' && (sortOrder === 'asc' ? '✓' : '')}
+                  <button onClick={() => handleSort('warrantyExpiry', 'asc')}>
+                    Warranty {sortBy === 'warrantyExpiry' ? '✓' : ''}
                   </button>
-                  <button onClick={() => { setSortBy('purchaseDate'); setSortOrder('desc'); }}>
-                    Purchase Date {sortBy === 'purchaseDate' && (sortOrder === 'desc' ? '✓' : '')}
+                  <button onClick={() => handleSort('purchaseDate', 'desc')}>
+                    Purchase Date {sortBy === 'purchaseDate' ? '✓' : ''}
+                  </button>
+                  <button onClick={() => handleSort('itemName', 'asc')}>
+                    Name (A-Z) {sortBy === 'itemName' && sortOrder === 'asc' ? '✓' : ''}
                   </button>
                 </div>
               </div>
@@ -531,7 +619,7 @@ export function AssetManagementPage() {
                 Refresh
               </button>
 
-              <button className="asset-toolbar-btn" onClick={handleExport} disabled={currentView !== 'items'}>
+              <button className="asset-toolbar-btn" onClick={handleExport} disabled={items.length === 0}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -543,7 +631,7 @@ export function AssetManagementPage() {
           </div>
 
           {/* Filters Panel */}
-          {showFilters && currentView === 'items' && (
+          {showFilters && (
             <div className="asset-filters-panel">
               <div className="asset-filter-group">
                 <label>Status</label>
@@ -577,7 +665,7 @@ export function AssetManagementPage() {
                   onChange={(e) => setFilters({...filters, vendor: e.target.value})}
                 />
               </div>
-              <button className="asset-filter-apply" onClick={() => { loadItems(); setShowFilters(false); }}>
+              <button className="asset-filter-apply" onClick={handleFilterApply}>
                 Apply Filters
               </button>
             </div>
@@ -586,7 +674,7 @@ export function AssetManagementPage() {
           {/* Categories View */}
           {currentView === 'categories' && (
             <div className="asset-categories-grid">
-              {loading ? (
+              {(loading || loadingAllItems) ? (
                 <div className="asset-loading">
                   <div className="spinner"></div>
                   <span>Loading categories...</span>
@@ -613,7 +701,7 @@ export function AssetManagementPage() {
                     </div>
                     <div className="asset-category-info">
                       <h3>{category.name}</h3>
-                      <span>{category.subcategories?.length || 0} subcategories</span>
+                      <span>{category.inventoryCount} inventory</span>
                     </div>
                     <svg className="asset-category-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -655,7 +743,7 @@ export function AssetManagementPage() {
                     </div>
                     <div className="asset-subcategory-info">
                       <h3>{sub.name}</h3>
-                      <span>{currentCategoryName}</span>
+                      <span>{sub.inventoryCount} inventory</span>
                     </div>
                     <svg className="asset-subcategory-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -674,12 +762,12 @@ export function AssetManagementPage() {
                   <div className="spinner"></div>
                   <span>Loading items...</span>
                 </div>
-              ) : filteredItems.length === 0 ? (
+              ) : items.length === 0 ? (
                 <div className="asset-empty">
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <p>{search ? 'No matching items found' : 'No items in this subcategory'}</p>
+                  <p>{search || filters.status || filters.location || filters.vendor ? 'No matching items found' : 'No items in this subcategory'}</p>
                 </div>
               ) : (
                 <div className="asset-table-wrapper">
@@ -690,16 +778,17 @@ export function AssetManagementPage() {
                         <th>Item Name</th>
                         <th>Brand</th>
                         <th>Model</th>
+                        <th>Current Qty</th>
                         <th>Status</th>
-                        <th>Assigned User</th>
-                        <th>Project</th>
                         <th>Warranty</th>
                         <th>Location</th>
+                        <th>Assigned User</th>
+                        <th>Project</th>
                         <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredItems.map(item => (
+                      {items.map(item => (
                         <tr key={item.id}>
                           <td>
                             <span className="asset-item-id">{item.itemNo}</span>
@@ -707,15 +796,16 @@ export function AssetManagementPage() {
                           <td>{item.itemName}</td>
                           <td>{item.brand || '-'}</td>
                           <td>{item.model || '-'}</td>
+                          <td>{item.currentQty}</td>
                           <td>
-                            <span className={`asset-status-badge status-${item.status.toLowerCase()}`}>
+                            <span className={`asset-status-badge status-${item.status.toLowerCase().replace('_', '-')}`}>
                               {item.status.replace(/_/g, ' ')}
                             </span>
                           </td>
-                          <td>{item.assignedTo?.name || '-'}</td>
-                          <td>{item.projectName || '-'}</td>
                           <td>{formatDate(item.warrantyExpiry)}</td>
                           <td>{item.location || '-'}</td>
+                          <td>{item.assignedTo?.name || '-'}</td>
+                          <td>{item.projectName || '-'}</td>
                           <td>
                             <button 
                               className="asset-action-btn"
