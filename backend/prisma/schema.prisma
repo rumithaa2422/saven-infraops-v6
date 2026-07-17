@@ -443,6 +443,26 @@ model ProjectEnvironment {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  
+  // Documents
+  documents       ProjectDocument[]
+}
+
+model ProjectDocument {
+  id                String   @id @default(cuid())
+  projectId         String
+  fileName          String
+  originalFileName  String
+  fileType          String
+  fileSize          Int
+  uploadedBy        String?
+  uploadedAt        DateTime @default(now())
+  remarks           String?
+  
+  // Relationship
+  project           ProjectEnvironment @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
 }
 
 model VendorLicense {

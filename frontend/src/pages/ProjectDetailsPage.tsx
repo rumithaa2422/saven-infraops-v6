@@ -51,9 +51,52 @@ export function ProjectDetailsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
+  // Documents state
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [docSearch, setDocSearch] = useState('');
+  const [docSortBy, setDocSortBy] = useState('uploadedAt');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
+  const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
+  const [deleteDocError, setDeleteDocError] = useState('');
+
+  type Document = {
+    id: string;
+    fileName: string;
+    originalFileName: string;
+    fileType: string;
+    fileSize: number;
+    uploadedBy: string | null;
+    uploadedAt: string;
+    remarks: string | null;
+  };
+
   useEffect(() => {
     loadProject();
   }, [id]);
+
+  useEffect(() => {
+    if (project?.id) {
+      loadDocuments();
+    }
+  }, [project?.id]);
+
+  async function loadDocuments() {
+    if (!id) return;
+    try {
+      setLoadingDocs(true);
+      const res = await api.get(`/projects-environments/${id}/documents`, {
+        params: { sortBy: docSortBy, sortOrder: 'desc' }
+      });
+      setDocuments(res.data.items || []);
+    } catch (err: any) {
+      console.error('Failed to load documents:', err);
+    } finally {
+      setLoadingDocs(false);
+    }
+  }
 
   async function loadProject() {
     if (!id) return;
@@ -136,6 +179,102 @@ export function ProjectDetailsPage() {
     }
   }
 
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+
+    // Validate file size (20 MB)
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('File size exceeds 20 MB limit');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/zip',
+      'image/png',
+      'image/jpeg',
+      'text/plain'
+    ];
+    const allowedExtensions = ['.pdf', '.docx', '.doc', '.xlsx', '.xls', '.pptx', '.zip', '.png', '.jpg', '.jpeg', '.txt'];
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(ext)) {
+      setUploadError('Invalid file type. Allowed types: PDF, DOCX, DOC, XLSX, XLS, PPTX, ZIP, PNG, JPG, JPEG, TXT');
+      return;
+    }
+
+    setUploading(true);
+    setUploadError('');
+    setUploadSuccess('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      await api.post(`/projects-environments/${id}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setUploadSuccess('Document uploaded successfully!');
+      loadDocuments();
+      e.target.value = '';
+    } catch (err: any) {
+      setUploadError(err.response?.data?.message || err.response?.data || 'Failed to upload document');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDownload(doc: Document) {
+    if (!id) return;
+    try {
+      const response = await api.get(`/projects-environments/${id}/documents/${doc.id}`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', doc.originalFileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to download document');
+    }
+  }
+
+  async function handleDeleteDoc(doc: Document) {
+    if (!id) return;
+    if (!confirm(`Delete "${doc.originalFileName}"?`)) return;
+
+    setDeletingDoc(doc.id);
+    setDeleteDocError('');
+    try {
+      await api.delete(`/projects-environments/${id}/documents/${doc.id}`);
+      loadDocuments();
+    } catch (err: any) {
+      setDeleteDocError(err.response?.data?.message || 'Failed to delete document');
+    } finally {
+      setDeletingDoc(null);
+    }
+  }
+
   // Access check for Employee
   if (isEmployee) {
     return (
@@ -189,6 +328,12 @@ export function ProjectDetailsPage() {
   }
 
   const teamSize = (project.teamMembers?.length || 0) + (project.manager ? 1 : 0);
+
+  const filteredDocs = documents.filter(doc =>
+    doc.originalFileName.toLowerCase().includes(docSearch.toLowerCase()) ||
+    doc.fileType.toLowerCase().includes(docSearch.toLowerCase()) ||
+    (doc.uploadedBy?.toLowerCase().includes(docSearch.toLowerCase()) ?? false)
+  );
 
   return (
     <div className="detail-page">
@@ -385,7 +530,7 @@ export function ProjectDetailsPage() {
             </div>
           </div>
 
-          {/* Documents Placeholder Card */}
+          {/* Documents Card */}
           <div className="detail-card">
             <div className="detail-card-header">
               <h3>
@@ -395,25 +540,112 @@ export function ProjectDetailsPage() {
                 </svg>
                 Documents
               </h3>
+              <div className="detail-card-actions">
+                {isSuperAdmin && (
+                  <label className="btn-upload" title="Upload Document">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <input type="file" accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.zip,.png,.jpg,.jpeg,.txt" onChange={handleFileUpload} disabled={uploading} style={{ display: 'none' }} />
+                  </label>
+                )}
+              </div>
             </div>
             <div className="detail-card-body">
-              <div className="detail-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 18V12M9 15L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <h4>Documents</h4>
-                <p>No documents uploaded.</p>
-                <button className="btn-secondary" disabled style={{ marginTop: '12px', opacity: 0.5 }}>
+              {/* Search and Sort */}
+              <div className="doc-toolbar">
+                <div className="doc-search">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                  Upload Document
+                  <input type="text" placeholder="Search documents..." value={docSearch} onChange={(e) => setDocSearch(e.target.value)} />
+                </div>
+                <select className="doc-sort" value={docSortBy} onChange={(e) => setDocSortBy(e.target.value)}>
+                  <option value="uploadedAt">Date</option>
+                  <option value="fileName">Name</option>
+                  <option value="fileType">Type</option>
+                  <option value="fileSize">Size</option>
+                  <option value="uploadedBy">Uploaded By</option>
+                </select>
+                <button className="btn-icon" onClick={loadDocuments} title="Refresh">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
               </div>
+
+              {/* Messages */}
+              {uploadSuccess && <div className="alert alert-success">{uploadSuccess}</div>}
+              {uploadError && <div className="alert alert-error">{uploadError}</div>}
+              {deleteDocError && <div className="alert alert-error">{deleteDocError}</div>}
+
+              {/* Documents Table */}
+              {loadingDocs ? (
+                <div className="doc-loading">
+                  <div className="spinner"></div>
+                  <span>Loading documents...</span>
+                </div>
+              ) : filteredDocs.length > 0 ? (
+                <div className="doc-table-wrapper">
+                  <table className="doc-table">
+                    <thead>
+                      <tr>
+                        <th>File Name</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Uploaded By</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredDocs.map((doc) => (
+                        <tr key={doc.id}>
+                          <td className="doc-name">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <span title={doc.originalFileName}>{doc.originalFileName}</span>
+                          </td>
+                          <td><span className="doc-type">{doc.fileType.split('/').pop()?.toUpperCase() || '-'}</span></td>
+                          <td>{formatFileSize(doc.fileSize)}</td>
+                          <td>{doc.uploadedBy || '-'}</td>
+                          <td>{formatDate(doc.uploadedAt)}</td>
+                          <td className="doc-actions">
+                            <button className="btn-icon" onClick={() => handleDownload(doc)} title="Download">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                            {isSuperAdmin && (
+                              <button className="btn-icon btn-icon-danger" onClick={() => handleDeleteDoc(doc)} title="Delete" disabled={deletingDoc === doc.id}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M3 6H21M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="detail-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <h4>No Documents</h4>
+                  <p>No documents uploaded yet.</p>
+                </div>
+              )}
             </div>
           </div>
 

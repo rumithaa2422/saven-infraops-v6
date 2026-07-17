@@ -32,6 +32,7 @@ import {
   updateUser,
   deleteUser
 } from '../../services/index.js';
+import { ProjectDocumentService } from '../../services/projectDocument.service.js';
 
 export const genericModuleRouter = Router();
 
@@ -968,6 +969,139 @@ genericModuleRouter.delete('/incidents/:id/resolution-document', requireAuth, as
       where: { id: document.id }
     });
     
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Configure multer for project documents
+const projectDocStorage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const projectId = req.params.id;
+    const uploadDir = path.join(process.cwd(), 'uploads', 'project-docs', projectId);
+    try {
+      await fs.mkdir(uploadDir, { recursive: true });
+      cb(null, uploadDir);
+    } catch (err) {
+      cb(err as Error, uploadDir);
+    }
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+const projectDocUpload = multer({
+  storage: projectDocStorage,
+  limits: { fileSize: 20 * 1024 * 1024 } // 20 MB
+});
+
+// GET /projects-environments/:id/documents - List documents
+genericModuleRouter.get('/projects-environments/:id/documents', requireAuth, async (req, res, next) => {
+  try {
+    const projectId = req.params.id;
+    const { search, sortBy, sortOrder } = req.query;
+
+    const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
+    if (!project) throw new HttpError(404, 'Project not found');
+
+    const result = await ProjectDocumentService.list(projectId, {
+      search: search as string,
+      sortBy: sortBy as string,
+      sortOrder: sortOrder as string
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /projects-environments/:id/documents - Upload document
+genericModuleRouter.post('/projects-environments/:id/documents', requireAuth, requirePermission('projects:manage'), projectDocUpload.single('file'), async (req, res, next) => {
+  try {
+    const projectId = req.params.id;
+
+    const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
+    if (!project) throw new HttpError(404, 'Project not found');
+
+    if (!req.file) throw new HttpError(400, 'No file uploaded');
+
+    const file = {
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size
+    };
+
+    const validation = ProjectDocumentService.validateFile({
+      mimeType: file.mimeType,
+      originalName: file.originalName,
+      size: file.size
+    });
+
+    if (!validation.valid) throw new HttpError(400, validation.error!);
+
+    const uploadedBy = req.user?.name || req.user?.email || 'Unknown';
+    const remarks = req.body.remarks || undefined;
+
+    const document = await ProjectDocumentService.upload(projectId, file, uploadedBy, remarks);
+
+    res.json({ document, success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /projects-environments/:id/documents/:docId - Download document
+genericModuleRouter.get('/projects-environments/:id/documents/:docId', requireAuth, async (req, res, next) => {
+  try {
+    const { id: projectId, docId } = req.params;
+
+    const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
+    if (!project) throw new HttpError(404, 'Project not found');
+
+    const document = await ProjectDocumentService.getById(docId);
+    if (!document) throw new HttpError(404, 'Document not found');
+    if (document.projectId !== projectId) throw new HttpError(404, 'Document not found');
+
+    const filePath = path.join(process.cwd(), 'uploads', 'project-docs', projectId, document.fileName);
+
+    res.setHeader('Content-Type', document.fileType);
+    res.setHeader('Content-Disposition', `attachment; filename="${document.originalFileName}"`);
+    res.setHeader('Content-Length', document.fileSize);
+
+    const fileBuffer = await fs.readFile(filePath);
+    res.send(fileBuffer);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /projects-environments/:id/documents/:docId - Delete document
+genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requireAuth, requirePermission('projects:manage'), async (req, res, next) => {
+  try {
+    const { id: projectId, docId } = req.params;
+
+    const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
+    if (!project) throw new HttpError(404, 'Project not found');
+
+    const document = await ProjectDocumentService.getById(docId);
+    if (!document) throw new HttpError(404, 'Document not found');
+    if (document.projectId !== projectId) throw new HttpError(404, 'Document not found');
+
+    // Delete file from disk
+    const filePath = path.join(process.cwd(), 'uploads', 'project-docs', projectId, document.fileName);
+    try {
+      await fs.unlink(filePath);
+    } catch {}
+
+    // Delete from database
+    await ProjectDocumentService.delete(docId);
+
     res.json({ success: true });
   } catch (error) {
     next(error);
