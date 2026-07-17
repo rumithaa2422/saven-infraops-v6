@@ -437,6 +437,10 @@ model ProjectEnvironment {
   projectLocation String?
   remarks         String?
   
+  // Team Management
+  managerId       String?
+  teamMemberIds    String?  // JSON array of user IDs
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

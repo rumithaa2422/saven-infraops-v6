@@ -129,7 +129,34 @@ const moduleMap: Record<string, ModuleConfig> = {
     managePermission: 'projects:manage',
     exportPermission: 'projects:export',
     entityType: 'ProjectEnvironment',
-    list: () => prisma.projectEnvironment.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
+    list: async () => {
+      const projects = await prisma.projectEnvironment.findMany({ 
+        orderBy: { createdAt: 'desc' }, 
+        take: 100 
+      });
+      // Fetch all users for manager and team member enrichment
+      const users = await prisma.user.findMany({
+        select: { id: true, name: true, email: true, department: true, roles: { include: { role: { select: { name: true } } } } }
+      });
+      // Enrich projects with manager and team member data
+      return projects.map(project => {
+        const manager = project.managerId ? users.find(u => u.id === project.managerId) : null;
+        let teamMembers: typeof users = [];
+        if (project.teamMemberIds) {
+          try {
+            const memberIds = JSON.parse(project.teamMemberIds);
+            teamMembers = users.filter(u => memberIds.includes(u.id));
+          } catch {
+            teamMembers = [];
+          }
+        }
+        return {
+          ...project,
+          manager,
+          teamMembers
+        };
+      });
+    },
     create: async (payload, actor, ip) => createProjectEnvironment({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateProjectEnvironment(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
@@ -317,9 +344,29 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
       case 'access-management':
         item = await prisma.accessRequest.findUnique({ where: { id } });
         break;
-      case 'projects-environments':
-        item = await prisma.projectEnvironment.findUnique({ where: { id } });
+      case 'projects-environments': {
+        const project = await prisma.projectEnvironment.findUnique({ where: { id } });
+        if (project) {
+          // Fetch manager and team members
+          const users = await prisma.user.findMany({
+            select: { id: true, name: true, email: true, department: true, roles: { include: { role: { select: { name: true } } } } }
+          });
+          const manager = project.managerId ? users.find(u => u.id === project.managerId) : null;
+          let teamMembers: typeof users = [];
+          if (project.teamMemberIds) {
+            try {
+              const memberIds = JSON.parse(project.teamMemberIds);
+              teamMembers = users.filter(u => memberIds.includes(u.id));
+            } catch {
+              teamMembers = [];
+            }
+          }
+          item = { ...project, manager, teamMembers };
+        } else {
+          item = null;
+        }
         break;
+      }
       case 'vendors-licenses':
         item = await prisma.vendorLicense.findUnique({ where: { id } });
         break;

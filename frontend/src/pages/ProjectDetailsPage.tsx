@@ -3,6 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  department: string | null;
+  roles: { role: { name: string } }[];
+};
+
 type Project = {
   id: string;
   projectName: string;
@@ -21,6 +29,10 @@ type Project = {
   projectType?: string;
   projectLocation?: string;
   remarks?: string;
+  managerId?: string;
+  teamMemberIds?: string;
+  manager?: User | null;
+  teamMembers?: User[];
   createdAt: string;
   updatedAt: string;
 };
@@ -45,8 +57,8 @@ export function ProjectDetailsPage() {
     if (!id) return;
     try {
       setLoading(true);
-      const res = await api.get(`/generic/projects/${id}`);
-      setProject(res.data);
+      const res = await api.get(`/generic/projects-environments/${id}`);
+      setProject(res.data.item);
       setError('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load project');
@@ -63,7 +75,7 @@ export function ProjectDetailsPage() {
     setDeleting(true);
     setDeleteError('');
     try {
-      await api.delete(`/generic/projects/${id}`);
+      await api.delete(`/generic/projects-environments/${id}`);
       navigate('/projects-environments');
     } catch (err: any) {
       setDeleteError(err.response?.data?.message || 'Failed to delete project');
@@ -95,6 +107,10 @@ export function ProjectDetailsPage() {
   function formatCurrency(value?: number): string {
     if (!value) return '-';
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  }
+
+  function getUserRole(user: User): string {
+    return user.roles?.[0]?.role?.name || 'Employee';
   }
 
   if (loading) {
@@ -194,10 +210,6 @@ export function ProjectDetailsPage() {
             </div>
             <div className="detail-meta-row">
               <span className="detail-meta-item">
-                <span className="detail-meta-label">Project Manager</span>
-                <span className="detail-meta-value">{project.ownerName || 'Unassigned'}</span>
-              </span>
-              <span className="detail-meta-item">
                 <span className="detail-meta-label">Client</span>
                 <span className="detail-meta-value">{project.client || '-'}</span>
               </span>
@@ -209,65 +221,55 @@ export function ProjectDetailsPage() {
           </div>
         </div>
 
-        {/* Content Grid */}
+        {/* Main Content */}
         <div className="detail-content-grid">
-          {/* Main Content */}
+          {/* Left Column - Main Info */}
           <div className="detail-main">
-            {/* Project Information */}
+            {/* Project Details */}
             <div className="detail-card">
               <div className="detail-card-header">
                 <h3>Project Information</h3>
               </div>
               <div className="detail-card-body">
-                <div className="detail-grid">
-                  <div className="detail-field">
-                    <label>Project Name</label>
-                    <span>{project.projectName}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Project Code</label>
-                    <span className="detail-id">{project.projectCode}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Client</label>
-                    <span>{project.client || '-'}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Project Manager</label>
-                    <span>{project.ownerName || '-'}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Department</label>
-                    <span>{project.department || '-'}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Technology Stack</label>
-                    <span>{project.technologyStack || '-'}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Project Type</label>
-                    <span>{project.projectType?.replace(/_/g, ' ') || '-'}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Project Location</label>
-                    <span>{project.projectLocation || '-'}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Start Date</label>
-                    <span>{formatDate(project.startDate)}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Expected End Date</label>
-                    <span>{formatDate(project.expectedEndDate)}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Actual End Date</label>
-                    <span>{formatDate(project.actualEndDate)}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Budget</label>
-                    <span>{formatCurrency(project.budget)}</span>
-                  </div>
+                <div className="detail-field">
+                  <label>Project Code</label>
+                  <span className="detail-id">{project.projectCode}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Client</label>
+                  <span>{project.client || '-'}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Department</label>
+                  <span>{project.department || '-'}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Technology Stack</label>
+                  <span>{project.technologyStack || '-'}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Project Type</label>
+                  <span>{project.projectType?.replace(/_/g, ' ') || '-'}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Project Location</label>
+                  <span>{project.projectLocation || '-'}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Start Date</label>
+                  <span>{formatDate(project.startDate)}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Expected End Date</label>
+                  <span>{formatDate(project.expectedEndDate)}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Actual End Date</label>
+                  <span>{formatDate(project.actualEndDate)}</span>
+                </div>
+                <div className="detail-field">
+                  <label>Budget</label>
+                  <span>{formatCurrency(project.budget)}</span>
                 </div>
               </div>
             </div>
@@ -332,8 +334,64 @@ export function ProjectDetailsPage() {
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Right Column - Team & Sidebar */}
           <div className="detail-sidebar">
+            {/* Team Members Card */}
+            <div className="detail-card">
+              <div className="detail-card-header">
+                <h3>Team</h3>
+              </div>
+              <div className="detail-card-body">
+                {/* Manager */}
+                <div className="team-section">
+                  <h4 className="team-section-title">Project Manager</h4>
+                  {project.manager ? (
+                    <div className="team-member-card manager">
+                      <div className="member-avatar">
+                        {project.manager.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="member-info">
+                        <span className="member-name">{project.manager.name}</span>
+                        <span className="member-details">{project.manager.email}</span>
+                        {project.manager.department && (
+                          <span className="member-details">{project.manager.department}</span>
+                        )}
+                        <span className="member-role-badge">Manager</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="no-team">No manager assigned</p>
+                  )}
+                </div>
+
+                {/* Team Members */}
+                <div className="team-section">
+                  <h4 className="team-section-title">Team Members ({project.teamMembers?.length || 0})</h4>
+                  {project.teamMembers && project.teamMembers.length > 0 ? (
+                    <div className="team-members-list">
+                      {project.teamMembers.map(member => (
+                        <div key={member.id} className="team-member-card">
+                          <div className="member-avatar">
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="member-info">
+                            <span className="member-name">{member.name}</span>
+                            <span className="member-details">{member.email}</span>
+                            {member.department && (
+                              <span className="member-details">{member.department}</span>
+                            )}
+                            <span className="member-role">{getUserRole(member)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="no-team">No team members assigned</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Project Statistics */}
             <div className="detail-card">
               <div className="detail-card-header">
@@ -341,8 +399,8 @@ export function ProjectDetailsPage() {
               </div>
               <div className="detail-card-body">
                 <div className="stat-row">
-                  <span className="stat-label">Members</span>
-                  <span className="stat-value">-</span>
+                  <span className="stat-label">Team Size</span>
+                  <span className="stat-value">{(project.teamMembers?.length || 0) + (project.manager ? 1 : 0)}</span>
                 </div>
                 <div className="stat-row">
                   <span className="stat-label">Inventory</span>

@@ -21,6 +21,8 @@ export interface CreateProjectEnvironmentInput {
   projectType?: string | null;
   projectLocation?: string | null;
   remarks?: string | null;
+  managerId?: string | null;
+  teamMemberIds?: string[];
   actorId?: string | null;
   actorEmail?: string | null;
   ipAddress?: string | null;
@@ -49,6 +51,33 @@ export async function createProjectEnvironment(
     throw error;
   }
 
+  // Validate manager exists if provided
+  if (data.managerId) {
+    const manager = await prisma.user.findUnique({ where: { id: data.managerId } });
+    if (!manager) {
+      const error: any = new Error('Manager not found');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  // Validate team members exist if provided
+  if (data.teamMemberIds && data.teamMemberIds.length > 0) {
+    const users = await prisma.user.findMany({
+      where: { id: { in: data.teamMemberIds } }
+    });
+    if (users.length !== data.teamMemberIds.length) {
+      const error: any = new Error('One or more team members not found');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  // Prepare team member IDs as JSON
+  const teamMemberIdsJson = data.teamMemberIds && data.teamMemberIds.length > 0
+    ? JSON.stringify(data.teamMemberIds)
+    : null;
+
   const item = await prisma.projectEnvironment.create({
     data: {
       projectName: data.projectName,
@@ -70,7 +99,9 @@ export async function createProjectEnvironment(
       actualEndDate: data.actualEndDate ? new Date(data.actualEndDate) : null,
       projectType: data.projectType || null,
       projectLocation: data.projectLocation || null,
-      remarks: data.remarks || null
+      remarks: data.remarks || null,
+      managerId: data.managerId || null,
+      teamMemberIds: teamMemberIdsJson
     }
   });
 
@@ -115,6 +146,34 @@ export async function updateProjectEnvironment(
     }
   }
 
+  // Validate manager exists if provided
+  if (data.managerId) {
+    const manager = await prisma.user.findUnique({ where: { id: data.managerId } });
+    if (!manager) {
+      const error: any = new Error('Manager not found');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  // Validate team members exist if provided
+  if (data.teamMemberIds && data.teamMemberIds.length > 0) {
+    const users = await prisma.user.findMany({
+      where: { id: { in: data.teamMemberIds } }
+    });
+    if (users.length !== data.teamMemberIds.length) {
+      const error: any = new Error('One or more team members not found');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  // Prepare team member IDs as JSON
+  let teamMemberIdsJson: string | null = undefined;
+  if (data.teamMemberIds !== undefined) {
+    teamMemberIdsJson = data.teamMemberIds.length > 0 ? JSON.stringify(data.teamMemberIds) : null;
+  }
+
   const item = await prisma.projectEnvironment.update({
     where: { id },
     data: {
@@ -136,7 +195,9 @@ export async function updateProjectEnvironment(
       actualEndDate: data.actualEndDate !== undefined ? (data.actualEndDate ? new Date(data.actualEndDate) : null) : undefined,
       projectType: data.projectType !== undefined ? (data.projectType || null) : undefined,
       projectLocation: data.projectLocation !== undefined ? (data.projectLocation || null) : undefined,
-      remarks: data.remarks !== undefined ? (data.remarks || null) : undefined
+      remarks: data.remarks !== undefined ? (data.remarks || null) : undefined,
+      managerId: data.managerId !== undefined ? (data.managerId || null) : undefined,
+      teamMemberIds: teamMemberIdsJson
     }
   });
 

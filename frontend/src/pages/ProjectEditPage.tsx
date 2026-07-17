@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  department: string | null;
+  roles: { role: { name: string } }[];
+};
 
 type Project = {
   id: string;
@@ -21,6 +29,8 @@ type Project = {
   projectType?: string;
   projectLocation?: string;
   remarks?: string;
+  managerId?: string;
+  teamMemberIds?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -28,19 +38,21 @@ type Project = {
 export function ProjectEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [users, setUsers] = useState<User[]>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [managerSearch, setManagerSearch] = useState('');
 
   const [formData, setFormData] = useState({
     projectName: '',
     projectCode: '',
     client: '',
-    ownerName: '',
-    description: '',
     department: '',
     technologyStack: '',
     priority: 'MEDIUM',
@@ -51,26 +63,50 @@ export function ProjectEditPage() {
     actualEndDate: '',
     projectType: '',
     projectLocation: '',
-    remarks: ''
+    description: '',
+    remarks: '',
+    managerId: '',
+    teamMemberIds: [] as string[]
   });
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setUsersLoading(true);
+      const response = await api.get('/generic/users-teams');
+      setUsers(response.data.items || []);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadProject();
-  }, [id]);
+    fetchUsers();
+  }, [id, fetchUsers]);
 
   async function loadProject() {
     if (!id) return;
     try {
       setLoading(true);
-      const res = await api.get(`/generic/projects/${id}`);
-      const project: Project = res.data;
+      const res = await api.get(`/generic/projects-environments/${id}`);
+      const project = res.data.item;
+      
+      // Parse teamMemberIds from JSON string
+      let teamMemberIdsArray: string[] = [];
+      if (project.teamMemberIds) {
+        try {
+          teamMemberIdsArray = JSON.parse(project.teamMemberIds);
+        } catch {
+          teamMemberIdsArray = [];
+        }
+      }
       
       setFormData({
         projectName: project.projectName || '',
         projectCode: project.projectCode || '',
         client: project.client || '',
-        ownerName: project.ownerName || '',
-        description: project.description || '',
         department: project.department || '',
         technologyStack: project.technologyStack || '',
         priority: project.priority || 'MEDIUM',
@@ -81,7 +117,10 @@ export function ProjectEditPage() {
         actualEndDate: project.actualEndDate ? project.actualEndDate.split('T')[0] : '',
         projectType: project.projectType || '',
         projectLocation: project.projectLocation || '',
-        remarks: project.remarks || ''
+        description: project.description || '',
+        remarks: project.remarks || '',
+        managerId: project.managerId || '',
+        teamMemberIds: teamMemberIdsArray
       });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load project');
@@ -89,6 +128,28 @@ export function ProjectEditPage() {
       setLoading(false);
     }
   }
+
+  const filteredManagers = users.filter(u => {
+    const search = managerSearch.toLowerCase();
+    return (
+      u.name.toLowerCase().includes(search) ||
+      u.email.toLowerCase().includes(search) ||
+      (u.department?.toLowerCase().includes(search) ?? false)
+    );
+  });
+
+  const filteredTeamMembers = users.filter(u => {
+    const search = userSearch.toLowerCase();
+    return (
+      u.name.toLowerCase().includes(search) ||
+      u.email.toLowerCase().includes(search) ||
+      (u.department?.toLowerCase().includes(search) ?? false)
+    );
+  });
+
+  const getUserRole = (user: User): string => {
+    return user.roles?.[0]?.role?.name || 'Employee';
+  };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -99,8 +160,11 @@ export function ProjectEditPage() {
     if (!formData.client.trim()) {
       newErrors.client = 'Client Name is required';
     }
-    if (!formData.ownerName.trim()) {
-      newErrors.ownerName = 'Project Manager is required';
+    if (!formData.managerId) {
+      newErrors.managerId = 'Project Manager is required';
+    }
+    if (formData.teamMemberIds.length === 0) {
+      newErrors.teamMemberIds = 'At least one team member is required';
     }
     if (!formData.startDate) {
       newErrors.startDate = 'Start Date is required';
@@ -119,10 +183,30 @@ export function ProjectEditPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when field is modified
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleManagerSelect = (userId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      managerId: userId,
+      teamMemberIds: prev.teamMemberIds.filter(id => id !== userId)
+    }));
+    setManagerSearch('');
+    setErrors(prev => ({ ...prev, managerId: '' }));
+  };
+
+  const handleTeamMemberToggle = (userId: string) => {
+    if (userId === formData.managerId) return;
+    setFormData(prev => ({
+      ...prev,
+      teamMemberIds: prev.teamMemberIds.includes(userId)
+        ? prev.teamMemberIds.filter(id => id !== userId)
+        : [...prev.teamMemberIds, userId]
+    }));
+    setErrors(prev => ({ ...prev, teamMemberIds: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,11 +220,11 @@ export function ProjectEditPage() {
     setError('');
 
     try {
-      await api.put(`/generic/projects/${id}`, {
+      const selectedManager = users.find(u => u.id === formData.managerId);
+      await api.patch(`/generic/projects-environments/${id}`, {
         projectName: formData.projectName,
         client: formData.client || null,
-        ownerName: formData.ownerName || null,
-        description: formData.description || null,
+        ownerName: selectedManager?.name || null,
         department: formData.department || null,
         technologyStack: formData.technologyStack || null,
         priority: formData.priority,
@@ -151,7 +235,10 @@ export function ProjectEditPage() {
         actualEndDate: formData.actualEndDate || null,
         projectType: formData.projectType || null,
         projectLocation: formData.projectLocation || null,
-        remarks: formData.remarks || null
+        description: formData.description || null,
+        remarks: formData.remarks || null,
+        managerId: formData.managerId,
+        teamMemberIds: formData.teamMemberIds
       });
       
       navigate(`/projects-environments/${id}`);
@@ -167,6 +254,9 @@ export function ProjectEditPage() {
       setSaving(false);
     }
   };
+
+  const selectedManager = users.find(u => u.id === formData.managerId);
+  const selectedTeamMembers = users.filter(u => formData.teamMemberIds.includes(u.id));
 
   if (loading) {
     return (
@@ -228,10 +318,18 @@ export function ProjectEditPage() {
         )}
 
         {/* Form */}
-        <div className="form-card">
-          <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="form-cards-container">
+          {/* Project Information Card */}
+          <div className="form-card">
+            <h3 className="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Project Information
+            </h3>
+
             <div className="form-section">
-              <h3>Basic Information</h3>
               <div className="form-grid">
                 <div className="form-group">
                   <label>Project Code</label>
@@ -268,19 +366,6 @@ export function ProjectEditPage() {
                     className={errors.client ? 'input-error' : ''}
                   />
                   {errors.client && <span className="error-text">{errors.client}</span>}
-                </div>
-
-                <div className="form-group">
-                  <label>Project Manager *</label>
-                  <input
-                    type="text"
-                    name="ownerName"
-                    value={formData.ownerName}
-                    onChange={handleChange}
-                    placeholder="Enter project manager name"
-                    className={errors.ownerName ? 'input-error' : ''}
-                  />
-                  {errors.ownerName && <span className="error-text">{errors.ownerName}</span>}
                 </div>
 
                 <div className="form-group">
@@ -325,11 +410,183 @@ export function ProjectEditPage() {
                     <option value="CANCELLED">Cancelled</option>
                   </select>
                 </div>
+
+                <div className="form-group">
+                  <label>Project Type</label>
+                  <select name="projectType" value={formData.projectType} onChange={handleChange}>
+                    <option value="">Select type</option>
+                    <option value="DEVELOPMENT">Development</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="INFRASTRUCTURE">Infrastructure</option>
+                    <option value="RESEARCH">Research</option>
+                    <option value="CONSULTING">Consulting</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Project Location</label>
+                  <input
+                    type="text"
+                    name="projectLocation"
+                    value={formData.projectLocation}
+                    onChange={handleChange}
+                    placeholder="Enter location"
+                  />
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Team Management Card */}
+          <div className="form-card">
+            <h3 className="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Team Management
+            </h3>
+
+            {/* Project Manager */}
+            <div className="form-section">
+              <label className="section-label">Project Manager *</label>
+              
+              {selectedManager ? (
+                <div className="selected-user-card">
+                  <div className="user-avatar">
+                    {selectedManager.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="user-info">
+                    <span className="user-name">{selectedManager.name}</span>
+                    <span className="user-details">{selectedManager.email}</span>
+                    <span className="user-role-badge">Manager</span>
+                  </div>
+                  <button type="button" className="remove-btn" onClick={() => setFormData(prev => ({ ...prev, managerId: '' }))}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="user-selector">
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    value={managerSearch}
+                    onChange={(e) => setManagerSearch(e.target.value)}
+                    className={errors.managerId ? 'input-error' : ''}
+                  />
+                  {errors.managerId && <span className="error-text">{errors.managerId}</span>}
+                  
+                  {managerSearch && (
+                    <div className="user-dropdown">
+                      {usersLoading ? (
+                        <div className="dropdown-loading">Loading...</div>
+                      ) : filteredManagers.length === 0 ? (
+                        <div className="dropdown-empty">No users found</div>
+                      ) : (
+                        filteredManagers.map(u => (
+                          <div
+                            key={u.id}
+                            className="user-option"
+                            onClick={() => handleManagerSelect(u.id)}
+                          >
+                            <div className="user-avatar small">{u.name.charAt(0).toUpperCase()}</div>
+                            <div className="user-info">
+                              <span className="user-name">{u.name}</span>
+                              <span className="user-details">{u.email} • {u.department || 'No department'}</span>
+                            </div>
+                            <span className="user-role">{getUserRole(u)}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Team Members */}
+            <div className="form-section">
+              <label className="section-label">Team Members *</label>
+              
+              {/* Selected Team Members */}
+              {selectedTeamMembers.length > 0 && (
+                <div className="selected-users-list">
+                  {selectedTeamMembers.map(member => (
+                    <div key={member.id} className="selected-user-card">
+                      <div className="user-avatar">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="user-info">
+                        <span className="user-name">{member.name}</span>
+                        <span className="user-details">{member.email}</span>
+                        <span className="user-role">{getUserRole(member)}</span>
+                      </div>
+                      <button type="button" className="remove-btn" onClick={() => handleTeamMemberToggle(member.id)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="user-selector">
+                <input
+                  type="text"
+                  placeholder="Search to add team members..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className={errors.teamMemberIds ? 'input-error' : ''}
+                />
+                {errors.teamMemberIds && <span className="error-text">{errors.teamMemberIds}</span>}
+                
+                {userSearch && (
+                  <div className="user-dropdown">
+                    {usersLoading ? (
+                      <div className="dropdown-loading">Loading...</div>
+                    ) : filteredTeamMembers.length === 0 ? (
+                      <div className="dropdown-empty">No users found</div>
+                    ) : (
+                      filteredTeamMembers
+                        .filter(u => u.id !== formData.managerId && !formData.teamMemberIds.includes(u.id))
+                        .map(u => (
+                          <div
+                            key={u.id}
+                            className="user-option"
+                            onClick={() => handleTeamMemberToggle(u.id)}
+                          >
+                            <div className="user-avatar small">{u.name.charAt(0).toUpperCase()}</div>
+                            <div className="user-info">
+                              <span className="user-name">{u.name}</span>
+                              <span className="user-details">{u.email} • {u.department || 'No department'}</span>
+                            </div>
+                            <span className="user-role">{getUserRole(u)}</span>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline & Budget Card */}
+          <div className="form-card">
+            <h3 className="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Timeline & Budget
+            </h3>
 
             <div className="form-section">
-              <h3>Timeline & Budget</h3>
               <div className="form-grid">
                 <div className="form-group">
                   <label>Start Date *</label>
@@ -377,35 +634,22 @@ export function ProjectEditPage() {
                     step="0.01"
                   />
                 </div>
-
-                <div className="form-group">
-                  <label>Project Type</label>
-                  <select name="projectType" value={formData.projectType} onChange={handleChange}>
-                    <option value="">Select type</option>
-                    <option value="DEVELOPMENT">Development</option>
-                    <option value="MAINTENANCE">Maintenance</option>
-                    <option value="INFRASTRUCTURE">Infrastructure</option>
-                    <option value="RESEARCH">Research</option>
-                    <option value="CONSULTING">Consulting</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Project Location</label>
-                  <input
-                    type="text"
-                    name="projectLocation"
-                    value={formData.projectLocation}
-                    onChange={handleChange}
-                    placeholder="Enter location"
-                  />
-                </div>
               </div>
             </div>
+          </div>
+
+          {/* Additional Information Card */}
+          <div className="form-card">
+            <h3 className="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Additional Information
+            </h3>
 
             <div className="form-section">
-              <h3>Additional Information</h3>
               <div className="form-group">
                 <label>Description</label>
                 <textarea
@@ -428,17 +672,18 @@ export function ProjectEditPage() {
                 />
               </div>
             </div>
+          </div>
 
-            <div className="form-actions">
-              <button type="button" className="secondary" onClick={() => navigate(`/projects-environments/${id}`)}>
-                Cancel
-              </button>
-              <button type="submit" className="primary" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* Form Actions */}
+          <div className="form-actions">
+            <button type="button" className="secondary" onClick={() => navigate(`/projects-environments/${id}`)}>
+              Cancel
+            </button>
+            <button type="submit" className="primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
