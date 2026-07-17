@@ -127,14 +127,8 @@ export function AssetManagementPage() {
   // Load summary stats and all items on mount
   useEffect(() => {
     loadStatsAndItems();
+    loadCategories();
   }, []);
-
-  // Load categories when viewing by inventory tab
-  useEffect(() => {
-    if (activeTab === 'inventory') {
-      loadCategoriesWithCounts();
-    }
-  }, [activeTab]);
 
   // Load items when search, filters, sort change
   useEffect(() => {
@@ -183,25 +177,21 @@ export function AssetManagementPage() {
     }
   }
 
-  async function loadCategoriesWithCounts() {
+  async function loadCategories() {
     try {
       setLoading(true);
       const res = await api.get('/inventory/categories');
-      const cats: Category[] = res.data.items || [];
+      const cats: Category[] = res.data.categories || [];
       
-      // Calculate counts from allItems
-      const catsWithCounts: CategoryWithCount[] = cats.map(cat => {
-        const categoryItems = allItems.filter(item => item.categoryId === cat.id);
-        const subcatsWithCounts = cat.subcategories.map(sub => ({
+      // Use inventoryCount from API response directly
+      const catsWithCounts: CategoryWithCount[] = cats.map(cat => ({
+        ...cat,
+        inventoryCount: (cat as any).inventoryCount || 0,
+        subcategories: cat.subcategories.map(sub => ({
           ...sub,
-          inventoryCount: allItems.filter(item => item.subcategoryId === sub.id).length
-        }));
-        return {
-          ...cat,
-          subcategories: subcatsWithCounts,
-          inventoryCount: categoryItems.length
-        };
-      });
+          inventoryCount: (sub as any).inventoryCount || 0
+        }))
+      }));
       
       setCategories(catsWithCounts);
     } catch (err) {
@@ -319,14 +309,9 @@ export function AssetManagementPage() {
 
   function handleRefresh() {
     loadStatsAndItems();
-    if (activeTab === 'inventory') {
-      if (currentView === 'categories') {
-        loadCategoriesWithCounts();
-      } else if (currentView === 'subcategories') {
-        loadCategoriesWithCounts();
-      } else {
-        loadItemsForCurrentView();
-      }
+    loadCategories();
+    if (currentView === 'items') {
+      loadItemsForCurrentView();
     }
   }
 
