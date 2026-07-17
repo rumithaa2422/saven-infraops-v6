@@ -41,9 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const permissions = user?.permissions || [];
 
   // Check if user is Super Admin (bypasses all permission checks)
+  // Check both sys:admin permission AND Super Admin role name
   const isSuperAdmin = useMemo(() => {
-    return permissions.includes(SUPER_ADMIN_PERMISSION);
-  }, [permissions]);
+    const hasSuperAdminPermission = permissions.includes(SUPER_ADMIN_PERMISSION);
+    const hasSuperAdminRole = user?.roles?.includes('Super Admin') ?? false;
+    return hasSuperAdminPermission || hasSuperAdminRole;
+  }, [permissions, user?.roles]);
 
   // Check if user has a specific permission
   const hasPermission = useCallback((permission: string): boolean => {
