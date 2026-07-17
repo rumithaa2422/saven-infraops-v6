@@ -40,6 +40,13 @@ type InventoryItem = {
   categoryId: string;
   subcategoryId: string;
   subcategory: { id: string; name: string };
+  // Assignment data (enriched from API)
+  assignment?: {
+    id: string;
+    status: string;
+    user?: { id: string; name: string; email: string };
+    project?: { id: string; projectName: string; projectCode: string };
+  };
 };
 
 type FilterState = {
@@ -51,6 +58,9 @@ type FilterState = {
   status: string;
   stock: string;
   purchaseYear: string;
+  assignmentStatus: string;
+  assignedUser: string;
+  project: string;
 };
 
 export function InventoryCategoryPage() {
@@ -79,7 +89,10 @@ export function InventoryCategoryPage() {
     warranty: '',
     status: '',
     stock: '',
-    purchaseYear: ''
+    purchaseYear: '',
+    assignmentStatus: '',
+    assignedUser: '',
+    project: ''
   });
 
   const [showFilters, setShowFilters] = useState(false);
@@ -127,7 +140,24 @@ export function InventoryCategoryPage() {
       const itemsRes = await api.get('/inventory-master', {
         params: { categoryId }
       });
-      setItems(itemsRes.data.items || []);
+      const loadedItems = itemsRes.data.items || [];
+      
+      // Fetch assignment data for all items
+      const itemsWithAssignments = await Promise.all(
+        loadedItems.map(async (item: InventoryItem) => {
+          try {
+            const assignRes = await api.get(`/inventory-assignments/inventory/${item.id}`);
+            return {
+              ...item,
+              assignment: assignRes.data.assignment || undefined
+            };
+          } catch {
+            return { ...item, assignment: undefined };
+          }
+        })
+      );
+      
+      setItems(itemsWithAssignments);
       
       setError('');
     } catch (err: any) {
@@ -164,7 +194,9 @@ export function InventoryCategoryPage() {
         item.itemNo.toLowerCase().includes(searchLower) ||
         item.brand?.toLowerCase().includes(searchLower) ||
         item.vendor?.toLowerCase().includes(searchLower) ||
-        item.location?.toLowerCase().includes(searchLower)
+        item.location?.toLowerCase().includes(searchLower) ||
+        item.assignment?.user?.name?.toLowerCase().includes(searchLower) ||
+        item.assignment?.project?.projectName?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -232,6 +264,33 @@ export function InventoryCategoryPage() {
         const year = new Date(item.purchaseDate).getFullYear().toString();
         return year === filters.purchaseYear;
       });
+    }
+
+    // Filter by assignment status
+    if (filters.assignmentStatus) {
+      if (filters.assignmentStatus === 'assigned') {
+        result = result.filter(item => item.assignment && item.assignment.status === 'ACTIVE');
+      } else if (filters.assignmentStatus === 'available') {
+        result = result.filter(item => !item.assignment);
+      }
+    }
+
+    // Filter by assigned user
+    if (filters.assignedUser) {
+      const userLower = filters.assignedUser.toLowerCase();
+      result = result.filter(item =>
+        item.assignment?.user?.name?.toLowerCase().includes(userLower) ||
+        item.assignment?.user?.email?.toLowerCase().includes(userLower)
+      );
+    }
+
+    // Filter by project
+    if (filters.project) {
+      const projectLower = filters.project.toLowerCase();
+      result = result.filter(item =>
+        item.assignment?.project?.projectName?.toLowerCase().includes(projectLower) ||
+        item.assignment?.project?.projectCode?.toLowerCase().includes(projectLower)
+      );
     }
 
     // Sort
@@ -399,7 +458,10 @@ export function InventoryCategoryPage() {
       warranty: '',
       status: '',
       stock: '',
-      purchaseYear: ''
+      purchaseYear: '',
+      assignmentStatus: '',
+      assignedUser: '',
+      project: ''
     });
     setSelectedSubcategory(null);
     loadData();
@@ -414,7 +476,10 @@ export function InventoryCategoryPage() {
       warranty: '',
       status: '',
       stock: '',
-      purchaseYear: ''
+      purchaseYear: '',
+      assignmentStatus: '',
+      assignedUser: '',
+      project: ''
     });
     setSelectedSubcategory(null);
   }
@@ -1405,6 +1470,37 @@ export function InventoryCategoryPage() {
               </select>
             </div>
           </div>
+          <div className="filters-row">
+            <div className="filter-group">
+              <label>Assignment Status</label>
+              <select
+                value={filters.assignmentStatus}
+                onChange={(e) => setFilters({ ...filters, assignmentStatus: e.target.value })}
+              >
+                <option value="">All</option>
+                <option value="assigned">Assigned</option>
+                <option value="available">Available</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Assigned User</label>
+              <input
+                type="text"
+                placeholder="Search user..."
+                value={filters.assignedUser}
+                onChange={(e) => setFilters({ ...filters, assignedUser: e.target.value })}
+              />
+            </div>
+            <div className="filter-group">
+              <label>Project</label>
+              <input
+                type="text"
+                placeholder="Search project..."
+                value={filters.project}
+                onChange={(e) => setFilters({ ...filters, project: e.target.value })}
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -1421,7 +1517,7 @@ export function InventoryCategoryPage() {
               <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
               <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
             </svg>
-            <p>{search || filters.vendor || filters.brand || filters.location || filters.warranty || filters.status || filters.stock || filters.purchaseYear || selectedSubcategory ? 'No matching items found' : 'No inventory items in this category'}</p>
+            <p>{search || filters.vendor || filters.brand || filters.location || filters.warranty || filters.status || filters.stock || filters.purchaseYear || filters.assignmentStatus || filters.assignedUser || filters.project || selectedSubcategory ? 'No matching items found' : 'No inventory items in this category'}</p>
             {search && <p className="empty-hint">Try adjusting your search</p>}
           </div>
         ) : (
@@ -1448,6 +1544,8 @@ export function InventoryCategoryPage() {
                 <th onClick={() => handleSort('warrantyExpiry')} className="sortable">
                   Warranty {sortBy === 'warrantyExpiry' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
+                <th>Assigned User</th>
+                <th>Current Project</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1484,6 +1582,12 @@ export function InventoryCategoryPage() {
                       <span className={warrantyStatus.class}>
                         {item.warrantyExpiry ? formatDate(item.warrantyExpiry) : '-'}
                       </span>
+                    </td>
+                    <td>
+                      {item.assignment?.user?.name || '-'}
+                    </td>
+                    <td>
+                      {item.assignment?.project?.projectName || '-'}
                     </td>
                     <td>
                       <button 

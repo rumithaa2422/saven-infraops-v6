@@ -22,6 +22,15 @@ type Document = {
   createdAt: string;
 };
 
+type Assignment = {
+  id: string;
+  status: string;
+  assignedDate: string;
+  remarks?: string;
+  user?: { id: string; name: string; email: string };
+  project?: { id: string; projectName: string; projectCode: string };
+};
+
 type InventoryItem = {
   id: string;
   itemNo: string;
@@ -63,8 +72,13 @@ export function InventoryDetailPage() {
   const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Assignment state
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [loadingAssignment, setLoadingAssignment] = useState(false);
+
   useEffect(() => {
     loadItem();
+    loadAssignment();
   }, [id]);
 
   async function loadItem() {
@@ -78,6 +92,19 @@ export function InventoryDetailPage() {
       setError(err.response?.data?.message || 'Failed to load inventory item');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadAssignment() {
+    if (!id) return;
+    try {
+      setLoadingAssignment(true);
+      const res = await api.get(`/inventory-assignments/inventory/${id}`);
+      setAssignment(res.data.assignment || null);
+    } catch {
+      setAssignment(null);
+    } finally {
+      setLoadingAssignment(false);
     }
   }
 
@@ -397,6 +424,126 @@ export function InventoryDetailPage() {
               {item.category.name} / {item.subcategory.name}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Assignment Summary Cards */}
+      <div className="assignment-summary-cards">
+        <div className={`assignment-summary-card ${assignment ? 'assigned' : 'available'}`}>
+          <div className="assignment-summary-icon">
+            {assignment ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            )}
+          </div>
+          <div className="assignment-summary-content">
+            <span className="assignment-summary-label">Assignment Status</span>
+            <span className="assignment-summary-value">{assignment ? 'Assigned' : 'Available'}</span>
+          </div>
+        </div>
+        {item.status === 'UNDER_REPAIR' && (
+          <div className="assignment-summary-card repair">
+            <div className="assignment-summary-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6.006 6.006 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6.006 6.006 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="assignment-summary-content">
+              <span className="assignment-summary-label">Item Status</span>
+              <span className="assignment-summary-value">Under Repair</span>
+            </div>
+          </div>
+        )}
+        {item.status === 'RETIRED' && (
+          <div className="assignment-summary-card retired">
+            <div className="assignment-summary-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="assignment-summary-content">
+              <span className="assignment-summary-label">Item Status</span>
+              <span className="assignment-summary-value">Retired</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Current Assignment Card */}
+      <div className="detail-card assignment-card">
+        <div className="detail-card-header">
+          <h3>Current Assignment</h3>
+          <button 
+            className="btn-link" 
+            onClick={() => navigate(`/access-management/${item.id}`)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 13V19C18 20.1046 17.1046 21 16 21H5C3.89543 21 3 20.1046 3 19V8C3 6.89543 3.89543 6 5 6H11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M15 3H21M21 3V9M21 3L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Open in Asset Management
+          </button>
+        </div>
+        <div className="detail-card-body">
+          {loadingAssignment ? (
+            <div className="assignment-loading">
+              <div className="spinner small"></div>
+              <span>Loading assignment...</span>
+            </div>
+          ) : assignment ? (
+            <div className="assignment-details">
+              <div className="detail-grid">
+                <div className="detail-field">
+                  <label>Assignment Status</label>
+                  <span className={`status-badge status-${assignment.status.toLowerCase()}`}>
+                    {assignment.status}
+                  </span>
+                </div>
+                <div className="detail-field">
+                  <label>Assigned User</label>
+                  <span className="detail-field-value">
+                    {assignment.user?.name || '-'}
+                    {assignment.user?.email && (
+                      <span className="field-subtext">{assignment.user.email}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="detail-field">
+                  <label>Assigned Project</label>
+                  <span className="detail-field-value">
+                    {assignment.project?.projectName || '-'}
+                    {assignment.project?.projectCode && (
+                      <span className="field-subtext">{assignment.project.projectCode}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="detail-field">
+                  <label>Assigned Date</label>
+                  <span className="detail-field-value">{formatDate(assignment.assignedDate)}</span>
+                </div>
+                <div className="detail-field full-width">
+                  <label>Remarks</label>
+                  <span className="detail-field-value">{assignment.remarks || '-'}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="assignment-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <p>No active assignment.</p>
+            </div>
+          )}
         </div>
       </div>
 

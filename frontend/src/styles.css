@@ -14207,3 +14207,189 @@ input:disabled {
     padding: 16px;
   }
 }
+
+/* Assignment Summary Cards */
+.assignment-summary-cards {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.assignment-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 20px;
+  min-width: 200px;
+}
+
+.assignment-summary-card.assigned {
+  background: linear-gradient(135deg, #ffffff, #eff6ff);
+  border-color: #bfdbfe;
+}
+
+.assignment-summary-card.assigned .assignment-summary-icon {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.assignment-summary-card.available {
+  background: linear-gradient(135deg, #ffffff, #f0fdf4);
+  border-color: #bbf7d0;
+}
+
+.assignment-summary-card.available .assignment-summary-icon {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.assignment-summary-card.repair {
+  background: linear-gradient(135deg, #ffffff, #fffbeb);
+  border-color: #fde68a;
+}
+
+.assignment-summary-card.repair .assignment-summary-icon {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.assignment-summary-card.retired {
+  background: linear-gradient(135deg, #ffffff, #f9fafb);
+  border-color: #e5e7eb;
+}
+
+.assignment-summary-card.retired .assignment-summary-icon {
+  color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+}
+
+.assignment-summary-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.assignment-summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.assignment-summary-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.assignment-summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Assignment Card */
+.assignment-card .detail-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-link:hover {
+  background: var(--brand-soft);
+}
+
+.assignment-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  padding: 20px;
+}
+
+.assignment-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.assignment-empty svg {
+  margin-bottom: 12px;
+  color: #22c55e;
+}
+
+.assignment-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.assignment-details .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.assignment-details .full-width {
+  grid-column: 1 / -1;
+}
+
+.assignment-details .field-subtext {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Status Badge Colors */
+.status-badge.status-available,
+.status-badge.AVAILABLE {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.status-badge.status-assigned,
+.status-badge.ASSIGNED {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.status-badge.status-under_repair,
+.status-badge.UNDER_REPAIR {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.status-badge.status-retired,
+.status-badge.RETIRED {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.status-badge.status-lost,
+.status-badge.LOST {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
