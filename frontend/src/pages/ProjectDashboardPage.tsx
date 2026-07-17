@@ -85,7 +85,7 @@ export function ProjectDashboardPage() {
         }
       });
 
-      let projectList: Project[] = res.data.records || res.data || [];
+      let projectList: Project[] = res.data.items || res.data || [];
       
       // Calculate summary
       const totalProjects = projectList.length;
