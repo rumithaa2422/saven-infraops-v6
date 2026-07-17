@@ -818,32 +818,371 @@ export function AssetManagementPage() {
 
       {/* By User Tab */}
       {activeTab === 'user' && (
-        <div className="asset-content asset-placeholder">
-          <div className="asset-coming-soon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-              <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <h3>By User View</h3>
-            <p>View inventory allocation by user is coming soon.</p>
-          </div>
-        </div>
+        <UserView />
       )}
 
       {/* By Project Tab */}
       {activeTab === 'project' && (
-        <div className="asset-content asset-placeholder">
-          <div className="asset-coming-soon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8 14H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <h3>By Project View</h3>
-            <p>View inventory allocation by project is coming soon.</p>
+        <ProjectView />
+      )}
+    </div>
+  );
+}
+
+// User View Component
+function UserView() {
+  const navigate = useNavigate();
+  
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'department' | 'assets'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  async function loadUsers() {
+    try {
+      setLoading(true);
+      // Load users with their assignment counts
+      const res = await api.get('/inventory-assignments/users', { params: { pageSize: 1000 } });
+      const userList = res.data.users || [];
+      
+      // Get assignment counts for each user
+      const usersWithCounts = await Promise.all(
+        userList.map(async (user: any) => {
+          try {
+            const assignRes = await api.get('/inventory-assignments', { 
+              params: { userId: user.id, status: 'ACTIVE' } 
+            });
+            const assignments = assignRes.data.assignments || [];
+            const projectIds = new Set(assignments.map((a: any) => a.project?.id).filter(Boolean));
+            return {
+              ...user,
+              assignedAssets: assignments.length,
+              projectCount: projectIds.size
+            };
+          } catch {
+            return { ...user, assignedAssets: 0, projectCount: 0 };
+          }
+        })
+      );
+      
+      setUsers(usersWithCounts);
+    } catch {
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filteredUsers = users
+    .filter(user => 
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      (user.department?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+      user.email.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortBy === 'department') {
+        comparison = (a.department || '').localeCompare(b.department || '');
+      } else if (sortBy === 'assets') {
+        comparison = a.assignedAssets - b.assignedAssets;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  function toggleSort(field: 'name' | 'department' | 'assets') {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  }
+
+  return (
+    <div className="asset-content">
+      {/* Toolbar */}
+      <div className="asset-toolbar">
+        <div className="asset-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+            <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="asset-toolbar-actions">
+          <div className="asset-sort-dropdown">
+            <button className="asset-toolbar-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Sort
+            </button>
+            <div className="asset-sort-menu">
+              <button onClick={() => toggleSort('name')}>
+                Name {sortBy === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <button onClick={() => toggleSort('department')}>
+                Department {sortBy === 'department' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <button onClick={() => toggleSort('assets')}>
+                Assigned Assets {sortBy === 'assets' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+              </button>
+            </div>
           </div>
+          <button className="asset-toolbar-btn" onClick={loadUsers}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Users Grid */}
+      {loading ? (
+        <div className="user-assets-grid-loading">
+          <div className="spinner"></div>
+          <span>Loading users...</span>
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="user-assets-empty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+          <h3>No Users Found</h3>
+          <p>No users match your search criteria.</p>
+        </div>
+      ) : (
+        <div className="user-cards-grid">
+          {filteredUsers.map(user => (
+            <div 
+              key={user.id} 
+              className="user-card"
+              onClick={() => navigate(`/access-management/user/${user.id}`)}
+            >
+              <div className="user-card-header">
+                <div className="user-card-avatar">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="user-card-info">
+                  <h3 className="user-card-name">{user.name}</h3>
+                  <span className="user-card-department">{user.department || 'No Department'}</span>
+                </div>
+              </div>
+              <div className="user-card-meta">
+                <span className="user-card-role">{user.role || 'Employee'}</span>
+              </div>
+              <div className="user-card-stats">
+                <div className="user-card-stat">
+                  <span className="stat-value">{user.assignedAssets}</span>
+                  <span className="stat-label">Assets</span>
+                </div>
+                <div className="user-card-stat">
+                  <span className="stat-value">{user.projectCount}</span>
+                  <span className="stat-label">Projects</span>
+                </div>
+              </div>
+              <div className="user-card-footer">
+                <span className="user-card-email">{user.email}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Project View Component
+function ProjectView() {
+  const navigate = useNavigate();
+  
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'manager' | 'assets'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  async function loadProjects() {
+    try {
+      setLoading(true);
+      const res = await api.get('/projects', { params: { pageSize: 1000 } });
+      const projectList = res.data.projects || [];
+      
+      // Get assignment counts for each project
+      const projectsWithCounts = await Promise.all(
+        projectList.map(async (project: any) => {
+          try {
+            const assignRes = await api.get('/inventory-assignments', { 
+              params: { projectId: project.id, status: 'ACTIVE' } 
+            });
+            const assignments = assignRes.data.assignments || [];
+            const userIds = new Set(assignments.map((a: any) => a.user?.id).filter(Boolean));
+            return {
+              ...project,
+              assignedAssets: assignments.length,
+              teamSize: userIds.size
+            };
+          } catch {
+            return { ...project, assignedAssets: 0, teamSize: 0 };
+          }
+        })
+      );
+      
+      setProjects(projectsWithCounts);
+    } catch {
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filteredProjects = projects
+    .filter(project => 
+      project.projectName.toLowerCase().includes(search.toLowerCase()) ||
+      project.projectCode.toLowerCase().includes(search.toLowerCase()) ||
+      (project.manager?.name?.toLowerCase().includes(search.toLowerCase()) ?? false)
+    )
+    .sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'name') {
+        comparison = a.projectName.localeCompare(b.projectName);
+      } else if (sortBy === 'manager') {
+        comparison = (a.manager?.name || '').localeCompare(b.manager?.name || '');
+      } else if (sortBy === 'assets') {
+        comparison = a.assignedAssets - b.assignedAssets;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  function toggleSort(field: 'name' | 'manager' | 'assets') {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  }
+
+  return (
+    <div className="asset-content">
+      {/* Toolbar */}
+      <div className="asset-toolbar">
+        <div className="asset-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+            <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="asset-toolbar-actions">
+          <div className="asset-sort-dropdown">
+            <button className="asset-toolbar-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Sort
+            </button>
+            <div className="asset-sort-menu">
+              <button onClick={() => toggleSort('name')}>
+                Project Name {sortBy === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <button onClick={() => toggleSort('manager')}>
+                Manager {sortBy === 'manager' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+              </button>
+              <button onClick={() => toggleSort('assets')}>
+                Assigned Assets {sortBy === 'assets' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+              </button>
+            </div>
+          </div>
+          <button className="asset-toolbar-btn" onClick={loadProjects}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Projects Grid */}
+      {loading ? (
+        <div className="user-assets-grid-loading">
+          <div className="spinner"></div>
+          <span>Loading projects...</span>
+        </div>
+      ) : filteredProjects.length === 0 ? (
+        <div className="user-assets-empty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
+            <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <h3>No Projects Found</h3>
+          <p>No projects match your search criteria.</p>
+        </div>
+      ) : (
+        <div className="user-cards-grid">
+          {filteredProjects.map(project => (
+            <div 
+              key={project.id} 
+              className="user-card"
+              onClick={() => navigate(`/access-management/project/${project.id}`)}
+            >
+              <div className="user-card-header">
+                <div className="user-card-avatar project">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <div className="user-card-info">
+                  <h3 className="user-card-name">{project.projectName}</h3>
+                  <span className="user-card-department">{project.projectCode}</span>
+                </div>
+              </div>
+              <div className="user-card-meta">
+                <span className={`status-badge status-${project.status.toLowerCase()}`}>
+                  {project.status}
+                </span>
+              </div>
+              <div className="user-card-stats">
+                <div className="user-card-stat">
+                  <span className="stat-value">{project.assignedAssets}</span>
+                  <span className="stat-label">Assets</span>
+                </div>
+                <div className="user-card-stat">
+                  <span className="stat-value">{project.teamSize}</span>
+                  <span className="stat-label">Team</span>
+                </div>
+              </div>
+              <div className="user-card-footer">
+                {project.manager && (
+                  <span className="user-card-email">Manager: {project.manager.name}</span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
