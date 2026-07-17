@@ -23,6 +23,7 @@ type Project = {
   remarks?: string;
   createdAt: string;
   updatedAt: string;
+  assignedAssets?: number;
 };
 
 type ProjectSummary = {
@@ -31,6 +32,28 @@ type ProjectSummary = {
   completedProjects: number;
   onHold: number;
   delayed: number;
+};
+
+type AssetSummary = {
+  totalAssigned: number;
+  available: number;
+  underRepair: number;
+};
+
+type Assignment = {
+  id: string;
+  inventory: {
+    id: string;
+    itemNo: string;
+    itemName: string;
+    status: string;
+    category?: { name: string };
+    subcategory?: { name: string };
+  };
+  user?: { id: string; name: string; email: string };
+  project?: { id: string; projectName: string; projectCode: string };
+  assignedDate: string;
+  status: string;
 };
 
 export function ProjectDashboardPage() {
@@ -47,6 +70,13 @@ export function ProjectDashboardPage() {
     completedProjects: 0,
     onHold: 0,
     delayed: 0
+  });
+
+  // Asset summary state
+  const [assetSummary, setAssetSummary] = useState<AssetSummary>({
+    totalAssigned: 0,
+    available: 0,
+    underRepair: 0
   });
 
   // Filters and search
@@ -87,7 +117,7 @@ export function ProjectDashboardPage() {
 
       let projectList: Project[] = res.data.items || res.data || [];
       
-      // Calculate summary
+      // Calculate project summary
       const totalProjects = projectList.length;
       const activeProjects = projectList.filter((p) => p.status === 'ACTIVE').length;
       const completedProjects = projectList.filter((p) => p.status === 'COMPLETED').length;
@@ -107,7 +137,53 @@ export function ProjectDashboardPage() {
       setTechnologies([...new Set(projectList.map(p => p.technologyStack).filter(Boolean))] as string[]);
       setManagers([...new Set(projectList.map(p => p.ownerName).filter(Boolean))] as string[]);
 
-      setProjects(projectList);
+      // Fetch assignment counts for each project
+      const projectsWithAssets = await Promise.all(
+        projectList.map(async (project) => {
+          try {
+            const assignRes = await api.get('/inventory-assignments', {
+              params: { projectId: project.id, status: 'ACTIVE' }
+            });
+            const assignments: Assignment[] = assignRes.data.assignments || [];
+            return {
+              ...project,
+              assignedAssets: assignments.length
+            };
+          } catch {
+            return { ...project, assignedAssets: 0 };
+          }
+        })
+      );
+
+      setProjects(projectsWithAssets);
+
+      // Calculate asset summary across all projects
+      let totalAssigned = 0;
+      for (const project of projectsWithAssets) {
+        totalAssigned += project.assignedAssets || 0;
+      }
+      
+      // Get global asset counts for reference
+      try {
+        const allAssignRes = await api.get('/inventory-assignments', {
+          params: { status: 'ACTIVE' }
+        });
+        const allAssignments: Assignment[] = allAssignRes.data.assignments || [];
+        const underRepair = allAssignments.filter((a) => a.inventory.status === 'UNDER_REPAIR').length;
+        
+        // Available = total assigned - under repair (simplified)
+        setAssetSummary({
+          totalAssigned,
+          available: allAssignments.length - totalAssigned,
+          underRepair
+        });
+      } catch {
+        setAssetSummary({
+          totalAssigned,
+          available: 0,
+          underRepair: 0
+        });
+      }
     } catch (err) {
       console.error('Failed to fetch projects:', err);
     } finally {
@@ -278,6 +354,47 @@ export function ProjectDashboardPage() {
             <div className="project-summary-content">
               <span className="project-summary-label">Delayed</span>
               <span className="project-summary-value">{loading ? '...' : summary.delayed}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Asset Summary Cards */}
+        <div className="project-summary-cards">
+          <div className="project-summary-card asset">
+            <div className="project-summary-icon assigned">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="project-summary-content">
+              <span className="project-summary-label">Assigned Assets</span>
+              <span className="project-summary-value">{loading ? '...' : assetSummary.totalAssigned}</span>
+            </div>
+          </div>
+
+          <div className="project-summary-card asset">
+            <div className="project-summary-icon available">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
+            <div className="project-summary-content">
+              <span className="project-summary-label">Available Assets</span>
+              <span className="project-summary-value">{loading ? '...' : assetSummary.available}</span>
+            </div>
+          </div>
+
+          <div className="project-summary-card asset">
+            <div className="project-summary-icon repair">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6.006 6.006 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6.006 6.006 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="project-summary-content">
+              <span className="project-summary-label">Assets Under Repair</span>
+              <span className="project-summary-value">{loading ? '...' : assetSummary.underRepair}</span>
             </div>
           </div>
         </div>
@@ -491,6 +608,7 @@ export function ProjectDashboardPage() {
                     <th>Priority</th>
                     <th>Department</th>
                     <th>Start Date</th>
+                    <th>Assigned Assets</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -512,6 +630,11 @@ export function ProjectDashboardPage() {
                       </td>
                       <td>{project.department || '-'}</td>
                       <td>{formatDate(project.startDate)}</td>
+                      <td>
+                        <span className="asset-count-badge">
+                          {project.assignedAssets || 0}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

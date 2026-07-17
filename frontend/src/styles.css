@@ -14393,3 +14393,258 @@ input:disabled {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
+
+/* Project Summary Cards - Asset Icon Colors */
+.project-summary-icon.assigned {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.project-summary-icon.available {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.project-summary-icon.repair {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+/* Asset Count Badge */
+.asset-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.asset-count-badge:hover {
+  background: var(--brand);
+  color: white;
+}
+
+/* Project Detail - Assigned Assets Section */
+.detail-section {
+  margin-top: 20px;
+}
+
+.detail-section .detail-card.full-width {
+  width: 100%;
+}
+
+.asset-summary-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.asset-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 120px;
+  padding: 16px 20px;
+  background: var(--bg);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.asset-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.asset-stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Asset Toolbar */
+.asset-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.asset-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.asset-search svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.asset-search input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.asset-search input::placeholder {
+  color: var(--muted);
+}
+
+.asset-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.asset-filter-select,
+.asset-filter-input {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.asset-filter-select:focus,
+.asset-filter-input:focus {
+  border-color: var(--brand);
+}
+
+.asset-filter-select {
+  min-width: 140px;
+}
+
+.asset-filter-input {
+  min-width: 160px;
+}
+
+/* Asset Loading State */
+.asset-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+/* Asset Empty State */
+.asset-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.asset-empty svg {
+  margin-bottom: 16px;
+  color: var(--brand);
+  opacity: 0.5;
+}
+
+.asset-empty p {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Asset Table */
+.asset-table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.asset-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.asset-table th {
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--bg);
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.asset-table td {
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+}
+
+.asset-table tbody tr:hover {
+  background: var(--bg);
+}
+
+.asset-table .item-no {
+  font-family: monospace;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.asset-table .item-name {
+  font-weight: 500;
+}
+
+/* Open Asset Button */
+.btn-open-asset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-open-asset:hover {
+  background: var(--brand);
+  color: white;
+}
+
+/* Dark mode adjustments */
+:root.dark .asset-search,
+:root.dark .asset-filter-select,
+:root.dark .asset-filter-input {
+  background: var(--panel);
+}
+
+:root.dark .asset-stat {
+  background: var(--panel);
+}

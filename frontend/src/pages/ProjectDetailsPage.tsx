@@ -37,6 +37,30 @@ type Project = {
   updatedAt: string;
 };
 
+type Assignment = {
+  id: string;
+  inventory: {
+    id: string;
+    itemNo: string;
+    itemName: string;
+    status: string;
+    warrantyExpiry?: string;
+    category?: { id: string; name: string };
+    subcategory?: { id: string; name: string };
+  };
+  user?: { id: string; name: string; email: string };
+  project?: { id: string; projectName: string; projectCode: string };
+  assignedDate: string;
+  status: string;
+};
+
+type AssetSummary = {
+  totalAssets: number;
+  uniqueUsers: number;
+  underRepair: number;
+  warrantyExpiring: number;
+};
+
 export function ProjectDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -68,6 +92,20 @@ export function ProjectDetailsPage() {
   const [activityFilter, setActivityFilter] = useState<'all' | 'today' | 'this_week' | 'this_month'>('all');
   const [activitySearch, setActivitySearch] = useState('');
 
+  // Assigned Assets state
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [assetSummary, setAssetSummary] = useState<AssetSummary>({
+    totalAssets: 0,
+    uniqueUsers: 0,
+    underRepair: 0,
+    warrantyExpiring: 0
+  });
+  const [assetSearch, setAssetSearch] = useState('');
+  const [assetFilterStatus, setAssetFilterStatus] = useState('');
+  const [assetFilterUser, setAssetFilterUser] = useState('');
+  const [assetFilterWarranty, setAssetFilterWarranty] = useState('');
+
   type Document = {
     id: string;
     fileName: string;
@@ -98,6 +136,7 @@ export function ProjectDetailsPage() {
     if (project?.id) {
       loadDocuments();
       loadActivities();
+      loadAssignments();
     }
   }, [project?.id]);
 
@@ -133,6 +172,51 @@ export function ProjectDetailsPage() {
       console.error('Failed to load documents:', err);
     } finally {
       setLoadingDocs(false);
+    }
+  }
+
+  async function loadAssignments() {
+    if (!id) return;
+    try {
+      setLoadingAssignments(true);
+      const res = await api.get('/inventory-assignments', {
+        params: { projectId: id, status: 'ACTIVE' }
+      });
+      const loadedAssignments: Assignment[] = res.data.assignments || [];
+      setAssignments(loadedAssignments);
+      
+      // Calculate summary
+      const userIds = new Set<string>();
+      let underRepair = 0;
+      const now = new Date();
+      const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      let warrantyExpiring = 0;
+      
+      loadedAssignments.forEach(assignment => {
+        if (assignment.user?.id) {
+          userIds.add(assignment.user.id);
+        }
+        if (assignment.inventory.status === 'UNDER_REPAIR') {
+          underRepair++;
+        }
+        if (assignment.inventory.warrantyExpiry) {
+          const expiry = new Date(assignment.inventory.warrantyExpiry);
+          if (expiry >= now && expiry <= thirtyDays) {
+            warrantyExpiring++;
+          }
+        }
+      });
+      
+      setAssetSummary({
+        totalAssets: loadedAssignments.length,
+        uniqueUsers: userIds.size,
+        underRepair,
+        warrantyExpiring
+      });
+    } catch (err: any) {
+      console.error('Failed to load assignments:', err);
+    } finally {
+      setLoadingAssignments(false);
     }
   }
 
@@ -221,6 +305,56 @@ export function ProjectDetailsPage() {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  // Filter assignments based on search and filters
+  function filterAssignments(): Assignment[] {
+    let result = [...assignments];
+    
+    // Search filter
+    if (assetSearch) {
+      const searchLower = assetSearch.toLowerCase();
+      result = result.filter(a =>
+        a.inventory.itemNo.toLowerCase().includes(searchLower) ||
+        a.inventory.itemName.toLowerCase().includes(searchLower) ||
+        a.user?.name?.toLowerCase().includes(searchLower) ||
+        a.user?.email?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Status filter
+    if (assetFilterStatus) {
+      result = result.filter(a => a.inventory.status === assetFilterStatus);
+    }
+    
+    // User filter
+    if (assetFilterUser) {
+      const userLower = assetFilterUser.toLowerCase();
+      result = result.filter(a =>
+        a.user?.name?.toLowerCase().includes(userLower) ||
+        a.user?.email?.toLowerCase().includes(userLower)
+      );
+    }
+    
+    // Warranty filter
+    if (assetFilterWarranty) {
+      const now = new Date();
+      const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      
+      result = result.filter(a => {
+        if (!a.inventory.warrantyExpiry) {
+          return assetFilterWarranty === 'none' || assetFilterWarranty === 'expired';
+        }
+        const expiry = new Date(a.inventory.warrantyExpiry);
+        
+        if (assetFilterWarranty === 'expired') return expiry < now;
+        if (assetFilterWarranty === 'expiring') return expiry >= now && expiry <= thirtyDays;
+        if (assetFilterWarranty === 'active') return expiry > thirtyDays;
+        return true;
+      });
+    }
+    
+    return result;
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -876,6 +1010,156 @@ export function ProjectDetailsPage() {
                     <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                   <p>No project activities available.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Assigned Assets Section */}
+        <div className="detail-section">
+          <div className="detail-card full-width">
+            <div className="detail-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Assigned Assets
+              </h3>
+              <div className="detail-card-actions">
+                <button className="btn-icon" onClick={loadAssignments} title="Refresh">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="detail-card-body">
+              {/* Summary Stats */}
+              <div className="asset-summary-stats">
+                <div className="asset-stat">
+                  <span className="asset-stat-value">{loadingAssignments ? '...' : assetSummary.totalAssets}</span>
+                  <span className="asset-stat-label">Assigned Assets</span>
+                </div>
+                <div className="asset-stat">
+                  <span className="asset-stat-value">{loadingAssignments ? '...' : assetSummary.uniqueUsers}</span>
+                  <span className="asset-stat-label">Users Using Assets</span>
+                </div>
+                <div className="asset-stat">
+                  <span className="asset-stat-value">{loadingAssignments ? '...' : assetSummary.underRepair}</span>
+                  <span className="asset-stat-label">Under Repair</span>
+                </div>
+                <div className="asset-stat">
+                  <span className="asset-stat-value">{loadingAssignments ? '...' : assetSummary.warrantyExpiring}</span>
+                  <span className="asset-stat-label">Warranty Expiring (30 days)</span>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="asset-toolbar">
+                <div className="asset-search">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search by Inventory ID, Item Name, Brand, Assigned User..."
+                    value={assetSearch}
+                    onChange={(e) => setAssetSearch(e.target.value)}
+                  />
+                </div>
+                <div className="asset-filters">
+                  <select
+                    value={assetFilterStatus}
+                    onChange={(e) => setAssetFilterStatus(e.target.value)}
+                    className="asset-filter-select"
+                  >
+                    <option value="">All Status</option>
+                    <option value="UNDER_REPAIR">Under Repair</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="DAMAGED">Damaged</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Filter by User..."
+                    value={assetFilterUser}
+                    onChange={(e) => setAssetFilterUser(e.target.value)}
+                    className="asset-filter-input"
+                  />
+                  <select
+                    value={assetFilterWarranty}
+                    onChange={(e) => setAssetFilterWarranty(e.target.value)}
+                    className="asset-filter-select"
+                  >
+                    <option value="">All Warranty</option>
+                    <option value="expiring">Expiring Soon</option>
+                    <option value="expired">Expired</option>
+                    <option value="active">Active</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              {loadingAssignments ? (
+                <div className="asset-loading">
+                  <div className="spinner"></div>
+                  <span>Loading assets...</span>
+                </div>
+              ) : assignments.length === 0 ? (
+                <div className="asset-empty">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <p>No inventory assigned to this project.</p>
+                </div>
+              ) : (
+                <div className="asset-table-wrapper">
+                  <table className="asset-table">
+                    <thead>
+                      <tr>
+                        <th>Inventory ID</th>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>Subcategory</th>
+                        <th>Brand</th>
+                        <th>Model</th>
+                        <th>Assigned User</th>
+                        <th>Assigned Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filterAssignments().map((assignment) => (
+                        <tr key={assignment.id}>
+                          <td className="item-no">{assignment.inventory.itemNo}</td>
+                          <td className="item-name">{assignment.inventory.itemName}</td>
+                          <td>{assignment.inventory.category?.name || '-'}</td>
+                          <td>{assignment.inventory.subcategory?.name || '-'}</td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td>{assignment.user?.name || '-'}</td>
+                          <td>{formatDate(assignment.assignedDate)}</td>
+                          <td>
+                            <span className={`status-badge status-${assignment.inventory.status.toLowerCase()}`}>
+                              {assignment.inventory.status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className="btn-open-asset"
+                              onClick={() => navigate(`/access-management/${assignment.inventory.id}`)}
+                            >
+                              Open
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
