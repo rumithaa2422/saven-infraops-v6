@@ -72,7 +72,7 @@ export function ProjectDashboardPage() {
     else setLoading(true);
 
     try {
-      const res = await api.get('/generic/projects', {
+      const res = await api.get('/projects-environments', {
         params: {
           search: search || undefined,
           status: statusFilter || undefined,
