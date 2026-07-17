@@ -89,12 +89,51 @@ export function AssetDetailsPage() {
   const [userActiveIndex, setUserActiveIndex] = useState(-1);
   const [projectActiveIndex, setProjectActiveIndex] = useState(-1);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  // Transfer modal state
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferUser, setTransferUser] = useState('');
+  const [transferProject, setTransferProject] = useState('');
+  const [transferUserSearch, setTransferUserSearch] = useState('');
+  const [transferProjectSearch, setTransferProjectSearch] = useState('');
+  const [filteredTransferUsers, setFilteredTransferUsers] = useState<User[]>([]);
+  const [filteredTransferProjects, setFilteredTransferProjects] = useState<Project[]>([]);
+  const [showTransferUserDropdown, setShowTransferUserDropdown] = useState(false);
+  const [showTransferProjectDropdown, setShowTransferProjectDropdown] = useState(false);
+  const [transferUserError, setTransferUserError] = useState('');
+  const [transferProjectError, setTransferProjectError] = useState('');
+  const [transferRemarks, setTransferRemarks] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
+  // Return modal state
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnRemarks, setReturnRemarks] = useState('');
+  const [returning, setReturning] = useState(false);
+
+  // Repair modal state
+  const [showRepairModal, setShowRepairModal] = useState(false);
+  const [issueDescription, setIssueDescription] = useState('');
+  const [vendor, setVendor] = useState('');
+  const [expectedReturnDate, setExpectedReturnDate] = useState('');
+  const [repairRemarks, setRepairRemarks] = useState('');
+  const [repairing, setRepairing] = useState(false);
+  const [repairError, setRepairError] = useState('');
+
+  // Retire modal state
+  const [showRetireModal, setShowRetireModal] = useState(false);
+  const [retireReason, setRetireReason] = useState('');
+  const [retireRemarks, setRetireRemarks] = useState('');
+  const [retiring, setRetiring] = useState(false);
+  const [retireError, setRetireError] = useState('');
 
   // Refs for click-outside detection and focus
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
   const userInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
+  const transferUserDropdownRef = useRef<HTMLDivElement>(null);
+  const transferProjectDropdownRef = useRef<HTMLDivElement>(null);
 
   async function loadItem() {
     if (!inventoryId) return;
@@ -355,7 +394,233 @@ export function AssetDetailsPage() {
     return { label: 'Active', class: 'warranty-active' };
   }
 
+  // Transfer handlers
+  function openTransferModal() {
+    setShowTransferModal(true);
+    setTransferUser('');
+    setTransferProject('');
+    setTransferUserSearch('');
+    setTransferProjectSearch('');
+    setTransferRemarks('');
+    setTransferUserError('');
+    setTransferProjectError('');
+    // Load users and projects for transfer
+    api.get('/inventory-assignments/users').then(res => {
+      setFilteredTransferUsers(res.data.users || []);
+    });
+    api.get('/inventory-assignments/projects').then(res => {
+      setFilteredTransferProjects(res.data.projects || []);
+    });
+  }
+
+  function closeTransferModal() {
+    setShowTransferModal(false);
+  }
+
+  async function handleTransfer() {
+    if (!inventoryId) return;
+
+    let hasError = false;
+    if (!transferUser) {
+      setTransferUserError('Please select a new user');
+      hasError = true;
+    } else {
+      setTransferUserError('');
+    }
+    if (!transferProject) {
+      setTransferProjectError('Please select a project');
+      hasError = true;
+    } else {
+      setTransferProjectError('');
+    }
+    if (hasError) return;
+
+    try {
+      setTransferring(true);
+      await api.post('/inventory-assignments/transfer', {
+        inventoryId,
+        userId: transferUser,
+        projectId: transferProject,
+        remarks: transferRemarks || undefined
+      });
+
+      setToastMessage('Inventory transferred successfully!');
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        closeTransferModal();
+        setShowSuccessToast(false);
+        loadItem();
+        loadAssignment();
+      }, 1500);
+    } catch (err: any) {
+      setToastMessage(err.response?.data?.message || 'Failed to transfer inventory');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } finally {
+      setTransferring(false);
+    }
+  }
+
+  // Return handlers
+  function openReturnModal() {
+    setShowReturnModal(true);
+    setReturnRemarks('');
+  }
+
+  function closeReturnModal() {
+    setShowReturnModal(false);
+  }
+
+  async function handleReturn() {
+    if (!inventoryId) return;
+
+    try {
+      setReturning(true);
+      await api.post('/inventory-assignments/return', {
+        inventoryId,
+        remarks: returnRemarks || undefined
+      });
+
+      setToastMessage('Inventory returned successfully!');
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        closeReturnModal();
+        setShowSuccessToast(false);
+        loadItem();
+        loadAssignment();
+      }, 1500);
+    } catch (err: any) {
+      setToastMessage(err.response?.data?.message || 'Failed to return inventory');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } finally {
+      setReturning(false);
+    }
+  }
+
+  // Repair handlers
+  function openRepairModal() {
+    setShowRepairModal(true);
+    setIssueDescription('');
+    setVendor('');
+    setExpectedReturnDate('');
+    setRepairRemarks('');
+    setRepairError('');
+  }
+
+  function closeRepairModal() {
+    setShowRepairModal(false);
+  }
+
+  async function handleRepair() {
+    if (!inventoryId) return;
+
+    if (!issueDescription.trim()) {
+      setRepairError('Issue description is required');
+      return;
+    }
+
+    try {
+      setRepairing(true);
+      setRepairError('');
+      await api.post('/inventory-assignments/repair', {
+        inventoryId,
+        issueDescription,
+        vendor: vendor || undefined,
+        expectedReturnDate: expectedReturnDate || undefined,
+        remarks: repairRemarks || undefined
+      });
+
+      setToastMessage('Inventory sent for repair!');
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        closeRepairModal();
+        setShowSuccessToast(false);
+        loadItem();
+        loadAssignment();
+      }, 1500);
+    } catch (err: any) {
+      setRepairError(err.response?.data?.message || 'Failed to send for repair');
+    } finally {
+      setRepairing(false);
+    }
+  }
+
+  // Retire handlers
+  function openRetireModal() {
+    setShowRetireModal(true);
+    setRetireReason('');
+    setRetireRemarks('');
+    setRetireError('');
+  }
+
+  function closeRetireModal() {
+    setShowRetireModal(false);
+  }
+
+  async function handleRetire() {
+    if (!inventoryId) return;
+
+    if (!retireReason.trim()) {
+      setRetireError('Retirement reason is required');
+      return;
+    }
+
+    try {
+      setRetiring(true);
+      setRetireError('');
+      await api.post('/inventory-assignments/retire', {
+        inventoryId,
+        reason: retireReason,
+        remarks: retireRemarks || undefined
+      });
+
+      setToastMessage('Inventory retired successfully!');
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        closeRetireModal();
+        setShowSuccessToast(false);
+        loadItem();
+        loadAssignment();
+      }, 1500);
+    } catch (err: any) {
+      setRetireError(err.response?.data?.message || 'Failed to retire inventory');
+    } finally {
+      setRetiring(false);
+    }
+  }
+
+  // Filter users for transfer
+  useEffect(() => {
+    if (!transferUserSearch.trim()) {
+      setFilteredTransferUsers(users);
+    } else {
+      const search = transferUserSearch.toLowerCase();
+      setFilteredTransferUsers(users.filter(u => 
+        u.name.toLowerCase().includes(search) || 
+        u.email.toLowerCase().includes(search)
+      ));
+    }
+  }, [transferUserSearch, users]);
+
+  // Filter projects for transfer
+  useEffect(() => {
+    if (!transferProjectSearch.trim()) {
+      setFilteredTransferProjects(projects);
+    } else {
+      const search = transferProjectSearch.toLowerCase();
+      setFilteredTransferProjects(projects.filter(p => 
+        p.projectName.toLowerCase().includes(search) || 
+        p.projectCode.toLowerCase().includes(search)
+      ));
+    }
+  }, [transferProjectSearch, projects]);
+
   const canAssign = isSuperAdmin && item && !NON_ASSIGNABLE_STATUSES.includes(item.status) && !assignment;
+  const canTransfer = isSuperAdmin && item?.status === 'ASSIGNED' && assignment;
+  const canReturn = isSuperAdmin && item?.status === 'ASSIGNED';
+  const canRepair = isSuperAdmin && item && ['AVAILABLE', 'ASSIGNED'].includes(item.status);
+  const canRetire = isSuperAdmin && item && ['AVAILABLE', 'ASSIGNED'].includes(item.status);
   const isFormReady = selectedUser && selectedProject;
 
   if (loading) {
@@ -683,12 +948,15 @@ export function AssetDetailsPage() {
                     </div>
                     <span className="action-label">Assign</span>
                     {canAssign ? (
-                      <span className="action-badge ready">Click to Assign</span>
+                      <span className="action-badge ready">Available</span>
                     ) : (
-                      <span className="action-badge phase3">Not Available</span>
+                      <span className="action-badge unavailable">Not Available</span>
                     )}
                   </div>
-                  <div className="action-card">
+                  <div 
+                    className={`action-card ${canTransfer ? 'action-card-clickable' : ''}`}
+                    onClick={canTransfer ? openTransferModal : undefined}
+                  >
                     <div className="action-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17 3L21 7L17 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -698,9 +966,16 @@ export function AssetDetailsPage() {
                       </svg>
                     </div>
                     <span className="action-label">Transfer</span>
-                    <span className="action-badge phase3">Available in Phase 3</span>
+                    {canTransfer ? (
+                      <span className="action-badge ready">Available</span>
+                    ) : (
+                      <span className="action-badge unavailable">Not Available</span>
+                    )}
                   </div>
-                  <div className="action-card">
+                  <div 
+                    className={`action-card ${canReturn ? 'action-card-clickable' : ''}`}
+                    onClick={canReturn ? openReturnModal : undefined}
+                  >
                     <div className="action-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -709,18 +984,32 @@ export function AssetDetailsPage() {
                       </svg>
                     </div>
                     <span className="action-label">Return</span>
-                    <span className="action-badge phase3">Available in Phase 3</span>
+                    {canReturn ? (
+                      <span className="action-badge ready">Available</span>
+                    ) : (
+                      <span className="action-badge unavailable">Not Available</span>
+                    )}
                   </div>
-                  <div className="action-card">
+                  <div 
+                    className={`action-card ${canRepair ? 'action-card-clickable' : ''}`}
+                    onClick={canRepair ? openRepairModal : undefined}
+                  >
                     <div className="action-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6.006 6.006 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6.006 6.006 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
                     <span className="action-label">Repair</span>
-                    <span className="action-badge phase3">Available in Phase 3</span>
+                    {canRepair ? (
+                      <span className="action-badge ready">Available</span>
+                    ) : (
+                      <span className="action-badge unavailable">Not Available</span>
+                    )}
                   </div>
-                  <div className="action-card">
+                  <div 
+                    className={`action-card ${canRetire ? 'action-card-clickable' : ''}`}
+                    onClick={canRetire ? openRetireModal : undefined}
+                  >
                     <div className="action-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 4L20 20M4 4H12M4 4V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -728,7 +1017,11 @@ export function AssetDetailsPage() {
                       </svg>
                     </div>
                     <span className="action-label">Retire</span>
-                    <span className="action-badge phase3">Available in Phase 3</span>
+                    {canRetire ? (
+                      <span className="action-badge ready">Available</span>
+                    ) : (
+                      <span className="action-badge unavailable">Not Available</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -736,6 +1029,268 @@ export function AssetDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Transfer Modal */}
+      {showTransferModal && (
+        <div className="enterprise-modal-overlay" onClick={closeTransferModal}>
+          <div className="enterprise-modal" onClick={e => e.stopPropagation()}>
+            <div className="enterprise-modal-header">
+              <div className="enterprise-modal-title-section">
+                <h1 className="enterprise-modal-title">Transfer Inventory</h1>
+                <div className="enterprise-modal-subtitle">
+                  <span className="enterprise-subtitle-id">{item?.itemNo}</span>
+                  <span className="enterprise-subtitle-name">{item?.itemName}</span>
+                  <span className="enterprise-status-badge status-assigned">Transfer</span>
+                </div>
+              </div>
+              <button className="enterprise-modal-close" onClick={closeTransferModal} disabled={transferring}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="enterprise-modal-body">
+              <div className="enterprise-section">
+                <h3 className="enterprise-section-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/></svg>
+                  Current Assignment
+                </h3>
+                <div className="enterprise-info-grid">
+                  <div className="enterprise-info-item">
+                    <span className="enterprise-info-label">Current User</span>
+                    <span className="enterprise-info-value">{assignment?.user?.name || '-'}</span>
+                  </div>
+                  <div className="enterprise-info-item">
+                    <span className="enterprise-info-label">Current Project</span>
+                    <span className="enterprise-info-value">{assignment?.project?.projectName || '-'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="enterprise-section" style={{marginTop: '20px'}}>
+                <h3 className="enterprise-section-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="currentColor" strokeWidth="2"/></svg>
+                  New Assignment
+                </h3>
+                <div className="enterprise-field">
+                  <label className="enterprise-label">Select New User <span className="enterprise-required">*</span></label>
+                  <div className="enterprise-autocomplete" ref={transferUserDropdownRef}>
+                    <input
+                      type="text"
+                      className={`enterprise-autocomplete-input ${transferUserError ? 'error' : ''}`}
+                      placeholder="Search user..."
+                      value={transferUserSearch}
+                      onChange={e => { setTransferUserSearch(e.target.value); setTransferUser(''); setShowTransferUserDropdown(true); }}
+                      onFocus={() => setShowTransferUserDropdown(true)}
+                      disabled={transferring}
+                    />
+                    {showTransferUserDropdown && (
+                      <div className="enterprise-autocomplete-dropdown">
+                        {filteredTransferUsers.map(u => (
+                          <div key={u.id} className={`enterprise-autocomplete-item ${transferUser === u.id ? 'selected' : ''}`} onClick={() => { setTransferUser(u.id); setTransferUserSearch(u.name); setTransferUserError(''); setShowTransferUserDropdown(false); }}>
+                            <div className="enterprise-autocomplete-item-avatar">{u.name.charAt(0)}</div>
+                            <div className="enterprise-autocomplete-item-content">
+                              <span className="enterprise-autocomplete-item-name">{u.name}</span>
+                              <span className="enterprise-autocomplete-item-email">{u.email}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {transferUserError && <span className="enterprise-field-error">{transferUserError}</span>}
+                  </div>
+                </div>
+                <div className="enterprise-field">
+                  <label className="enterprise-label">Select Project <span className="enterprise-required">*</span></label>
+                  <div className="enterprise-autocomplete" ref={transferProjectDropdownRef}>
+                    <input
+                      type="text"
+                      className={`enterprise-autocomplete-input ${transferProjectError ? 'error' : ''}`}
+                      placeholder="Search project..."
+                      value={transferProjectSearch}
+                      onChange={e => { setTransferProjectSearch(e.target.value); setTransferProject(''); setShowTransferProjectDropdown(true); }}
+                      onFocus={() => setShowTransferProjectDropdown(true)}
+                      disabled={transferring}
+                    />
+                    {showTransferProjectDropdown && (
+                      <div className="enterprise-autocomplete-dropdown">
+                        {filteredTransferProjects.map(p => (
+                          <div key={p.id} className={`enterprise-autocomplete-item ${transferProject === p.id ? 'selected' : ''}`} onClick={() => { setTransferProject(p.id); setTransferProjectSearch(p.projectName); setTransferProjectError(''); setShowTransferProjectDropdown(false); }}>
+                            <div className="enterprise-autocomplete-item-avatar project"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="currentColor" strokeWidth="2"/></svg></div>
+                            <div className="enterprise-autocomplete-item-content">
+                              <span className="enterprise-autocomplete-item-name">{p.projectName}</span>
+                              <span className="enterprise-autocomplete-item-email">{p.projectCode}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {transferProjectError && <span className="enterprise-field-error">{transferProjectError}</span>}
+                  </div>
+                </div>
+                <div className="enterprise-field">
+                  <label className="enterprise-label">Remarks</label>
+                  <textarea className="enterprise-textarea" placeholder="Add remarks..." value={transferRemarks} onChange={e => setTransferRemarks(e.target.value)} disabled={transferring} rows={3} />
+                </div>
+              </div>
+            </div>
+            <div className="enterprise-modal-footer">
+              <div></div>
+              <div className="enterprise-modal-footer-right">
+                <button className="enterprise-btn-secondary" onClick={closeTransferModal} disabled={transferring}>Cancel</button>
+                <button className="enterprise-btn-primary" onClick={handleTransfer} disabled={transferring || !transferUser || !transferProject}>
+                  {transferring ? <><span className="enterprise-spinner"></span>Transferring...</> : 'Transfer Inventory'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Return Modal */}
+      {showReturnModal && (
+        <div className="enterprise-modal-overlay" onClick={closeReturnModal}>
+          <div className="enterprise-modal enterprise-modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="enterprise-modal-header">
+              <div className="enterprise-modal-title-section">
+                <h1 className="enterprise-modal-title">Return Inventory</h1>
+                <div className="enterprise-modal-subtitle">
+                  <span className="enterprise-subtitle-id">{item?.itemNo}</span>
+                  <span className="enterprise-subtitle-name">{item?.itemName}</span>
+                </div>
+              </div>
+              <button className="enterprise-modal-close" onClick={closeReturnModal} disabled={returning}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="enterprise-modal-body">
+              <div className="enterprise-confirm-message">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="confirm-icon warning"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                <p>Are you sure you want to return this inventory?</p>
+                <p className="confirm-detail">This will set the inventory status back to Available.</p>
+              </div>
+              <div className="enterprise-field">
+                <label className="enterprise-label">Remarks (Optional)</label>
+                <textarea className="enterprise-textarea" placeholder="Add return remarks..." value={returnRemarks} onChange={e => setReturnRemarks(e.target.value)} disabled={returning} rows={3} />
+              </div>
+            </div>
+            <div className="enterprise-modal-footer">
+              <div></div>
+              <div className="enterprise-modal-footer-right">
+                <button className="enterprise-btn-secondary" onClick={closeReturnModal} disabled={returning}>Cancel</button>
+                <button className="enterprise-btn-primary" onClick={handleReturn} disabled={returning}>
+                  {returning ? <><span className="enterprise-spinner"></span>Returning...</> : 'Confirm Return'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Repair Modal */}
+      {showRepairModal && (
+        <div className="enterprise-modal-overlay" onClick={closeRepairModal}>
+          <div className="enterprise-modal" onClick={e => e.stopPropagation()}>
+            <div className="enterprise-modal-header">
+              <div className="enterprise-modal-title-section">
+                <h1 className="enterprise-modal-title">Send for Repair</h1>
+                <div className="enterprise-modal-subtitle">
+                  <span className="enterprise-subtitle-id">{item?.itemNo}</span>
+                  <span className="enterprise-subtitle-name">{item?.itemName}</span>
+                  <span className="enterprise-status-badge status-under_repair">Repair</span>
+                </div>
+              </div>
+              <button className="enterprise-modal-close" onClick={closeRepairModal} disabled={repairing}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="enterprise-modal-body">
+              <div className="enterprise-section">
+                <h3 className="enterprise-section-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6.006 6.006 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6.006 6.006 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Repair Details
+                </h3>
+                <div className="enterprise-field">
+                  <label className="enterprise-label">Issue Description <span className="enterprise-required">*</span></label>
+                  <textarea className={`enterprise-textarea ${repairError && !issueDescription ? 'error' : ''}`} placeholder="Describe the issue..." value={issueDescription} onChange={e => setIssueDescription(e.target.value)} disabled={repairing} rows={3} />
+                </div>
+                <div className="enterprise-field">
+                  <label className="enterprise-label">Vendor</label>
+                  <input type="text" className="enterprise-autocomplete-input" placeholder="Enter vendor name..." value={vendor} onChange={e => setVendor(e.target.value)} disabled={repairing} />
+                </div>
+                <div className="enterprise-field">
+                  <label className="enterprise-label">Expected Return Date</label>
+                  <input type="date" className="enterprise-autocomplete-input" value={expectedReturnDate} onChange={e => setExpectedReturnDate(e.target.value)} disabled={repairing} />
+                </div>
+                <div className="enterprise-field">
+                  <label className="enterprise-label">Remarks</label>
+                  <textarea className="enterprise-textarea" placeholder="Additional remarks..." value={repairRemarks} onChange={e => setRepairRemarks(e.target.value)} disabled={repairing} rows={2} />
+                </div>
+                {repairError && <div className="enterprise-error-banner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg><span>{repairError}</span></div>}
+              </div>
+            </div>
+            <div className="enterprise-modal-footer">
+              <div></div>
+              <div className="enterprise-modal-footer-right">
+                <button className="enterprise-btn-secondary" onClick={closeRepairModal} disabled={repairing}>Cancel</button>
+                <button className="enterprise-btn-primary" onClick={handleRepair} disabled={repairing || !issueDescription.trim()}>
+                  {repairing ? <><span className="enterprise-spinner"></span>Sending...</> : 'Send for Repair'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Retire Modal */}
+      {showRetireModal && (
+        <div className="enterprise-modal-overlay" onClick={closeRetireModal}>
+          <div className="enterprise-modal enterprise-modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="enterprise-modal-header">
+              <div className="enterprise-modal-title-section">
+                <h1 className="enterprise-modal-title">Retire Inventory</h1>
+                <div className="enterprise-modal-subtitle">
+                  <span className="enterprise-subtitle-id">{item?.itemNo}</span>
+                  <span className="enterprise-subtitle-name">{item?.itemName}</span>
+                </div>
+              </div>
+              <button className="enterprise-modal-close" onClick={closeRetireModal} disabled={retiring}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="enterprise-modal-body">
+              <div className="enterprise-confirm-message danger">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="confirm-icon danger"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                <p>Are you sure you want to retire this inventory?</p>
+                <p className="confirm-detail">Retired inventory cannot be assigned again.</p>
+              </div>
+              <div className="enterprise-field">
+                <label className="enterprise-label">Reason for Retirement <span className="enterprise-required">*</span></label>
+                <textarea className="enterprise-textarea" placeholder="Enter retirement reason..." value={retireReason} onChange={e => setRetireReason(e.target.value)} disabled={retiring} rows={3} />
+              </div>
+              <div className="enterprise-field">
+                <label className="enterprise-label">Remarks</label>
+                <textarea className="enterprise-textarea" placeholder="Additional remarks..." value={retireRemarks} onChange={e => setRetireRemarks(e.target.value)} disabled={retiring} rows={2} />
+              </div>
+              {retireError && <div className="enterprise-error-banner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg><span>{retireError}</span></div>}
+            </div>
+            <div className="enterprise-modal-footer">
+              <div></div>
+              <div className="enterprise-modal-footer-right">
+                <button className="enterprise-btn-secondary" onClick={closeRetireModal} disabled={retiring}>Cancel</button>
+                <button className="enterprise-btn-primary danger" onClick={handleRetire} disabled={retiring || !retireReason.trim()}>
+                  {retiring ? <><span className="enterprise-spinner"></span>Retiring...</> : 'Confirm Retirement'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="enterprise-toast success">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Assign Modal - Enterprise Design */}
       {showAssignModal && (

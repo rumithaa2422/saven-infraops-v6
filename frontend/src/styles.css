@@ -13164,6 +13164,11 @@ input:disabled {
   color: #22c55e;
 }
 
+.action-badge.unavailable {
+  background: rgba(156, 163, 175, 0.1);
+  color: #9ca3af;
+}
+
 .action-card-clickable {
   cursor: pointer;
   opacity: 1;
@@ -13690,4 +13695,61 @@ input:disabled {
   .enterprise-modal-footer-left { display: none; }
   .enterprise-modal-footer-right { width: 100%; }
   .enterprise-btn-secondary, .enterprise-btn-primary { flex: 1; justify-content: center; }
+}
+
+/* Confirmation dialog styles */
+.enterprise-confirm-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  background: #fef3c7;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.enterprise-confirm-message.danger {
+  background: #fef2f2;
+}
+
+.enterprise-confirm-message .confirm-icon {
+  margin-bottom: 16px;
+}
+
+.enterprise-confirm-message .confirm-icon.warning {
+  color: #f59e0b;
+}
+
+.enterprise-confirm-message .confirm-icon.danger {
+  color: #ef4444;
+}
+
+.enterprise-confirm-message p {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.enterprise-confirm-message .confirm-detail {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Small modal variant */
+.enterprise-modal-sm {
+  max-width: 520px;
+}
+
+/* Danger button */
+.enterprise-btn-primary.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.enterprise-btn-primary.danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
 }
