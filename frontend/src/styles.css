@@ -10676,28 +10676,279 @@ input:disabled {
   font-weight: 500;
 }
 
-.detail-content-grid {
+/* Detail Header Actions */
+.detail-header-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+/* Detail Page Layout */
+.detail-page {
+  padding: 20px;
+}
+
+.detail-page .detail-header {
+  margin-bottom: 20px;
+}
+
+.detail-page .detail-header .detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.detail-page .detail-header .detail-title-row .detail-ticket-no {
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.detail-page .detail-header .detail-title-row .detail-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.detail-page .detail-header .detail-meta-row {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.detail-page .detail-header .detail-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-page .detail-header .detail-meta-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-page .detail-header .detail-meta-value {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Detail Card Improvements */
+.detail-card {
+  margin-bottom: 0;
+}
+
+.detail-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.detail-card-header h3 svg {
+  color: var(--brand);
+}
+
+.detail-card-body {
+  padding: 16px 20px;
+}
+
+.detail-card-count {
+  background: var(--brand-soft);
+  color: var(--brand);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Info Grid */
+.detail-info-grid {
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+}
+
+.detail-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-info-item label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-info-item span {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.detail-info-item span.mono {
+  font-family: monospace;
+  color: var(--brand);
+}
+
+/* Quick Info Card */
+.detail-sidebar .detail-card-body .info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-sidebar .detail-card-body .info-row:last-child {
+  border-bottom: none;
+}
+
+.detail-sidebar .detail-card-body .info-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.detail-sidebar .detail-card-body .info-value {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Team Section */
+.team-section {
+  margin-bottom: 16px;
+}
+
+.team-section:last-child {
+  margin-bottom: 0;
+}
+
+.team-section-title {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.team-member-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  background: var(--bg);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.team-member-card:last-child {
+  margin-bottom: 0;
+}
+
+.member-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.member-details {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.member-role {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.member-role-badge.manager {
+  display: inline-block;
+  background: var(--brand-soft);
+  color: var(--brand);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.no-team {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .detail-content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-sidebar {
+    order: -1;
+  }
 }
 
 .detail-main {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  min-width: 0;
 }
 
 .detail-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .detail-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
