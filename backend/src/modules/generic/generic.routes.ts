@@ -346,6 +346,28 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
       case 'access-management':
         item = await prisma.accessRequest.findUnique({ where: { id } });
         break;
+      case 'users-teams':
+        item = await prisma.user.findUnique({ 
+          where: { id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            department: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            roles: {
+              include: {
+                role: {
+                  select: { name: true }
+                }
+              }
+            }
+          }
+        });
+        break;
       case 'projects-environments': {
         const project = await prisma.projectEnvironment.findUnique({ where: { id } });
         if (project) {

@@ -64,9 +64,9 @@ export function UserAssetsPage() {
   async function loadUser() {
     try {
       setLoading(true);
-      // Use the generic users endpoint - single item response
-      const res = await api.get(`/generic/users/${userId}`);
-      const user = res.data;
+      // Use the users-teams endpoint - single item response
+      const res = await api.get(`/users-teams/${userId}`);
+      const user = res.data.item;
       // Extract role from the roles array
       const role = user.roles?.[0]?.role?.name || 'Employee';
       setUserData({ ...user, role });

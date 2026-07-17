@@ -846,9 +846,9 @@ function UserView() {
   async function loadUsers() {
     try {
       setLoading(true);
-      // Load users with their assignment counts from generic users endpoint
+      // Load users with their assignment counts from users-teams endpoint
       // Response format: { items: [...] }
-      const res = await api.get('/generic/users');
+      const res = await api.get('/users-teams');
       const userList = res.data.items || [];
       
       // Get assignment counts for each user
@@ -1028,7 +1028,7 @@ function ProjectView() {
     try {
       setLoading(true);
       // Response format: { items: [...] }
-      const res = await api.get('/generic/projects-environments');
+      const res = await api.get('/projects-environments');
       const projectList = res.data.items || [];
       
       // Get assignment counts for each project

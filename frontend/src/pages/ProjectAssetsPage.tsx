@@ -62,8 +62,8 @@ export function ProjectAssetsPage() {
   async function loadProject() {
     try {
       setLoading(true);
-      const res = await api.get(`/projects/${projectId}`);
-      setProjectData(res.data.project);
+      const res = await api.get(`/projects-environments/${projectId}`);
+      setProjectData(res.data.item);
       setError('');
     } catch {
       setError('Failed to load project details.');
