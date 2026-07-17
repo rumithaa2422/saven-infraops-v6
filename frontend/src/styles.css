@@ -12977,3 +12977,184 @@ input:disabled {
     align-items: center;
   }
 }
+
+/* ============================================
+   Asset Details Page
+   ============================================ */
+
+/* Summary Cards Grid */
+.asset-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+  .asset-summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .asset-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .asset-summary-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.asset-summary-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asset-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.asset-summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.asset-summary-value.not-assigned {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.asset-summary-value.status-text.status-available {
+  color: #22c55e;
+}
+
+.asset-summary-value.status-text.status-assigned {
+  color: #3b82f6;
+}
+
+.asset-summary-value.status-text.status-under_repair {
+  color: #eab308;
+}
+
+.asset-summary-value.status-text.status-retired {
+  color: #6b7280;
+}
+
+.asset-summary-value.status-text.status-lost {
+  color: #ef4444;
+}
+
+.asset-summary-value.warranty-active {
+  color: #22c55e;
+}
+
+.asset-summary-value.warranty-warning {
+  color: #eab308;
+}
+
+.asset-summary-value.warranty-expired {
+  color: #ef4444;
+}
+
+/* Detail Empty State */
+.detail-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.detail-empty-state svg {
+  opacity: 0.4;
+  margin-bottom: 12px;
+}
+
+.detail-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Mono text */
+.detail-field-value.mono {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--brand);
+}
+
+/* Lifecycle Action Cards */
+.action-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .action-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: center;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.action-card:hover {
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+.action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.action-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.action-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.action-badge.phase3 {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
