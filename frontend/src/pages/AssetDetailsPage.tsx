@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
@@ -82,6 +82,12 @@ export function AssetDetailsPage() {
   const [projectSearch, setProjectSearch] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [userError, setUserError] = useState('');
+  const [projectError, setProjectError] = useState('');
+
+  // Refs for click-outside detection
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
 
   async function loadItem() {
     if (!inventoryId) return;
@@ -119,17 +125,36 @@ export function AssetDetailsPage() {
     }
   }, [showAssignModal]);
 
+  // Load users when dropdown opens or search changes
   useEffect(() => {
-    if (showAssignModal && userSearch) {
+    if (showAssignModal) {
       loadUsers(userSearch);
     }
   }, [userSearch, showAssignModal]);
 
+  // Load projects when dropdown opens or search changes
   useEffect(() => {
-    if (showAssignModal && projectSearch) {
+    if (showAssignModal) {
       loadProjects(projectSearch);
     }
   }, [projectSearch, showAssignModal]);
+
+  // Click outside to close dropdowns
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
+        setShowProjectDropdown(false);
+      }
+    }
+
+    if (showAssignModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showAssignModal]);
 
   async function loadUsers(search = '') {
     try {
@@ -159,6 +184,8 @@ export function AssetDetailsPage() {
     setSelectedProject('');
     setRemarks('');
     setAssignError('');
+    setUserError('');
+    setProjectError('');
     setUserSearch('');
     setProjectSearch('');
   }
@@ -167,20 +194,28 @@ export function AssetDetailsPage() {
     setShowAssignModal(false);
     setUsers([]);
     setProjects([]);
+    setShowUserDropdown(false);
+    setShowProjectDropdown(false);
   }
 
   async function handleAssign() {
     if (!inventoryId) return;
 
     // Validation
+    let hasError = false;
     if (!selectedUser) {
-      setAssignError('Please select a user');
-      return;
+      setUserError('Please select a user');
+      hasError = true;
+    } else {
+      setUserError('');
     }
     if (!selectedProject) {
-      setAssignError('Please select a project');
-      return;
+      setProjectError('Please select a project');
+      hasError = true;
+    } else {
+      setProjectError('');
     }
+    if (hasError) return;
 
     try {
       setAssigning(true);
@@ -236,6 +271,7 @@ export function AssetDetailsPage() {
   }
 
   const canAssign = isSuperAdmin && item && !NON_ASSIGNABLE_STATUSES.includes(item.status) && !assignment;
+  const isFormReady = selectedUser && selectedProject;
 
   if (loading) {
     return (
@@ -671,13 +707,13 @@ export function AssetDetailsPage() {
                   <span className="step-title">Assign To</span>
                 </div>
                 <div className="step-content">
-                  <div className="searchable-dropdown">
+                  <div className="searchable-dropdown" ref={userDropdownRef}>
                     <label>Select User *</label>
                     <div className="dropdown-input-wrapper">
                       <input
                         type="text"
-                        className="dropdown-input"
-                        placeholder="Search user by name or email..."
+                        className={`dropdown-input ${userError ? 'input-error' : ''}`}
+                        placeholder="Click to search user..."
                         value={userSearch}
                         onChange={e => {
                           setUserSearch(e.target.value);
@@ -685,31 +721,40 @@ export function AssetDetailsPage() {
                         }}
                         onFocus={() => {
                           setShowUserDropdown(true);
-                          loadUsers(userSearch);
                         }}
+                        readOnly
                       />
-                      {showUserDropdown && users.length > 0 && (
+                      <svg className="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {showUserDropdown && (
                         <div className="dropdown-list">
-                          {users.map(user => (
-                            <div
-                              key={user.id}
-                              className={`dropdown-item ${selectedUser === user.id ? 'selected' : ''}`}
-                              onClick={() => {
-                                setSelectedUser(user.id);
-                                setUserSearch(user.name);
-                                setShowUserDropdown(false);
-                              }}
-                            >
-                              <div className="dropdown-item-name">{user.name}</div>
-                              <div className="dropdown-item-email">{user.email}</div>
-                              {user.department && (
-                                <div className="dropdown-item-dept">{user.department}</div>
-                              )}
-                            </div>
-                          ))}
+                          {users.length > 0 ? (
+                            users.map(user => (
+                              <div
+                                key={user.id}
+                                className={`dropdown-item ${selectedUser === user.id ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setSelectedUser(user.id);
+                                  setUserSearch(user.name);
+                                  setUserError('');
+                                  setShowUserDropdown(false);
+                                }}
+                              >
+                                <div className="dropdown-item-name">{user.name}</div>
+                                <div className="dropdown-item-email">{user.email}</div>
+                                {user.department && (
+                                  <div className="dropdown-item-dept">{user.department}</div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="dropdown-empty">No users found</div>
+                          )}
                         </div>
                       )}
                     </div>
+                    {userError && <span className="field-error">{userError}</span>}
                   </div>
                 </div>
               </div>
@@ -721,13 +766,13 @@ export function AssetDetailsPage() {
                   <span className="step-title">Project</span>
                 </div>
                 <div className="step-content">
-                  <div className="searchable-dropdown">
+                  <div className="searchable-dropdown" ref={projectDropdownRef}>
                     <label>Select Project *</label>
                     <div className="dropdown-input-wrapper">
                       <input
                         type="text"
-                        className="dropdown-input"
-                        placeholder="Search project by name or code..."
+                        className={`dropdown-input ${projectError ? 'input-error' : ''}`}
+                        placeholder="Click to search project..."
                         value={projectSearch}
                         onChange={e => {
                           setProjectSearch(e.target.value);
@@ -735,28 +780,37 @@ export function AssetDetailsPage() {
                         }}
                         onFocus={() => {
                           setShowProjectDropdown(true);
-                          loadProjects(projectSearch);
                         }}
+                        readOnly
                       />
-                      {showProjectDropdown && projects.length > 0 && (
+                      <svg className="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {showProjectDropdown && (
                         <div className="dropdown-list">
-                          {projects.map(project => (
-                            <div
-                              key={project.id}
-                              className={`dropdown-item ${selectedProject === project.id ? 'selected' : ''}`}
-                              onClick={() => {
-                                setSelectedProject(project.id);
-                                setProjectSearch(project.projectName);
-                                setShowProjectDropdown(false);
-                              }}
-                            >
-                              <div className="dropdown-item-name">{project.projectName}</div>
-                              <div className="dropdown-item-email">{project.projectCode}</div>
-                            </div>
-                          ))}
+                          {projects.length > 0 ? (
+                            projects.map(project => (
+                              <div
+                                key={project.id}
+                                className={`dropdown-item ${selectedProject === project.id ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setSelectedProject(project.id);
+                                  setProjectSearch(project.projectName);
+                                  setProjectError('');
+                                  setShowProjectDropdown(false);
+                                }}
+                              >
+                                <div className="dropdown-item-name">{project.projectName}</div>
+                                <div className="dropdown-item-email">{project.projectCode}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="dropdown-empty">No projects found</div>
+                          )}
                         </div>
                       )}
                     </div>
+                    {projectError && <span className="field-error">{projectError}</span>}
                   </div>
                 </div>
               </div>
@@ -796,7 +850,7 @@ export function AssetDetailsPage() {
               <button 
                 className="btn-primary" 
                 onClick={handleAssign}
-                disabled={assigning}
+                disabled={assigning || !isFormReady}
               >
                 {assigning ? 'Assigning...' : 'Assign Inventory'}
               </button>
