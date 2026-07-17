@@ -26,6 +26,36 @@ type InventoryItem = {
   subcategory: { id: string; name: string };
 };
 
+type Assignment = {
+  id: string;
+  inventoryId: string;
+  userId: string | null;
+  projectId: string | null;
+  assignedBy: string;
+  assignedByName: string;
+  assignedDate: string;
+  status: string;
+  remarks: string | null;
+  returnedDate: string | null;
+  user: { id: string; name: string; email: string } | null;
+  project: { id: string; projectName: string; projectCode: string } | null;
+};
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  department?: string;
+};
+
+type Project = {
+  id: string;
+  projectName: string;
+  projectCode: string;
+};
+
+const NON_ASSIGNABLE_STATUSES = ['UNDER_REPAIR', 'RETIRED', 'LOST', 'DAMAGED'];
+
 export function AssetDetailsPage() {
   const { inventoryId } = useParams<{ inventoryId: string }>();
   const navigate = useNavigate();
@@ -35,8 +65,23 @@ export function AssetDetailsPage() {
   const isEmployee = !isSuperAdmin && !isAdmin;
 
   const [item, setItem] = useState<InventoryItem | null>(null);
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Assign modal state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedProject, setSelectedProject] = useState('');
+  const [remarks, setRemarks] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [projectSearch, setProjectSearch] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
 
   async function loadItem() {
     if (!inventoryId) return;
@@ -52,12 +97,110 @@ export function AssetDetailsPage() {
     }
   }
 
+  async function loadAssignment() {
+    if (!inventoryId) return;
+    try {
+      const res = await api.get(`/inventory-assignments/inventory/${inventoryId}`);
+      setAssignment(res.data.assignment || null);
+    } catch {
+      setAssignment(null);
+    }
+  }
+
   useEffect(() => {
     loadItem();
+    loadAssignment();
   }, [inventoryId]);
+
+  useEffect(() => {
+    if (showAssignModal) {
+      loadUsers();
+      loadProjects();
+    }
+  }, [showAssignModal]);
+
+  useEffect(() => {
+    if (showAssignModal && userSearch) {
+      loadUsers(userSearch);
+    }
+  }, [userSearch, showAssignModal]);
+
+  useEffect(() => {
+    if (showAssignModal && projectSearch) {
+      loadProjects(projectSearch);
+    }
+  }, [projectSearch, showAssignModal]);
+
+  async function loadUsers(search = '') {
+    try {
+      const res = await api.get('/inventory-assignments/users', { params: { search } });
+      setUsers(res.data.users || []);
+    } catch {
+      setUsers([]);
+    }
+  }
+
+  async function loadProjects(search = '') {
+    try {
+      const res = await api.get('/inventory-assignments/projects', { params: { search } });
+      setProjects(res.data.projects || []);
+    } catch {
+      setProjects([]);
+    }
+  }
 
   function handleBack() {
     navigate('/access-management');
+  }
+
+  function openAssignModal() {
+    setShowAssignModal(true);
+    setSelectedUser('');
+    setSelectedProject('');
+    setRemarks('');
+    setAssignError('');
+    setUserSearch('');
+    setProjectSearch('');
+  }
+
+  function closeAssignModal() {
+    setShowAssignModal(false);
+    setUsers([]);
+    setProjects([]);
+  }
+
+  async function handleAssign() {
+    if (!inventoryId) return;
+
+    // Validation
+    if (!selectedUser) {
+      setAssignError('Please select a user');
+      return;
+    }
+    if (!selectedProject) {
+      setAssignError('Please select a project');
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      setAssignError('');
+
+      await api.post('/inventory-assignments', {
+        inventoryId,
+        userId: selectedUser,
+        projectId: selectedProject,
+        remarks: remarks || undefined
+      });
+
+      // Refresh data
+      await Promise.all([loadItem(), loadAssignment()]);
+      closeAssignModal();
+    } catch (err: any) {
+      setAssignError(err.response?.data?.message || 'Failed to assign inventory');
+    } finally {
+      setAssigning(false);
+    }
   }
 
   function formatDate(dateStr?: string): string {
@@ -91,6 +234,8 @@ export function AssetDetailsPage() {
     }
     return { label: 'Active', class: 'warranty-active' };
   }
+
+  const canAssign = isSuperAdmin && item && !NON_ASSIGNABLE_STATUSES.includes(item.status) && !assignment;
 
   if (loading) {
     return (
@@ -181,11 +326,15 @@ export function AssetDetailsPage() {
             </div>
             <div className="asset-summary-card">
               <span className="asset-summary-label">Current User</span>
-              <span className="asset-summary-value not-assigned">Not Assigned</span>
+              <span className={`asset-summary-value ${assignment ? '' : 'not-assigned'}`}>
+                {assignment?.user?.name || 'Not Assigned'}
+              </span>
             </div>
             <div className="asset-summary-card">
               <span className="asset-summary-label">Current Project</span>
-              <span className="asset-summary-value not-assigned">Not Assigned</span>
+              <span className={`asset-summary-value ${assignment ? '' : 'not-assigned'}`}>
+                {assignment?.project?.projectName || 'Not Assigned'}
+              </span>
             </div>
             <div className="asset-summary-card">
               <span className="asset-summary-label">Warranty</span>
@@ -332,13 +481,48 @@ export function AssetDetailsPage() {
               <h3>Current Assignment</h3>
             </div>
             <div className="detail-card-body">
-              <div className="detail-empty-state">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                <p>No active assignment.</p>
-              </div>
+              {assignment ? (
+                <div className="assignment-details">
+                  <div className="detail-field-row">
+                    <div className="detail-field">
+                      <label>Assigned User</label>
+                      <span className="detail-field-value">{assignment.user?.name || '-'}</span>
+                    </div>
+                    <div className="detail-field">
+                      <label>Project</label>
+                      <span className="detail-field-value">{assignment.project?.projectName || '-'}</span>
+                    </div>
+                  </div>
+                  <div className="detail-field-row">
+                    <div className="detail-field">
+                      <label>Assigned Date</label>
+                      <span className="detail-field-value">{formatDate(assignment.assignedDate)}</span>
+                    </div>
+                    <div className="detail-field">
+                      <label>Status</label>
+                      <span className="detail-field-value">
+                        <span className={`status-badge status-${assignment.status.toLowerCase()}`}>
+                          {assignment.status}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  {assignment.remarks && (
+                    <div className="detail-field">
+                      <label>Remarks</label>
+                      <span className="detail-field-value">{assignment.remarks}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="detail-empty-state">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  <p>No active assignment.</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -366,7 +550,10 @@ export function AssetDetailsPage() {
               </div>
               <div className="detail-card-body">
                 <div className="action-cards-grid">
-                  <div className="action-card">
+                  <div 
+                    className={`action-card ${canAssign ? 'action-card-clickable' : ''}`}
+                    onClick={canAssign ? openAssignModal : undefined}
+                  >
                     <div className="action-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
@@ -374,7 +561,11 @@ export function AssetDetailsPage() {
                       </svg>
                     </div>
                     <span className="action-label">Assign</span>
-                    <span className="action-badge phase3">Available in Phase 3</span>
+                    {canAssign ? (
+                      <span className="action-badge ready">Click to Assign</span>
+                    ) : (
+                      <span className="action-badge phase3">Not Available</span>
+                    )}
                   </div>
                   <div className="action-card">
                     <div className="action-icon">
@@ -424,6 +615,195 @@ export function AssetDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Assign Modal */}
+      {showAssignModal && (
+        <div className="modal-overlay" onClick={closeAssignModal}>
+          <div className="modal-content assign-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Assign Inventory</h2>
+              <button className="modal-close" onClick={closeAssignModal}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              {/* Step 1: Inventory Information */}
+              <div className="assign-step">
+                <div className="step-header">
+                  <span className="step-number">1</span>
+                  <span className="step-title">Inventory Information</span>
+                </div>
+                <div className="step-content inventory-info-preview">
+                  <div className="info-row">
+                    <span className="info-label">Inventory ID</span>
+                    <span className="info-value mono">{item?.itemNo}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Item Name</span>
+                    <span className="info-value">{item?.itemName}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Category</span>
+                    <span className="info-value">{item?.category?.name}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Subcategory</span>
+                    <span className="info-value">{item?.subcategory?.name}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Brand</span>
+                    <span className="info-value">{item?.brand || '-'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Model</span>
+                    <span className="info-value">{item?.model || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2: Assign To */}
+              <div className="assign-step">
+                <div className="step-header">
+                  <span className="step-number">2</span>
+                  <span className="step-title">Assign To</span>
+                </div>
+                <div className="step-content">
+                  <div className="searchable-dropdown">
+                    <label>Select User *</label>
+                    <div className="dropdown-input-wrapper">
+                      <input
+                        type="text"
+                        className="dropdown-input"
+                        placeholder="Search user by name or email..."
+                        value={userSearch}
+                        onChange={e => {
+                          setUserSearch(e.target.value);
+                          setSelectedUser('');
+                        }}
+                        onFocus={() => {
+                          setShowUserDropdown(true);
+                          loadUsers(userSearch);
+                        }}
+                      />
+                      {showUserDropdown && users.length > 0 && (
+                        <div className="dropdown-list">
+                          {users.map(user => (
+                            <div
+                              key={user.id}
+                              className={`dropdown-item ${selectedUser === user.id ? 'selected' : ''}`}
+                              onClick={() => {
+                                setSelectedUser(user.id);
+                                setUserSearch(user.name);
+                                setShowUserDropdown(false);
+                              }}
+                            >
+                              <div className="dropdown-item-name">{user.name}</div>
+                              <div className="dropdown-item-email">{user.email}</div>
+                              {user.department && (
+                                <div className="dropdown-item-dept">{user.department}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Project */}
+              <div className="assign-step">
+                <div className="step-header">
+                  <span className="step-number">3</span>
+                  <span className="step-title">Project</span>
+                </div>
+                <div className="step-content">
+                  <div className="searchable-dropdown">
+                    <label>Select Project *</label>
+                    <div className="dropdown-input-wrapper">
+                      <input
+                        type="text"
+                        className="dropdown-input"
+                        placeholder="Search project by name or code..."
+                        value={projectSearch}
+                        onChange={e => {
+                          setProjectSearch(e.target.value);
+                          setSelectedProject('');
+                        }}
+                        onFocus={() => {
+                          setShowProjectDropdown(true);
+                          loadProjects(projectSearch);
+                        }}
+                      />
+                      {showProjectDropdown && projects.length > 0 && (
+                        <div className="dropdown-list">
+                          {projects.map(project => (
+                            <div
+                              key={project.id}
+                              className={`dropdown-item ${selectedProject === project.id ? 'selected' : ''}`}
+                              onClick={() => {
+                                setSelectedProject(project.id);
+                                setProjectSearch(project.projectName);
+                                setShowProjectDropdown(false);
+                              }}
+                            >
+                              <div className="dropdown-item-name">{project.projectName}</div>
+                              <div className="dropdown-item-email">{project.projectCode}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4: Remarks */}
+              <div className="assign-step">
+                <div className="step-header">
+                  <span className="step-number">4</span>
+                  <span className="step-title">Remarks</span>
+                </div>
+                <div className="step-content">
+                  <textarea
+                    className="remarks-textarea"
+                    placeholder="Optional remarks..."
+                    value={remarks}
+                    onChange={e => setRemarks(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {assignError && (
+                <div className="assign-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  {assignError}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeAssignModal}>
+                Cancel
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={handleAssign}
+                disabled={assigning}
+              >
+                {assigning ? 'Assigning...' : 'Assign Inventory'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -99,6 +99,7 @@ model User {
   activationToken  UserActivationToken?
   requestedTickets ServiceRequest[]     @relation("RequesterTickets")
   assignedTickets  ServiceRequest[]     @relation("AssigneeTickets")
+  inventoryAssignments InventoryAssignment[]
 }
 
 model UserActivationToken {
@@ -348,6 +349,7 @@ model InventoryMaster {
   subcategory     InventorySubCategory @relation(fields: [subcategoryId], references: [id])
   history         InventoryHistory[]
   documents       InventoryDocument[]
+  assignments     InventoryAssignment[]
   
   @@index([categoryId])
   @@index([subcategoryId])
@@ -382,6 +384,32 @@ model InventoryDocument {
   inventory    InventoryMaster @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
   
   @@index([inventoryId])
+}
+
+// Inventory Assignment - tracks who has been assigned what inventory
+model InventoryAssignment {
+  id            String    @id @default(cuid())
+  inventoryId   String
+  userId        String?
+  projectId     String?
+  assignedBy    String
+  assignedByName String
+  assignedDate  DateTime  @default(now())
+  status        String    @default("ACTIVE") // ACTIVE, RETURNED, TRANSFERRED
+  remarks       String?   @db.Text
+  returnedDate  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  inventory     InventoryMaster   @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  user         User?            @relation(fields: [userId], references: [id])
+  project      ProjectEnvironment? @relation(fields: [projectId], references: [id])
+  
+  @@index([inventoryId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
 }
 
 model AccessRequest {
@@ -449,6 +477,9 @@ model ProjectEnvironment {
   
   // Activities
   activities      ProjectActivity[]
+  
+  // Inventory Assignments
+  inventoryAssignments InventoryAssignment[]
 }
 
 model ProjectDocument {

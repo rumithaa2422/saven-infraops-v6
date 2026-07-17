@@ -74,12 +74,29 @@ inventoryMasterRouter.get('/', requireAuth, async (req, res, next) => {
         },
         subcategory: {
           select: { id: true, name: true }
+        },
+        assignments: {
+          where: { status: 'ACTIVE' },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            project: { select: { id: true, projectName: true, projectCode: true } }
+          },
+          take: 1
         }
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json({ items });
+    // Transform items to include assignment data at top level
+    const itemsWithAssignments = items.map(item => ({
+      ...item,
+      assignedTo: item.assignments[0]?.user || null,
+      projectName: item.assignments[0]?.project?.projectName || null,
+      projectCode: item.assignments[0]?.project?.projectCode || null,
+      assignments: undefined // Remove nested assignments
+    }));
+
+    res.json({ items: itemsWithAssignments });
   } catch (error) {
     next(error);
   }
