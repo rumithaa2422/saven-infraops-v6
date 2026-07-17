@@ -73,6 +73,8 @@ export function AssetDetailsPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedProject, setSelectedProject] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -84,10 +86,15 @@ export function AssetDetailsPage() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [userError, setUserError] = useState('');
   const [projectError, setProjectError] = useState('');
+  const [userActiveIndex, setUserActiveIndex] = useState(-1);
+  const [projectActiveIndex, setProjectActiveIndex] = useState(-1);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  // Refs for click-outside detection
+  // Refs for click-outside detection and focus
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
+  const userInputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
 
   async function loadItem() {
     if (!inventoryId) return;
@@ -122,22 +129,38 @@ export function AssetDetailsPage() {
     if (showAssignModal) {
       loadUsers();
       loadProjects();
+      setUserActiveIndex(-1);
+      setProjectActiveIndex(-1);
     }
   }, [showAssignModal]);
 
-  // Load users when dropdown opens or search changes
+  // Filter users based on search
   useEffect(() => {
-    if (showAssignModal) {
-      loadUsers(userSearch);
+    if (!userSearch.trim()) {
+      setFilteredUsers(users);
+    } else {
+      const search = userSearch.toLowerCase();
+      setFilteredUsers(users.filter(u => 
+        u.name.toLowerCase().includes(search) || 
+        u.email.toLowerCase().includes(search)
+      ));
     }
-  }, [userSearch, showAssignModal]);
+    setUserActiveIndex(-1);
+  }, [userSearch, users]);
 
-  // Load projects when dropdown opens or search changes
+  // Filter projects based on search
   useEffect(() => {
-    if (showAssignModal) {
-      loadProjects(projectSearch);
+    if (!projectSearch.trim()) {
+      setFilteredProjects(projects);
+    } else {
+      const search = projectSearch.toLowerCase();
+      setFilteredProjects(projects.filter(p => 
+        p.projectName.toLowerCase().includes(search) || 
+        p.projectCode.toLowerCase().includes(search)
+      ));
     }
-  }, [projectSearch, showAssignModal]);
+    setProjectActiveIndex(-1);
+  }, [projectSearch, projects]);
 
   // Click outside to close dropdowns
   useEffect(() => {
@@ -155,6 +178,56 @@ export function AssetDetailsPage() {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showAssignModal]);
+
+  // Keyboard navigation for user dropdown
+  function handleUserKeyDown(e: React.KeyboardEvent) {
+    if (!showUserDropdown || filteredUsers.length === 0) return;
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setUserActiveIndex(prev => prev < filteredUsers.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setUserActiveIndex(prev => prev > 0 ? prev - 1 : filteredUsers.length - 1);
+    } else if (e.key === 'Enter' && userActiveIndex >= 0) {
+      e.preventDefault();
+      selectUser(filteredUsers[userActiveIndex]);
+    } else if (e.key === 'Escape') {
+      setShowUserDropdown(false);
+    }
+  }
+
+  // Keyboard navigation for project dropdown
+  function handleProjectKeyDown(e: React.KeyboardEvent) {
+    if (!showProjectDropdown || filteredProjects.length === 0) return;
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setProjectActiveIndex(prev => prev < filteredProjects.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setProjectActiveIndex(prev => prev > 0 ? prev - 1 : filteredProjects.length - 1);
+    } else if (e.key === 'Enter' && projectActiveIndex >= 0) {
+      e.preventDefault();
+      selectProject(filteredProjects[projectActiveIndex]);
+    } else if (e.key === 'Escape') {
+      setShowProjectDropdown(false);
+    }
+  }
+
+  function selectUser(user: User) {
+    setSelectedUser(user.id);
+    setUserSearch(user.name);
+    setUserError('');
+    setShowUserDropdown(false);
+  }
+
+  function selectProject(project: Project) {
+    setSelectedProject(project.id);
+    setProjectSearch(project.projectName);
+    setProjectError('');
+    setShowProjectDropdown(false);
+  }
 
   async function loadUsers(search = '') {
     try {
@@ -188,14 +261,20 @@ export function AssetDetailsPage() {
     setProjectError('');
     setUserSearch('');
     setProjectSearch('');
+    setFilteredUsers([]);
+    setFilteredProjects([]);
+    setShowSuccessToast(false);
   }
 
   function closeAssignModal() {
     setShowAssignModal(false);
     setUsers([]);
     setProjects([]);
+    setFilteredUsers([]);
+    setFilteredProjects([]);
     setShowUserDropdown(false);
     setShowProjectDropdown(false);
+    setShowSuccessToast(false);
   }
 
   async function handleAssign() {
@@ -228,12 +307,18 @@ export function AssetDetailsPage() {
         remarks: remarks || undefined
       });
 
-      // Refresh data
-      await Promise.all([loadItem(), loadAssignment()]);
-      closeAssignModal();
+      // Show success toast
+      setShowSuccessToast(true);
+      
+      // Close modal after brief delay
+      setTimeout(() => {
+        closeAssignModal();
+        // Refresh data
+        loadItem();
+        loadAssignment();
+      }, 1500);
     } catch (err: any) {
       setAssignError(err.response?.data?.message || 'Failed to assign inventory');
-    } finally {
       setAssigning(false);
     }
   }
@@ -652,210 +737,344 @@ export function AssetDetailsPage() {
         </div>
       </div>
 
-      {/* Assign Modal */}
+      {/* Assign Modal - Enterprise Design */}
       {showAssignModal && (
-        <div className="modal-overlay" onClick={closeAssignModal}>
-          <div className="modal-content assign-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Assign Inventory</h2>
-              <button className="modal-close" onClick={closeAssignModal}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <div className="enterprise-modal-overlay" onClick={closeAssignModal}>
+          <div className="enterprise-modal" onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="enterprise-modal-header">
+              <div className="enterprise-modal-title-section">
+                <h1 className="enterprise-modal-title">Assign Inventory</h1>
+                <div className="enterprise-modal-subtitle">
+                  <span className="enterprise-subtitle-id">{item?.itemNo}</span>
+                  <span className="enterprise-subtitle-name">{item?.itemName}</span>
+                  <span className={`enterprise-status-badge status-${item?.status?.toLowerCase()}`}>
+                    {item?.status?.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                <div className="enterprise-modal-breadcrumb">
+                  <span>{item?.category?.name}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  <span>{item?.subcategory?.name}</span>
+                </div>
+              </div>
+              <button className="enterprise-modal-close" onClick={closeAssignModal} disabled={assigning}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </button>
             </div>
-            
-            <div className="modal-body">
-              {/* Step 1: Inventory Information */}
-              <div className="assign-step">
-                <div className="step-header">
-                  <span className="step-number">1</span>
-                  <span className="step-title">Inventory Information</span>
-                </div>
-                <div className="step-content inventory-info-preview">
-                  <div className="info-row">
-                    <span className="info-label">Inventory ID</span>
-                    <span className="info-value mono">{item?.itemNo}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Item Name</span>
-                    <span className="info-value">{item?.itemName}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Category</span>
-                    <span className="info-value">{item?.category?.name}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Subcategory</span>
-                    <span className="info-value">{item?.subcategory?.name}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Brand</span>
-                    <span className="info-value">{item?.brand || '-'}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Model</span>
-                    <span className="info-value">{item?.model || '-'}</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Step 2: Assign To */}
-              <div className="assign-step">
-                <div className="step-header">
-                  <span className="step-number">2</span>
-                  <span className="step-title">Assign To</span>
-                </div>
-                <div className="step-content">
-                  <div className="searchable-dropdown" ref={userDropdownRef}>
-                    <label>Select User *</label>
-                    <div className="dropdown-input-wrapper">
-                      <input
-                        type="text"
-                        className={`dropdown-input ${userError ? 'input-error' : ''}`}
-                        placeholder="Click to search user..."
-                        value={userSearch}
-                        onChange={e => {
-                          setUserSearch(e.target.value);
-                          setSelectedUser('');
-                        }}
-                        onFocus={() => {
-                          setShowUserDropdown(true);
-                        }}
-                        readOnly
-                      />
-                      <svg className="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            {/* Modal Body */}
+            <div className="enterprise-modal-body">
+              {/* Two Column Layout */}
+              <div className="enterprise-modal-columns">
+                {/* Left Column - Inventory Information */}
+                <div className="enterprise-column">
+                  <div className="enterprise-section">
+                    <h3 className="enterprise-section-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M3 9h18M9 21V9" stroke="currentColor" strokeWidth="2"/>
                       </svg>
-                      {showUserDropdown && (
-                        <div className="dropdown-list">
-                          {users.length > 0 ? (
-                            users.map(user => (
-                              <div
-                                key={user.id}
-                                className={`dropdown-item ${selectedUser === user.id ? 'selected' : ''}`}
-                                onClick={() => {
-                                  setSelectedUser(user.id);
-                                  setUserSearch(user.name);
-                                  setUserError('');
-                                  setShowUserDropdown(false);
-                                }}
-                              >
-                                <div className="dropdown-item-name">{user.name}</div>
-                                <div className="dropdown-item-email">{user.email}</div>
-                                {user.department && (
-                                  <div className="dropdown-item-dept">{user.department}</div>
-                                )}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="dropdown-empty">No users found</div>
+                      Inventory Information
+                    </h3>
+                    <div className="enterprise-info-grid">
+                      <div className="enterprise-info-item">
+                        <span className="enterprise-info-label">Inventory ID</span>
+                        <span className="enterprise-info-value mono">{item?.itemNo}</span>
+                      </div>
+                      <div className="enterprise-info-item">
+                        <span className="enterprise-info-label">Category</span>
+                        <span className="enterprise-info-value">{item?.category?.name}</span>
+                      </div>
+                      <div className="enterprise-info-item">
+                        <span className="enterprise-info-label">Subcategory</span>
+                        <span className="enterprise-info-value">{item?.subcategory?.name}</span>
+                      </div>
+                      <div className="enterprise-info-item">
+                        <span className="enterprise-info-label">Brand</span>
+                        <span className="enterprise-info-value">{item?.brand || '-'}</span>
+                      </div>
+                      <div className="enterprise-info-item">
+                        <span className="enterprise-info-label">Model</span>
+                        <span className="enterprise-info-value">{item?.model || '-'}</span>
+                      </div>
+                      <div className="enterprise-info-item">
+                        <span className="enterprise-info-label">Location</span>
+                        <span className="enterprise-info-value">{item?.location || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Assignment */}
+                <div className="enterprise-column">
+                  <div className="enterprise-section">
+                    <h3 className="enterprise-section-title">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="currentColor" strokeWidth="2"/>
+                        <circle cx="17" cy="11" r="3" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M21 21v-1.5a2 2 0 00-2-2h-1" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                      Assignment Details
+                    </h3>
+
+                    {/* User Autocomplete */}
+                    <div className="enterprise-field">
+                      <label className="enterprise-label">
+                        Project Manager / User
+                        <span className="enterprise-required">*</span>
+                      </label>
+                      <div className="enterprise-autocomplete" ref={userDropdownRef}>
+                        <div className="enterprise-autocomplete-input-wrapper">
+                          <svg className="enterprise-autocomplete-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                            <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          <input
+                            ref={userInputRef}
+                            type="text"
+                            className={`enterprise-autocomplete-input ${userError ? 'error' : ''} ${assigning ? 'disabled' : ''}`}
+                            placeholder="Search for a user..."
+                            value={userSearch}
+                            onChange={e => {
+                              setUserSearch(e.target.value);
+                              setSelectedUser('');
+                              setShowUserDropdown(true);
+                            }}
+                            onFocus={() => setShowUserDropdown(true)}
+                            onKeyDown={handleUserKeyDown}
+                            disabled={assigning}
+                          />
+                          {userSearch && (
+                            <button 
+                              className="enterprise-autocomplete-clear"
+                              onClick={() => {
+                                setUserSearch('');
+                                setSelectedUser('');
+                                setUserError('');
+                                userInputRef.current?.focus();
+                              }}
+                              disabled={assigning}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            </button>
                           )}
                         </div>
-                      )}
-                    </div>
-                    {userError && <span className="field-error">{userError}</span>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 3: Project */}
-              <div className="assign-step">
-                <div className="step-header">
-                  <span className="step-number">3</span>
-                  <span className="step-title">Project</span>
-                </div>
-                <div className="step-content">
-                  <div className="searchable-dropdown" ref={projectDropdownRef}>
-                    <label>Select Project *</label>
-                    <div className="dropdown-input-wrapper">
-                      <input
-                        type="text"
-                        className={`dropdown-input ${projectError ? 'input-error' : ''}`}
-                        placeholder="Click to search project..."
-                        value={projectSearch}
-                        onChange={e => {
-                          setProjectSearch(e.target.value);
-                          setSelectedProject('');
-                        }}
-                        onFocus={() => {
-                          setShowProjectDropdown(true);
-                        }}
-                        readOnly
-                      />
-                      <svg className="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      {showProjectDropdown && (
-                        <div className="dropdown-list">
-                          {projects.length > 0 ? (
-                            projects.map(project => (
-                              <div
-                                key={project.id}
-                                className={`dropdown-item ${selectedProject === project.id ? 'selected' : ''}`}
-                                onClick={() => {
-                                  setSelectedProject(project.id);
-                                  setProjectSearch(project.projectName);
-                                  setProjectError('');
-                                  setShowProjectDropdown(false);
-                                }}
-                              >
-                                <div className="dropdown-item-name">{project.projectName}</div>
-                                <div className="dropdown-item-email">{project.projectCode}</div>
+                        {showUserDropdown && (
+                          <div className="enterprise-autocomplete-dropdown">
+                            {filteredUsers.length > 0 ? (
+                              filteredUsers.map((user, index) => (
+                                <div
+                                  key={user.id}
+                                  className={`enterprise-autocomplete-item ${selectedUser === user.id ? 'selected' : ''} ${index === userActiveIndex ? 'active' : ''}`}
+                                  onClick={() => !assigning && selectUser(user)}
+                                  onMouseEnter={() => setUserActiveIndex(index)}
+                                >
+                                  <div className="enterprise-autocomplete-item-avatar">
+                                    {user.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="enterprise-autocomplete-item-content">
+                                    <span className="enterprise-autocomplete-item-name">{user.name}</span>
+                                    <span className="enterprise-autocomplete-item-email">{user.email}</span>
+                                    {user.department && (
+                                      <span className="enterprise-autocomplete-item-dept">{user.department}</span>
+                                    )}
+                                  </div>
+                                  {selectedUser === user.id && (
+                                    <svg className="enterprise-autocomplete-item-check" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="enterprise-autocomplete-empty">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                                  <path d="M16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                <span>No users found</span>
                               </div>
-                            ))
-                          ) : (
-                            <div className="dropdown-empty">No projects found</div>
+                            )}
+                          </div>
+                        )}
+                        {userError && <span className="enterprise-field-error">{userError}</span>}
+                      </div>
+                    </div>
+
+                    {/* Project Autocomplete */}
+                    <div className="enterprise-field">
+                      <label className="enterprise-label">
+                        Project
+                        <span className="enterprise-required">*</span>
+                      </label>
+                      <div className="enterprise-autocomplete" ref={projectDropdownRef}>
+                        <div className="enterprise-autocomplete-input-wrapper">
+                          <svg className="enterprise-autocomplete-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="currentColor" strokeWidth="2"/>
+                            <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          <input
+                            ref={projectInputRef}
+                            type="text"
+                            className={`enterprise-autocomplete-input ${projectError ? 'error' : ''} ${assigning ? 'disabled' : ''}`}
+                            placeholder="Search for a project..."
+                            value={projectSearch}
+                            onChange={e => {
+                              setProjectSearch(e.target.value);
+                              setSelectedProject('');
+                              setShowProjectDropdown(true);
+                            }}
+                            onFocus={() => setShowProjectDropdown(true)}
+                            onKeyDown={handleProjectKeyDown}
+                            disabled={assigning}
+                          />
+                          {projectSearch && (
+                            <button 
+                              className="enterprise-autocomplete-clear"
+                              onClick={() => {
+                                setProjectSearch('');
+                                setSelectedProject('');
+                                setProjectError('');
+                                projectInputRef.current?.focus();
+                              }}
+                              disabled={assigning}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            </button>
                           )}
                         </div>
-                      )}
+                        {showProjectDropdown && (
+                          <div className="enterprise-autocomplete-dropdown">
+                            {filteredProjects.length > 0 ? (
+                              filteredProjects.map((project, index) => (
+                                <div
+                                  key={project.id}
+                                  className={`enterprise-autocomplete-item ${selectedProject === project.id ? 'selected' : ''} ${index === projectActiveIndex ? 'active' : ''}`}
+                                  onClick={() => !assigning && selectProject(project)}
+                                  onMouseEnter={() => setProjectActiveIndex(index)}
+                                >
+                                  <div className="enterprise-autocomplete-item-avatar project">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="currentColor" strokeWidth="2"/>
+                                    </svg>
+                                  </div>
+                                  <div className="enterprise-autocomplete-item-content">
+                                    <span className="enterprise-autocomplete-item-name">{project.projectName}</span>
+                                    <span className="enterprise-autocomplete-item-email">{project.projectCode}</span>
+                                  </div>
+                                  {selectedProject === project.id && (
+                                    <svg className="enterprise-autocomplete-item-check" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="enterprise-autocomplete-empty">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="currentColor" strokeWidth="2"/>
+                                  <path d="M12 12v.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                <span>No projects found</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {projectError && <span className="enterprise-field-error">{projectError}</span>}
+                      </div>
                     </div>
-                    {projectError && <span className="field-error">{projectError}</span>}
+
+                    {/* Remarks */}
+                    <div className="enterprise-field">
+                      <label className="enterprise-label">Remarks</label>
+                      <textarea
+                        className={`enterprise-textarea ${assigning ? 'disabled' : ''}`}
+                        placeholder="Add any additional notes or comments..."
+                        value={remarks}
+                        onChange={e => setRemarks(e.target.value)}
+                        disabled={assigning}
+                        rows={4}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Step 4: Remarks */}
-              <div className="assign-step">
-                <div className="step-header">
-                  <span className="step-number">4</span>
-                  <span className="step-title">Remarks</span>
-                </div>
-                <div className="step-content">
-                  <textarea
-                    className="remarks-textarea"
-                    placeholder="Optional remarks..."
-                    value={remarks}
-                    onChange={e => setRemarks(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              </div>
-
+              {/* Error Message */}
               {assignError && (
-                <div className="assign-error">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <div className="enterprise-error-banner">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
                     <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                  {assignError}
+                  <span>{assignError}</span>
                 </div>
               )}
             </div>
 
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={closeAssignModal}>
-                Cancel
-              </button>
-              <button 
-                className="btn-primary" 
-                onClick={handleAssign}
-                disabled={assigning || !isFormReady}
-              >
-                {assigning ? 'Assigning...' : 'Assign Inventory'}
-              </button>
+            {/* Modal Footer */}
+            <div className="enterprise-modal-footer">
+              <div className="enterprise-modal-footer-left">
+                {/* Keyboard hints */}
+                <span className="enterprise-keyboard-hint">
+                  <kbd>↑</kbd><kbd>↓</kbd> Navigate
+                </span>
+                <span className="enterprise-keyboard-hint">
+                  <kbd>Enter</kbd> Select
+                </span>
+                <span className="enterprise-keyboard-hint">
+                  <kbd>Esc</kbd> Close
+                </span>
+              </div>
+              <div className="enterprise-modal-footer-right">
+                <button 
+                  className="enterprise-btn-secondary"
+                  onClick={closeAssignModal}
+                  disabled={assigning}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="enterprise-btn-primary"
+                  onClick={handleAssign}
+                  disabled={assigning || !isFormReady}
+                >
+                  {assigning ? (
+                    <>
+                      <span className="enterprise-spinner"></span>
+                      Assigning...
+                    </>
+                  ) : (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Assign Inventory
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Success Toast */}
+          {showSuccessToast && (
+            <div className="enterprise-toast success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Inventory assigned successfully!</span>
+            </div>
+          )}
         </div>
       )}
     </div>
