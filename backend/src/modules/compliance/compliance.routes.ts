@@ -833,8 +833,8 @@ async function ensureUploadDir(dirPath: string): Promise<void> {
   }
 }
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
+// Configure multer for document repository uploads (multiple files, various formats)
+const documentStorage = multer.diskStorage({
   destination: async (_req, _file, cb) => {
     await ensureUploadDir('uploads/documents');
     cb(null, path.join(process.cwd(), 'uploads', 'documents'));
@@ -846,7 +846,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const documentFileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const ext = path.extname(file.originalname).toLowerCase().slice(1);
   if (ALLOWED_EXTENSIONS.has(ext)) {
     cb(null, true);
@@ -855,13 +855,13 @@ const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFil
   }
 };
 
-const upload = multer({
-  storage,
+const documentUpload = multer({
+  storage: documentStorage,
   limits: {
     fileSize: MAX_FILE_SIZE_BYTES,
     files: 10 // Max 10 files per upload
   },
-  fileFilter
+  fileFilter: documentFileFilter
 });
 
 // Get file icon based on extension
@@ -951,7 +951,7 @@ complianceRouter.post('/files', requireAuth, async (req: Request, res: Response,
       requirePermissionOr(['compliance:create', 'compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    upload.array('files', 10)(req, res, async (err) => {
+    documentUpload.array('files', 10)(req, res, async (err) => {
       if (err) {
         if (err.message && err.message.includes('not allowed')) {
           return res.status(400).json({ message: err.message });
