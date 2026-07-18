@@ -2,6 +2,7 @@
  * Compliance Document Repository Routes
  * 
  * Handles PDF document upload, list, delete, and export operations.
+ * Phase 1: Document Repository with folder management
  */
 
 import { Router, Request, Response } from 'express';
@@ -22,6 +23,7 @@ import {
   getDocumentFilePath,
   importComplianceDocuments
 } from '../../services/compliance.service.js';
+import { prisma } from '../../common/prisma.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
 
@@ -382,6 +384,203 @@ complianceRouter.get('/:id/export', requireAuth, async (req: Request, res: Respo
 
     const fileStream = await fs.readFile(filePath);
     res.send(fileStream);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// Document Repository - Folder Management (Phase 1)
+// ============================================
+
+/**
+ * GET /api/compliance/folders
+ * List all root folders with summary stats
+ * Query params:
+ *   - search: Search term (matches name, description)
+ *   - sortBy: name | createdAt | updatedAt
+ *   - sortOrder: asc | desc
+ */
+complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const search = req.query.search as string | undefined;
+    const sortBy = (req.query.sortBy as 'name' | 'createdAt' | 'updatedAt') || 'createdAt';
+    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
+
+    // Build where clause for root folders only (parentId is null)
+    const where: any = { parentId: null };
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { description: { contains: search } }
+      ];
+    }
+
+    // Fetch folders
+    const folders = await prisma.documentFolder.findMany({
+      where,
+      orderBy: { [sortBy]: sortOrder }
+    });
+
+    // Get total counts for summary
+    const totalFolders = await prisma.documentFolder.count({ where: { parentId: null } });
+    const totalFiles = await prisma.complianceDocument.count();
+    const totalStorageBytes = await prisma.complianceDocument.aggregate({
+      _sum: { fileSize: true }
+    });
+
+    // Get recently modified (most recently updated folders)
+    const recentFolders = await prisma.documentFolder.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      select: { id: true, name: true, updatedAt: true }
+    });
+
+    res.json({
+      items: folders,
+      summary: {
+        totalFolders,
+        totalFiles,
+        storageUsed: totalStorageBytes._sum.fileSize || 0,
+        recentlyModified: recentFolders
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/compliance/folders
+ * Create a new root folder
+ */
+complianceRouter.post('/folders', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:create', 'compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { name, description } = req.body;
+
+    if (!name || name.trim() === '') {
+      throw new HttpError(400, 'Folder name is required');
+    }
+
+    const folder = await prisma.documentFolder.create({
+      data: {
+        name: name.trim(),
+        description: description?.trim() || null,
+        createdBy: req.user?.id || null,
+        createdByEmail: req.user?.email || null
+      }
+    });
+
+    res.status(201).json({ item: folder });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/compliance/folders/:id
+ * Update a folder (rename)
+ */
+complianceRouter.patch('/folders/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    if (!id) {
+      throw new HttpError(400, 'Folder ID is required');
+    }
+
+    const existingFolder = await prisma.documentFolder.findUnique({ where: { id } });
+    if (!existingFolder) {
+      throw new HttpError(404, 'Folder not found');
+    }
+
+    const updateData: any = {};
+    if (name !== undefined) {
+      if (name.trim() === '') {
+        throw new HttpError(400, 'Folder name cannot be empty');
+      }
+      updateData.name = name.trim();
+    }
+    if (description !== undefined) {
+      updateData.description = description?.trim() || null;
+    }
+
+    const folder = await prisma.documentFolder.update({
+      where: { id },
+      data: updateData
+    });
+
+    res.json({ item: folder });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/compliance/folders/:id
+ * Delete a folder
+ */
+complianceRouter.delete('/folders/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage', 'compliance:delete'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+
+    if (!id) {
+      throw new HttpError(400, 'Folder ID is required');
+    }
+
+    const existingFolder = await prisma.documentFolder.findUnique({ where: { id } });
+    if (!existingFolder) {
+      throw new HttpError(404, 'Folder not found');
+    }
+
+    await prisma.documentFolder.delete({ where: { id } });
+
+    res.json({ success: true, message: 'Folder deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/folders/:id
+ * Get folder details
+ */
+complianceRouter.get('/folders/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+
+    if (!id) {
+      throw new HttpError(400, 'Folder ID is required');
+    }
+
+    const folder = await prisma.documentFolder.findUnique({ where: { id } });
+    if (!folder) {
+      throw new HttpError(404, 'Folder not found');
+    }
+
+    res.json({ item: folder });
   } catch (error) {
     next(error);
   }

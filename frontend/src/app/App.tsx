@@ -28,6 +28,7 @@ import { UserDetailsPage } from '../pages/UserDetailsPage';
 import { CreateUserPage } from '../pages/CreateUserPage';
 import { EditUserPage } from '../pages/EditUserPage';
 import { UsersImportExportPage } from '../pages/UsersImportExportPage';
+import { DocumentRepositoryPage } from '../pages/DocumentRepositoryPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -250,7 +251,7 @@ export function App() {
           path="compliance" 
           element={
             <PermissionRoute permission={modulePermissions['compliance']}>
-              <ModulePage moduleKey="compliance" title="Compliance" />
+              <DocumentRepositoryPage />
             </PermissionRoute>
           } 
         />

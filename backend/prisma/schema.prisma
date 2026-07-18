@@ -581,3 +581,22 @@ model NotificationLog {
   error     String?  @db.Text
   createdAt DateTime @default(now())
 }
+
+// Document Repository - Phase 1: Folders
+model DocumentFolder {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  parentId    String?  // For future nested folders support
+  createdBy   String?
+  createdByEmail String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations for tracking files within folder
+  files       Int      @default(0)  // Count of files (denormalized for performance)
+  subfolders  Int      @default(0) // Count of subfolders (denormalized)
+  
+  @@index([parentId])
+  @@index([createdAt])
+}
