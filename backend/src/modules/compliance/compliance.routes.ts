@@ -1614,12 +1614,29 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
     const archiver = (await import('archiver')).default;
     const archive = archiver('zip', { zlib: { level: 9 } });
 
+    // Set response headers
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="document-repository-${Date.now()}.zip"`);
+    
+    // Handle stream errors
+    archive.on('error', (err) => {
+      console.error('Archive error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Export failed: ' + err.message });
+      }
+    });
 
+    // Handle warnings
+    archive.on('warning', (err) => {
+      console.warn('Archive warning:', err);
+    });
+
+    // Pipe archive to response
     archive.pipe(res);
 
-    const addFilesFromFolder = async (fid: string, basePath: string) => {
+    let itemsAdded = 0;
+
+    // Helper to recursively add folder contents
+    const addFolderContents = async (fid: string, folderPath: string): Promise<void> => {
       // Add files in this folder
       const files = await prisma.documentFile.findMany({
         where: { folderId: fid }
@@ -1628,10 +1645,13 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
       for (const file of files) {
         const filePath = path.join(process.cwd(), file.storagePath);
         try {
-          const fullPath = path.join(basePath, file.originalFileName);
-          archive.file(filePath, { name: fullPath });
+          // Check if file exists
+          await fs.access(filePath);
+          archive.file(filePath, { name: path.join(folderPath, file.originalFileName) });
+          itemsAdded++;
         } catch {
           // File not found on disk, skip
+          console.warn(`File not found: ${filePath}`);
         }
       }
 
@@ -1641,7 +1661,7 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
       });
 
       for (const subfolder of subfolders) {
-        await addFilesFromFolder(subfolder.id, path.join(basePath, subfolder.name));
+        await addFolderContents(subfolder.id, path.join(folderPath, subfolder.name));
       }
     };
 
@@ -1651,8 +1671,12 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
         where: { parentFolderId: null }
       });
 
+      if (rootFolders.length === 0) {
+        throw new HttpError(404, 'No folders to export');
+      }
+
       for (const folder of rootFolders) {
-        await addFilesFromFolder(folder.id, folder.name);
+        await addFolderContents(folder.id, folder.name);
       }
     } else if (exportType === 'folder' && folderId) {
       // Export specific folder
@@ -1664,7 +1688,7 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
         throw new HttpError(404, 'Folder not found');
       }
 
-      await addFilesFromFolder(folderId, folder.name);
+      await addFolderContents(folderId, folder.name);
     } else if (exportType === 'selected' && itemIds) {
       const ids = itemIds.split(',');
 
@@ -1672,25 +1696,41 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
         // Check if it's a folder
         const folder = await prisma.documentFolder.findUnique({ where: { id } });
         if (folder) {
-          await addFilesFromFolder(folder.id, folder.name);
+          await addFolderContents(folder.id, folder.name);
         } else {
           // It's a file
           const file = await prisma.documentFile.findUnique({ where: { id } });
           if (file) {
             const filePath = path.join(process.cwd(), file.storagePath);
             try {
+              await fs.access(filePath);
               archive.file(filePath, { name: file.originalFileName });
+              itemsAdded++;
             } catch {
-              // File not found
+              console.warn(`File not found: ${filePath}`);
             }
           }
         }
       }
     }
 
+    // Check if anything was added
+    if (itemsAdded === 0 && exportType === 'selected') {
+      throw new HttpError(404, 'No files found in selection');
+    }
+
+    // Finalize the archive
     archive.finalize();
-  } catch (error) {
-    next(error);
+
+    // Log completion
+    archive.on('finish', () => {
+      console.log(`Export completed: ${itemsAdded} files added`);
+    });
+  } catch (error: any) {
+    console.error('Export error:', error);
+    if (!res.headersSent) {
+      next(error);
+    }
   }
 });
 

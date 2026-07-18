@@ -108,6 +108,7 @@ export function DocumentRepositoryPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [exporting, setExporting] = useState(false);
 
   // Filters
   const [fileTypes, setFileTypes] = useState<string[]>([]);
@@ -143,53 +144,22 @@ export function DocumentRepositoryPage() {
     setError('');
 
     try {
-      // Convert sort option to backend params
       let sortByParam = 'createdAt';
       let sortOrder: 'asc' | 'desc' = 'desc';
       let foldersFirst = false;
 
       switch (sortBy) {
-        case 'name_asc':
-          sortByParam = 'name';
-          sortOrder = 'asc';
-          break;
-        case 'name_desc':
-          sortByParam = 'name';
-          sortOrder = 'desc';
-          break;
-        case 'newest':
-          sortByParam = 'createdAt';
-          sortOrder = 'desc';
-          break;
-        case 'oldest':
-          sortByParam = 'createdAt';
-          sortOrder = 'asc';
-          break;
-        case 'recent':
-          sortByParam = 'updatedAt';
-          sortOrder = 'desc';
-          break;
-        case 'largest':
-          sortByParam = 'fileSize';
-          sortOrder = 'desc';
-          break;
-        case 'smallest':
-          sortByParam = 'fileSize';
-          sortOrder = 'asc';
-          break;
-        case 'folders_first':
-          foldersFirst = true;
-          sortByParam = 'name';
-          sortOrder = 'asc';
-          break;
-        case 'files_first':
-          foldersFirst = true;
-          sortByParam = 'name';
-          sortOrder = 'asc';
-          break;
+        case 'name_asc': sortByParam = 'name'; sortOrder = 'asc'; break;
+        case 'name_desc': sortByParam = 'name'; sortOrder = 'desc'; break;
+        case 'newest': sortByParam = 'createdAt'; sortOrder = 'desc'; break;
+        case 'oldest': sortByParam = 'createdAt'; sortOrder = 'asc'; break;
+        case 'recent': sortByParam = 'updatedAt'; sortOrder = 'desc'; break;
+        case 'largest': sortByParam = 'fileSize'; sortOrder = 'desc'; break;
+        case 'smallest': sortByParam = 'fileSize'; sortOrder = 'asc'; break;
+        case 'folders_first': foldersFirst = true; sortByParam = 'name'; sortOrder = 'asc'; break;
+        case 'files_first': foldersFirst = true; sortByParam = 'name'; sortOrder = 'asc'; break;
       }
 
-      // Size filter
       let sizeMin: number | undefined;
       let sizeMax: number | undefined;
       if (sizeFilter) {
@@ -221,7 +191,6 @@ export function DocumentRepositoryPage() {
       setItems(res.data.items || []);
       setSummary(res.data.summary || { totalFolders: 0, totalFiles: 0 });
       
-      // Get breadcrumbs
       if (folderId) {
         const breadcrumbRes = await api.get(`/compliance/folders/${folderId}/breadcrumbs`);
         setBreadcrumbs(breadcrumbRes.data.breadcrumbs || []);
@@ -304,16 +273,35 @@ export function DocumentRepositoryPage() {
     }
   };
 
-  // Export handlers
+  // Export handlers with proper error handling
   const handleExportSelected = async () => {
     if (selectedItems.size === 0) return;
+    setExporting(true);
+    setMessage('Preparing export...');
     
     try {
       const response = await api.get('/compliance/export', {
         params: { type: 'selected', itemIds: Array.from(selectedItems).join(',') },
-        responseType: 'blob'
+        responseType: 'blob',
+        validateStatus: (status) => status < 500
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // Check if response is an error JSON
+      const contentType = String(response.headers?.['content-type'] || '');
+      if (typeof response.data === 'object' && contentType.includes('application/json')) {
+        setError(response.data?.message || 'Export failed');
+        setExporting(false);
+        return;
+      }
+      
+      if (response.status >= 400) {
+        setError(response.data?.message || 'Export failed');
+        setExporting(false);
+        return;
+      }
+      
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `selected-items-${Date.now()}.zip`;
@@ -324,17 +312,38 @@ export function DocumentRepositoryPage() {
       setMessage(`Exported ${selectedItems.size} item(s)`);
       setShowExportDialog(false);
     } catch (err: any) {
-      setError('Failed to export');
+      setError(err.response?.data?.message || 'Failed to export');
+    } finally {
+      setExporting(false);
     }
   };
 
   const handleExportFolder = async (folderId: string) => {
+    setExporting(true);
+    setMessage('Preparing export...');
+    
     try {
       const response = await api.get('/compliance/export', {
         params: { type: 'folder', folderId },
-        responseType: 'blob'
+        responseType: 'blob',
+        validateStatus: (status) => status < 500
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const contentType = String(response.headers?.['content-type'] || '');
+      if (typeof response.data === 'object' && contentType.includes('application/json')) {
+        setError(response.data?.message || 'Export failed');
+        setExporting(false);
+        return;
+      }
+      
+      if (response.status >= 400) {
+        setError(response.data?.message || 'Export failed');
+        setExporting(false);
+        return;
+      }
+      
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `folder-${Date.now()}.zip`;
@@ -345,11 +354,16 @@ export function DocumentRepositoryPage() {
       setMessage('Folder exported');
       setShowExportDialog(false);
     } catch (err: any) {
-      setError('Failed to export folder');
+      setError(err.response?.data?.message || 'Failed to export folder');
+    } finally {
+      setExporting(false);
     }
   };
 
   const handleExportCurrent = async () => {
+    setExporting(true);
+    setMessage('Preparing export...');
+    
     try {
       const params = currentFolderId 
         ? { type: 'folder', folderId: currentFolderId }
@@ -357,9 +371,25 @@ export function DocumentRepositoryPage() {
       
       const response = await api.get('/compliance/export', {
         params,
-        responseType: 'blob'
+        responseType: 'blob',
+        validateStatus: (status) => status < 500
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      const contentType = String(response.headers?.['content-type'] || '');
+      if (typeof response.data === 'object' && contentType.includes('application/json')) {
+        setError(response.data?.message || 'Export failed');
+        setExporting(false);
+        return;
+      }
+      
+      if (response.status >= 400) {
+        setError(response.data?.message || 'Export failed');
+        setExporting(false);
+        return;
+      }
+      
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `documents-${Date.now()}.zip`;
@@ -367,10 +397,12 @@ export function DocumentRepositoryPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      setMessage('Exported successfully');
+      setMessage('Export successful');
       setShowExportDialog(false);
     } catch (err: any) {
-      setError('Failed to export');
+      setError(err.response?.data?.message || 'Failed to export');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -629,7 +661,6 @@ export function DocumentRepositoryPage() {
   const hasActiveFilters = fileTypes.length > 0 || dateFrom || dateTo || sizeFilter || uploadedBy || contentType !== 'both';
   const hasSearch = search.trim() !== '';
 
-  // Get empty message
   const getEmptyMessage = () => {
     if (hasSearch || hasActiveFilters) {
       if (contentType === 'folders') return 'No folders match your search.';
@@ -784,13 +815,13 @@ export function DocumentRepositoryPage() {
 
             {(isSuperAdmin || isAdmin) && selectedItems.size > 0 && (
               <>
-                <button type="button" className="toolbar-btn" onClick={handleExportSelected}>
+                <button type="button" className="toolbar-btn" onClick={handleExportSelected} disabled={exporting}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                     <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                  Export Selected
+                  {exporting ? 'Exporting...' : 'Export Selected'}
                 </button>
                 <button type="button" className="toolbar-btn danger" onClick={handleDeleteSelected}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -803,7 +834,7 @@ export function DocumentRepositoryPage() {
             )}
 
             {(isSuperAdmin || isAdmin) && (
-              <button type="button" className="toolbar-btn" onClick={handleExport}>
+              <button type="button" className="toolbar-btn" onClick={handleExport} disabled={exporting}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1115,26 +1146,26 @@ export function DocumentRepositoryPage() {
       )}
 
       {showExportDialog && (
-        <div className="modal-overlay" onClick={() => setShowExportDialog(false)}>
+        <div className="modal-overlay" onClick={() => !exporting && setShowExportDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><h2>Export</h2><button type="button" className="modal-close" onClick={() => setShowExportDialog(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
+            <div className="modal-header"><h2>Export</h2><button type="button" className="modal-close" onClick={() => !exporting && setShowExportDialog(false)} disabled={exporting}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
             <div className="modal-body">
               <div className="export-options">
-                <button className="export-option" onClick={handleExportCurrent}>
+                <button className="export-option" onClick={handleExportCurrent} disabled={exporting}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/></svg>
-                  <span>Export Current View</span>
+                  <span>{exporting ? 'Exporting...' : 'Export Current View'}</span>
                   <small>{currentFolderId ? 'This folder and contents' : 'Entire repository'}</small>
                 </button>
                 {selectedItems.size > 0 && (
-                  <button className="export-option" onClick={handleExportSelected}>
+                  <button className="export-option" onClick={handleExportSelected} disabled={exporting}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12L12 15L15 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M20 20H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M12 4V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                    <span>Export Selected ({selectedItems.size})</span>
+                    <span>{exporting ? 'Exporting...' : `Export Selected (${selectedItems.size})`}</span>
                     <small>Download as ZIP</small>
                   </button>
                 )}
               </div>
             </div>
-            <div className="modal-footer"><button type="button" className="secondary" onClick={() => setShowExportDialog(false)}>Cancel</button></div>
+            <div className="modal-footer"><button type="button" className="secondary" onClick={() => setShowExportDialog(false)} disabled={exporting}>Cancel</button></div>
           </div>
         </div>
       )}
