@@ -582,21 +582,21 @@ model NotificationLog {
   createdAt DateTime @default(now())
 }
 
-// Document Repository - Phase 1: Folders
+// Document Repository - Phase 2: Folder Explorer
 model DocumentFolder {
-  id          String   @id @default(cuid())
-  name        String
-  description String?  @db.Text
-  parentId    String?  // For future nested folders support
-  createdBy   String?
+  id             String   @id @default(cuid())
+  name           String
+  description    String?  @db.Text
+  parentFolderId String?  // For unlimited hierarchy support
+  createdBy      String?
   createdByEmail String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  // Relations for tracking files within folder
-  files       Int      @default(0)  // Count of files (denormalized for performance)
-  subfolders  Int      @default(0) // Count of subfolders (denormalized)
+  // Relations
+  parent         DocumentFolder?  @relation("FolderHierarchy", fields: [parentFolderId], references: [id])
+  children       DocumentFolder[] @relation("FolderHierarchy")
   
-  @@index([parentId])
+  @@index([parentFolderId])
   @@index([createdAt])
 }

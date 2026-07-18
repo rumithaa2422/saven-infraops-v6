@@ -390,13 +390,89 @@ complianceRouter.get('/:id/export', requireAuth, async (req: Request, res: Respo
 });
 
 // ============================================
-// Document Repository - Folder Management (Phase 1)
+// Document Repository - Folder Explorer (Phase 2)
 // ============================================
+
+type FolderWithCounts = {
+  id: string;
+  name: string;
+  description: string | null;
+  parentFolderId: string | null;
+  createdBy: string | null;
+  createdByEmail: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  _count: {
+    children: number;
+  };
+};
+
+type BreadcrumbItem = {
+  id: string | null;
+  name: string;
+};
+
+// Helper to get breadcrumbs for a folder
+async function getBreadcrumbs(folderId: string | null): Promise<BreadcrumbItem[]> {
+  const breadcrumbs: BreadcrumbItem[] = [{ id: null, name: 'Document Repository' }];
+  
+  if (!folderId) return breadcrumbs;
+  
+  const ids: string[] = [];
+  let currentId: string | null = folderId;
+  
+  // Collect all ancestor IDs
+  while (currentId) {
+    ids.unshift(currentId);
+    const folder = await prisma.documentFolder.findUnique({
+      where: { id: currentId },
+      select: { parentFolderId: true }
+    });
+    currentId = folder?.parentFolderId || null;
+  }
+  
+  // Fetch all folders in one query
+  if (ids.length > 0) {
+    const folders = await prisma.documentFolder.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true }
+    });
+    
+    // Sort by the order in ids
+    folders.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    
+    for (const folder of folders) {
+      breadcrumbs.push({ id: folder.id, name: folder.name });
+    }
+  }
+  
+  return breadcrumbs;
+}
+
+// Helper to count all descendants recursively
+async function countDescendants(folderId: string): Promise<{ folders: number; files: number }> {
+  let folderCount = 0;
+  let fileCount = 0;
+  
+  const children = await prisma.documentFolder.findMany({
+    where: { parentFolderId: folderId },
+    select: { id: true }
+  });
+  
+  for (const child of children) {
+    const counts = await countDescendants(child.id);
+    folderCount += 1 + counts.folders;
+    fileCount += counts.files;
+  }
+  
+  return { folders: folderCount, files: fileCount };
+}
 
 /**
  * GET /api/compliance/folders
- * List all root folders with summary stats
+ * List folders with optional parentFolderId for hierarchy navigation
  * Query params:
+ *   - parentFolderId: (optional) ID of parent folder, null for root
  *   - search: Search term (matches name, description)
  *   - sortBy: name | createdAt | updatedAt
  *   - sortOrder: asc | desc
@@ -407,12 +483,13 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
+    const parentFolderId = req.query.parentFolderId as string | null || null;
     const search = req.query.search as string | undefined;
     const sortBy = (req.query.sortBy as 'name' | 'createdAt' | 'updatedAt') || 'createdAt';
     const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
 
-    // Build where clause for root folders only (parentId is null)
-    const where: any = { parentId: null };
+    // Build where clause
+    const where: any = { parentFolderId };
     
     if (search) {
       where.OR = [
@@ -421,32 +498,55 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
       ];
     }
 
-    // Fetch folders
+    // Fetch folders with child count
     const folders = await prisma.documentFolder.findMany({
       where,
-      orderBy: { [sortBy]: sortOrder }
-    });
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        _count: {
+          select: { children: true }
+        }
+      }
+    }) as FolderWithCount[];
 
-    // Get total counts for summary
-    const totalFolders = await prisma.documentFolder.count({ where: { parentId: null } });
-    const totalFiles = await prisma.complianceDocument.count();
-    const totalStorageBytes = await prisma.complianceDocument.aggregate({
-      _sum: { fileSize: true }
-    });
+    // Format folders with counts
+    const formattedFolders = folders.map(folder => ({
+      id: folder.id,
+      name: folder.name,
+      description: folder.description,
+      parentFolderId: folder.parentFolderId,
+      createdBy: folder.createdBy,
+      createdByEmail: folder.createdByEmail,
+      createdAt: folder.createdAt,
+      updatedAt: folder.updatedAt,
+      subfolderCount: folder._count.children,
+      fileCount: 0 // Will be updated when files are implemented
+    }));
 
-    // Get recently modified (most recently updated folders)
+    // Get breadcrumbs
+    const breadcrumbs = await getBreadcrumbs(parentFolderId);
+
+    // Get summary for current folder level
+    const totalSubfolders = folders.length;
+    const totalFiles = 0; // Will be updated when files are implemented
+    const storageUsed = 0; // Will be updated when files are implemented
+
+    // Get recently modified folders at this level
     const recentFolders = await prisma.documentFolder.findMany({
+      where: { parentFolderId },
       orderBy: { updatedAt: 'desc' },
       take: 5,
       select: { id: true, name: true, updatedAt: true }
     });
 
     res.json({
-      items: folders,
+      items: formattedFolders,
+      breadcrumbs,
+      currentFolderId: parentFolderId,
       summary: {
-        totalFolders,
+        totalSubfolders,
         totalFiles,
-        storageUsed: totalStorageBytes._sum.fileSize || 0,
+        storageUsed,
         recentlyModified: recentFolders
       }
     });
@@ -457,7 +557,7 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
 
 /**
  * POST /api/compliance/folders
- * Create a new root folder
+ * Create a new folder (optionally inside a parent folder)
  */
 complianceRouter.post('/folders', requireAuth, async (req: Request, res: Response, next) => {
   try {
@@ -465,16 +565,25 @@ complianceRouter.post('/folders', requireAuth, async (req: Request, res: Respons
       requirePermissionOr(['compliance:create', 'compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { name, description } = req.body;
+    const { name, description, parentFolderId } = req.body;
 
     if (!name || name.trim() === '') {
       throw new HttpError(400, 'Folder name is required');
+    }
+
+    // Validate parent folder exists if provided
+    if (parentFolderId) {
+      const parent = await prisma.documentFolder.findUnique({ where: { id: parentFolderId } });
+      if (!parent) {
+        throw new HttpError(404, 'Parent folder not found');
+      }
     }
 
     const folder = await prisma.documentFolder.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
+        parentFolderId: parentFolderId || null,
         createdBy: req.user?.id || null,
         createdByEmail: req.user?.email || null
       }
@@ -532,7 +641,7 @@ complianceRouter.patch('/folders/:id', requireAuth, async (req: Request, res: Re
 
 /**
  * DELETE /api/compliance/folders/:id
- * Delete a folder
+ * Delete a folder (only if no children)
  */
 complianceRouter.delete('/folders/:id', requireAuth, async (req: Request, res: Response, next) => {
   try {
@@ -546,9 +655,17 @@ complianceRouter.delete('/folders/:id', requireAuth, async (req: Request, res: R
       throw new HttpError(400, 'Folder ID is required');
     }
 
-    const existingFolder = await prisma.documentFolder.findUnique({ where: { id } });
+    const existingFolder = await prisma.documentFolder.findUnique({ 
+      where: { id },
+      include: { _count: { select: { children: true } } }
+    });
     if (!existingFolder) {
       throw new HttpError(404, 'Folder not found');
+    }
+
+    // Check for child folders - prevent deletion if children exist
+    if (existingFolder._count.children > 0) {
+      throw new HttpError(400, 'This folder contains subfolders. Delete them first.');
     }
 
     await prisma.documentFolder.delete({ where: { id } });
@@ -561,7 +678,7 @@ complianceRouter.delete('/folders/:id', requireAuth, async (req: Request, res: R
 
 /**
  * GET /api/compliance/folders/:id
- * Get folder details
+ * Get folder details with breadcrumbs
  */
 complianceRouter.get('/folders/:id', requireAuth, async (req: Request, res: Response, next) => {
   try {
@@ -575,12 +692,49 @@ complianceRouter.get('/folders/:id', requireAuth, async (req: Request, res: Resp
       throw new HttpError(400, 'Folder ID is required');
     }
 
-    const folder = await prisma.documentFolder.findUnique({ where: { id } });
+    const folder = await prisma.documentFolder.findUnique({ 
+      where: { id },
+      include: { _count: { select: { children: true } } }
+    });
     if (!folder) {
       throw new HttpError(404, 'Folder not found');
     }
 
-    res.json({ item: folder });
+    // Get breadcrumbs
+    const breadcrumbs = await getBreadcrumbs(id);
+
+    res.json({ 
+      item: {
+        ...folder,
+        subfolderCount: folder._count.children,
+        fileCount: 0
+      },
+      breadcrumbs 
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/folders/:id/breadcrumbs
+ * Get breadcrumbs for a specific folder
+ */
+complianceRouter.get('/folders/:id/breadcrumbs', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+
+    if (!id) {
+      throw new HttpError(400, 'Folder ID is required');
+    }
+
+    const breadcrumbs = await getBreadcrumbs(id);
+
+    res.json({ breadcrumbs });
   } catch (error) {
     next(error);
   }

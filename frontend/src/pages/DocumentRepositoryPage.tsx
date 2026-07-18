@@ -7,24 +7,25 @@ type Folder = {
   id: string;
   name: string;
   description: string | null;
-  files: number;
-  subfolders: number;
+  parentFolderId: string | null;
+  createdBy: string | null;
+  createdByEmail: string | null;
   createdAt: string;
   updatedAt: string;
-  createdByEmail: string | null;
+  subfolderCount: number;
+  fileCount: number;
 };
 
-type RecentFolder = {
-  id: string;
+type BreadcrumbItem = {
+  id: string | null;
   name: string;
-  updatedAt: string;
 };
 
 type FolderSummary = {
-  totalFolders: number;
+  totalSubfolders: number;
   totalFiles: number;
   storageUsed: number;
-  recentlyModified: RecentFolder[];
+  recentlyModified: { id: string; name: string; updatedAt: string }[];
 };
 
 type SortOption = 'name_asc' | 'name_desc' | 'newest' | 'oldest' | 'recent';
@@ -51,8 +52,10 @@ export function DocumentRepositoryPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [summary, setSummary] = useState<FolderSummary>({
-    totalFolders: 0,
+    totalSubfolders: 0,
     totalFiles: 0,
     storageUsed: 0,
     recentlyModified: []
@@ -76,7 +79,7 @@ export function DocumentRepositoryPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const fetchFolders = useCallback(async (isRefresh = false) => {
+  const fetchFolders = useCallback(async (isRefresh = false, folderId: string | null = currentFolderId) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
@@ -111,6 +114,7 @@ export function DocumentRepositoryPage() {
 
       const res = await api.get('/compliance/folders', {
         params: {
+          parentFolderId: folderId || undefined,
           search: search || undefined,
           sortBy: sortByParam,
           sortOrder
@@ -119,7 +123,7 @@ export function DocumentRepositoryPage() {
 
       let folderList: Folder[] = res.data.items || [];
       
-      // Apply date filter on frontend (Phase 1)
+      // Apply date filter on frontend
       if (dateFilter) {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -156,6 +160,8 @@ export function DocumentRepositoryPage() {
       }
 
       setFolders(folderList);
+      setBreadcrumbs(res.data.breadcrumbs || []);
+      setCurrentFolderId(res.data.currentFolderId || null);
       if (res.data.summary) {
         setSummary(res.data.summary);
       }
@@ -165,7 +171,7 @@ export function DocumentRepositoryPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [search, sortBy, dateFilter]);
+  }, [search, sortBy, dateFilter, currentFolderId]);
 
   useEffect(() => {
     fetchFolders();
@@ -194,6 +200,13 @@ export function DocumentRepositoryPage() {
 
   const handleSort = (option: SortOption) => {
     setSortBy(option);
+  };
+
+  const handleNavigateToFolder = (folderId: string | null) => {
+    setCurrentFolderId(folderId);
+    setSearch('');
+    setDateFilter('');
+    fetchFolders(true, folderId);
   };
 
   const handleExport = async () => {
@@ -225,14 +238,15 @@ export function DocumentRepositoryPage() {
     try {
       await api.post('/compliance/folders', {
         name: newFolderName.trim(),
-        description: newFolderDescription.trim() || null
+        description: newFolderDescription.trim() || null,
+        parentFolderId: currentFolderId
       });
 
       setMessage('Folder created successfully');
       setShowCreateDialog(false);
       setNewFolderName('');
       setNewFolderDescription('');
-      fetchFolders();
+      fetchFolders(true);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create folder');
     } finally {
@@ -260,7 +274,7 @@ export function DocumentRepositoryPage() {
       setEditingFolder(null);
       setNewFolderName('');
       setNewFolderDescription('');
-      fetchFolders();
+      fetchFolders(true);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to rename folder');
     } finally {
@@ -275,7 +289,7 @@ export function DocumentRepositoryPage() {
       await api.delete(`/compliance/folders/${folderId}`);
       setMessage('Folder deleted successfully');
       setShowActionsMenu(null);
-      fetchFolders();
+      fetchFolders(true);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to delete folder');
     }
@@ -291,14 +305,39 @@ export function DocumentRepositoryPage() {
 
   const hasActiveFilters = dateFilter !== '';
 
+  // Get current folder name for header
+  const currentFolderName = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Document Repository';
+
   return (
     <div className="doc-repo-page">
       <div className="page-container">
+        {/* Breadcrumbs */}
+        <div className="doc-repo-breadcrumbs">
+          {breadcrumbs.map((crumb, index) => (
+            <span key={crumb.id || 'root'} className="breadcrumb-item">
+              {index > 0 && <span className="breadcrumb-separator">&gt;</span>}
+              <button 
+                type="button"
+                className={`breadcrumb-link ${index === breadcrumbs.length - 1 ? 'active' : ''}`}
+                onClick={() => handleNavigateToFolder(crumb.id)}
+                disabled={index === breadcrumbs.length - 1}
+              >
+                {crumb.name}
+              </button>
+            </span>
+          ))}
+        </div>
+
         {/* Page Header */}
         <div className="page-header">
           <div className="page-title-section">
-            <h1>Document Repository</h1>
-            <p className="page-subtitle">Organize and manage your documents in folders</p>
+            <h1>{currentFolderName}</h1>
+            <p className="page-subtitle">
+              {currentFolderId 
+                ? `Managing subfolders and files within this folder`
+                : 'Organize and manage your documents in folders'
+              }
+            </p>
           </div>
         </div>
 
@@ -325,8 +364,8 @@ export function DocumentRepositoryPage() {
               </svg>
             </div>
             <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Total Folders</span>
-              <span className="doc-repo-summary-value">{loading ? '...' : summary.totalFolders}</span>
+              <span className="doc-repo-summary-label">Total Subfolders</span>
+              <span className="doc-repo-summary-value">{loading ? '...' : summary.totalSubfolders}</span>
             </div>
           </div>
 
@@ -496,7 +535,7 @@ export function DocumentRepositoryPage() {
         {/* Folders Grid */}
         <div className="doc-repo-grid-section">
           <div className="section-header">
-            <h3>Folders</h3>
+            <h3>Subfolders</h3>
             <span className="section-count">{folders.length} items</span>
           </div>
 
@@ -510,8 +549,8 @@ export function DocumentRepositoryPage() {
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              <p>No folders yet</p>
-              <span>Create your first folder to organize documents</span>
+              <p>No folders found</p>
+              <span>{currentFolderId ? 'This folder is empty' : 'Create your first folder to organize documents'}</span>
               {isSuperAdmin && (
                 <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>
                   Create Folder
@@ -532,7 +571,7 @@ export function DocumentRepositoryPage() {
           ) : (
             <div className="doc-repo-grid">
               {folders.map((folder) => (
-                <div key={folder.id} className="doc-repo-folder-card">
+                <div key={folder.id} className="doc-repo-folder-card" onClick={() => handleNavigateToFolder(folder.id)}>
                   <div className="folder-card-header">
                     <div className="folder-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -540,7 +579,7 @@ export function DocumentRepositoryPage() {
                       </svg>
                     </div>
                     {(isSuperAdmin || isAdmin) && (
-                      <div className="folder-actions" ref={showActionsMenu === folder.id ? undefined : actionsMenuRef}>
+                      <div className="folder-actions" ref={showActionsMenu === folder.id ? undefined : actionsMenuRef} onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           className="actions-menu-btn"
@@ -587,8 +626,8 @@ export function DocumentRepositoryPage() {
                       <p className="folder-description">{folder.description}</p>
                     )}
                     <div className="folder-stats">
-                      <span>{folder.files} files</span>
-                      <span>{folder.subfolders} subfolders</span>
+                      <span>{folder.subfolderCount} subfolders</span>
+                      <span>{folder.fileCount} files</span>
                     </div>
                   </div>
                   <div className="folder-card-footer">
