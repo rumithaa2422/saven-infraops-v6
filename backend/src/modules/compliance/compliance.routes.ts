@@ -1960,7 +1960,7 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
         version: file.version,
         storagePath: file.storagePath,
         folder: file.folder,
-        fileTags: file.fileTags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+        fileTags: file.fileTags.map(t => ({ id: t.taggedFiles.id, name: t.taggedFiles.name, color: t.taggedFiles.color }))
       },
       folderPath,
       versions,
@@ -2046,7 +2046,7 @@ complianceRouter.patch('/files/:id', requireAuth, async (req: Request, res: Resp
       success: true,
       file: updatedFile ? {
         ...updatedFile,
-        fileTags: updatedFile.fileTags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+        fileTags: updatedFile.fileTags.map(t => ({ id: t.taggedFiles.id, name: t.taggedFiles.name, color: t.taggedFiles.color }))
       } : null
     });
   } catch (error) {
