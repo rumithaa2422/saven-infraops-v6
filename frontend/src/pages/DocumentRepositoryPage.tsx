@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { StatCard } from '../components/StatCard';
 
 type Item = {
   id: string;
@@ -641,12 +642,15 @@ export function DocumentRepositoryPage() {
             </div>
           )}
         </div>
-        <div className="header-right">
-          <span className="stat-badge">{summary.totalFolders ?? 0} folders</span>
-          <span className="stat-badge">{summary.totalFiles ?? 0} files</span>
-          <span className="stat-badge">{formatBytes(summary.storageUsed)}</span>
-        </div>
       </div>
+
+      {/* Summary Cards */}
+      <section className="grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+        <StatCard label="Total Folders" value={summary.totalFolders ?? 0} hint="Repository folders" />
+        <StatCard label="Total Files" value={summary.totalFiles ?? 0} hint="Uploaded documents" />
+        <StatCard label="Storage Used" value={formatBytes(summary.storageUsed)} hint="Disk space" />
+        <StatCard label="Last Updated" value={summary.recentActivityCount ? 'Active' : '-'} hint="Recent activity" />
+      </section>
 
       {(error || message) && (
         <div className={`alert ${error ? 'alert-error' : 'alert-success'}`}>
