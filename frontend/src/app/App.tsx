@@ -27,6 +27,7 @@ import { UsersDashboardPage } from '../pages/UsersDashboardPage';
 import { UserDetailsPage } from '../pages/UserDetailsPage';
 import { CreateUserPage } from '../pages/CreateUserPage';
 import { EditUserPage } from '../pages/EditUserPage';
+import { UsersImportExportPage } from '../pages/UsersImportExportPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -343,6 +344,14 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['users-teams']}>
               <EditUserPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="users-teams/import-export" 
+          element={
+            <PermissionRoute permission={modulePermissions['users-teams']}>
+              <UsersImportExportPage />
             </PermissionRoute>
           } 
         />

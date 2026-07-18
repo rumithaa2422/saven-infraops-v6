@@ -15704,3 +15704,254 @@ input:disabled {
 :root.dark .asset-stat {
   background: var(--panel);
 }
+
+/* ========================================
+   Users Import/Export Page Styles
+   ======================================== */
+
+.import-export-page {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.import-export-card {
+  background: white;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.import-export-card:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.import-export-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: var(--brand-soft);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
+}
+
+.import-export-card:hover .import-export-icon {
+  background: var(--brand);
+  color: white;
+}
+
+.import-export-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.import-export-card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.import-export-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--brand);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.import-instructions {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.import-instructions h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.import-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.import-instructions li {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.import-reference {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.import-reference h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.reference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.reference-item {
+  background: var(--bg);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reference-item.required {
+  border-left: 3px solid var(--brand);
+}
+
+.reference-item .field-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.reference-item .field-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Access Restricted */
+.access-restricted {
+  text-align: center;
+  padding: 64px 24px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.access-restricted svg {
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.access-restricted h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  color: var(--text);
+}
+
+.access-restricted p {
+  margin: 0 0 24px 0;
+  color: var(--muted);
+}
+
+/* Import Preview Table Enhancements */
+.import-preview-table td:nth-child(4) {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-error-item {
+  background: var(--bg);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.import-error-item strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.import-error-item ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.import-error-item li {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.import-errors-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* Import Result Stats */
+.import-result-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin: 24px 0;
+}
+
+.import-result-stat {
+  text-align: center;
+}
+
+.import-result-stat .value {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.import-result-stat .value.success {
+  color: #10b981;
+}
+
+.import-result-stat .value.warning {
+  color: #f59e0b;
+}
+
+.import-result-stat .value.danger {
+  color: #ef4444;
+}
+
+.import-result-stat .label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Import/Export page header adjustment */
+.import-export-page + .import-instructions,
+.import-instructions + .import-reference {
+  margin-top: 24px;
+}

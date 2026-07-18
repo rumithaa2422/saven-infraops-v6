@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import * as XLSX from 'xlsx';
 
 type User = {
   id: string;
@@ -164,26 +165,55 @@ export function UsersDashboardPage() {
 
   const handleExport = async () => {
     try {
-      const csvHeaders = ['Name', 'Email', 'Phone', 'Department', 'Roles', 'Status', 'Created At'];
-      const csvRows = users.map(u => [
-        u.name,
-        u.email,
-        u.phoneNumber || '',
-        u.department || '',
-        u.roles?.map(r => r.role?.name).join(', ') || '',
-        u.status,
-        new Date(u.createdAt).toLocaleDateString()
-      ]);
+      // Prepare export data with all user fields
+      const exportData = users.map((user) => {
+        const nameParts = user.name?.split(' ') || ['', ''];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        return {
+          'Employee ID': user.employeeId || '',
+          'First Name': firstName,
+          'Last Name': lastName,
+          'Email': user.email || '',
+          'Phone Number': user.phoneNumber || '',
+          'Department': user.department || '',
+          'Designation': (user as any).designation || '',
+          'Role': user.roles?.[0]?.role?.name || '',
+          'Reporting Manager': (user as any).reportingManager || '',
+          'Employment Type': (user as any).employmentType || '',
+          'Joining Date': (user as any).dateJoined ? new Date((user as any).dateJoined).toISOString().split('T')[0] : '',
+          'Status': user.status || '',
+          'Address': (user as any).address || '',
+          'Remarks': (user as any).remarks || ''
+        };
+      });
 
-      const csvContent = [csvHeaders, ...csvRows]
-        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-        .join('\n');
+      // Create workbook and worksheet
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
+      // Set column widths
+      worksheet['!cols'] = [
+        { wch: 15 }, // Employee ID
+        { wch: 15 }, // First Name
+        { wch: 15 }, // Last Name
+        { wch: 30 }, // Email
+        { wch: 15 }, // Phone Number
+        { wch: 15 }, // Department
+        { wch: 20 }, // Designation
+        { wch: 15 }, // Role
+        { wch: 20 }, // Reporting Manager
+        { wch: 15 }, // Employment Type
+        { wch: 15 }, // Joining Date
+        { wch: 12 }, // Status
+        { wch: 30 }, // Address
+        { wch: 30 }, // Remarks
+      ];
+
+      // Download Excel file
+      XLSX.writeFile(workbook, `users-export-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (err) {
       console.error('Export failed:', err);
     }
@@ -387,6 +417,17 @@ export function UsersDashboardPage() {
                   <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 Export
+              </button>
+            )}
+
+            {isSuperAdmin && (
+              <button type="button" className="toolbar-btn" onClick={() => navigate('/users-teams/import-export')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Import / Export
               </button>
             )}
 
