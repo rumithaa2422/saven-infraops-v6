@@ -617,10 +617,51 @@ model DocumentFile {
   uploadedAt       DateTime @default(now())
   modifiedAt       DateTime @updatedAt
   description      String?  @db.Text
+  downloadCount    Int      @default(0)
+  version         Int      @default(1)
 
   // Relations
   folder           DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  tags             DocumentTag[]
   
   @@index([folderId])
   @@index([uploadedAt])
+}
+
+// Phase 5: Document Tags
+model DocumentTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#5468ff")
+  createdAt DateTime @default(now())
+
+  files     DocumentFile[]
+}
+
+// Document-File Tags junction table
+model DocumentFileTag {
+  fileId    String
+  tagId     String
+  addedAt   DateTime @default(now())
+
+  file      DocumentFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  tag       DocumentTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([fileId, tagId])
+}
+
+// Phase 5: Document Activity Log
+model DocumentActivity {
+  id          String   @id @default(cuid())
+  fileId      String?
+  folderId    String?
+  action      String   // uploaded, downloaded, renamed, moved, deleted, version_created
+  details     String?  @db.Text
+  performedBy String?
+  performedByEmail String?
+  createdAt   DateTime @default(now())
+
+  @@index([fileId])
+  @@index([folderId])
+  @@index([createdAt])
 }

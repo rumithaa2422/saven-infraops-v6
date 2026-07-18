@@ -1818,3 +1818,543 @@ complianceRouter.delete('/items', requireAuth, async (req: Request, res: Respons
     next(error);
   }
 });
+
+/**
+ * GET /api/compliance/tags
+ * Get all tags
+ */
+complianceRouter.get('/tags', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const tags = await prisma.documentTag.findMany({
+      orderBy: { name: 'asc' }
+    });
+
+    res.json({ tags });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/compliance/tags
+ * Create a new tag
+ * Body: { name: string, color?: string }
+ */
+complianceRouter.post('/tags', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { name, color } = req.body as { name: string; color?: string };
+
+    if (!name || !name.trim()) {
+      throw new HttpError(400, 'Tag name is required');
+    }
+
+    const tag = await prisma.documentTag.create({
+      data: {
+        name: name.trim(),
+        color: color || '#5468ff'
+      }
+    });
+
+    res.status(201).json({ tag });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/files/:id
+ * Get file details with tags, versions, and activity
+ */
+complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+
+    const file = await prisma.documentFile.findUnique({
+      where: { id },
+      include: {
+        folder: true,
+        tags: {
+          include: { tag: true }
+        }
+      }
+    });
+
+    if (!file) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    // Get folder path for breadcrumbs
+    const getFolderPath = async (folderId: string | null): Promise<{ id: string; name: string }[]> => {
+      const path: { id: string; name: string }[] = [];
+      let currentId = folderId;
+      
+      while (currentId) {
+        const folder = await prisma.documentFolder.findUnique({
+          where: { id: currentId },
+          select: { id: true, name: true, parentFolderId: true }
+        });
+        if (folder) {
+          path.unshift({ id: folder.id, name: folder.name });
+          currentId = folder.parentFolderId;
+        } else {
+          break;
+        }
+      }
+      return path;
+    };
+
+    const folderPath = await getFolderPath(file.folderId);
+
+    // Get activity for this file
+    const activities = await prisma.documentActivity.findMany({
+      where: { fileId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+
+    // Get all versions (files with same original name in same folder)
+    const versions = await prisma.documentFile.findMany({
+      where: {
+        folderId: file.folderId,
+        originalFileName: file.originalFileName
+      },
+      orderBy: { version: 'desc' },
+      select: {
+        id: true,
+        version: true,
+        uploadedBy: true,
+        uploadedByEmail: true,
+        uploadedAt: true,
+        fileSize: true,
+        modifiedAt: true
+      }
+    });
+
+    res.json({
+      file: {
+        id: file.id,
+        folderId: file.folderId,
+        originalFileName: file.originalFileName,
+        fileExtension: file.fileExtension,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+        iconType: getFileIcon(file.fileExtension),
+        uploadedBy: file.uploadedBy,
+        uploadedByEmail: file.uploadedByEmail,
+        uploadedAt: file.uploadedAt,
+        modifiedAt: file.modifiedAt,
+        description: file.description,
+        downloadCount: file.downloadCount,
+        version: file.version,
+        storagePath: file.storagePath,
+        folder: file.folder,
+        tags: file.tags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+      },
+      folderPath,
+      versions,
+      activities
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/compliance/files/:id
+ * Update file description or tags
+ * Body: { description?: string, tagIds?: string[] }
+ */
+complianceRouter.patch('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const { description, tagIds, action } = req.body as { 
+      description?: string; 
+      tagIds?: string[];
+      action?: string;
+    };
+
+    const file = await prisma.documentFile.findUnique({ where: { id } });
+    if (!file) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    // Update description
+    if (description !== undefined) {
+      await prisma.documentFile.update({
+        where: { id },
+        data: { description }
+      });
+
+      // Log activity if description changed
+      if (action === 'description_updated') {
+        await prisma.documentActivity.create({
+          data: {
+            fileId: id,
+            action: 'renamed',
+            details: 'Description updated',
+            performedBy: req.body.userName || 'Unknown',
+            performedByEmail: req.body.userEmail || ''
+          }
+        });
+      }
+    }
+
+    // Update tags
+    if (tagIds !== undefined) {
+      // Remove existing tags
+      await prisma.documentFileTag.deleteMany({
+        where: { fileId: id }
+      });
+
+      // Add new tags
+      if (tagIds.length > 0) {
+        await prisma.documentFileTag.createMany({
+          data: tagIds.map(tagId => ({
+            fileId: id,
+            tagId
+          }))
+        });
+      }
+    }
+
+    // Fetch updated file
+    const updatedFile = await prisma.documentFile.findUnique({
+      where: { id },
+      include: {
+        folder: true,
+        tags: { include: { tag: true } }
+      }
+    });
+
+    res.json({
+      success: true,
+      file: updatedFile ? {
+        ...updatedFile,
+        tags: updatedFile.tags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+      } : null
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/compliance/files/:id/download
+ * Download file and increment counter
+ */
+complianceRouter.post('/files/:id/download', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+
+    const file = await prisma.documentFile.findUnique({ where: { id } });
+    if (!file) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    // Increment download count
+    await prisma.documentFile.update({
+      where: { id },
+      data: { downloadCount: { increment: 1 } }
+    });
+
+    // Log activity
+    await prisma.documentActivity.create({
+      data: {
+        fileId: id,
+        action: 'downloaded',
+        details: `Downloaded ${file.originalFileName}`,
+        performedBy: req.body.userName || 'Unknown',
+        performedByEmail: req.body.userEmail || ''
+      }
+    });
+
+    res.json({ success: true, downloadCount: file.downloadCount + 1 });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/compliance/files/:id/replace
+ * Replace file with new version
+ */
+complianceRouter.post('/files/:id/replace', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const userName = req.body.userName || 'Unknown';
+    const userEmail = req.body.userEmail || '';
+
+    const existingFile = await prisma.documentFile.findUnique({
+      where: { id },
+      include: { tags: true }
+    });
+
+    if (!existingFile) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    // Get current max version in this folder with same original filename
+    const maxVersion = await prisma.documentFile.findFirst({
+      where: {
+        folderId: existingFile.folderId,
+        originalFileName: existingFile.originalFileName
+      },
+      orderBy: { version: 'desc' },
+      select: { version: true }
+    });
+
+    const newVersion = (maxVersion?.version || existingFile.version) + 1;
+
+    // Create new version with new storage
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const ext = path.extname(existingFile.originalFileName);
+    const newStoragePath = path.join('uploads', 'compliance', `compliance-${uniqueSuffix}${ext}`);
+    const fullPath = path.join(process.cwd(), newStoragePath);
+
+    await ensureUploadDir();
+
+    // The actual file upload should be handled by multer middleware before this endpoint
+    // For now, we'll just create the version record
+
+    const newFile = await prisma.documentFile.create({
+      data: {
+        folderId: existingFile.folderId,
+        fileName: `compliance-${uniqueSuffix}${ext}`,
+        originalFileName: existingFile.originalFileName,
+        fileExtension: existingFile.fileExtension,
+        mimeType: existingFile.mimeType,
+        fileSize: req.body.fileSize || existingFile.fileSize,
+        storagePath: newStoragePath,
+        uploadedBy: userName,
+        uploadedByEmail: userEmail,
+        description: existingFile.description,
+        version: newVersion
+      }
+    });
+
+    // Copy tags to new version
+    for (const tag of existingFile.tags) {
+      await prisma.documentFileTag.create({
+        data: {
+          fileId: newFile.id,
+          tagId: tag.tagId
+        }
+      });
+    }
+
+    // Log activity
+    await prisma.documentActivity.create({
+      data: {
+        fileId: newFile.id,
+        action: 'version_created',
+        details: `Version ${newVersion} created`,
+        performedBy: userName,
+        performedByEmail: userEmail
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      file: newFile,
+      version: newVersion
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/compliance/files/:id/restore
+ * Restore a specific version
+ */
+complianceRouter.post('/files/:id/restore', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const { targetVersionId } = req.body as { targetVersionId: string };
+    const userName = req.body.userName || 'Unknown';
+    const userEmail = req.body.userEmail || '';
+
+    const sourceFile = await prisma.documentFile.findUnique({
+      where: { id: targetVersionId },
+      include: { tags: true }
+    });
+
+    if (!sourceFile) {
+      throw new HttpError(404, 'Version not found');
+    }
+
+    // Get current file
+    const currentFile = await prisma.documentFile.findUnique({ where: { id } });
+    if (!currentFile) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    // Get max version
+    const maxVersion = await prisma.documentFile.findFirst({
+      where: {
+        folderId: currentFile.folderId,
+        originalFileName: currentFile.originalFileName
+      },
+      orderBy: { version: 'desc' },
+      select: { version: true }
+    });
+
+    const newVersion = (maxVersion?.version || currentFile.version) + 1;
+
+    // Create new version from source
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const ext = path.extname(sourceFile.originalFileName);
+    const newStoragePath = path.join('uploads', 'compliance', `compliance-${uniqueSuffix}${ext}`);
+
+    // Copy the file
+    const srcPath = path.join(process.cwd(), sourceFile.storagePath);
+    const destPath = path.join(process.cwd(), newStoragePath);
+    await fs.copyFile(srcPath, destPath);
+
+    const newFile = await prisma.documentFile.create({
+      data: {
+        folderId: currentFile.folderId,
+        fileName: `compliance-${uniqueSuffix}${ext}`,
+        originalFileName: currentFile.originalFileName,
+        fileExtension: sourceFile.fileExtension,
+        mimeType: sourceFile.mimeType,
+        fileSize: sourceFile.fileSize,
+        storagePath: newStoragePath,
+        uploadedBy: userName,
+        uploadedByEmail: userEmail,
+        description: currentFile.description,
+        version: newVersion
+      }
+    });
+
+    // Copy tags
+    for (const tag of sourceFile.tags) {
+      await prisma.documentFileTag.create({
+        data: {
+          fileId: newFile.id,
+          tagId: tag.tagId
+        }
+      });
+    }
+
+    // Log activity
+    await prisma.documentActivity.create({
+      data: {
+        fileId: newFile.id,
+        action: 'version_created',
+        details: `Restored to version ${sourceFile.version} as version ${newVersion}`,
+        performedBy: userName,
+        performedByEmail: userEmail
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      file: newFile,
+      version: newVersion
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/activity
+ * Get recent activity
+ * Query params: folderId (optional), limit (default 10)
+ */
+complianceRouter.get('/activity', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const folderId = req.query.folderId as string | undefined;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const where: any = {};
+    if (folderId) {
+      where.folderId = folderId;
+    }
+
+    const activities = await prisma.documentActivity.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(limit, 50)
+    });
+
+    const total = await prisma.documentActivity.count({ where });
+
+    res.json({ activities, total });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/summary
+ * Get repository summary with activity stats
+ */
+complianceRouter.get('/summary', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const folderId = req.query.folderId as string | null || null;
+
+    // Get counts
+    const [folderCount, fileStats, recentActivity, recentModified] = await Promise.all([
+      folderId 
+        ? prisma.documentFolder.count({ where: { parentFolderId: folderId } })
+        : prisma.documentFolder.count({ where: { parentFolderId: null } }),
+      folderId
+        ? prisma.documentFile.aggregate({ where: { folderId }, _count: true, _sum: { fileSize: true } })
+        : prisma.documentFile.aggregate({ _count: true, _sum: { fileSize: true } }),
+      prisma.documentActivity.count(),
+      prisma.documentActivity.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { action: true, createdAt: true }
+      })
+    ]);
+
+    res.json({
+      totalFolders: folderCount,
+      totalFiles: fileStats._count,
+      storageUsed: fileStats._sum.fileSize || 0,
+      recentActivityCount: recentActivity,
+      recentModified
+    });
+  } catch (error) {
+    next(error);
+  }
+});

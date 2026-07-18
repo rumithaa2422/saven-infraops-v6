@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
@@ -24,6 +24,55 @@ type Item = {
   uploadedByEmail?: string | null;
   uploadedAt?: string;
   modifiedAt?: string;
+  downloadCount?: number;
+  version?: number;
+};
+
+type FileDetails = {
+  id: string;
+  folderId: string;
+  originalFileName: string;
+  fileExtension: string;
+  mimeType: string;
+  fileSize: number;
+  iconType: string;
+  uploadedBy: string | null;
+  uploadedByEmail: string | null;
+  uploadedAt: string;
+  modifiedAt: string;
+  description: string | null;
+  downloadCount: number;
+  version: number;
+  storagePath: string;
+  folder: { id: string; name: string };
+  tags: { id: string; name: string; color: string }[];
+};
+
+type Version = {
+  id: string;
+  version: number;
+  uploadedBy: string | null;
+  uploadedByEmail: string | null;
+  uploadedAt: string;
+  fileSize: number;
+  modifiedAt: string;
+};
+
+type Activity = {
+  id: string;
+  fileId: string | null;
+  folderId: string | null;
+  action: string;
+  details: string | null;
+  performedBy: string | null;
+  performedByEmail: string | null;
+  createdAt: string;
+};
+
+type Tag = {
+  id: string;
+  name: string;
+  color: string;
 };
 
 type BreadcrumbItem = {
@@ -49,6 +98,36 @@ const formatDate = (dateStr: string | undefined): string => {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatDateTime = (dateStr: string | undefined): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+const getActivityIcon = (action: string) => {
+  const icons: Record<string, React.ReactElement> = {
+    uploaded: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>,
+    downloaded: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2"/><path d="M12 15V3" stroke="currentColor" strokeWidth="2"/></svg>,
+    renamed: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 20H21" stroke="currentColor" strokeWidth="2"/><path d="M18.34 5.76C18.99 5.11 19.69 4.54 20.45 4.05M3 21H21M14.12 8.88L14.37 9C15.22 9.67 15.88 10.54 16.36 11.54" stroke="currentColor" strokeWidth="2"/></svg>,
+    moved: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 9L2 12M2 12L5 15M2 12H14" stroke="currentColor" strokeWidth="2"/><path d="M19 15L22 12M22 12L19 9M22 12H10" stroke="currentColor" strokeWidth="2"/></svg>,
+    deleted: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6H5H21" stroke="currentColor" strokeWidth="2"/><path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2"/></svg>,
+    version_created: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2"/><path d="M12 18V12" stroke="currentColor" strokeWidth="2"/><path d="M9 15H15" stroke="currentColor" strokeWidth="2"/></svg>
+  };
+  return icons[action] || icons.uploaded;
+};
+
+const getActivityLabel = (action: string): string => {
+  const labels: Record<string, string> = {
+    uploaded: 'Uploaded',
+    downloaded: 'Downloaded',
+    renamed: 'Renamed',
+    moved: 'Moved',
+    deleted: 'Deleted',
+    version_created: 'Version Created'
+  };
+  return labels[action] || action;
 };
 
 const FileIcon = ({ type }: { type: string }) => {
@@ -81,9 +160,28 @@ export function DocumentRepositoryPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [summary, setSummary] = useState({ totalFolders: 0, totalFiles: 0 });
+  const [summary, setSummary] = useState({ 
+    totalFolders: 0, 
+    totalFiles: 0,
+    storageUsed: 0,
+    recentActivityCount: 0
+  });
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+
+  // File details panel
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
+  const [fileDetails, setFileDetails] = useState<FileDetails | null>(null);
+  const [fileVersions, setFileVersions] = useState<Version[]>([]);
+  const [fileActivities, setFileActivities] = useState<Activity[]>([]);
+  const [folderPath, setFolderPath] = useState<BreadcrumbItem[]>([]);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [newDescription, setNewDescription] = useState('');
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showTagsDialog, setShowTagsDialog] = useState(false);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
 
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
@@ -134,9 +232,52 @@ export function DocumentRepositoryPage() {
     } catch { /* ignore */ }
   }, []);
 
+  // Fetch all tags
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await api.get('/compliance/tags');
+      setAllTags(res.data.tags || []);
+    } catch { /* ignore */ }
+  }, []);
+
+  // Fetch recent activity
+  const fetchRecentActivity = useCallback(async () => {
+    try {
+      const res = await api.get('/compliance/activity', { params: { limit: 10 } });
+      setRecentActivities(res.data.activities || []);
+    } catch { /* ignore */ }
+  }, []);
+
+  // Fetch summary
+  const fetchSummary = useCallback(async () => {
+    try {
+      const res = await api.get('/compliance/summary', {
+        params: { folderId: currentFolderId || undefined }
+      });
+      setSummary(res.data || { totalFolders: 0, totalFiles: 0, storageUsed: 0, recentActivityCount: 0 });
+    } catch { /* ignore */ }
+  }, [currentFolderId]);
+
   useEffect(() => {
     fetchUploaders();
-  }, [fetchUploaders]);
+    fetchTags();
+    fetchRecentActivity();
+  }, [fetchUploaders, fetchTags, fetchRecentActivity]);
+
+  // Fetch file details
+  const fetchFileDetails = useCallback(async (fileId: string) => {
+    try {
+      const res = await api.get(`/compliance/files/${fileId}`);
+      setFileDetails(res.data.file);
+      setFileVersions(res.data.versions || []);
+      setFileActivities(res.data.activities || []);
+      setFolderPath(res.data.folderPath || []);
+      setNewDescription(res.data.file?.description || '');
+      setSelectedTags(res.data.file?.tags?.map((t: any) => t.id) || []);
+    } catch (err: any) {
+      setError('Failed to load file details');
+    }
+  }, []);
 
   const fetchData = useCallback(async (isRefresh = false, folderId: string | null = currentFolderId) => {
     if (isRefresh) setRefreshing(true);
@@ -189,7 +330,7 @@ export function DocumentRepositoryPage() {
       });
 
       setItems(res.data.items || []);
-      setSummary(res.data.summary || { totalFolders: 0, totalFiles: 0 });
+      setSummary(res.data.summary || { totalFolders: 0, totalFiles: 0, storageUsed: 0, recentActivityCount: 0 });
       
       if (folderId) {
         const breadcrumbRes = await api.get(`/compliance/folders/${folderId}/breadcrumbs`);
@@ -210,7 +351,8 @@ export function DocumentRepositoryPage() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchSummary();
+  }, [fetchData, fetchSummary]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -248,6 +390,7 @@ export function DocumentRepositoryPage() {
     setUploadedBy('');
     setFileTypes([]);
     setContentType('both');
+    setShowDetailsPanel(false);
     fetchData(true, folderId);
   };
 
@@ -273,7 +416,79 @@ export function DocumentRepositoryPage() {
     }
   };
 
-  // Export handlers with proper error handling
+  // File details handlers
+  const handleShowFileDetails = (item: Item) => {
+    if (item.itemType === 'file') {
+      fetchFileDetails(item.id);
+      setShowDetailsPanel(true);
+    }
+  };
+
+  const handleSaveDescription = async () => {
+    if (!fileDetails) return;
+    
+    setSaving(true);
+    try {
+      await api.patch(`/compliance/files/${fileDetails.id}`, {
+        description: newDescription,
+        action: 'description_updated'
+      });
+      setMessage('Description updated');
+      setEditingDescription(false);
+      fetchFileDetails(fileDetails.id);
+      fetchRecentActivity();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update description');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveTags = async () => {
+    if (!fileDetails) return;
+    
+    setSaving(true);
+    try {
+      await api.patch(`/compliance/files/${fileDetails.id}`, {
+        tagIds: selectedTags
+      });
+      setMessage('Tags updated');
+      setShowTagsDialog(false);
+      fetchFileDetails(fileDetails.id);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update tags');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownloadFile = async (fileId: string, fileName: string) => {
+    try {
+      // Increment download count
+      await api.post(`/compliance/files/${fileId}/download`, {
+        userName: user?.name,
+        userEmail: user?.email
+      });
+      
+      const response = await api.get(`/compliance/files/${fileId}?action=download`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      fetchRecentActivity();
+      if (fileDetails?.id === fileId) {
+        fetchFileDetails(fileId);
+      }
+    } catch (err: any) {
+      setError('Failed to download file');
+    }
+  };
+
+  // Export handlers
   const handleExportSelected = async () => {
     if (selectedItems.size === 0) return;
     setExporting(true);
@@ -286,7 +501,6 @@ export function DocumentRepositoryPage() {
         validateStatus: (status) => status < 500
       });
       
-      // Check if response is an error JSON
       const contentType = String(response.headers?.['content-type'] || '');
       if (typeof response.data === 'object' && contentType.includes('application/json')) {
         setError(response.data?.message || 'Export failed');
@@ -406,7 +620,6 @@ export function DocumentRepositoryPage() {
     }
   };
 
-  // Delete selected
   const handleDeleteSelected = async () => {
     if (selectedItems.size === 0) return;
     if (!confirm(`Delete ${selectedItems.size} item(s)?`)) return;
@@ -419,6 +632,8 @@ export function DocumentRepositoryPage() {
       setSelectedItems(new Set());
       setSelectAll(false);
       fetchData(true);
+      fetchSummary();
+      fetchRecentActivity();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete');
     }
@@ -466,6 +681,7 @@ export function DocumentRepositoryPage() {
       setNewFolderName('');
       setNewFolderDescription('');
       fetchData(true);
+      fetchSummary();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create folder');
     } finally {
@@ -511,6 +727,7 @@ export function DocumentRepositoryPage() {
       setMessage('Folder deleted');
       setShowActionsMenu(null);
       fetchData(true);
+      fetchSummary();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete folder');
     }
@@ -537,6 +754,8 @@ export function DocumentRepositoryPage() {
       formData.append('files', files[i]);
     }
     formData.append('folderId', currentFolderId || '');
+    formData.append('userName', user?.name || '');
+    formData.append('userEmail', user?.email || '');
 
     try {
       await api.post('/compliance/files', formData, {
@@ -551,6 +770,8 @@ export function DocumentRepositoryPage() {
       setMessage(`Uploaded ${files.length} file(s)`);
       setShowUploadDialog(false);
       fetchData(true);
+      fetchSummary();
+      fetchRecentActivity();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to upload files');
     } finally {
@@ -602,6 +823,7 @@ export function DocumentRepositoryPage() {
       setMovingFile(null);
       setSelectedMoveFolder('');
       fetchData(true);
+      fetchSummary();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to move file');
     } finally {
@@ -618,25 +840,15 @@ export function DocumentRepositoryPage() {
       });
       setMessage('File deleted');
       setShowFileActionsMenu(null);
+      if (fileDetails?.id === fileId) {
+        setShowDetailsPanel(false);
+        setFileDetails(null);
+      }
       fetchData(true);
+      fetchSummary();
+      fetchRecentActivity();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete file');
-    }
-  };
-
-  const handleDownloadFile = async (fileId: string, fileName: string) => {
-    try {
-      const response = await api.get(`/compliance/files/${fileId}?action=download`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError('Failed to download file');
     }
   };
 
@@ -740,27 +952,27 @@ export function DocumentRepositoryPage() {
           <div className="doc-repo-summary-card">
             <div className="doc-repo-summary-icon storage">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="doc-repo-summary-content">
+              <span className="doc-repo-summary-label">Storage</span>
+              <span className="doc-repo-summary-value">{loading ? '...' : formatBytes(summary.storageUsed || 0)}</span>
+            </div>
+          </div>
+
+          <div className="doc-repo-summary-card">
+            <div className="doc-repo-summary-icon activity">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
               </svg>
             </div>
             <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Selected</span>
-              <span className="doc-repo-summary-value">{selectedItems.size}</span>
-            </div>
-          </div>
-
-          <div className="doc-repo-summary-card">
-            <div className="doc-repo-summary-icon recent">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Total</span>
-              <span className="doc-repo-summary-value">{totalItems}</span>
+              <span className="doc-repo-summary-label">Activity</span>
+              <span className="doc-repo-summary-value">{recentActivities.length}</span>
             </div>
           </div>
         </div>
@@ -1014,7 +1226,7 @@ export function DocumentRepositoryPage() {
                       <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
                     </div>
                     <div className="file-card-header">
-                      <div className="file-icon" onClick={() => (item.iconType === 'pdf' || item.iconType === 'image') && handlePreviewFile(item)}>
+                      <div className="file-icon" onClick={() => (item.iconType === 'pdf' || item.iconType === 'image') ? handlePreviewFile(item) : handleShowFileDetails(item)}>
                         <FileIcon type={item.iconType || 'file'} />
                       </div>
                       {(isSuperAdmin || isAdmin) && (
@@ -1028,6 +1240,7 @@ export function DocumentRepositoryPage() {
                           </button>
                           {showFileActionsMenu === item.id && (
                             <div className="actions-dropdown">
+                              <button onClick={() => handleShowFileDetails(item)}>Details</button>
                               {(item.iconType === 'pdf' || item.iconType === 'image') && (
                                 <button onClick={() => handlePreviewFile(item)}>Preview</button>
                               )}
@@ -1040,7 +1253,7 @@ export function DocumentRepositoryPage() {
                         </div>
                       )}
                     </div>
-                    <div className="file-card-body">
+                    <div className="file-card-body" onClick={() => handleShowFileDetails(item)}>
                       <h4 className="file-name">{item.originalFileName}</h4>
                       <div className="file-stats">
                         <span>{item.fileExtension?.toUpperCase()}</span>
@@ -1049,7 +1262,7 @@ export function DocumentRepositoryPage() {
                     </div>
                     <div className="file-card-footer">
                       <span className="file-date">{item.uploadedByEmail || 'Unknown'}</span>
-                      <span className="file-date">Modified {formatDate(item.modifiedAt)}</span>
+                      <span className="file-date">v{item.version || 1}</span>
                     </div>
                   </div>
                 )
@@ -1057,7 +1270,274 @@ export function DocumentRepositoryPage() {
             </div>
           )}
         </div>
+
+        {/* Recent Activity Section */}
+        {recentActivities.length > 0 && (
+          <div className="activity-section">
+            <h3>Recent Activity</h3>
+            <div className="activity-list">
+              {recentActivities.slice(0, 5).map(activity => (
+                <div key={activity.id} className="activity-item">
+                  <span className="activity-icon">{getActivityIcon(activity.action)}</span>
+                  <div className="activity-content">
+                    <span className="activity-action">{getActivityLabel(activity.action)}</span>
+                    <span className="activity-details">{activity.details}</span>
+                  </div>
+                  <span className="activity-time">{formatDateTime(activity.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* File Details Panel */}
+      {showDetailsPanel && fileDetails && (
+        <div className="details-panel-overlay" onClick={() => setShowDetailsPanel(false)}>
+          <div className="details-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="details-panel-header">
+              <h2>File Details</h2>
+              <button type="button" className="modal-close" onClick={() => setShowDetailsPanel(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+
+            <div className="details-panel-content">
+              <div className="file-preview-large">
+                <FileIcon type={fileDetails.iconType} />
+                <h3>{fileDetails.originalFileName}</h3>
+                <span className="version-badge">Version {fileDetails.version}</span>
+              </div>
+
+              <div className="details-section">
+                <h4>Folder Path</h4>
+                <p className="folder-path">
+                  {folderPath.map((f, i) => (
+                    <span key={f.id || i}>{i > 0 && ' > '}{f.name}</span>
+                  ))}
+                </p>
+              </div>
+
+              <div className="details-section">
+                <div className="details-row">
+                  <span className="details-label">File Type</span>
+                  <span className="details-value">{fileDetails.mimeType}</span>
+                </div>
+                <div className="details-row">
+                  <span className="details-label">Extension</span>
+                  <span className="details-value">.{fileDetails.fileExtension}</span>
+                </div>
+                <div className="details-row">
+                  <span className="details-label">File Size</span>
+                  <span className="details-value">{formatBytes(fileDetails.fileSize)}</span>
+                </div>
+                <div className="details-row">
+                  <span className="details-label">Downloads</span>
+                  <span className="details-value">{fileDetails.downloadCount}</span>
+                </div>
+              </div>
+
+              <div className="details-section">
+                <div className="details-row">
+                  <span className="details-label">Uploaded By</span>
+                  <span className="details-value">{fileDetails.uploadedByEmail || 'Unknown'}</span>
+                </div>
+                <div className="details-row">
+                  <span className="details-label">Created</span>
+                  <span className="details-value">{formatDate(fileDetails.uploadedAt)}</span>
+                </div>
+                <div className="details-row">
+                  <span className="details-label">Modified</span>
+                  <span className="details-value">{formatDate(fileDetails.modifiedAt)}</span>
+                </div>
+              </div>
+
+              <div className="details-section">
+                <div className="details-section-header">
+                  <h4>Description</h4>
+                  {!editingDescription && (
+                    <button type="button" className="edit-btn" onClick={() => setEditingDescription(true)}>
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {editingDescription ? (
+                  <div className="description-edit">
+                    <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={3} />
+                    <div className="edit-actions">
+                      <button type="button" className="secondary" onClick={() => { setEditingDescription(false); setNewDescription(fileDetails.description || ''); }}>Cancel</button>
+                      <button type="button" className="primary" onClick={handleSaveDescription} disabled={saving}>
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="description-text">{fileDetails.description || 'No description'}</p>
+                )}
+              </div>
+
+              <div className="details-section">
+                <div className="details-section-header">
+                  <h4>Tags</h4>
+                  <button type="button" className="edit-btn" onClick={() => setShowTagsDialog(true)}>
+                    {fileDetails.tags.length > 0 ? 'Edit' : 'Add'}
+                  </button>
+                </div>
+                <div className="tags-display">
+                  {fileDetails.tags.length > 0 ? (
+                    fileDetails.tags.map(tag => (
+                      <span key={tag.id} className="tag" style={{ backgroundColor: tag.color + '20', color: tag.color }}>
+                        {tag.name}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="no-tags">No tags</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="details-section">
+                <div className="details-section-header">
+                  <h4>Storage Location</h4>
+                </div>
+                <p className="storage-path">{fileDetails.storagePath}</p>
+              </div>
+
+              <div className="details-section">
+                <div className="details-section-header">
+                  <h4>Version History</h4>
+                  <button type="button" className="edit-btn" onClick={() => setShowVersionHistory(true)}>
+                    View All ({fileVersions.length})
+                  </button>
+                </div>
+                {fileVersions.length > 1 ? (
+                  <div className="version-list">
+                    {fileVersions.slice(0, 3).map(v => (
+                      <div key={v.id} className="version-item">
+                        <span className="version-number">v{v.version}</span>
+                        <span className="version-info">{formatDate(v.uploadedAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-versions">Only one version</p>
+                )}
+              </div>
+
+              <div className="details-section">
+                <div className="details-section-header">
+                  <h4>Activity</h4>
+                </div>
+                {fileActivities.length > 0 ? (
+                  <div className="activity-list-small">
+                    {fileActivities.slice(0, 5).map(activity => (
+                      <div key={activity.id} className="activity-item-small">
+                        <span className="activity-icon-small">{getActivityIcon(activity.action)}</span>
+                        <span className="activity-text">{getActivityLabel(activity.action)}</span>
+                        <span className="activity-time-small">{formatDateTime(activity.createdAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="no-activity">No activity</p>
+                )}
+              </div>
+
+              <div className="details-actions">
+                <button type="button" className="primary" onClick={() => handleDownloadFile(fileDetails.id, fileDetails.originalFileName)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2"/><path d="M12 15V3" stroke="currentColor" strokeWidth="2"/></svg>
+                  Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Version History Dialog */}
+      {showVersionHistory && fileDetails && (
+        <div className="modal-overlay" onClick={() => setShowVersionHistory(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Version History - {fileDetails.originalFileName}</h2>
+              <button type="button" className="modal-close" onClick={() => setShowVersionHistory(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              {fileVersions.length > 0 ? (
+                <div className="version-history-list">
+                  {fileVersions.map((version, index) => (
+                    <div key={version.id} className={`version-history-item ${index === 0 ? 'latest' : ''}`}>
+                      <div className="version-info-col">
+                        <span className="version-badge-large">Version {version.version}</span>
+                        {index === 0 && <span className="latest-badge">Latest</span>}
+                      </div>
+                      <div className="version-details-col">
+                        <span>{version.uploadedByEmail || 'Unknown'}</span>
+                        <span>{formatDateTime(version.uploadedAt)}</span>
+                        <span>{formatBytes(version.fileSize)}</span>
+                      </div>
+                      <div className="version-actions-col">
+                        <button type="button" className="toolbar-btn" onClick={() => handleDownloadFile(version.id, fileDetails.originalFileName)}>
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>No version history available</p>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="secondary" onClick={() => setShowVersionHistory(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tags Dialog */}
+      {showTagsDialog && (
+        <div className="modal-overlay" onClick={() => setShowTagsDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Manage Tags</h2>
+              <button type="button" className="modal-close" onClick={() => setShowTagsDialog(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="tags-selection">
+                {allTags.map(tag => (
+                  <label key={tag.id} className="tag-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={selectedTags.includes(tag.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTags([...selectedTags, tag.id]);
+                        } else {
+                          setSelectedTags(selectedTags.filter(id => id !== tag.id));
+                        }
+                      }}
+                    />
+                    <span className="tag" style={{ backgroundColor: tag.color + '20', color: tag.color }}>
+                      {tag.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="secondary" onClick={() => setShowTagsDialog(false)}>Cancel</button>
+              <button type="button" className="primary" onClick={handleSaveTags} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Tags'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialogs */}
       {showCreateDialog && (
