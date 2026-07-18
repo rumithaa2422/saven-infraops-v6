@@ -335,8 +335,8 @@ model InventoryMaster {
   itemName       String
   brand          String?
   model          String?
-  vendor         String?
-  vendorId       String?   // Vendor relation
+  vendorName     String?   // Preserved: original vendor name string (for display)
+  vendorId       String?   // Vendor relation FK
   invoiceNo      String?
   purchaseCost   Float?
   gst            Float?

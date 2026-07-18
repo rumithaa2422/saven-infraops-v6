@@ -18,7 +18,7 @@ type InventoryItem = {
   itemName: string;
   brand?: string;
   model?: string;
-  vendor?: string;
+  vendorName?: string;
   vendorId?: string;
   invoiceNo?: string;
   purchaseCost?: number;
@@ -86,7 +86,7 @@ export function InventoryMasterPage() {
     itemName: '',
     brand: '',
     model: '',
-    vendor: '',
+    vendorName: '',
     invoiceNo: '',
     purchaseCost: undefined,
     gst: undefined,
@@ -149,7 +149,7 @@ export function InventoryMasterPage() {
         itemName: item.itemName || '',
         brand: item.brand || '',
         model: item.model || '',
-        vendor: item.vendor || '',
+        vendorName: item.vendorName || '',
         vendorId: item.vendorId || '',
         invoiceNo: item.invoiceNo || '',
         purchaseCost: item.purchaseCost,
@@ -255,7 +255,8 @@ export function InventoryMasterPage() {
         itemName: form.itemName.trim(),
         brand: form.brand?.trim() || undefined,
         model: form.model?.trim() || undefined,
-        vendor: form.vendor?.trim() || undefined,
+        vendorName: form.vendorName?.trim() || undefined,
+        vendorId: form.vendorId || undefined,
         invoiceNo: form.invoiceNo?.trim() || undefined,
         purchaseCost: form.purchaseCost,
         gst: form.gst,

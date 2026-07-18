@@ -37,7 +37,7 @@ type InventoryItem = {
   itemName: string;
   brand?: string;
   model?: string;
-  vendor?: string;
+  vendorName?: string;
   vendorId?: string;
   invoiceNo?: string;
   purchaseDate?: string;
@@ -582,10 +582,10 @@ export function InventoryDetailPage() {
                   <label>Vendor</label>
                   {item.vendorId ? (
                     <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/vendors-licenses/${item.vendorId}`); }} className="detail-link">
-                      {item.vendor || 'View Vendor'}
+                      {item.vendorName || 'View Vendor'}
                     </a>
                   ) : (
-                    <span className="detail-field-value">{item.vendor || '-'}</span>
+                    <span className="detail-field-value">{item.vendorName || '-'}</span>
                   )}
                 </div>
                 <div className="detail-field">
@@ -695,10 +695,10 @@ export function InventoryDetailPage() {
                 <label>Vendor</label>
                 {item.vendorId ? (
                   <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/vendors-licenses/${item.vendorId}`); }} className="detail-link">
-                    {item.vendor || 'View Vendor'}
+                    {item.vendorName || 'View Vendor'}
                   </a>
                 ) : (
-                  <span>{item.vendor || '-'}</span>
+                  <span>{item.vendorName || '-'}</span>
                 )}
               </div>
             </div>
