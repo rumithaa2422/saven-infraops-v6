@@ -30,6 +30,7 @@ vendorRouter.get('/', requireAuth, async (req: Request, res: Response, next) => 
       contractExpiryFrom,
       contractExpiryTo,
       contractStatus,
+      year,
       sortBy = 'vendorName',
       sortOrder = 'asc',
       page = '1',
@@ -43,35 +44,60 @@ vendorRouter.get('/', requireAuth, async (req: Request, res: Response, next) => 
     // Build where clause
     const where: any = {};
 
-    // Search across multiple fields
-    if (search) {
-      const searchLower = (search as string).toLowerCase();
+    // Search across multiple fields (MySQL is case-insensitive by default with contains)
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchTerm = search.trim();
       where.OR = [
-        { vendorName: { contains: searchLower, mode: 'insensitive' } },
-        { vendorCode: { contains: searchLower, mode: 'insensitive' } },
-        { primaryContactName: { contains: searchLower, mode: 'insensitive' } },
-        { email: { contains: searchLower, mode: 'insensitive' } },
-        { phone: { contains: searchLower, mode: 'insensitive' } },
-        { website: { contains: searchLower, mode: 'insensitive' } }
+        { vendorName: { contains: searchTerm } },
+        { vendorCode: { contains: searchTerm } },
+        { primaryContactName: { contains: searchTerm } },
+        { email: { contains: searchTerm } },
+        { phone: { contains: searchTerm } },
+        { website: { contains: searchTerm } }
       ];
     }
 
-    // Filters
-    if (category) where.category = category;
-    if (status) where.status = status;
-    if (country) where.country = country;
-
-    // Contract expiry range
-    if (contractExpiryFrom || contractExpiryTo) {
-      where.contractExpiryDate = {};
-      if (contractExpiryFrom) where.contractExpiryDate.gte = new Date(contractExpiryFrom as string);
-      if (contractExpiryTo) where.contractExpiryDate.lte = new Date(contractExpiryTo as string);
+    // Filters - exact matches
+    if (category && typeof category === 'string' && category.trim()) {
+      where.category = category.trim();
+    }
+    if (status && typeof status === 'string' && status.trim()) {
+      where.status = status.trim();
+    }
+    if (country && typeof country === 'string' && country.trim()) {
+      where.country = country.trim();
     }
 
-    // Contract status filter
-    if (contractStatus) {
+    // Year filter - filter by contract expiry or renewal year
+    if (year && typeof year === 'string' && year.trim()) {
+      const yearNum = parseInt(year);
+      if (!isNaN(yearNum)) {
+        const yearStart = new Date(yearNum, 0, 1);
+        const yearEnd = new Date(yearNum, 11, 31, 23, 59, 59);
+        where.OR = where.OR || [];
+        where.OR.push(
+          {
+            AND: [
+              { contractExpiryDate: { not: null } },
+              { contractExpiryDate: { gte: yearStart, lte: yearEnd } }
+            ]
+          },
+          {
+            AND: [
+              { renewalDate: { not: null } },
+              { renewalDate: { gte: yearStart, lte: yearEnd } }
+            ]
+          }
+        );
+      }
+    }
+
+    // Contract status filter (mutually exclusive with date range)
+    if (contractStatus && typeof contractStatus === 'string' && contractStatus.trim()) {
       const now = new Date();
+      now.setHours(0, 0, 0, 0);
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      thirtyDaysFromNow.setHours(23, 59, 59, 999);
       
       if (contractStatus === 'active') {
         where.contractExpiryDate = { gte: now };
@@ -85,11 +111,31 @@ vendorRouter.get('/', requireAuth, async (req: Request, res: Response, next) => 
       }
     }
 
+    // Contract expiry date range (mutually exclusive with status filter)
+    if ((contractExpiryFrom || contractExpiryTo) && !contractStatus) {
+      const dateCondition: any = {};
+      if (contractExpiryFrom) {
+        const fromDate = new Date(contractExpiryFrom as string);
+        fromDate.setHours(0, 0, 0, 0);
+        dateCondition.gte = fromDate;
+      }
+      if (contractExpiryTo) {
+        const toDate = new Date(contractExpiryTo as string);
+        toDate.setHours(23, 59, 59, 999);
+        dateCondition.lte = toDate;
+      }
+      if (Object.keys(dateCondition).length > 0) {
+        where.contractExpiryDate = dateCondition;
+      }
+    }
+
     // Sort options
     let orderBy: any = { vendorName: 'asc' };
+    const orderDirection = sortOrder === 'desc' ? 'desc' : 'asc';
+    
     switch (sortBy) {
       case 'vendorName':
-        orderBy = { vendorName: sortOrder };
+        orderBy = { vendorName: orderDirection };
         break;
       case 'newest':
         orderBy = { createdAt: 'desc' };
@@ -98,10 +144,10 @@ vendorRouter.get('/', requireAuth, async (req: Request, res: Response, next) => 
         orderBy = { createdAt: 'asc' };
         break;
       case 'contractExpiry':
-        orderBy = { contractExpiryDate: sortOrder || 'asc' };
+        orderBy = { contractExpiryDate: orderDirection || 'asc' };
         break;
       case 'status':
-        orderBy = { status: sortOrder || 'asc' };
+        orderBy = { status: orderDirection || 'asc' };
         break;
       default:
         orderBy = { vendorName: 'asc' };
@@ -143,7 +189,9 @@ vendorRouter.get('/summary', requireAuth, async (req: Request, res: Response, ne
     );
 
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    thirtyDaysFromNow.setHours(23, 59, 59, 999);
 
     const [totalVendors, activeVendors, expiringContracts, pendingRenewals] = await Promise.all([
       prisma.vendor.count(),
