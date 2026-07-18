@@ -198,7 +198,7 @@ vendorRouter.get('/categories', requireAuth, async (req: Request, res: Response,
       orderBy: { category: 'asc' }
     });
 
-    res.json(categories.map(c => c.category));
+    res.json({ categories: categories.map(c => c.category) });
   } catch (error) {
     next(error);
   }
@@ -624,6 +624,120 @@ vendorRouter.get('/:id/inventory', requireAuth, async (req: Request, res: Respon
     });
 
     res.json({ inventory });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/vendors/summary
+// Get vendor dashboard summary statistics
+// ============================================================
+vendorRouter.get('/summary', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    thirtyDaysFromNow.setHours(23, 59, 59, 999);
+
+    const [
+      totalVendors,
+      activeVendors,
+      expiringContracts,
+      pendingRenewals
+    ] = await Promise.all([
+      prisma.vendor.count(),
+      prisma.vendor.count({ where: { status: 'ACTIVE' } }),
+      prisma.vendor.count({
+        where: {
+          contractExpiryDate: { gte: now, lte: thirtyDaysFromNow }
+        }
+      }),
+      prisma.vendor.count({
+        where: {
+          contractExpiryDate: { lt: now }
+        }
+      })
+    ]);
+
+    res.json({
+      totalVendors,
+      activeVendors,
+      expiringContracts,
+      pendingRenewals
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/vendors/countries
+// Get all unique vendor countries
+// ============================================================
+vendorRouter.get('/countries', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const countries = await prisma.vendor.findMany({
+      select: { country: true },
+      distinct: ['country'],
+      where: { country: { not: null } },
+      orderBy: { country: 'asc' }
+    });
+
+    res.json({
+      countries: countries.map(c => c.country).filter(Boolean)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/vendors/years
+// Get all distinct contract years
+// ============================================================
+vendorRouter.get('/years', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    // Get distinct years from contractExpiryDate
+    const vendors = await prisma.vendor.findMany({
+      select: {
+        contractExpiryDate: true,
+        renewalDate: true
+      },
+      where: {
+        OR: [
+          { contractExpiryDate: { not: null } },
+          { renewalDate: { not: null } }
+        ]
+      }
+    });
+
+    // Extract unique years from both fields
+    const yearsSet = new Set<number>();
+    vendors.forEach(vendor => {
+      if (vendor.contractExpiryDate) {
+        yearsSet.add(new Date(vendor.contractExpiryDate).getFullYear());
+      }
+      if (vendor.renewalDate) {
+        yearsSet.add(new Date(vendor.renewalDate).getFullYear());
+      }
+    });
+
+    const years = Array.from(yearsSet).sort((a, b) => b - a); // Descending order
+
+    res.json({ years });
   } catch (error) {
     next(error);
   }

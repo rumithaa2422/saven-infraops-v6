@@ -46,7 +46,7 @@
     "@types/node": "latest",
     "@types/nodemailer": "^8.0.1",
     "prisma": "^5.22.0",
-    "tsx": "latest",
+    "tsx": "^4.23.1",
     "typescript": "latest",
     "vitest": "latest"
   },
