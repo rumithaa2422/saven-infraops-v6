@@ -467,7 +467,10 @@ export function UserDetailsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {user.assignedInventory.slice(0, 10).map((assignment) => (
+                        {/* Deduplicate by assignment ID */}
+                        {Array.from(
+                          new Map(user.assignedInventory.slice(0, 10).map(a => [a.id, a])).values()
+                        ).map((assignment) => (
                           <tr key={assignment.id}>
                             <td className="item-no">{assignment.inventory.itemNo}</td>
                             <td>{assignment.inventory.category?.name || '-'}</td>

@@ -458,7 +458,8 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
               },
               project: { select: { id: true, projectName: true, projectCode: true } }
             },
-            orderBy: { assignedDate: 'desc' }
+            orderBy: { assignedDate: 'desc' },
+            distinct: ['id']
           });
           
           // Calculate summary stats
