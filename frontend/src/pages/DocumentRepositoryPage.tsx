@@ -39,7 +39,8 @@ type SortOption =
   | 'recent' | 'largest' | 'smallest'
   | 'folders_first' | 'files_first';
 
-const formatBytes = (bytes: number): string => {
+const formatBytes = (bytes: number | undefined | null): string => {
+  if (bytes === undefined || bytes === null || isNaN(bytes)) return '0 B';
   if (bytes === 0) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -186,7 +187,14 @@ export function DocumentRepositoryPage() {
       });
 
       setItems(res.data.items || []);
-      setSummary(res.data.summary || { totalFolders: 0, totalFiles: 0, storageUsed: 0, recentActivityCount: 0 });
+      // Handle both /items and /summary response formats
+      const summaryData = res.data.summary || res.data || {};
+      setSummary({
+        totalFolders: summaryData.totalFolders ?? 0,
+        totalFiles: summaryData.totalFiles ?? 0,
+        storageUsed: summaryData.storageUsed ?? 0,
+        recentActivityCount: summaryData.recentActivityCount ?? 0
+      });
       
       if (folderId) {
         const breadcrumbRes = await api.get(`/compliance/folders/${folderId}/breadcrumbs`);
@@ -634,8 +642,8 @@ export function DocumentRepositoryPage() {
           )}
         </div>
         <div className="header-right">
-          <span className="stat-badge">{summary.totalFolders} folders</span>
-          <span className="stat-badge">{summary.totalFiles} files</span>
+          <span className="stat-badge">{summary.totalFolders ?? 0} folders</span>
+          <span className="stat-badge">{summary.totalFiles ?? 0} files</span>
           <span className="stat-badge">{formatBytes(summary.storageUsed)}</span>
         </div>
       </div>
