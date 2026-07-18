@@ -1088,9 +1088,9 @@ complianceRouter.post('/files', requireAuth, async (req: Request, res: Response,
 
 /**
  * GET /api/compliance/files/:id
- * Download or preview a file
+ * Get file details (default) or download/preview a file (with action query param)
  * Query params:
- *   - action: 'download' | 'preview'
+ *   - action: 'download' | 'preview' (optional, returns JSON details if not provided)
  */
 complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
   try {
@@ -1099,45 +1099,146 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
     );
 
     const { id } = req.params;
-    const action = (req.query.action as string) || 'download';
+    const action = req.query.action as string | undefined;
 
     if (!id) {
       throw new HttpError(400, 'File ID is required');
     }
 
-    const file = await prisma.documentFile.findUnique({ where: { id } });
+    const file = await prisma.documentFile.findUnique({
+      where: { id },
+      include: {
+        folder: true,
+        fileTags: {
+          include: { tag: true }
+        }
+      }
+    });
+
     if (!file) {
       throw new HttpError(404, 'File not found');
     }
 
-    const filePath = path.join(process.cwd(), file.storagePath);
-    
-    try {
-      await fs.access(filePath);
-    } catch {
-      throw new HttpError(404, 'File not found on disk');
-    }
-
-    if (action === 'preview') {
-      // Check if file is previewable (images and PDFs)
-      const previewableTypes = ['png', 'jpg', 'jpeg', 'pdf'];
-      if (previewableTypes.includes(file.fileExtension.toLowerCase())) {
-        res.setHeader('Content-Type', file.mimeType);
-        res.setHeader('Content-Disposition', `inline; filename="${file.originalFileName}"`);
-      } else {
-        return res.status(400).json({ 
-          message: 'Preview unavailable for this file type',
-          downloadUrl: `/api/compliance/files/${id}?action=download`
-        });
+    // If action is specified, return file binary (download or preview)
+    if (action === 'download' || action === 'preview') {
+      const filePath = path.join(process.cwd(), file.storagePath);
+      
+      try {
+        await fs.access(filePath);
+      } catch {
+        throw new HttpError(404, 'File not found on disk');
       }
-    } else {
-      res.setHeader('Content-Type', file.mimeType);
-      res.setHeader('Content-Disposition', `attachment; filename="${file.originalFileName}"`);
+
+      if (action === 'preview') {
+        // Check if file is previewable (images and PDFs)
+        const previewableTypes = ['png', 'jpg', 'jpeg', 'pdf'];
+        if (previewableTypes.includes(file.fileExtension.toLowerCase())) {
+          res.setHeader('Content-Type', file.mimeType);
+          res.setHeader('Content-Disposition', `inline; filename="${file.originalFileName}"`);
+        } else {
+          return res.status(400).json({ 
+            message: 'Preview unavailable for this file type',
+            downloadUrl: `/api/compliance/files/${id}?action=download`
+          });
+        }
+      } else {
+        res.setHeader('Content-Type', file.mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${file.originalFileName}"`);
+      }
+
+      res.setHeader('Content-Length', file.fileSize);
+      const fileStream = await fs.readFile(filePath);
+      return res.send(fileStream);
     }
 
-    res.setHeader('Content-Length', file.fileSize);
-    const fileStream = await fs.readFile(filePath);
-    res.send(fileStream);
+    // No action specified - return file details as JSON
+    // Get folder path for breadcrumbs
+    const getFolderPath = async (folderId: string | null): Promise<{ id: string; name: string }[]> => {
+      const folderPath: { id: string; name: string }[] = [];
+      let currentId = folderId;
+      
+      while (currentId) {
+        const folder = await prisma.documentFolder.findUnique({
+          where: { id: currentId },
+          select: { id: true, name: true, parentFolderId: true }
+        });
+        if (folder) {
+          folderPath.unshift({ id: folder.id, name: folder.name });
+          currentId = folder.parentFolderId;
+        } else {
+          break;
+        }
+      }
+      return folderPath;
+    };
+
+    const folderPath = await getFolderPath(file.folderId);
+
+    // Get activity for this file
+    const activities = await prisma.documentActivity.findMany({
+      where: { fileId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+
+    // Get all versions (files with same original name in same folder)
+    const versions = await prisma.documentFile.findMany({
+      where: {
+        folderId: file.folderId,
+        originalFileName: file.originalFileName
+      },
+      orderBy: { version: 'desc' },
+      select: {
+        id: true,
+        version: true,
+        uploadedBy: true,
+        uploadedByEmail: true,
+        uploadedAt: true,
+        fileSize: true,
+        modifiedAt: true
+      }
+    });
+
+    // Helper to get icon type from extension
+    const getFileIcon = (ext: string): string => {
+      const iconMap: Record<string, string> = {
+        pdf: 'pdf', doc: 'word', docx: 'word',
+        xls: 'excel', xlsx: 'excel', csv: 'excel',
+        ppt: 'powerpoint', pptx: 'powerpoint',
+        png: 'image', jpg: 'image', jpeg: 'image', gif: 'image',
+        txt: 'text', log: 'text', md: 'text',
+        zip: 'archive', rar: 'archive', '7z': 'archive',
+        mp4: 'file', avi: 'file', mov: 'file', wmv: 'file',
+        mp3: 'file', wav: 'file', flac: 'file',
+        html: 'file', css: 'file', js: 'file', json: 'file'
+      };
+      return iconMap[ext.toLowerCase()] || 'file';
+    };
+
+    res.json({
+      file: {
+        id: file.id,
+        folderId: file.folderId,
+        originalFileName: file.originalFileName,
+        fileExtension: file.fileExtension,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+        iconType: getFileIcon(file.fileExtension),
+        uploadedBy: file.uploadedBy,
+        uploadedByEmail: file.uploadedByEmail,
+        uploadedAt: file.uploadedAt,
+        modifiedAt: file.modifiedAt,
+        description: file.description,
+        downloadCount: file.downloadCount,
+        version: file.version,
+        storagePath: file.storagePath,
+        folder: file.folder,
+        tags: file.fileTags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+      },
+      folderPath,
+      versions,
+      activities
+    });
   } catch (error) {
     next(error);
   }
@@ -1864,108 +1965,6 @@ complianceRouter.post('/tags', requireAuth, async (req: Request, res: Response, 
     });
 
     res.status(201).json({ tag });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * GET /api/compliance/files/:id
- * Get file details with tags, versions, and activity
- */
-complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
-  try {
-    await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
-    );
-
-    const { id } = req.params;
-
-    const file = await prisma.documentFile.findUnique({
-      where: { id },
-      include: {
-        folder: true,
-        fileTags: {
-          include: { tag: true }
-        }
-      }
-    });
-
-    if (!file) {
-      throw new HttpError(404, 'File not found');
-    }
-
-    // Get folder path for breadcrumbs
-    const getFolderPath = async (folderId: string | null): Promise<{ id: string; name: string }[]> => {
-      const path: { id: string; name: string }[] = [];
-      let currentId = folderId;
-      
-      while (currentId) {
-        const folder = await prisma.documentFolder.findUnique({
-          where: { id: currentId },
-          select: { id: true, name: true, parentFolderId: true }
-        });
-        if (folder) {
-          path.unshift({ id: folder.id, name: folder.name });
-          currentId = folder.parentFolderId;
-        } else {
-          break;
-        }
-      }
-      return path;
-    };
-
-    const folderPath = await getFolderPath(file.folderId);
-
-    // Get activity for this file
-    const activities = await prisma.documentActivity.findMany({
-      where: { fileId: id },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
-
-    // Get all versions (files with same original name in same folder)
-    const versions = await prisma.documentFile.findMany({
-      where: {
-        folderId: file.folderId,
-        originalFileName: file.originalFileName
-      },
-      orderBy: { version: 'desc' },
-      select: {
-        id: true,
-        version: true,
-        uploadedBy: true,
-        uploadedByEmail: true,
-        uploadedAt: true,
-        fileSize: true,
-        modifiedAt: true
-      }
-    });
-
-    res.json({
-      file: {
-        id: file.id,
-        folderId: file.folderId,
-        originalFileName: file.originalFileName,
-        fileExtension: file.fileExtension,
-        mimeType: file.mimeType,
-        fileSize: file.fileSize,
-        iconType: getFileIcon(file.fileExtension),
-        uploadedBy: file.uploadedBy,
-        uploadedByEmail: file.uploadedByEmail,
-        uploadedAt: file.uploadedAt,
-        modifiedAt: file.modifiedAt,
-        description: file.description,
-        downloadCount: file.downloadCount,
-        version: file.version,
-        storagePath: file.storagePath,
-        folder: file.folder,
-        fileTags: file.fileTags.map(t => ({ id: t.taggedFiles.id, name: t.taggedFiles.name, color: t.taggedFiles.color }))
-      },
-      folderPath,
-      versions,
-      activities
-    });
   } catch (error) {
     next(error);
   }

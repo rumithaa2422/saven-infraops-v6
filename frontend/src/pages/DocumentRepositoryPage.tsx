@@ -151,6 +151,87 @@ const FileIcon = ({ type }: { type: string }) => {
   );
 };
 
+// PreviewViewer component - fetches file directly from API and displays it
+function PreviewViewer({ fileId, fileName, fileType }: { fileId: string; fileName: string; fileType: string }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let url: string | null = null;
+
+    const fetchPreview = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const baseUrl = import.meta.env.VITE_API_URL || '';
+        const response = await fetch(`${baseUrl}/api/compliance/files/${fileId}?action=preview`, {
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load preview');
+        }
+
+        const blob = await response.blob();
+        url = URL.createObjectURL(blob);
+        setBlobUrl(url);
+      } catch (err) {
+        setError('Failed to load preview');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPreview();
+
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [fileId]);
+
+  if (loading) {
+    return (
+      <div className="preview-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading preview...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="preview-unavailable">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <p>Preview unavailable for this file type</p>
+      </div>
+    );
+  }
+
+  if (fileType === 'pdf') {
+    return (
+      <iframe 
+        src={blobUrl || ''} 
+        title={fileName} 
+        className="preview-iframe"
+      />
+    );
+  }
+
+  // For images
+  return (
+    <img 
+      src={blobUrl || ''} 
+      alt={fileName} 
+      className="preview-image"
+      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+    />
+  );
+}
+
 export function DocumentRepositoryPage() {
   const { user, isSuperAdmin } = useAuth();
   const isAdmin = user?.roles.includes('Admin') ?? false;
@@ -216,6 +297,13 @@ export function DocumentRepositoryPage() {
   const [uploadedBy, setUploadedBy] = useState('');
   const [contentType, setContentType] = useState<'both' | 'folders' | 'files'>('both');
   const [uploaders, setUploaders] = useState<string[]>([]);
+  const [yearFilter, setYearFilter] = useState<string>('');
+  
+  // Generate available years from current year going back 10 years
+  const availableYears = Array.from({ length: 10 }, (_, i) => {
+    const year = new Date().getFullYear() - i;
+    return year.toString();
+  });
 
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderDescription, setNewFolderDescription] = useState('');
@@ -312,14 +400,22 @@ export function DocumentRepositoryPage() {
         }
       }
 
+      // Calculate date range based on year filter
+      let effectiveDateFrom = dateFrom;
+      let effectiveDateTo = dateTo;
+      if (yearFilter) {
+        effectiveDateFrom = `${yearFilter}-01-01`;
+        effectiveDateTo = `${yearFilter}-12-31`;
+      }
+
       const res = await api.get('/compliance/items', {
         params: {
           folderId: folderId || undefined,
           search: search || undefined,
           type: contentType,
           fileTypes: fileTypes.length > 0 ? fileTypes.join(',') : undefined,
-          dateFrom: dateFrom || undefined,
-          dateTo: dateTo || undefined,
+          dateFrom: effectiveDateFrom || undefined,
+          dateTo: effectiveDateTo || undefined,
           sizeMin,
           sizeMax,
           uploadedBy: uploadedBy || undefined,
@@ -347,7 +443,7 @@ export function DocumentRepositoryPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [search, sortBy, fileTypes, dateFrom, dateTo, sizeFilter, uploadedBy, contentType, currentFolderId]);
+  }, [search, sortBy, fileTypes, dateFrom, dateTo, sizeFilter, uploadedBy, contentType, currentFolderId, yearFilter]);
 
   useEffect(() => {
     fetchData();
@@ -356,22 +452,30 @@ export function DocumentRepositoryPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Close folder actions menu
-      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
-        setShowActionsMenu(null);
-      }
-      // Close file actions menu - check all dropdown menus on the page
-      const activeMenu = document.querySelector('.file-actions .actions-dropdown');
-      if (activeMenu && !activeMenu.contains(event.target as Node)) {
-        // Only close if click is outside the entire file-actions container
-        const fileActions = document.querySelectorAll('.file-actions');
-        let clickedInsideAnyMenu = false;
-        fileActions.forEach(container => {
+      // Close folder actions menu if click is outside
+      if (showActionsMenu !== null) {
+        const folderActions = document.querySelectorAll('.folder-actions');
+        let clickedInsideFolderMenu = false;
+        folderActions.forEach(container => {
           if (container.contains(event.target as Node)) {
-            clickedInsideAnyMenu = true;
+            clickedInsideFolderMenu = true;
           }
         });
-        if (!clickedInsideAnyMenu) {
+        if (!clickedInsideFolderMenu) {
+          setShowActionsMenu(null);
+        }
+      }
+      
+      // Close file actions menu if click is outside
+      if (showFileActionsMenu !== null) {
+        const fileActions = document.querySelectorAll('.file-actions');
+        let clickedInsideFileMenu = false;
+        fileActions.forEach(container => {
+          if (container.contains(event.target as Node)) {
+            clickedInsideFileMenu = true;
+          }
+        });
+        if (!clickedInsideFileMenu) {
           setShowFileActionsMenu(null);
         }
       }
@@ -390,7 +494,7 @@ export function DocumentRepositoryPage() {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, []);
+  }, [showActionsMenu, showFileActionsMenu]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -414,6 +518,7 @@ export function DocumentRepositoryPage() {
     setUploadedBy('');
     setFileTypes([]);
     setContentType('both');
+    setYearFilter('');
     setShowDetailsPanel(false);
     fetchData(true, folderId);
   };
@@ -896,7 +1001,7 @@ export function DocumentRepositoryPage() {
   const folders = items.filter(i => i.itemType === 'folder');
   const files = items.filter(i => i.itemType === 'file');
   
-  const hasActiveFilters = fileTypes.length > 0 || dateFrom || dateTo || sizeFilter || uploadedBy || contentType !== 'both';
+  const hasActiveFilters = fileTypes.length > 0 || dateFrom || dateTo || sizeFilter || uploadedBy || contentType !== 'both' || yearFilter;
   const hasSearch = search.trim() !== '';
 
   const getEmptyMessage = () => {
@@ -1131,11 +1236,25 @@ export function DocumentRepositoryPage() {
               </div>
 
               <div className="filter-group">
-                <label>Date Range</label>
-                <div className="date-range">
-                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
-                  <span>to</span>
-                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
+                <label>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
+                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Created Date
+                </label>
+                <div className="date-range-row">
+                  <div className="date-inputs">
+                    <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
+                    <span className="date-separator">to</span>
+                    <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
+                  </div>
+                  <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="year-select">
+                    <option value="">All Years</option>
+                    {availableYears.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -1168,6 +1287,7 @@ export function DocumentRepositoryPage() {
                 setSizeFilter('');
                 setUploadedBy('');
                 setContentType('both');
+                setYearFilter('');
               }}>Clear Filters</button>
               <button type="button" className="apply-filters-btn" onClick={() => fetchData()}>Apply Filters</button>
             </div>
@@ -1216,8 +1336,8 @@ export function DocumentRepositoryPage() {
                         </svg>
                       </div>
                       {(isSuperAdmin || isAdmin) && (
-                        <div className="folder-actions" ref={showActionsMenu === item.id ? undefined : actionsMenuRef} onClick={(e) => e.stopPropagation()}>
-                          <button type="button" className="actions-menu-btn" onClick={(e) => { e.stopPropagation(); setShowActionsMenu(showActionsMenu === item.id ? null : item.id); }}>
+                        <div className="folder-actions" ref={actionsMenuRef} onClick={(e) => e.stopPropagation()}>
+                          <button type="button" className="actions-menu-btn" onClick={(e) => { e.stopPropagation(); setShowFileActionsMenu(null); setShowActionsMenu(showActionsMenu === item.id ? null : item.id); }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <circle cx="12" cy="5" r="2" fill="currentColor"/>
                               <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -1256,8 +1376,8 @@ export function DocumentRepositoryPage() {
                         <FileIcon type={item.iconType || 'file'} />
                       </div>
                       {(isSuperAdmin || isAdmin) && (
-                        <div className="file-actions" ref={showFileActionsMenu === item.id ? undefined : fileActionsMenuRef}>
-                          <button type="button" className="actions-menu-btn" onClick={() => setShowFileActionsMenu(showFileActionsMenu === item.id ? null : item.id)}>
+                        <div className="file-actions" ref={fileActionsMenuRef}>
+                          <button type="button" className="actions-menu-btn" onClick={() => { setShowActionsMenu(null); setShowFileActionsMenu(showFileActionsMenu === item.id ? null : item.id); }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <circle cx="12" cy="5" r="2" fill="currentColor"/>
                               <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -1688,7 +1808,7 @@ export function DocumentRepositoryPage() {
             </div>
             <div className="modal-body preview-body">
               {(previewFile.iconType === 'pdf' || previewFile.iconType === 'image') ? (
-                <iframe src={`/api/compliance/files/${previewFile.id}?action=preview`} title={previewFile.originalFileName || ''} className="preview-iframe" />
+                <PreviewViewer fileId={previewFile.id} fileName={previewFile.originalFileName || ''} fileType={previewFile.iconType || 'file'} />
               ) : (
                 <div className="preview-unavailable">
                   <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
