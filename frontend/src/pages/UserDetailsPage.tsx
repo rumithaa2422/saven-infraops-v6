@@ -3,6 +3,35 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
+type InventoryAssignment = {
+  id: string;
+  inventoryId: string;
+  status: string;
+  assignedDate: string;
+  returnedDate?: string;
+  inventory: {
+    id: string;
+    itemNo: string;
+    itemName: string;
+    serialNumber?: string;
+    status: string;
+    category: { id: string; name: string };
+    subcategory: { id: string; name: string };
+  };
+  project?: {
+    id: string;
+    projectName: string;
+    projectCode: string;
+  };
+};
+
+type InventorySummary = {
+  totalAssigned: number;
+  available: number;
+  underRepair: number;
+  returned: number;
+};
+
 type User = {
   id: string;
   name: string;
@@ -33,6 +62,8 @@ type User = {
     managerName?: string;
     userProjectRole: string;
   } | null;
+  assignedInventory?: InventoryAssignment[];
+  inventorySummary?: InventorySummary;
 };
 
 export function UserDetailsPage() {
@@ -86,6 +117,32 @@ export function UserDetailsPage() {
     if (roleName === 'Admin') return 'role-admin';
     if (roleName === 'Manager') return 'role-manager';
     return 'role-employee';
+  }
+
+  function getInventoryStatusBadge(status: string): string {
+    const statusMap: Record<string, string> = {
+      'AVAILABLE': 'status-available',
+      'ASSIGNED': 'status-assigned',
+      'UNDER_REPAIR': 'status-repair',
+      'RETURNED': 'status-returned',
+      'RETIRED': 'status-retired',
+      'ACTIVE': 'status-assigned',
+      'TRANSFERRED': 'status-transferred'
+    };
+    return statusMap[status] || '';
+  }
+
+  function getInventoryStatusLabel(status: string): string {
+    const labelMap: Record<string, string> = {
+      'AVAILABLE': 'Available',
+      'ASSIGNED': 'Assigned',
+      'UNDER_REPAIR': 'Repair',
+      'RETURNED': 'Returned',
+      'RETIRED': 'Retired',
+      'ACTIVE': 'Active',
+      'TRANSFERRED': 'Transferred'
+    };
+    return labelMap[status] || status;
   }
 
   if (loading) {
@@ -351,6 +408,106 @@ export function UserDetailsPage() {
                     <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                   <p>No project assigned.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Assigned Inventory Card */}
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                  <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                  <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                  <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Assigned Inventory
+              </h3>
+            </div>
+            <div className="detail-card-body">
+              {user.assignedInventory && user.assignedInventory.length > 0 ? (
+                <>
+                  {/* Summary Stats */}
+                  {user.inventorySummary && (
+                    <div className="inventory-summary">
+                      <div className="inventory-summary-card">
+                        <span className="inventory-summary-value">{user.inventorySummary.totalAssigned}</span>
+                        <span className="inventory-summary-label">Assigned</span>
+                      </div>
+                      <div className="inventory-summary-card available">
+                        <span className="inventory-summary-value">{user.inventorySummary.available}</span>
+                        <span className="inventory-summary-label">Available</span>
+                      </div>
+                      <div className="inventory-summary-card repair">
+                        <span className="inventory-summary-value">{user.inventorySummary.underRepair}</span>
+                        <span className="inventory-summary-label">Repair</span>
+                      </div>
+                      <div className="inventory-summary-card returned">
+                        <span className="inventory-summary-value">{user.inventorySummary.returned}</span>
+                        <span className="inventory-summary-label">Returned</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Inventory Table */}
+                  <div className="inventory-table-container">
+                    <table className="inventory-table">
+                      <thead>
+                        <tr>
+                          <th>Inventory ID</th>
+                          <th>Category</th>
+                          <th>Sub Category</th>
+                          <th>Name</th>
+                          <th>Status</th>
+                          <th>Assigned Date</th>
+                          <th>Project</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {user.assignedInventory.slice(0, 10).map((assignment) => (
+                          <tr key={assignment.id}>
+                            <td className="item-no">{assignment.inventory.itemNo}</td>
+                            <td>{assignment.inventory.category?.name || '-'}</td>
+                            <td>{assignment.inventory.subcategory?.name || '-'}</td>
+                            <td className="item-name">{assignment.inventory.itemName}</td>
+                            <td>
+                              <span className={`status-badge ${getInventoryStatusBadge(assignment.status === 'ACTIVE' ? 'ASSIGNED' : assignment.inventory.status)}`}>
+                                {getInventoryStatusLabel(assignment.status === 'ACTIVE' ? 'ASSIGNED' : assignment.inventory.status)}
+                              </span>
+                            </td>
+                            <td>{formatDate(assignment.assignedDate)}</td>
+                            <td>{assignment.project?.projectName || '-'}</td>
+                            <td>
+                              <button 
+                                className="btn-open-inventory"
+                                onClick={() => navigate(`/inventory/${assignment.inventoryId}`)}
+                              >
+                                Open
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {user.assignedInventory.length > 10 && (
+                    <p className="inventory-table-note">
+                      Showing 10 of {user.assignedInventory.length} items
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="detail-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                    <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  <p>No inventory assigned.</p>
                 </div>
               )}
             </div>

@@ -446,7 +446,35 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
             };
           }
           
-          item = { ...userRecord, currentProject: projectInfo };
+          // Fetch assigned inventory for this user
+          const inventoryAssignments = await prisma.inventoryAssignment.findMany({
+            where: { userId: id },
+            include: {
+              inventory: {
+                include: {
+                  category: { select: { id: true, name: true } },
+                  subcategory: { select: { id: true, name: true } }
+                }
+              },
+              project: { select: { id: true, projectName: true, projectCode: true } }
+            },
+            orderBy: { assignedDate: 'desc' }
+          });
+          
+          // Calculate summary stats
+          const inventorySummary = {
+            totalAssigned: inventoryAssignments.filter(a => a.status === 'ACTIVE').length,
+            available: inventoryAssignments.filter(a => a.inventory.status === 'AVAILABLE').length,
+            underRepair: inventoryAssignments.filter(a => a.inventory.status === 'UNDER_REPAIR').length,
+            returned: inventoryAssignments.filter(a => a.status === 'RETURNED').length
+          };
+          
+          item = { 
+            ...userRecord, 
+            currentProject: projectInfo,
+            assignedInventory: inventoryAssignments,
+            inventorySummary
+          };
         } else {
           item = null;
         }

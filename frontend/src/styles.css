@@ -16087,3 +16087,187 @@ input:disabled {
   opacity: 0.8;
   text-decoration: underline;
 }
+
+/* ========================================
+   User Details - Assigned Inventory
+   ======================================== */
+
+/* Inventory Summary Cards */
+.inventory-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.inventory-summary-card {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.inventory-summary-card.available {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.inventory-summary-card.repair {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.inventory-summary-card.returned {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.inventory-summary-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.inventory-summary-card.available .inventory-summary-value {
+  color: #10b981;
+}
+
+.inventory-summary-card.repair .inventory-summary-value {
+  color: #f59e0b;
+}
+
+.inventory-summary-card.returned .inventory-summary-value {
+  color: #6366f1;
+}
+
+.inventory-summary-label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Inventory Table */
+.inventory-table-container {
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.inventory-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.inventory-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.inventory-table tbody tr:hover {
+  background: var(--bg);
+}
+
+.inventory-table .item-no {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.inventory-table .item-name {
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-table-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* Open Inventory Button */
+.btn-open-inventory {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-open-inventory:hover {
+  background: var(--brand);
+  color: white;
+}
+
+/* Inventory Status Badges */
+.status-available {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.status-assigned {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.status-repair {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.status-returned {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.status-retired {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .inventory-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .inventory-table th,
+  .inventory-table td {
+    padding: 8px;
+    font-size: 12px;
+  }
+}
