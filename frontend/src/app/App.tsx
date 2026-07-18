@@ -30,6 +30,7 @@ import { EditUserPage } from '../pages/EditUserPage';
 import { UsersImportExportPage } from '../pages/UsersImportExportPage';
 import { DocumentRepositoryPage } from '../pages/DocumentRepositoryPage';
 import { VendorDirectoryPage } from '../pages/VendorDirectoryPage';
+import { VendorDetailsPage } from '../pages/VendorDetailsPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -293,6 +294,14 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['vendors-licenses']}>
               <VendorDirectoryPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="vendors-licenses/:id" 
+          element={
+            <PermissionRoute permission={modulePermissions['vendors-licenses']}>
+              <VendorDetailsPage />
             </PermissionRoute>
           } 
         />

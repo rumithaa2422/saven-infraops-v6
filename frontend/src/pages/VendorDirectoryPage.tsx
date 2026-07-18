@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
@@ -63,6 +64,7 @@ const formatDate = (dateStr: string | undefined | null): string => {
 };
 
 export function VendorDirectoryPage() {
+  const navigate = useNavigate();
   const { user, hasPermission } = useAuth();
   const isAdmin = user?.roles.includes('Admin') || user?.roles.includes('Super Admin');
 
@@ -98,10 +100,6 @@ export function VendorDirectoryPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalVendors, setTotalVendors] = useState(0);
-
-  // Selection
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
 
   // Dialogs
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -226,10 +224,9 @@ export function VendorDirectoryPage() {
     loadVendors();
   };
 
-  // View details
+  // View details - navigate to full details page
   const handleViewDetails = (vendor: Vendor) => {
-    setSelectedVendor(vendor);
-    setShowDetails(true);
+    navigate(`/vendors-licenses/${vendor.id}`);
   };
 
   // Create vendor
@@ -256,10 +253,6 @@ export function VendorDirectoryPage() {
       loadVendors();
       loadSummary();
       loadMetadata();
-      if (selectedVendor?.id === editingVendor?.id) {
-        const res = await api.get(`/vendors/${editingVendor.id}`);
-        setSelectedVendor(res.data);
-      }
     } catch (err: any) {
       throw new Error(err.response?.data?.message || 'Failed to update vendor');
     }
@@ -273,7 +266,6 @@ export function VendorDirectoryPage() {
       setMessage('Vendor deleted successfully');
       setShowDeleteDialog(false);
       setEditingVendor(null);
-      setShowDetails(false);
       loadVendors();
       loadSummary();
     } catch (err: any) {
@@ -794,17 +786,6 @@ export function VendorDirectoryPage() {
           </div>
         </div>
       )}
-
-      {/* Vendor Details Panel */}
-      {showDetails && selectedVendor && (
-        <VendorDetailsPanel
-          vendor={selectedVendor}
-          onClose={() => { setShowDetails(false); setSelectedVendor(null); }}
-          onEdit={() => { setShowDetails(false); setEditingVendor(selectedVendor); setShowEditDialog(true); }}
-          onDelete={() => { setShowDetails(false); setEditingVendor(selectedVendor); setShowDeleteDialog(true); }}
-          isAdmin={isAdmin}
-        />
-      )}
     </div>
   );
 }
@@ -1005,156 +986,5 @@ function ImportFileUpload({ onImport, onClose }: ImportFileUploadProps) {
         </button>
       </div>
     </>
-  );
-}
-
-// ============================================================
-// Vendor Details Panel Component
-// ============================================================
-type VendorDetailsPanelProps = {
-  vendor: Vendor;
-  onClose: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  isAdmin: boolean;
-};
-
-function VendorDetailsPanel({ vendor, onClose, onEdit, onDelete, isAdmin }: VendorDetailsPanelProps) {
-  return (
-    <div className="details-panel-overlay" onClick={onClose}>
-      <div className="details-panel" onClick={e => e.stopPropagation()}>
-        <div className="details-header">
-          <div className="details-title">
-            <h2>{vendor.vendorName}</h2>
-            <span className={`status-badge ${vendor.status.toLowerCase()}`}>{vendor.status}</span>
-          </div>
-          <button type="button" className="close-btn" onClick={onClose}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          </button>
-        </div>
-
-        <div className="details-content">
-          {/* Overview Tab */}
-          <div className="details-section">
-            <h3>Basic Information</h3>
-            <div className="details-grid">
-              <div className="detail-item">
-                <label>Vendor Code</label>
-                <span>{vendor.vendorCode}</span>
-              </div>
-              <div className="detail-item">
-                <label>Category</label>
-                <span>{vendor.category}</span>
-              </div>
-              <div className="detail-item">
-                <label>Website</label>
-                <span>{vendor.website ? <a href={vendor.website} target="_blank" rel="noopener noreferrer">{vendor.website}</a> : '-'}</span>
-              </div>
-              <div className="detail-item">
-                <label>Country</label>
-                <span>{vendor.country || '-'}</span>
-              </div>
-              <div className="detail-item">
-                <label>GST Number</label>
-                <span>{vendor.gstNumber || '-'}</span>
-              </div>
-              <div className="detail-item">
-                <label>Registration Number</label>
-                <span>{vendor.registrationNumber || '-'}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="details-section">
-            <h3>Contact Information</h3>
-            <div className="details-grid">
-              <div className="detail-item">
-                <label>Primary Contact</label>
-                <span>{vendor.primaryContactName}</span>
-              </div>
-              <div className="detail-item">
-                <label>Designation</label>
-                <span>{vendor.designation || '-'}</span>
-              </div>
-              <div className="detail-item">
-                <label>Email</label>
-                <span><a href={`mailto:${vendor.email}`}>{vendor.email}</a></span>
-              </div>
-              <div className="detail-item">
-                <label>Phone</label>
-                <span><a href={`tel:${vendor.phone}`}>{vendor.phone}</a></span>
-              </div>
-              <div className="detail-item full-width">
-                <label>Address</label>
-                <span>{vendor.address || '-'}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="details-section">
-            <h3>Contract Information</h3>
-            <div className="details-grid">
-              <div className="detail-item">
-                <label>Contract Start Date</label>
-                <span>{vendor.contractStartDate ? formatDate(vendor.contractStartDate) : '-'}</span>
-              </div>
-              <div className="detail-item">
-                <label>Contract Expiry Date</label>
-                <span>{vendor.contractExpiryDate ? formatDate(vendor.contractExpiryDate) : '-'}</span>
-              </div>
-              <div className="detail-item">
-                <label>Renewal Date</label>
-                <span>{vendor.renewalDate ? formatDate(vendor.renewalDate) : '-'}</span>
-              </div>
-              <div className="detail-item">
-                <label>Payment Terms</label>
-                <span>{vendor.paymentTerms || '-'}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="details-section">
-            <h3>Remarks</h3>
-            <p>{vendor.remarks || 'No remarks'}</p>
-          </div>
-
-          <div className="details-section">
-            <h3>Quick Statistics</h3>
-            <div className="quick-stats">
-              <div className="quick-stat">
-                <span className="stat-value">-</span>
-                <span className="stat-label">Total Assets</span>
-              </div>
-              <div className="quick-stat">
-                <span className="stat-value">-</span>
-                <span className="stat-label">Active Licenses</span>
-              </div>
-              <div className="quick-stat">
-                <span className="stat-value">-</span>
-                <span className="stat-label">Total Projects</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="details-section meta">
-            <span>Created: {formatDate(vendor.createdAt)}</span>
-            <span>Updated: {formatDate(vendor.updatedAt)}</span>
-          </div>
-        </div>
-
-        {isAdmin && (
-          <div className="details-actions">
-            <button type="button" className="secondary" onClick={onEdit}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2"/><path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2"/></svg>
-              Edit
-            </button>
-            <button type="button" className="danger" onClick={onDelete}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/></svg>
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
   );
 }

@@ -708,3 +708,218 @@ vendorRouter.get('/export', requireAuth, async (req: Request, res: Response, nex
     next(error);
   }
 });
+
+// ============================================================
+// GET /api/vendors/:id/details
+// Get vendor with full details including related data
+// ============================================================
+vendorRouter.get('/:id/details', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const vendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!vendor) {
+      throw new HttpError(404, 'Vendor not found');
+    }
+
+    // Get associated assets count
+    const assetCount = await prisma.asset.count({
+      where: { vendorId: id }
+    });
+
+    // Get licenses for this vendor
+    const licenses = await prisma.vendorLicense.findMany({
+      where: { vendorName: vendor.vendorName },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Get linked documents count from compliance
+    const documentsCount = await prisma.complianceDocument.count({
+      where: { 
+        folder: {
+          path: { contains: vendor.vendorName }
+        }
+      }
+    }).catch(() => 0);
+
+    // Get audit log for this vendor
+    const auditLogs = await prisma.auditLog.findMany({
+      where: { 
+        entityType: 'Vendor',
+        entityId: id
+      },
+      orderBy: { performedAt: 'desc' },
+      take: 20
+    });
+
+    // Calculate contract status
+    let contractStatus = 'no_contract';
+    if (vendor.contractExpiryDate) {
+      const now = new Date();
+      const expiry = new Date(vendor.contractExpiryDate);
+      const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      
+      if (expiry < now) {
+        contractStatus = 'expired';
+      } else if (expiry <= thirtyDays) {
+        contractStatus = 'expiring';
+      } else {
+        contractStatus = 'active';
+      }
+    }
+
+    res.json({
+      ...vendor,
+      assetCount,
+      licenseCount: licenses.length,
+      documentsCount,
+      licenses,
+      contractStatus,
+      auditLogs: auditLogs.map(log => ({
+        ...log,
+        performedAt: log.performedAt.toISOString()
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/vendors/:id/linked-projects
+// Get projects linked to this vendor
+// ============================================================
+vendorRouter.get('/:id/linked-projects', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const vendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!vendor) {
+      throw new HttpError(404, 'Vendor not found');
+    }
+
+    // Get projects that have inventory from this vendor
+    const linkedProjects = await prisma.project.findMany({
+      where: {
+        environments: {
+          some: {
+            assets: {
+              some: {
+                vendorId: id
+              }
+            }
+          }
+        }
+      },
+      select: {
+        id: true,
+        projectName: true,
+        projectCode: true,
+        status: true,
+        startDate: true,
+        ownerName: true
+      },
+      take: 10
+    });
+
+    res.json({ projects: linkedProjects });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/vendors/:id/inventory
+// Get inventory purchased from this vendor
+// ============================================================
+vendorRouter.get('/:id/inventory', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const vendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!vendor) {
+      throw new HttpError(404, 'Vendor not found');
+    }
+
+    // Get inventory items from this vendor
+    const inventory = await prisma.inventoryMaster.findMany({
+      where: { vendorId: id },
+      select: {
+        id: true,
+        itemNo: true,
+        itemName: true,
+        serialNumber: true,
+        status: true,
+        warrantyExpiry: true,
+        purchaseDate: true,
+        assignedDate: true
+      },
+      take: 20
+    });
+
+    res.json({ inventory });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/vendors/:id/documents
+// Get documents linked to this vendor
+// ============================================================
+vendorRouter.get('/:id/documents', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const vendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!vendor) {
+      throw new HttpError(404, 'Vendor not found');
+    }
+
+    // Get compliance documents that might be related to this vendor
+    // Search in fileName or originalFileName for vendor name
+    const documents = await prisma.complianceDocument.findMany({
+      where: {
+        OR: [
+          { originalFileName: { contains: vendor.vendorName } },
+          { fileName: { contains: vendor.vendorName } },
+          { description: { contains: vendor.vendorName } }
+        ]
+      },
+      select: {
+        id: true,
+        fileName: true,
+        originalFileName: true,
+        fileSize: true,
+        mimeType: true,
+        fileExtension: true,
+        category: true,
+        uploadedAt: true,
+        uploadedByEmail: true
+      },
+      take: 20,
+      orderBy: { uploadedAt: 'desc' }
+    });
+
+    res.json({ documents });
+  } catch (error) {
+    // If compliance module tables don't exist, return empty
+    res.json({ documents: [] });
+  }
+});
