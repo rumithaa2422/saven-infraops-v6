@@ -7,6 +7,7 @@ type User = {
   id: string;
   name: string;
   email: string;
+  employeeId?: string;
   department: string | null;
   roles: { role: { name: string; id: string } }[];
 };
@@ -39,24 +40,20 @@ export function CreateUserPage() {
     employeeId: '',
     email: '',
     phoneNumber: '',
-    password: '',
-    confirmPassword: '',
     department: '',
     designation: '',
     roleId: '',
     managerId: '',
     employmentType: '',
-    dateJoined: '',
-    status: 'ACTIVE',
-    address: '',
-    remarks: ''
+    dateJoined: ''
   });
 
   const fetchRoles = useCallback(async () => {
     try {
       setRolesLoading(true);
       const response = await api.get('/generic/roles');
-      setRoles(response.data.items || response.data || []);
+      const roleData = response.data.items || response.data || [];
+      setRoles(roleData);
     } catch (err) {
       console.error('Failed to fetch roles:', err);
     } finally {
@@ -69,9 +66,7 @@ export function CreateUserPage() {
       setManagersLoading(true);
       const response = await api.get('/users-teams');
       const users = response.data.items || response.data || [];
-      // Filter out inactive users and potential circular reporting
-      const activeManagers = users.filter((u: User) => u.roles?.some(r => ['Super Admin', 'Admin', 'Manager'].includes(r.role?.name)));
-      setManagers(activeManagers);
+      setManagers(users);
     } catch (err) {
       console.error('Failed to fetch managers:', err);
     } finally {
@@ -89,7 +84,8 @@ export function CreateUserPage() {
     return (
       u.name.toLowerCase().includes(search) ||
       u.email.toLowerCase().includes(search) ||
-      (u.department?.toLowerCase().includes(search) ?? false)
+      (u.department?.toLowerCase().includes(search) ?? false) ||
+      (u.employeeId?.toLowerCase().includes(search) ?? false)
     );
   });
 
@@ -114,14 +110,6 @@ export function CreateUserPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
     if (!formData.department) {
       newErrors.department = 'Department is required';
     }
@@ -145,7 +133,7 @@ export function CreateUserPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -178,16 +166,12 @@ export function CreateUserPage() {
         employeeId: formData.employeeId,
         email: formData.email,
         phoneNumber: formData.phoneNumber || undefined,
-        password: formData.password,
         department: formData.department,
         designation: formData.designation,
         roleId: formData.roleId,
         managerId: formData.managerId || undefined,
         employmentType: formData.employmentType,
-        dateJoined: formData.dateJoined,
-        status: formData.status,
-        address: formData.address || undefined,
-        remarks: formData.remarks || undefined
+        dateJoined: formData.dateJoined
       };
 
       await api.post('/auth/register', payload);
@@ -309,30 +293,6 @@ export function CreateUserPage() {
                 />
                 {errors.phoneNumber && <span className="error-message">{errors.phoneNumber}</span>}
               </div>
-              <div className="form-group">
-                <label>Password <span className="required">*</span></label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Min 8 characters"
-                  className={errors.password ? 'error' : ''}
-                />
-                {errors.password && <span className="error-message">{errors.password}</span>}
-              </div>
-              <div className="form-group">
-                <label>Confirm Password <span className="required">*</span></label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Re-enter password"
-                  className={errors.confirmPassword ? 'error' : ''}
-                />
-                {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
-              </div>
             </div>
           </div>
         </div>
@@ -387,53 +347,15 @@ export function CreateUserPage() {
                   className={errors.roleId ? 'error' : ''}
                 >
                   <option value="">Select Role</option>
-                  {roles.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
+                  {rolesLoading ? (
+                    <option value="" disabled>Loading roles...</option>
+                  ) : (
+                    roles.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))
+                  )}
                 </select>
                 {errors.roleId && <span className="error-message">{errors.roleId}</span>}
-              </div>
-              <div className="form-group">
-                <label>Reporting Manager</label>
-                <div className="searchable-dropdown">
-                  <input
-                    type="text"
-                    value={getSelectedManager() ? getSelectedManager()!.name : managerSearch}
-                    onChange={(e) => {
-                      setManagerSearch(e.target.value);
-                      setShowManagerDropdown(true);
-                      if (formData.managerId) {
-                        setFormData(prev => ({ ...prev, managerId: '' }));
-                      }
-                    }}
-                    onFocus={() => setShowManagerDropdown(true)}
-                    placeholder="Search for a manager..."
-                    disabled={managersLoading}
-                  />
-                  {showManagerDropdown && (
-                    <div className="dropdown-menu">
-                      {managersLoading ? (
-                        <div className="dropdown-loading">Loading...</div>
-                      ) : filteredManagers.length === 0 ? (
-                        <div className="dropdown-empty">No managers found</div>
-                      ) : (
-                        filteredManagers.map(m => (
-                          <div
-                            key={m.id}
-                            className={`dropdown-item ${formData.managerId === m.id ? 'selected' : ''}`}
-                            onClick={() => handleManagerSelect(m)}
-                          >
-                            <div className="dropdown-item-avatar">{m.name.charAt(0)}</div>
-                            <div className="dropdown-item-info">
-                              <span className="dropdown-item-name">{m.name}</span>
-                              <span className="dropdown-item-meta">{m.department} • {m.email}</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
               <div className="form-group">
                 <label>Employment Type <span className="required">*</span></label>
@@ -461,70 +383,49 @@ export function CreateUserPage() {
                 />
                 {errors.dateJoined && <span className="error-message">{errors.dateJoined}</span>}
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Status */}
-        <div className="form-card">
-          <div className="form-card-header">
-            <h2>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              Status
-            </h2>
-          </div>
-          <div className="form-card-body">
-            <div className="form-grid">
               <div className="form-group">
-                <label>Status</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 4: Additional Information */}
-        <div className="form-card">
-          <div className="form-card-header">
-            <h2>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Additional Information
-            </h2>
-          </div>
-          <div className="form-card-body">
-            <div className="form-grid">
-              <div className="form-group full-width">
-                <label>Address</label>
-                <textarea
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter address (optional)"
-                  rows={3}
-                />
-              </div>
-              <div className="form-group full-width">
-                <label>Remarks</label>
-                <textarea
-                  name="remarks"
-                  value={formData.remarks}
-                  onChange={handleChange}
-                  placeholder="Additional notes (optional)"
-                  rows={3}
-                />
+                <label>Reporting Manager</label>
+                <div className="searchable-dropdown">
+                  <input
+                    type="text"
+                    value={getSelectedManager() ? `${getSelectedManager()!.name} (${getSelectedManager()!.employeeId || 'No ID'})` : managerSearch}
+                    onChange={(e) => {
+                      setManagerSearch(e.target.value);
+                      setShowManagerDropdown(true);
+                      if (formData.managerId) {
+                        setFormData(prev => ({ ...prev, managerId: '' }));
+                      }
+                    }}
+                    onFocus={() => setShowManagerDropdown(true)}
+                    placeholder="Search for a manager..."
+                    disabled={managersLoading}
+                  />
+                  {showManagerDropdown && (
+                    <div className="dropdown-menu">
+                      {managersLoading ? (
+                        <div className="dropdown-loading">Loading users...</div>
+                      ) : filteredManagers.length === 0 ? (
+                        <div className="dropdown-empty">No users found</div>
+                      ) : (
+                        filteredManagers.slice(0, 20).map(m => (
+                          <div
+                            key={m.id}
+                            className={`dropdown-item ${formData.managerId === m.id ? 'selected' : ''}`}
+                            onClick={() => handleManagerSelect(m)}
+                          >
+                            <div className="dropdown-item-avatar">{m.name.charAt(0).toUpperCase()}</div>
+                            <div className="dropdown-item-info">
+                              <span className="dropdown-item-name">{m.name}</span>
+                              <span className="dropdown-item-meta">
+                                {m.employeeId || 'No ID'} • {m.department || 'No Department'}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
