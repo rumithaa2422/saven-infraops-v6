@@ -622,251 +622,355 @@ export function DocumentRepositoryPage() {
   const hasSearch = search.trim() !== '';
 
   return (
-    <div className="doc-repository">
-      <div className="doc-repository-header">
-        <div className="header-left">
-          <h2>Document Repository</h2>
-          {currentFolderId && breadcrumbs.length > 0 && (
-            <div className="breadcrumbs">
-              <button type="button" className={`breadcrumb-link ${breadcrumbs.length === 0 ? 'active' : ''}`} onClick={() => handleNavigateToFolder(null)}>
-                Root
+    <div className="doc-repo-page">
+      <div className="page-container">
+        {/* Breadcrumbs */}
+        {currentFolderId && breadcrumbs.length > 0 && (
+          <div className="doc-repo-breadcrumbs">
+            <div className="breadcrumb-item">
+              <button type="button" className="breadcrumb-link" onClick={() => handleNavigateToFolder(null)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px' }}>
+                  <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Compliance
               </button>
-              {breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={crumb.id || index}>
-                  <span className="breadcrumb-separator">/</span>
+            </div>
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.id || index}>
+                <span className="breadcrumb-separator">›</span>
+                <div className="breadcrumb-item">
                   <button type="button" className={`breadcrumb-link ${index === breadcrumbs.length - 1 ? 'active' : ''}`} onClick={() => handleNavigateToFolder(crumb.id)}>
                     {crumb.name}
                   </button>
-                </React.Fragment>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+
+        {/* Summary Cards */}
+        <div className="doc-repo-summary-cards">
+          <div className="doc-repo-summary-card">
+            <div className="doc-repo-summary-icon folders">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
+            <div className="doc-repo-summary-content">
+              <span className="doc-repo-summary-label">Total Folders</span>
+              <span className="doc-repo-summary-value">{summary.totalFolders ?? 0}</span>
+            </div>
+          </div>
+
+          <div className="doc-repo-summary-card">
+            <div className="doc-repo-summary-icon files">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
+            <div className="doc-repo-summary-content">
+              <span className="doc-repo-summary-label">Total Files</span>
+              <span className="doc-repo-summary-value">{summary.totalFiles ?? 0}</span>
+            </div>
+          </div>
+
+          <div className="doc-repo-summary-card">
+            <div className="doc-repo-summary-icon storage">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/>
+                <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 15V3" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
+            <div className="doc-repo-summary-content">
+              <span className="doc-repo-summary-label">Storage Used</span>
+              <span className="doc-repo-summary-value">{formatBytes(summary.storageUsed)}</span>
+            </div>
+          </div>
+
+          <div className="doc-repo-summary-card">
+            <div className="doc-repo-summary-icon recent">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
+            <div className="doc-repo-summary-content">
+              <span className="doc-repo-summary-label">Last Updated</span>
+              <span className="doc-repo-summary-value">{summary.recentActivityCount ? 'Active' : '-'}</span>
+            </div>
+          </div>
+        </div>
+
+        {(error || message) && (
+          <div className={`alert ${error ? 'alert-error' : 'alert-success'}`}>
+            {error || message}
+            <button onClick={() => { setError(''); setMessage(''); }}>×</button>
+          </div>
+        )}
+
+        {/* Toolbar */}
+        <div className="toolbar">
+          <form onSubmit={handleSearch} className="search-form">
+            <div className="search-input-wrapper">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              <input type="text" placeholder="Search folders and files..." value={search} onChange={(e) => setSearch(e.target.value)} className="search-input" />
+            </div>
+            <button type="submit" className="toolbar-btn primary">Search</button>
+          </form>
+
+          <div className="toolbar-actions">
+            <button type="button" className={`toolbar-btn ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 4H21V6H3V4ZM7 11H17V13H7V11ZM10 18H14V20H10V18Z" stroke="currentColor" strokeWidth="2"/></svg>
+              Filters
+              {hasActiveFilters && <span className="filter-badge"></span>}
+            </button>
+
+            <div className="sort-dropdown">
+              <button type="button" className="toolbar-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                Sort
+              </button>
+              <div className="sort-dropdown-content">
+                <button className={sortBy === 'name_asc' ? 'active' : ''} onClick={() => handleSort('name_asc')}>Name A-Z</button>
+                <button className={sortBy === 'name_desc' ? 'active' : ''} onClick={() => handleSort('name_desc')}>Name Z-A</button>
+                <button className={sortBy === 'newest' ? 'active' : ''} onClick={() => handleSort('newest')}>Newest</button>
+                <button className={sortBy === 'oldest' ? 'active' : ''} onClick={() => handleSort('oldest')}>Oldest</button>
+                <button className={sortBy === 'recent' ? 'active' : ''} onClick={() => handleSort('recent')}>Recently Modified</button>
+                <button className={sortBy === 'largest' ? 'active' : ''} onClick={() => handleSort('largest')}>Largest File</button>
+                <button className={sortBy === 'smallest' ? 'active' : ''} onClick={() => handleSort('smallest')}>Smallest File</button>
+                <button className={sortBy === 'folders_first' ? 'active' : ''} onClick={() => handleSort('folders_first')}>Folders First</button>
+              </div>
+            </div>
+
+            <button type="button" className={`toolbar-btn ${refreshing ? 'refreshing' : ''}`} onClick={handleRefresh} disabled={refreshing}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={refreshing ? 'spin' : ''}><path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Refresh
+            </button>
+
+            {(isSuperAdmin || isAdmin) && selectedItems.size > 0 && (
+              <>
+                <button type="button" className="toolbar-btn" onClick={handleExportSelected} disabled={exporting}>
+                  Export Selected
+                </button>
+                <button type="button" className="toolbar-btn danger" onClick={handleDeleteSelected}>
+                  Delete ({selectedItems.size})
+                </button>
+              </>
+            )}
+
+            {(isSuperAdmin || isAdmin) && (
+              <>
+                <button type="button" className="toolbar-btn" onClick={handleExport} disabled={exporting}>
+                  {exporting ? 'Exporting...' : 'Export'}
+                </button>
+                <button type="button" className="toolbar-btn" onClick={() => setShowUploadDialog(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>
+                  Upload
+                </button>
+                <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  New Folder
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="filters-panel">
+            <div className="filters-header">
+              <h4>Filters</h4>
+            </div>
+            <div className="filters-content">
+              <div className="filter-row">
+                <div className="filter-group">
+                  <label>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+                      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Created Date
+                  </label>
+                  <div className="date-range-inputs">
+                    <div className="date-input-wrapper">
+                      <span className="date-label">From</span>
+                      <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                    </div>
+                    <span className="date-separator">—</span>
+                    <div className="date-input-wrapper">
+                      <span className="date-label">To</span>
+                      <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="filter-group">
+                  <label>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+                      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Year
+                  </label>
+                  <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="year-select">
+                    <option value="">All Years</option>
+                    {availableYears.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="filter-actions">
+              <button type="button" className="clear-filters-btn" onClick={() => {
+                setDateFrom('');
+                setDateTo('');
+                setYearFilter('');
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Clear Filters
+              </button>
+              <button type="button" className="apply-filters-btn" onClick={() => fetchData()}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Apply
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Content Section */}
+        <div className="doc-repo-grid-section">
+          <div className="section-header">
+            <label className="select-all-checkbox">
+              <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
+              <span>Select All ({totalItems})</span>
+            </label>
+            <span className="section-count">{folders.length} folders · {files.length} files</span>
+          </div>
+
+          {loading ? (
+            <div className="table-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading...</p>
+            </div>
+          ) : totalItems === 0 ? (
+            <div className="doc-repo-empty">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/></svg>
+              <p>{hasSearch || hasActiveFilters ? 'No items match your search' : 'No items in this folder'}</p>
+              <span>Upload files or create folders to get started</span>
+              {isSuperAdmin && !hasSearch && !hasActiveFilters && (
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                  <button type="button" className="secondary" onClick={() => setShowUploadDialog(true)}>Upload Files</button>
+                  <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>Create Folder</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="doc-repo-grid">
+              {items.map((item) => (
+                item.itemType === 'folder' ? (
+                  <div key={item.id} className={`doc-repo-folder-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
+                    <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
+                      <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
+                    </div>
+                    <div className="folder-card-header" onClick={() => handleNavigateToFolder(item.id)}>
+                      <div className="folder-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/></svg>
+                      </div>
+                      {(isSuperAdmin || isAdmin) && (
+                        <div className="folder-actions" ref={actionsMenuRef} onClick={(e) => e.stopPropagation()}>
+                          <button type="button" className="actions-menu-btn" onClick={() => { setShowFileActionsMenu(null); setShowActionsMenu(showActionsMenu === item.id ? null : item.id); }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>
+                          </button>
+                          {showActionsMenu === item.id && (
+                            <div className="actions-dropdown">
+                              <button onClick={() => openRenameDialog(item)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2"/><path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2"/></svg>
+                                Rename
+                              </button>
+                              <button onClick={() => handleDeleteFolder(item.id)} className="delete">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/></svg>
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="folder-card-body" onClick={() => handleNavigateToFolder(item.id)}>
+                      <h4 className="folder-name">{item.name}</h4>
+                      {item.description && <p className="folder-description">{item.description}</p>}
+                      <div className="folder-stats">
+                        <span>{item.subfolderCount || 0} folders</span>
+                        <span>{item.fileCount || 0} files</span>
+                      </div>
+                    </div>
+                    <div className="folder-card-footer">
+                      <span className="folder-date">Created {formatDate(item.createdAt)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={item.id} className={`doc-repo-file-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
+                    <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
+                      <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
+                    </div>
+                    <div className="file-card-header">
+                      <div className="file-icon" onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>
+                        {getFileIcon(item.iconType || 'file')}
+                      </div>
+                      {(isSuperAdmin || isAdmin) && (
+                        <div className="file-actions" ref={fileActionsMenuRef}>
+                          <button type="button" className="actions-menu-btn" onClick={() => { setShowActionsMenu(null); setShowFileActionsMenu(showFileActionsMenu === item.id ? null : item.id); }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>
+                          </button>
+                          {showFileActionsMenu === item.id && (
+                            <div className="actions-dropdown">
+                              <button onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2"/><path d="M12 15V3" stroke="currentColor" strokeWidth="2"/></svg>
+                                Download
+                              </button>
+                              <button onClick={() => openRenameFileDialog(item)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2"/><path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2"/></svg>
+                                Rename
+                              </button>
+                              <button onClick={() => handleOpenMoveDialog(item)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 3L19 12L5 21V3Z" stroke="currentColor" strokeWidth="2"/></svg>
+                                Move
+                              </button>
+                              <button onClick={() => handleDeleteFile(item.id)} className="delete">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/></svg>
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="file-card-body" onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>
+                      <h4 className="file-name">{item.originalFileName}</h4>
+                      <div className="file-stats">
+                        <span className="file-type">{item.fileExtension?.toUpperCase()}</span>
+                        <span>{formatBytes(item.fileSize || 0)}</span>
+                      </div>
+                    </div>
+                    <div className="file-card-footer">
+                      <span className="file-uploader">{item.uploadedByEmail || 'Unknown'}</span>
+                      <span className="file-version">v{item.version || 1}</span>
+                    </div>
+                  </div>
+                )
               ))}
             </div>
           )}
         </div>
-      </div>
-
-      {/* Summary Cards */}
-      <section className="grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-        <StatCard label="Total Folders" value={summary.totalFolders ?? 0} hint="Repository folders" />
-        <StatCard label="Total Files" value={summary.totalFiles ?? 0} hint="Uploaded documents" />
-        <StatCard label="Storage Used" value={formatBytes(summary.storageUsed)} hint="Disk space" />
-        <StatCard label="Last Updated" value={summary.recentActivityCount ? 'Active' : '-'} hint="Recent activity" />
-      </section>
-
-      {(error || message) && (
-        <div className={`alert ${error ? 'alert-error' : 'alert-success'}`}>
-          {error || message}
-          <button onClick={() => { setError(''); setMessage(''); }}>×</button>
-        </div>
-      )}
-
-      <div className="toolbar">
-        <form onSubmit={handleSearch} className="search-form">
-          <div className="search-input-wrapper">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-            <input type="text" placeholder="Search folders and files..." value={search} onChange={(e) => setSearch(e.target.value)} className="search-input" />
-          </div>
-          <button type="submit" className="toolbar-btn primary">Search</button>
-        </form>
-
-        <div className="toolbar-actions">
-          <button type="button" className={`toolbar-btn ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 4H21V6H3V4ZM7 11H17V13H7V11ZM10 18H14V20H10V18Z" stroke="currentColor" strokeWidth="2"/></svg>
-            Filters
-            {hasActiveFilters && <span className="filter-badge"></span>}
-          </button>
-
-          <div className="sort-dropdown">
-            <button type="button" className="toolbar-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              Sort
-            </button>
-            <div className="sort-dropdown-content">
-              <button className={sortBy === 'name_asc' ? 'active' : ''} onClick={() => handleSort('name_asc')}>Name A-Z</button>
-              <button className={sortBy === 'name_desc' ? 'active' : ''} onClick={() => handleSort('name_desc')}>Name Z-A</button>
-              <button className={sortBy === 'newest' ? 'active' : ''} onClick={() => handleSort('newest')}>Newest</button>
-              <button className={sortBy === 'oldest' ? 'active' : ''} onClick={() => handleSort('oldest')}>Oldest</button>
-              <button className={sortBy === 'recent' ? 'active' : ''} onClick={() => handleSort('recent')}>Recently Modified</button>
-              <button className={sortBy === 'largest' ? 'active' : ''} onClick={() => handleSort('largest')}>Largest File</button>
-              <button className={sortBy === 'smallest' ? 'active' : ''} onClick={() => handleSort('smallest')}>Smallest File</button>
-              <button className={sortBy === 'folders_first' ? 'active' : ''} onClick={() => handleSort('folders_first')}>Folders First</button>
-            </div>
-          </div>
-
-          <button type="button" className={`toolbar-btn ${refreshing ? 'refreshing' : ''}`} onClick={handleRefresh} disabled={refreshing}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={refreshing ? 'spin' : ''}><path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Refresh
-          </button>
-
-          {(isSuperAdmin || isAdmin) && selectedItems.size > 0 && (
-            <>
-              <button type="button" className="toolbar-btn" onClick={handleExportSelected} disabled={exporting}>
-                Export Selected
-              </button>
-              <button type="button" className="toolbar-btn danger" onClick={handleDeleteSelected}>
-                Delete Selected ({selectedItems.size})
-              </button>
-            </>
-          )}
-
-          {(isSuperAdmin || isAdmin) && (
-            <>
-              <button type="button" className="toolbar-btn" onClick={handleExport} disabled={exporting}>
-                {exporting ? 'Exporting...' : 'Export All'}
-              </button>
-              <button type="button" className="toolbar-btn" onClick={() => setShowUploadDialog(true)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>
-                Upload
-              </button>
-              <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                New Folder
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {showFilters && (
-        <div className="filters-panel">
-          <div className="filters-grid">
-            <div className="filter-group">
-              <label>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
-                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Created Date
-              </label>
-              <div className="date-range-row">
-                <div className="date-inputs">
-                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
-                  <span className="date-separator">to</span>
-                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
-                </div>
-                <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="year-select">
-                  <option value="">All Years</option>
-                  {availableYears.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="filter-actions">
-            <button type="button" className="clear-filters-btn" onClick={() => {
-              setDateFrom('');
-              setDateTo('');
-              setYearFilter('');
-            }}>Clear Filters</button>
-            <button type="button" className="apply-filters-btn" onClick={() => fetchData()}>Apply Filters</button>
-          </div>
-        </div>
-      )}
-
-      <div className="doc-repo-grid-section">
-        <div className="section-header">
-          <label className="select-all-checkbox">
-            <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
-            <span>Select All ({totalItems})</span>
-          </label>
-          <span className="section-count">{folders.length} folders, {files.length} files</span>
-        </div>
-
-        {loading ? (
-          <div className="table-loading">
-            <div className="loading-spinner"></div>
-            <p>Loading...</p>
-          </div>
-        ) : totalItems === 0 ? (
-          <div className="doc-repo-empty">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/></svg>
-            <p>{hasSearch || hasActiveFilters ? 'No items match your search' : 'No items in this folder'}</p>
-            {isSuperAdmin && !hasSearch && !hasActiveFilters && (
-              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                <button type="button" className="secondary" onClick={() => setShowUploadDialog(true)}>Upload Files</button>
-                <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>Create Folder</button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="doc-repo-grid">
-            {items.map((item) => (
-              item.itemType === 'folder' ? (
-                <div key={item.id} className={`doc-repo-folder-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
-                  <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
-                    <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
-                  </div>
-                  <div className="folder-card-header" onClick={() => handleNavigateToFolder(item.id)}>
-                    <div className="folder-icon">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="#5468ff" strokeWidth="2"/></svg>
-                    </div>
-                    {(isSuperAdmin || isAdmin) && (
-                      <div className="folder-actions" ref={actionsMenuRef} onClick={(e) => e.stopPropagation()}>
-                        <button type="button" className="actions-menu-btn" onClick={() => { setShowFileActionsMenu(null); setShowActionsMenu(showActionsMenu === item.id ? null : item.id); }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>
-                        </button>
-                        {showActionsMenu === item.id && (
-                          <div className="actions-dropdown">
-                            <button onClick={() => openRenameDialog(item)}>Rename</button>
-                            <button onClick={() => handleDeleteFolder(item.id)} className="delete">Delete</button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="folder-card-body" onClick={() => handleNavigateToFolder(item.id)}>
-                    <h4 className="folder-name">{item.name}</h4>
-                    {item.description && <p className="folder-description">{item.description}</p>}
-                    <div className="folder-stats">
-                      <span>{item.subfolderCount || 0} folders</span>
-                      <span>{item.fileCount || 0} files</span>
-                    </div>
-                  </div>
-                  <div className="folder-card-footer">
-                    <span className="folder-date">Created {formatDate(item.createdAt)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div key={item.id} className={`doc-repo-file-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
-                  <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
-                    <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
-                  </div>
-                  <div className="file-card-header">
-                    <div className="file-icon" onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>
-                      {getFileIcon(item.iconType || 'file')}
-                    </div>
-                    {(isSuperAdmin || isAdmin) && (
-                      <div className="file-actions" ref={fileActionsMenuRef}>
-                        <button type="button" className="actions-menu-btn" onClick={() => { setShowActionsMenu(null); setShowFileActionsMenu(showFileActionsMenu === item.id ? null : item.id); }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>
-                        </button>
-                        {showFileActionsMenu === item.id && (
-                          <div className="actions-dropdown">
-                            <button onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>Download</button>
-                            <button onClick={() => openRenameFileDialog(item)}>Rename</button>
-                            <button onClick={() => handleOpenMoveDialog(item)}>Move</button>
-                            <button onClick={() => handleDeleteFile(item.id)} className="delete">Delete</button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="file-card-body" onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>
-                    <h4 className="file-name">{item.originalFileName}</h4>
-                    <div className="file-stats">
-                      <span>{item.fileExtension?.toUpperCase()}</span>
-                      <span>{formatBytes(item.fileSize || 0)}</span>
-                    </div>
-                  </div>
-                  <div className="file-card-footer">
-                    <span className="file-date">{item.uploadedByEmail || 'Unknown'}</span>
-                    <span className="file-date">v{item.version || 1}</span>
-                  </div>
-                </div>
-              )
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Create Folder Dialog */}
