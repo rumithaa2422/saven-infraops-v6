@@ -14876,6 +14876,56 @@ input:disabled {
   background: var(--panel);
 }
 
+/* ==================== USER DETAILS PAGE ==================== */
+
+/* Detail Avatar */
+.detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.detail-title-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-meta-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Detail Placeholder */
+.detail-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.detail-placeholder svg {
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.detail-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
 /* ==================== USERS DASHBOARD ==================== */
 
 /* User Summary Cards */
