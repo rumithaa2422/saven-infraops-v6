@@ -3,11 +3,12 @@
 ## 1. Files Modified
 
 ### Backend
-- **backend/src/modules/vendor/vendor.routes.ts** - Complete rewrite (removed 1198 lines → ~600 lines)
+- **backend/src/modules/vendor/vendor.routes.ts** - Complete rewrite (removed 1198 lines → ~580 lines)
 - **backend/prisma/schema.prisma** - Cleaned up relations
 
 ### Frontend
 - **frontend/src/pages/VendorDetailsPage.tsx** - Complete rewrite to remove Project/License/Compliance sections
+- **frontend/src/pages/VendorDirectoryPage.tsx** - Removed Import/Export functionality
 
 ---
 
@@ -24,19 +25,19 @@ licenses VendorLicense[]
 
 ### Updated VendorLicense model:
 ```prisma
-// BEFORE: Had relation to Vendor
+// Removed relation to Vendor
 vendor Vendor? @relation(fields: [vendorId], references: [id])
 
-// AFTER: Plain string field (no relation)
+// Now: Plain string field (no relation)
 vendorId String? // Vendor FK - stored but not used for relations in this phase
 ```
 
 ### Updated ProjectEnvironment model:
 ```prisma
-// BEFORE: Had relation to Vendor
+// Removed relation to Vendor
 primaryVendor Vendor? @relation(fields: [primaryVendorId], references: [id])
 
-// AFTER: Plain string field (no relation)
+// Now: Plain string field (no relation)
 primaryVendorId String? // Vendor FK - stored but not used for relations in this phase
 ```
 
@@ -59,6 +60,8 @@ primaryVendorId String? // Vendor FK - stored but not used for relations in this
 | `POST /licenses` | License management removed |
 | `PUT /licenses/:id` | License management removed |
 | `DELETE /licenses/:id` | License management removed |
+| `POST /import` | Import functionality removed |
+| `GET /export` | Export functionality removed |
 
 ### From DELETE /:id:
 - Removed project dependency check
@@ -88,33 +91,7 @@ The Edit Vendor function has been verified and works correctly:
 
 ---
 
-## 5. Edit Vendor Verification Checklist
-
-### Backend:
-- [x] `GET /vendors/:id` - Returns single vendor
-- [x] `PUT /vendors/:id` - Updates vendor with validation
-- [x] Validation: vendorName required
-- [x] Validation: vendorCode required
-- [x] Validation: category required
-- [x] Validation: primaryContactName required
-- [x] Validation: email required
-- [x] Validation: phone required
-- [x] Validation: email format
-- [x] Validation: duplicate vendorCode check
-- [x] Audit log created on update
-
-### Frontend:
-- [x] Vendor Details page loads correctly
-- [x] Edit button navigates to edit page
-- [x] Form pre-fills with existing values
-- [x] Validation shows errors
-- [x] Save updates database
-- [x] Vendor Details refreshes after save
-- [x] Table refreshes after save
-
----
-
-## 6. Testing Checklist
+## 5. Testing Checklist
 
 ### Vendor CRUD
 - [ ] Create new vendor - all fields saved
@@ -143,13 +120,6 @@ The Edit Vendor function has been verified and works correctly:
 - [ ] Sort by status
 - [ ] Sort by category
 
-### Import/Export
-- [ ] Export vendors to JSON
-- [ ] Import vendors from Excel
-- [ ] Import validates required fields
-- [ ] Import skips duplicates
-- [ ] Import handles validation errors
-
 ### Inventory Integration
 - [ ] Inventory Create shows vendor dropdown
 - [ ] Inventory Edit shows vendor dropdown
@@ -176,6 +146,15 @@ The Edit Vendor function has been verified and works correctly:
 - [ ] 400 for invalid email
 - [ ] 400 for delete with inventory
 
+### Toolbar Verification
+- [ ] Search input works
+- [ ] Filter button opens filter panel
+- [ ] Sort dropdown works
+- [ ] Refresh button reloads data
+- [ ] Add Vendor button opens create form
+- [ ] No Import button
+- [ ] No Export button
+
 ---
 
 ## What's Kept
@@ -184,7 +163,6 @@ The Edit Vendor function has been verified and works correctly:
 - Vendor CRUD operations
 - Search & filter
 - Sort & pagination
-- Import/Export
 - Stats endpoint
 - Inventory query endpoint
 - Internal owner support
@@ -209,8 +187,12 @@ The Edit Vendor function has been verified and works correctly:
 - License CRUD routes
 - Document/compliance endpoints
 - Project dependency checks in delete
+- Import endpoint
+- Export endpoint
 
 ### Frontend:
+- Import functionality
+- Export functionality
 - Licenses section from Vendor Details
 - Linked Projects section from Vendor Details
 - Documents section from Vendor Details

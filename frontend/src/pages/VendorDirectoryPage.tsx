@@ -4,11 +4,10 @@
  * Enterprise vendor management with full CRUD operations.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import * as XLSX from 'xlsx';
 
 type Vendor = {
   id: string;
@@ -105,7 +104,6 @@ export function VendorDirectoryPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
 
   // Metadata
@@ -274,94 +272,6 @@ export function VendorDirectoryPage() {
     }
   };
 
-  // Export vendors
-  const handleExport = async () => {
-    try {
-      const res = await api.get('/vendors/export');
-      const data = res.data;
-
-      const exportData = data.map((v: Vendor) => ({
-        'Vendor Name': v.vendorName,
-        'Vendor Code': v.vendorCode,
-        'Category': v.category,
-        'Status': v.status,
-        'Website': v.website || '',
-        'Country': v.country || '',
-        'GST Number': v.gstNumber || '',
-        'Registration Number': v.registrationNumber || '',
-        'Primary Contact': v.primaryContactName,
-        'Designation': v.designation || '',
-        'Email': v.email,
-        'Phone': v.phone,
-        'Address': v.address || '',
-        'Remarks': v.remarks || '',
-        'Contract Start Date': v.contractStartDate ? formatDate(v.contractStartDate) : '',
-        'Contract Expiry Date': v.contractExpiryDate ? formatDate(v.contractExpiryDate) : '',
-        'Renewal Date': v.renewalDate ? formatDate(v.renewalDate) : '',
-        'Payment Terms': v.paymentTerms || ''
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Vendors');
-      XLSX.writeFile(wb, `vendors-export-${new Date().toISOString().split('T')[0]}.xlsx`);
-      setMessage('Vendors exported successfully');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to export vendors');
-    }
-  };
-
-  // Import vendors
-  const handleImport = async (file: File) => {
-    return new Promise<void>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(sheet) as any[];
-
-          // Normalize headers
-          const vendors = json.map(row => ({
-            vendorName: row['Vendor Name'] || row['vendorName'] || '',
-            vendorCode: row['Vendor Code'] || row['vendorCode'] || '',
-            category: row['Category'] || row['category'] || '',
-            status: row['Status'] || row['status'] || 'ACTIVE',
-            website: row['Website'] || row['website'] || '',
-            country: row['Country'] || row['country'] || '',
-            gstNumber: row['GST Number'] || row['gstNumber'] || '',
-            registrationNumber: row['Registration Number'] || row['registrationNumber'] || '',
-            primaryContactName: row['Primary Contact'] || row['primaryContactName'] || '',
-            designation: row['Designation'] || row['designation'] || '',
-            email: row['Email'] || row['email'] || '',
-            phone: row['Phone'] || row['phone'] || '',
-            address: row['Address'] || row['address'] || '',
-            remarks: row['Remarks'] || row['remarks'] || '',
-            contractStartDate: row['Contract Start Date'] || row['contractStartDate'] || '',
-            contractExpiryDate: row['Contract Expiry Date'] || row['contractExpiryDate'] || '',
-            renewalDate: row['Renewal Date'] || row['renewalDate'] || '',
-            paymentTerms: row['Payment Terms'] || row['paymentTerms'] || ''
-          }));
-
-          const res = await api.post('/vendors/import', { vendors });
-          const result = res.data;
-
-          setMessage(`Import complete: ${result.imported} imported, ${result.skipped} skipped, ${result.failed} failed`);
-          setShowImportDialog(false);
-          loadVendors();
-          loadSummary();
-          loadMetadata();
-          resolve();
-        } catch (err: any) {
-          reject(new Error(err.response?.data?.message || 'Failed to import vendors'));
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
   const hasActiveFilters = categoryFilter || statusFilter || countryFilter || contractStatusFilter || dateFrom || dateTo || yearFilter;
 
   return (
@@ -477,20 +387,10 @@ export function VendorDirectoryPage() {
             </button>
 
             {isAdmin && (
-              <>
-                <button type="button" className="toolbar-btn" onClick={() => setShowImportDialog(true)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2"/><path d="M12 15V3" stroke="currentColor" strokeWidth="2"/></svg>
-                  Import
-                </button>
-                <button type="button" className="toolbar-btn" onClick={handleExport}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>
-                  Export
-                </button>
-                <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                  Add Vendor
-                </button>
-              </>
+              <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                Add Vendor
+              </button>
             )}
           </div>
         </div>
@@ -641,7 +541,6 @@ export function VendorDirectoryPage() {
               <span>{search || hasActiveFilters ? 'Try adjusting your search or filters' : 'Add your first vendor to get started'}</span>
               {isAdmin && !search && !hasActiveFilters && (
                 <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                  <button type="button" className="secondary" onClick={() => setShowImportDialog(true)}>Import Vendors</button>
                   <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>Add Vendor</button>
                 </div>
               )}
@@ -760,29 +659,6 @@ export function VendorDirectoryPage() {
                 Delete
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Import Dialog */}
-      {showImportDialog && (
-        <div className="modal-overlay" onClick={() => setShowImportDialog(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3>Import Vendors</h3>
-            <p>Upload an Excel file (.xlsx) with vendor data.</p>
-            <div className="import-template-info">
-              <h4>Required Columns:</h4>
-              <ul>
-                <li>Vendor Name *</li>
-                <li>Vendor Code *</li>
-                <li>Category *</li>
-                <li>Primary Contact *</li>
-                <li>Email *</li>
-                <li>Phone *</li>
-              </ul>
-              <p><small>Duplicate vendor codes will be skipped.</small></p>
-            </div>
-            <ImportFileUpload onImport={handleImport} onClose={() => setShowImportDialog(false)} />
           </div>
         </div>
       )}
@@ -994,45 +870,3 @@ function VendorFormDialog({ vendor, onClose, onSubmit, title }: VendorFormDialog
   );
 }
 
-// ============================================================
-// Import File Upload Component
-// ============================================================
-type ImportFileUploadProps = {
-  onImport: (file: File) => Promise<void>;
-  onClose: () => void;
-};
-
-function ImportFileUpload({ onImport, onClose }: ImportFileUploadProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [importing, setImporting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleImport = async () => {
-    if (!file) return;
-    setImporting(true);
-    setError('');
-    try {
-      await onImport(file);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="file-upload-area">
-        <input type="file" accept=".xlsx,.xls" onChange={e => setFile(e.target.files?.[0] || null)} />
-        {file && <p>Selected: {file.name}</p>}
-      </div>
-      {error && <div className="alert alert-error">{error}</div>}
-      <div className="modal-actions">
-        <button type="button" className="secondary" onClick={onClose} disabled={importing}>Cancel</button>
-        <button type="button" className="primary" onClick={handleImport} disabled={!file || importing}>
-          {importing ? 'Importing...' : 'Import'}
-        </button>
-      </div>
-    </>
-  );
-}
