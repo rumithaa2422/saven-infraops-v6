@@ -446,9 +446,12 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
             };
           }
           
-          // Fetch assigned inventory for this user
+          // Fetch assigned inventory for this user (only ACTIVE assignments for current view)
           const inventoryAssignments = await prisma.inventoryAssignment.findMany({
-            where: { userId: id },
+            where: { 
+              userId: id,
+              status: 'ACTIVE'
+            },
             include: {
               inventory: {
                 include: {
