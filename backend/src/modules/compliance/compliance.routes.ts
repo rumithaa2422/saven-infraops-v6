@@ -537,44 +537,73 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
     // Get breadcrumbs
     const breadcrumbs = await getBreadcrumbs(parentFolderId);
 
-    // Get summary for current folder level (files at this level only)
-    const totalSubfolders = folders.length;
-    
-    // Get file counts and storage for current level
-    const fileWhere: any = {};
-    if (parentFolderId !== null) {
-      fileWhere.folderId = parentFolderId;
+    // Get summary
+    let totalFiles: number;
+    let storageUsed: number;
+    let recentItems: { id: string; name: string; updatedAt: Date; type: string }[];
+
+    if (parentFolderId === null) {
+      // Root level: Repository-wide statistics
+      const [fileStats, recentFolders, recentFiles] = await Promise.all([
+        prisma.documentFile.aggregate({
+          _count: true,
+          _sum: { fileSize: true }
+        }),
+        prisma.documentFolder.findMany({
+          orderBy: { updatedAt: 'desc' },
+          take: 3,
+          select: { id: true, name: true, updatedAt: true }
+        }),
+        prisma.documentFile.findMany({
+          orderBy: { modifiedAt: 'desc' },
+          take: 3,
+          select: { id: true, originalFileName: true, modifiedAt: true }
+        })
+      ]);
+
+      totalFiles = fileStats._count;
+      storageUsed = fileStats._sum.fileSize || 0;
+
+      // Combine and sort by most recent (all repository items)
+      recentItems = [
+        ...recentFolders.map(f => ({ id: f.id, name: f.name, updatedAt: f.updatedAt, type: 'folder' })),
+        ...recentFiles.map(f => ({ id: f.id, name: f.originalFileName, updatedAt: f.modifiedAt, type: 'file' }))
+      ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5);
+    } else {
+      // Inside a folder: Folder-level statistics
+      const totalSubfolders = folders.length;
+
+      const [fileStats, recentFolders, recentFiles] = await Promise.all([
+        prisma.documentFile.aggregate({
+          where: { folderId: parentFolderId },
+          _count: true,
+          _sum: { fileSize: true }
+        }),
+        prisma.documentFolder.findMany({
+          where: { parentFolderId },
+          orderBy: { updatedAt: 'desc' },
+          take: 3,
+          select: { id: true, name: true, updatedAt: true }
+        }),
+        prisma.documentFile.findMany({
+          where: { folderId: parentFolderId },
+          orderBy: { modifiedAt: 'desc' },
+          take: 3,
+          select: { id: true, originalFileName: true, modifiedAt: true }
+        })
+      ]);
+
+      totalFiles = fileStats._count;
+      storageUsed = fileStats._sum.fileSize || 0;
+
+      // Combine and sort by most recent (items in this folder)
+      recentItems = [
+        ...recentFolders.map(f => ({ id: f.id, name: f.name, updatedAt: f.updatedAt, type: 'folder' })),
+        ...recentFiles.map(f => ({ id: f.id, name: f.originalFileName, updatedAt: f.modifiedAt, type: 'file' }))
+      ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5);
     }
-    
-    const fileStats = await prisma.documentFile.aggregate({
-      where: fileWhere,
-      _count: true,
-      _sum: { fileSize: true }
-    });
-    
-    const totalFiles = fileStats._count;
-    const storageUsed = fileStats._sum.fileSize || 0;
 
-    // Get recently modified items (folders and files combined, sorted by updatedAt)
-    const recentFolders = await prisma.documentFolder.findMany({
-      where: { parentFolderId },
-      orderBy: { updatedAt: 'desc' },
-      take: 3,
-      select: { id: true, name: true, updatedAt: true }
-    });
-    
-    const recentFiles = await prisma.documentFile.findMany({
-      where: fileWhere,
-      orderBy: { modifiedAt: 'desc' },
-      take: 3,
-      select: { id: true, originalFileName: true, modifiedAt: true }
-    });
-
-    // Combine and sort by most recent
-    const recentItems = [
-      ...recentFolders.map(f => ({ id: f.id, name: f.name, updatedAt: f.updatedAt, type: 'folder' })),
-      ...recentFiles.map(f => ({ id: f.id, name: f.originalFileName, updatedAt: f.modifiedAt, type: 'file' }))
-    ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5);
+    const totalSubfolders = folders.length;
 
     res.json({
       items: formattedFolders,
@@ -892,7 +921,7 @@ function getFileIcon(fileExtension: string): string {
  * GET /api/compliance/files
  * List files in a folder
  * Query params:
- *   - folderId: (optional) ID of folder, null for root
+ *   - folderId: (required) ID of folder
  *   - search: Search term
  *   - sortBy: fileName | uploadedAt | fileSize
  *   - sortOrder: asc | desc
@@ -903,16 +932,18 @@ complianceRouter.get('/files', requireAuth, async (req: Request, res: Response, 
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const folderId = req.query.folderId as string | null;
+    const folderId = req.query.folderId as string | undefined;
     const search = req.query.search as string | undefined;
     const sortBy = (req.query.sortBy as 'fileName' | 'uploadedAt' | 'fileSize') || 'uploadedAt';
     const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
 
-    // Build where clause - only include folderId if it has a value
-    const where: any = {};
-    if (folderId !== undefined && folderId !== null) {
-      where.folderId = folderId;
+    // Files must belong to a folder - return empty if no folderId
+    if (!folderId) {
+      return res.json({ items: [] });
     }
+
+    // Build where clause
+    const where: any = { folderId };
     
     if (search) {
       where.OR = [

@@ -605,7 +605,7 @@ model DocumentFolder {
 // Document Repository - Phase 3: File Management
 model DocumentFile {
   id               String   @id @default(cuid())
-  folderId         String?  // Nullable for root-level files
+  folderId         String
   fileName         String   // System filename (stored)
   originalFileName String   // Original user filename
   fileExtension    String   // e.g., pdf, docx, png
