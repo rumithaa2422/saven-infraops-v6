@@ -122,7 +122,7 @@ export function CreateUserPage() {
         dateJoined: formData.dateJoined
       };
 
-      await api.post('/auth/register', payload);
+      await api.post('/users-teams', payload);
       navigate('/users-teams');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create user');
