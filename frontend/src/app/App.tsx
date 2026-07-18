@@ -58,12 +58,7 @@ interface PermissionRouteProps {
 }
 
 function PermissionRoute({ permission, anyPermission, children, fallback }: PermissionRouteProps) {
-  const { hasPermission, hasAnyPermission, isSuperAdmin } = useAuth();
-
-  // Super Admin bypasses all permission checks
-  if (isSuperAdmin) {
-    return <>{children}</>;
-  }
+  const { hasPermission, hasAnyPermission } = useAuth();
 
   let hasAccess = false;
 

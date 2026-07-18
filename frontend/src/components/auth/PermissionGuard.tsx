@@ -49,13 +49,11 @@ export function PermissionGuard({
   fallback = null,
   children
 }: PermissionGuardProps) {
-  const { hasPermission, hasAnyPermission, can: canCheck, isSuperAdmin } = useAuth();
+  const { hasPermission, hasAnyPermission, can: canCheck } = useAuth();
 
   let hasAccess = false;
 
-  if (isSuperAdmin) {
-    hasAccess = true;
-  } else if (permission) {
+  if (permission) {
     // Check single permission or array of permissions (ALL must match)
     const perms = Array.isArray(permission) ? permission : [permission];
     hasAccess = perms.every(p => hasPermission(p));
@@ -65,6 +63,9 @@ export function PermissionGuard({
   } else if (can) {
     // Check using can("action", "module") format
     hasAccess = canCheck(can[0], can[1]);
+  } else {
+    // No permission specified, allow access
+    hasAccess = true;
   }
 
   // Apply inversion if specified
@@ -140,19 +141,19 @@ export function PermissionButton({
   children,
   type = 'button'
 }: PermissionButtonProps) {
-  const { hasPermission, hasAnyPermission, can: canCheck, isSuperAdmin } = useAuth();
+  const { hasPermission, hasAnyPermission, can: canCheck } = useAuth();
 
   let hasAccess = false;
 
-  if (isSuperAdmin) {
-    hasAccess = true;
-  } else if (permission) {
+  if (permission) {
     const perms = Array.isArray(permission) ? permission : [permission];
     hasAccess = perms.every(p => hasPermission(p));
   } else if (anyPermission) {
     hasAccess = hasAnyPermission(anyPermission);
   } else if (can) {
     hasAccess = canCheck(can[0], can[1]);
+  } else {
+    hasAccess = true;
   }
 
   if (!hasAccess) {

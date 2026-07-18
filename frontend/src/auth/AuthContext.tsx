@@ -25,9 +25,6 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Super Admin permission that grants full access
-const SUPER_ADMIN_PERMISSION = 'sys:admin';
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('infraops.token'));
   const [user, setUser] = useState<User | null>(() => {
@@ -40,39 +37,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const permissions = user?.permissions || [];
 
-  // Check if user is Super Admin (bypasses all permission checks)
-  // Check both sys:admin permission AND Super Admin role name
+  // All roles follow the same permission evaluation logic
+  // isSuperAdmin is now just a flag indicating the role - it does NOT bypass permissions
   const isSuperAdmin = useMemo(() => {
-    const hasSuperAdminPermission = permissions.includes(SUPER_ADMIN_PERMISSION);
-    const hasSuperAdminRole = user?.roles?.includes('Super Admin') ?? false;
-    return hasSuperAdminPermission || hasSuperAdminRole;
-  }, [permissions, user?.roles]);
+    return user?.roles?.includes('Super Admin') ?? false;
+  }, [user?.roles]);
 
   // Check if user has a specific permission
   const hasPermission = useCallback((permission: string): boolean => {
-    if (isSuperAdmin) return true;
     return permissions.includes(permission);
-  }, [permissions, isSuperAdmin]);
+  }, [permissions]);
 
   // Check if user has ANY of the specified permissions
   const hasAnyPermission = useCallback((permissionList: string[]): boolean => {
-    if (isSuperAdmin) return true;
     if (!permissionList || permissionList.length === 0) return false;
     return permissionList.some(p => permissions.includes(p));
-  }, [permissions, isSuperAdmin]);
+  }, [permissions]);
 
   // Check if user has ALL of the specified permissions
   const hasAllPermissions = useCallback((permissionList: string[]): boolean => {
-    if (isSuperAdmin) return true;
     if (!permissionList || permissionList.length === 0) return true;
     return permissionList.every(p => permissions.includes(p));
-  }, [permissions, isSuperAdmin]);
+  }, [permissions]);
 
   // Shorthand permission check: can("action") or can("action", "module")
   // Examples: can("manage", "inventory"), can("create"), can("delete")
   const can = useCallback((action: string, module?: string): boolean => {
-    if (isSuperAdmin) return true;
-    
     // Build permission string: "module:action" or just "action"
     const permission = module ? `${module}:${action}` : action;
     
@@ -86,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (permissions.includes('*:*')) return true;
     
     return false;
-  }, [permissions, isSuperAdmin]);
+  }, [permissions]);
 
   async function login(email: string, password: string) {
     const response = await api.post('/auth/login', { email, password });
@@ -129,7 +119,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
   return ctx;
 }
-
-// Export the super admin permission constant for use elsewhere
-export { SUPER_ADMIN_PERMISSION };
 
