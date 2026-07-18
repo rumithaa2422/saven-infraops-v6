@@ -483,7 +483,7 @@ export function UserDetailsPage() {
                             <td>
                               <button 
                                 className="btn-open-inventory"
-                                onClick={() => navigate(`/inventory/${assignment.inventoryId}`)}
+                                onClick={() => navigate(`/inventory/master/${assignment.inventoryId}`)}
                               >
                                 Open
                               </button>
