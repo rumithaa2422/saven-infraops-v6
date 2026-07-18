@@ -116,7 +116,7 @@ export function UsersDashboardPage() {
 
   const fetchRoles = useCallback(async () => {
     try {
-      const res = await api.get('/generic/roles');
+      const res = await api.get('/roles');
       setRoles(res.data.items || res.data || []);
     } catch (err) {
       console.error('Failed to fetch roles:', err);

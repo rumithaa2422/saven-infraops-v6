@@ -3,37 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  employeeId?: string;
-  phoneNumber?: string;
-  department?: string;
-  designation?: string;
-  employmentType?: string;
-  dateJoined?: string;
-  managerId?: string;
-  manager?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  team?: string;
-  address?: string;
-  remarks?: string;
-  status: string;
-  roles: { role: { name: string; id: string } }[];
-};
-
-type ManagerUser = {
-  id: string;
-  name: string;
-  email: string;
-  department: string | null;
-  roles: { role: { name: string; id: string } }[];
-};
-
 type Role = {
   id: string;
   name: string;
@@ -51,13 +20,9 @@ export function EditUserPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rolesLoading, setRolesLoading] = useState(true);
-  const [managersLoading, setManagersLoading] = useState(true);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [roles, setRoles] = useState<Role[]>([]);
-  const [managers, setManagers] = useState<ManagerUser[]>([]);
-  const [managerSearch, setManagerSearch] = useState('');
-  const [showManagerDropdown, setShowManagerDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -68,7 +33,6 @@ export function EditUserPage() {
     department: '',
     designation: '',
     roleId: '',
-    managerId: '',
     employmentType: '',
     dateJoined: '',
     status: 'ACTIVE',
@@ -81,7 +45,7 @@ export function EditUserPage() {
     try {
       setLoading(true);
       const response = await api.get(`/users-teams/${id}`);
-      const user: User = response.data.item || response.data;
+      const user = response.data.item || response.data;
       
       const nameParts = user.name.split(' ');
       const firstName = nameParts[0] || '';
@@ -96,17 +60,12 @@ export function EditUserPage() {
         department: user.department || '',
         designation: user.designation || '',
         roleId: user.roles?.[0]?.role?.id || '',
-        managerId: user.managerId || user.manager?.id || '',
         employmentType: user.employmentType || '',
         dateJoined: user.dateJoined ? user.dateJoined.split('T')[0] : '',
         status: user.status,
         address: user.address || '',
         remarks: user.remarks || ''
       });
-
-      if (user.manager) {
-        setManagerSearch(user.manager.name);
-      }
     } catch (err) {
       setError('Failed to load user');
     } finally {
@@ -117,7 +76,7 @@ export function EditUserPage() {
   const fetchRoles = useCallback(async () => {
     try {
       setRolesLoading(true);
-      const response = await api.get('/generic/roles');
+      const response = await api.get('/roles');
       setRoles(response.data.items || response.data || []);
     } catch (err) {
       console.error('Failed to fetch roles:', err);
@@ -126,41 +85,10 @@ export function EditUserPage() {
     }
   }, []);
 
-  const fetchManagers = useCallback(async () => {
-    try {
-      setManagersLoading(true);
-      const response = await api.get('/users-teams');
-      const users = response.data.items || response.data || [];
-      // Filter out the current user and inactive users
-      const activeManagers = (users as ManagerUser[]).filter(
-        u => u.id !== id && u.roles?.some(r => ['Super Admin', 'Admin', 'Manager'].includes(r.role?.name))
-      );
-      setManagers(activeManagers);
-    } catch (err) {
-      console.error('Failed to fetch managers:', err);
-    } finally {
-      setManagersLoading(false);
-    }
-  }, [id]);
-
   useEffect(() => {
     fetchUser();
     fetchRoles();
-    fetchManagers();
-  }, [fetchUser, fetchRoles, fetchManagers]);
-
-  const filteredManagers = managers.filter(u => {
-    const search = managerSearch.toLowerCase();
-    return (
-      u.name.toLowerCase().includes(search) ||
-      u.email.toLowerCase().includes(search) ||
-      (u.department?.toLowerCase().includes(search) ?? false)
-    );
-  });
-
-  const getSelectedManager = () => {
-    return managers.find(m => m.id === formData.managerId);
-  };
+  }, [fetchUser, fetchRoles]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -210,15 +138,6 @@ export function EditUserPage() {
     }
   };
 
-  const handleManagerSelect = (user: ManagerUser) => {
-    setFormData(prev => ({ ...prev, managerId: user.id }));
-    setManagerSearch('');
-    setShowManagerDropdown(false);
-    if (errors.managerId) {
-      setErrors(prev => ({ ...prev, managerId: '' }));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -238,7 +157,6 @@ export function EditUserPage() {
         department: formData.department,
         designation: formData.designation,
         roleId: formData.roleId,
-        managerId: formData.managerId || undefined,
         employmentType: formData.employmentType,
         dateJoined: formData.dateJoined,
         status: formData.status,
@@ -430,53 +348,15 @@ export function EditUserPage() {
                   className={errors.roleId ? 'error' : ''}
                 >
                   <option value="">Select Role</option>
-                  {roles.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
+                  {rolesLoading ? (
+                    <option value="" disabled>Loading roles...</option>
+                  ) : (
+                    roles.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))
+                  )}
                 </select>
                 {errors.roleId && <span className="error-message">{errors.roleId}</span>}
-              </div>
-              <div className="form-group">
-                <label>Reporting Manager</label>
-                <div className="searchable-dropdown">
-                  <input
-                    type="text"
-                    value={getSelectedManager() ? getSelectedManager()!.name : managerSearch}
-                    onChange={(e) => {
-                      setManagerSearch(e.target.value);
-                      setShowManagerDropdown(true);
-                      if (formData.managerId && !getSelectedManager()) {
-                        // User is typing, clear selection
-                      }
-                    }}
-                    onFocus={() => setShowManagerDropdown(true)}
-                    placeholder="Search for a manager..."
-                    disabled={managersLoading}
-                  />
-                  {showManagerDropdown && (
-                    <div className="dropdown-menu">
-                      {managersLoading ? (
-                        <div className="dropdown-loading">Loading...</div>
-                      ) : filteredManagers.length === 0 ? (
-                        <div className="dropdown-empty">No managers found</div>
-                      ) : (
-                        filteredManagers.map(m => (
-                          <div
-                            key={m.id}
-                            className={`dropdown-item ${formData.managerId === m.id ? 'selected' : ''}`}
-                            onClick={() => handleManagerSelect(m)}
-                          >
-                            <div className="dropdown-item-avatar">{m.name.charAt(0)}</div>
-                            <div className="dropdown-item-info">
-                              <span className="dropdown-item-name">{m.name}</span>
-                              <span className="dropdown-item-meta">{m.department} • {m.email}</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
               <div className="form-group">
                 <label>Employment Type <span className="required">*</span></label>

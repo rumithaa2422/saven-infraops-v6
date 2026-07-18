@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { useAuth } from '../auth/AuthContext';
 
 type User = {
   id: string;
@@ -11,11 +10,6 @@ type User = {
   department?: string;
   designation?: string;
   employmentType?: string;
-  manager?: {
-    id: string;
-    name: string;
-    email: string;
-  };
   team?: string;
   status: string;
   createdAt: string;
@@ -27,9 +21,6 @@ type User = {
 export function UserDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user: currentUser, isSuperAdmin } = useAuth();
-  const isAdmin = currentUser?.roles.includes('Admin') ?? false;
-  const isOwnProfile = currentUser?.id === id;
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -204,10 +195,6 @@ export function UserDetailsPage() {
                       {primaryRole}
                     </span>
                   </span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Reporting Manager</label>
-                  <span>{user.manager?.name || '-'}</span>
                 </div>
                 <div className="detail-info-item">
                   <label>Status</label>

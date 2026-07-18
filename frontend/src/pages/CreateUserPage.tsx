@@ -3,15 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  employeeId?: string;
-  department: string | null;
-  roles: { role: { name: string; id: string } }[];
-};
-
 type Role = {
   id: string;
   name: string;
@@ -26,13 +17,9 @@ export function CreateUserPage() {
 
   const [loading, setLoading] = useState(false);
   const [rolesLoading, setRolesLoading] = useState(true);
-  const [managersLoading, setManagersLoading] = useState(true);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [roles, setRoles] = useState<Role[]>([]);
-  const [managers, setManagers] = useState<User[]>([]);
-  const [managerSearch, setManagerSearch] = useState('');
-  const [showManagerDropdown, setShowManagerDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -43,7 +30,6 @@ export function CreateUserPage() {
     department: '',
     designation: '',
     roleId: '',
-    managerId: '',
     employmentType: '',
     dateJoined: ''
   });
@@ -51,7 +37,7 @@ export function CreateUserPage() {
   const fetchRoles = useCallback(async () => {
     try {
       setRolesLoading(true);
-      const response = await api.get('/generic/roles');
+      const response = await api.get('/roles');
       const roleData = response.data.items || response.data || [];
       setRoles(roleData);
     } catch (err) {
@@ -61,37 +47,9 @@ export function CreateUserPage() {
     }
   }, []);
 
-  const fetchManagers = useCallback(async () => {
-    try {
-      setManagersLoading(true);
-      const response = await api.get('/users-teams');
-      const users = response.data.items || response.data || [];
-      setManagers(users);
-    } catch (err) {
-      console.error('Failed to fetch managers:', err);
-    } finally {
-      setManagersLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchRoles();
-    fetchManagers();
-  }, [fetchRoles, fetchManagers]);
-
-  const filteredManagers = managers.filter(u => {
-    const search = managerSearch.toLowerCase();
-    return (
-      u.name.toLowerCase().includes(search) ||
-      u.email.toLowerCase().includes(search) ||
-      (u.department?.toLowerCase().includes(search) ?? false) ||
-      (u.employeeId?.toLowerCase().includes(search) ?? false)
-    );
-  });
-
-  const getSelectedManager = () => {
-    return managers.find(m => m.id === formData.managerId);
-  };
+  }, [fetchRoles]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -141,15 +99,6 @@ export function CreateUserPage() {
     }
   };
 
-  const handleManagerSelect = (user: User) => {
-    setFormData(prev => ({ ...prev, managerId: user.id }));
-    setManagerSearch('');
-    setShowManagerDropdown(false);
-    if (errors.managerId) {
-      setErrors(prev => ({ ...prev, managerId: '' }));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -169,7 +118,6 @@ export function CreateUserPage() {
         department: formData.department,
         designation: formData.designation,
         roleId: formData.roleId,
-        managerId: formData.managerId || undefined,
         employmentType: formData.employmentType,
         dateJoined: formData.dateJoined
       };
@@ -382,50 +330,6 @@ export function CreateUserPage() {
                   className={errors.dateJoined ? 'error' : ''}
                 />
                 {errors.dateJoined && <span className="error-message">{errors.dateJoined}</span>}
-              </div>
-              <div className="form-group">
-                <label>Reporting Manager</label>
-                <div className="searchable-dropdown">
-                  <input
-                    type="text"
-                    value={getSelectedManager() ? `${getSelectedManager()!.name} (${getSelectedManager()!.employeeId || 'No ID'})` : managerSearch}
-                    onChange={(e) => {
-                      setManagerSearch(e.target.value);
-                      setShowManagerDropdown(true);
-                      if (formData.managerId) {
-                        setFormData(prev => ({ ...prev, managerId: '' }));
-                      }
-                    }}
-                    onFocus={() => setShowManagerDropdown(true)}
-                    placeholder="Search for a manager..."
-                    disabled={managersLoading}
-                  />
-                  {showManagerDropdown && (
-                    <div className="dropdown-menu">
-                      {managersLoading ? (
-                        <div className="dropdown-loading">Loading users...</div>
-                      ) : filteredManagers.length === 0 ? (
-                        <div className="dropdown-empty">No users found</div>
-                      ) : (
-                        filteredManagers.slice(0, 20).map(m => (
-                          <div
-                            key={m.id}
-                            className={`dropdown-item ${formData.managerId === m.id ? 'selected' : ''}`}
-                            onClick={() => handleManagerSelect(m)}
-                          >
-                            <div className="dropdown-item-avatar">{m.name.charAt(0).toUpperCase()}</div>
-                            <div className="dropdown-item-info">
-                              <span className="dropdown-item-name">{m.name}</span>
-                              <span className="dropdown-item-meta">
-                                {m.employeeId || 'No ID'} • {m.department || 'No Department'}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
