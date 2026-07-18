@@ -480,14 +480,13 @@ model ProjectEnvironment {
   managerId     String?
   teamMemberIds String? // JSON array of user IDs
 
-  // Vendor relation
+  // Vendor FK - stored but not used for relations in this phase
   primaryVendorId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  primaryVendor Vendor?        @relation(fields: [primaryVendorId], references: [id])
+  // Relations - no vendor relation in this phase
   
   // Documents
   documents ProjectDocument[]
@@ -537,8 +536,8 @@ model ProjectActivity {
 
 model VendorLicense {
   id            String    @id @default(cuid())
-  vendorName    String    // Keep for backwards compatibility
-  vendorId      String?   // Vendor relation
+  vendorName    String    // Vendor/supplier name (stored as string)
+  vendorId      String?   // Vendor FK - stored but not used for relations in this phase
   licenseName   String
   licenseCount  Int       @default(0)
   assignedCount Int       @default(0)
@@ -547,9 +546,6 @@ model VendorLicense {
   ownerName     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  // Relations
-  vendor Vendor? @relation(fields: [vendorId], references: [id])
 
   @@index([vendorId])
 }
@@ -580,11 +576,9 @@ model Vendor {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  // Relations
+  // Relations - only inventory and internal owner for this phase
   internalOwner        User?               @relation("VendorOwner", fields: [internalOwnerId], references: [id])
   inventory           InventoryMaster[]
-  licenses            VendorLicense[]
-  projects            ProjectEnvironment[]
 
   @@index([vendorCode])
   @@index([status])
