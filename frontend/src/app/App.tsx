@@ -23,6 +23,7 @@ import { AssetManagementPage } from '../pages/AssetManagementPage';
 import { AssetDetailsPage } from '../pages/AssetDetailsPage';
 import { UserAssetsPage } from '../pages/UserAssetsPage';
 import { ProjectAssetsPage } from '../pages/ProjectAssetsPage';
+import { UsersDashboardPage } from '../pages/UsersDashboardPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -314,7 +315,7 @@ export function App() {
           path="users-teams" 
           element={
             <PermissionRoute permission={modulePermissions['users-teams']}>
-              <ModulePage moduleKey="users-teams" title="Users & Teams" />
+              <UsersDashboardPage />
             </PermissionRoute>
           } 
         />
