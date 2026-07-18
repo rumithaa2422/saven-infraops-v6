@@ -25,6 +25,8 @@ import { UserAssetsPage } from '../pages/UserAssetsPage';
 import { ProjectAssetsPage } from '../pages/ProjectAssetsPage';
 import { UsersDashboardPage } from '../pages/UsersDashboardPage';
 import { UserDetailsPage } from '../pages/UserDetailsPage';
+import { CreateUserPage } from '../pages/CreateUserPage';
+import { EditUserPage } from '../pages/EditUserPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -325,6 +327,22 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['users-teams']}>
               <UserDetailsPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="users-teams/create" 
+          element={
+            <PermissionRoute permission={modulePermissions['users-teams']}>
+              <CreateUserPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="users-teams/:id/edit" 
+          element={
+            <PermissionRoute permission={modulePermissions['users-teams']}>
+              <EditUserPage />
             </PermissionRoute>
           } 
         />
