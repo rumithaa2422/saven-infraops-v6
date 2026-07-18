@@ -91,7 +91,14 @@ model User {
   email            String               @unique
   phoneNumber      String?
   passwordHash     String?
+  employeeId       String?
   department       String?
+  designation      String?
+  employmentType   String?
+  dateJoined       DateTime?
+  address          String?
+  remarks          String?
+  team             String?
   status           UserStatus           @default(PENDING_ACTIVATION)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt

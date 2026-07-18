@@ -207,10 +207,11 @@ const moduleMap: Record<string, ModuleConfig> = {
         status: true, 
         createdAt: true, 
         updatedAt: true,
+        employeeId: true,
         roles: {
           include: {
             role: {
-              select: { name: true }
+              select: { id: true, name: true }
             }
           }
         }
@@ -358,10 +359,17 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
             status: true,
             createdAt: true,
             updatedAt: true,
+            employeeId: true,
+            designation: true,
+            employmentType: true,
+            dateJoined: true,
+            address: true,
+            remarks: true,
+            team: true,
             roles: {
               include: {
                 role: {
-                  select: { name: true }
+                  select: { id: true, name: true }
                 }
               }
             }

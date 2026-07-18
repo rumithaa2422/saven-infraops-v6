@@ -711,6 +711,61 @@ tbody tr:hover { background: #f8faff; }
   cursor: not-allowed;
 }
 
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.25rem;
+}
+
+.modal-content p {
+  margin: 0 0 12px 0;
+  color: var(--muted);
+}
+
+.modal-content .warning-text {
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.modal-content .alert-error {
+  margin: 12px 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 /* Modal danger button */
 button.danger {
   background: #dc2626;

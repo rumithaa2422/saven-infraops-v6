@@ -11,6 +11,7 @@ type User = {
   department?: string;
   status: string;
   createdAt: string;
+  employeeId?: string;
   roles: { role: { id: string; name: string } }[];
 };
 
@@ -47,6 +48,11 @@ export function UsersDashboardPage() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{ show: boolean; user: User | null }>({ show: false, user: null });
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Summary state
   const [summary, setSummary] = useState<UserSummary>({
@@ -180,6 +186,29 @@ export function UsersDashboardPage() {
       link.click();
     } catch (err) {
       console.error('Export failed:', err);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteDialog.user) return;
+    
+    // Prevent self-deletion
+    if (deleteDialog.user.id === user?.id) {
+      setDeleteError('You cannot delete your own account.');
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError('');
+
+    try {
+      await api.delete(`/users-teams/${deleteDialog.user.id}`);
+      setDeleteDialog({ show: false, user: null });
+      fetchUsers();
+    } catch (err: any) {
+      setDeleteError(err.response?.data?.message || 'Failed to delete user');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -476,43 +505,62 @@ export function UsersDashboardPage() {
                     <th onClick={() => handleSort('createdAt')} className="sortable">
                       Created {sortBy === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th>Action</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => {
-                    const primaryRole = user.roles?.[0]?.role?.name || 'Employee';
+                  {filteredUsers.map((u) => {
+                    const primaryRole = u.roles?.[0]?.role?.name || 'Employee';
+                    const isOwnAccount = u.id === user?.id;
                     return (
-                      <tr key={user.id} onClick={() => navigate(`/users-teams/${user.id}`)}>
-                        <td className="user-cell">
+                      <tr key={u.id}>
+                        <td className="user-cell" onClick={() => navigate(`/users-teams/${u.id}`)}>
                           <div className="user-avatar">
-                            {user.name.charAt(0).toUpperCase()}
+                            {u.name.charAt(0).toUpperCase()}
                           </div>
                           <div className="user-info">
-                            <span className="user-name">{user.name}</span>
-                            <span className="user-email">{user.email}</span>
+                            <span className="user-name">{u.name}</span>
+                            <span className="user-email">{u.email}</span>
                           </div>
                         </td>
-                        <td className="mono muted">-</td>
-                        <td>{user.department || '-'}</td>
-                        <td>
+                        <td className="mono muted">{u.employeeId || '-'}</td>
+                        <td onClick={() => navigate(`/users-teams/${u.id}`)}>{u.department || '-'}</td>
+                        <td onClick={() => navigate(`/users-teams/${u.id}`)}>
                           <span className={`role-badge ${getRoleBadgeClass(primaryRole)}`}>
                             {primaryRole}
                           </span>
                         </td>
-                        <td>
-                          <span className={`status-badge status-${user.status.toLowerCase()}`}>
-                            {user.status}
+                        <td onClick={() => navigate(`/users-teams/${u.id}`)}>
+                          <span className={`status-badge status-${u.status.toLowerCase()}`}>
+                            {u.status}
                           </span>
                         </td>
-                        <td className="muted">{formatDate(user.createdAt)}</td>
-                        <td>
+                        <td className="muted" onClick={() => navigate(`/users-teams/${u.id}`)}>{formatDate(u.createdAt)}</td>
+                        <td className="actions-cell">
                           <button
                             className="btn-open"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/users-teams/${user.id}`); }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/users-teams/${u.id}`); }}
                           >
                             Open
                           </button>
+                          {(isSuperAdmin || isAdmin) && (
+                            <button
+                              className="btn-edit"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/users-teams/${u.id}/edit`); }}
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {isSuperAdmin && (
+                            <button
+                              className="btn-delete"
+                              onClick={(e) => { e.stopPropagation(); setDeleteDialog({ show: true, user: u }); }}
+                              disabled={isOwnAccount}
+                              title={isOwnAccount ? 'You cannot delete your own account' : 'Delete user'}
+                            >
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -522,6 +570,26 @@ export function UsersDashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        {deleteDialog.show && (
+          <div className="modal-overlay" onClick={() => setDeleteDialog({ show: false, user: null })}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>Delete User</h3>
+              <p>Are you sure you want to delete <strong>{deleteDialog.user?.name}</strong>?</p>
+              <p className="warning-text">This action cannot be undone.</p>
+              {deleteError && <div className="alert alert-error">{deleteError}</div>}
+              <div className="modal-actions">
+                <button className="btn-secondary" onClick={() => setDeleteDialog({ show: false, user: null })}>
+                  Cancel
+                </button>
+                <button className="btn-delete" onClick={handleDeleteUser} disabled={deleting}>
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

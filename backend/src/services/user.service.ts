@@ -7,6 +7,13 @@ export interface CreateUserInput {
   email: string;
   phoneNumber?: string | null;
   department?: string | null;
+  employeeId?: string | null;
+  designation?: string | null;
+  employmentType?: string | null;
+  dateJoined?: string | null;
+  address?: string | null;
+  remarks?: string | null;
+  team?: string | null;
   roleId?: string | null;
   actorId?: string | null;
   actorEmail?: string | null;
@@ -27,6 +34,13 @@ export async function createUser(data: CreateUserInput) {
       email: data.email,
       phoneNumber: data.phoneNumber || null,
       department: data.department || null,
+      employeeId: data.employeeId || null,
+      designation: data.designation || null,
+      employmentType: data.employmentType || null,
+      dateJoined: data.dateJoined ? new Date(data.dateJoined) : null,
+      address: data.address || null,
+      remarks: data.remarks || null,
+      team: data.team || null,
       status: 'PENDING_ACTIVATION'
     }
   });
@@ -72,6 +86,13 @@ export interface UpdateUserInput {
   department?: string | null;
   status?: 'PENDING_ACTIVATION' | 'ACTIVE' | 'DISABLED' | 'LOCKED';
   phoneNumber?: string | null;
+  employeeId?: string | null;
+  designation?: string | null;
+  employmentType?: string | null;
+  dateJoined?: string | null;
+  address?: string | null;
+  remarks?: string | null;
+  roleId?: string | null;
   actorId?: string | null;
   actorEmail?: string | null;
   ipAddress?: string | null;
@@ -89,9 +110,38 @@ export async function updateUser(id: string, data: UpdateUserInput) {
       name: data.name,
       department: data.department !== undefined ? (data.department || null) : undefined,
       status: data.status,
-      phoneNumber: data.phoneNumber !== undefined ? (data.phoneNumber || null) : undefined
+      phoneNumber: data.phoneNumber !== undefined ? (data.phoneNumber || null) : undefined,
+      employeeId: data.employeeId !== undefined ? (data.employeeId || null) : undefined,
+      designation: data.designation !== undefined ? (data.designation || null) : undefined,
+      employmentType: data.employmentType !== undefined ? (data.employmentType || null) : undefined,
+      dateJoined: data.dateJoined !== undefined ? (data.dateJoined ? new Date(data.dateJoined) : null) : undefined,
+      address: data.address !== undefined ? (data.address || null) : undefined,
+      remarks: data.remarks !== undefined ? (data.remarks || null) : undefined
     }
   });
+
+  // Update role if provided
+  if (data.roleId !== undefined) {
+    // Remove existing roles
+    await prisma.userRole.deleteMany({ where: { userId: id } });
+    
+    // Add new role if provided
+    if (data.roleId) {
+      const role = await prisma.role.findFirst({
+        where: {
+          OR: [
+            { id: data.roleId },
+            { name: data.roleId }
+          ]
+        }
+      });
+      if (role) {
+        await prisma.userRole.create({
+          data: { userId: id, roleId: role.id }
+        });
+      }
+    }
+  }
 
   await prisma.auditLog.create({
     data: {

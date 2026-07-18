@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../auth/AuthContext';
 
 type User = {
   id: string;
@@ -15,12 +16,16 @@ type User = {
   createdAt: string;
   updatedAt: string;
   dateJoined?: string;
+  address?: string;
+  remarks?: string;
+  employeeId?: string;
   roles: { role: { id: string; name: string } }[];
 };
 
 export function UserDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user: currentUser, isSuperAdmin } = useAuth();
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +136,11 @@ export function UserDetailsPage() {
               </span>
             </div>
           </div>
+          {(isSuperAdmin || currentUser?.roles.includes('Admin')) && (
+            <button className="btn-primary" onClick={() => navigate(`/users-teams/${id}/edit`)}>
+              Edit
+            </button>
+          )}
         </div>
         <div className="detail-meta-row">
           {user.department && (
@@ -169,12 +179,16 @@ export function UserDetailsPage() {
             <div className="detail-card-body">
               <div className="detail-info-grid">
                 <div className="detail-info-item">
+                  <label>Employee ID</label>
+                  <span>{user.employeeId || '-'}</span>
+                </div>
+                <div className="detail-info-item">
                   <label>Full Name</label>
-                  <span>{user.name}</span>
+                  <span>{user.name || '-'}</span>
                 </div>
                 <div className="detail-info-item">
                   <label>Email</label>
-                  <span>{user.email}</span>
+                  <span>{user.email || '-'}</span>
                 </div>
                 <div className="detail-info-item">
                   <label>Phone Number</label>
@@ -233,6 +247,14 @@ export function UserDetailsPage() {
                   <label>Team</label>
                   <span>{user.team || '-'}</span>
                 </div>
+                <div className="detail-info-item full-width">
+                  <label>Address</label>
+                  <span>{user.address || '-'}</span>
+                </div>
+                <div className="detail-info-item full-width">
+                  <label>Remarks</label>
+                  <span>{user.remarks || '-'}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -255,30 +277,6 @@ export function UserDetailsPage() {
                   <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 <p>Not assigned to any project.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Assigned Inventory Card - Placeholder */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 12C13.1046 12 14 11.1046 14 10C14 8.89543 13.1046 8 12 8C10.8954 8 10 8.89543 10 10C10 11.1046 10.8954 12 12 12Z" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                Assigned Inventory
-              </h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 7H4V5C4 3.89543 4.89543 3 6 3H18C19.1046 3 20 3.89543 20 5V7Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M20 7V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V7" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 12C13.1046 12 14 11.1046 14 10C14 8.89543 13.1046 8 12 8C10.8954 8 10 8.89543 10 10C10 11.1046 10.8954 12 12 12Z" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                <p>Inventory information will appear once assets are assigned.</p>
               </div>
             </div>
           </div>
