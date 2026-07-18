@@ -291,7 +291,7 @@ export function DocumentRepositoryPage() {
       setShowActionsMenu(null);
       fetchFolders(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete folder');
+      setError(err.response?.data?.message || 'Failed to delete folder');
     }
   };
 
