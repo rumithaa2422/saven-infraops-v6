@@ -486,12 +486,16 @@ export function DocumentRepositoryPage() {
     setError('');
 
     const formData = new FormData();
+    // Include folderId if we're in a subfolder
+    if (currentFolderId) {
+      formData.append('folderId', currentFolderId);
+    }
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
 
     try {
-      const res = await api.post('/compliance/import', formData, {
+      const res = await api.post('/compliance/files', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
@@ -500,16 +504,23 @@ export function DocumentRepositoryPage() {
         }
       });
       
-      setMessage(`Successfully uploaded ${res.data.imported?.length || 0} files`);
-      if (res.data.skipped?.length > 0) {
-        setMessage(prev => `${prev} (${res.data.skipped.length} skipped)`);
+      const uploadedCount = res.data.totalUploaded || res.data.uploaded?.length || 0;
+      const errorCount = res.data.totalErrors || res.data.errors?.length || 0;
+      
+      if (uploadedCount > 0) {
+        setMessage(`Successfully uploaded ${uploadedCount} file${uploadedCount > 1 ? 's' : ''}`);
+      }
+      if (errorCount > 0) {
+        const errorMsg = res.data.errors?.map((e: any) => `${e.fileName}: ${e.error}`).join('; ');
+        setError(`Failed to upload ${errorCount} file${errorCount > 1 ? 's' : ''}: ${errorMsg}`);
       }
       setShowUploadDialog(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
       fetchData(true);
       fetchSummary();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Upload failed');
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Upload failed';
+      setError(errorMsg);
     } finally {
       setUploading(false);
       setUploadProgress(0);

@@ -32,7 +32,7 @@ export const complianceRouter = Router();
 // Configure multer for PDF uploads
 const storage = multer.diskStorage({
   destination: async (_req, _file, cb) => {
-    await ensureUploadDir();
+    await ensureUploadDir('uploads/compliance');
     cb(null, path.join(process.cwd(), 'uploads', 'compliance'));
   },
   filename: (_req, file, cb) => {
@@ -856,7 +856,10 @@ const MAX_FILE_SIZE_MB = 50;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 // Helper to ensure upload directory exists
-async function ensureUploadDir(dirPath: string): Promise<void> {
+async function ensureUploadDir(dirPath: string = 'uploads'): Promise<void> {
+  if (!dirPath) {
+    throw new Error('Upload directory path is required');
+  }
   const fs = await import('fs');
   const path = await import('path');
   const fullPath = path.join(process.cwd(), dirPath);
@@ -987,7 +990,7 @@ complianceRouter.get('/files', requireAuth, async (req: Request, res: Response, 
 complianceRouter.post('/files', requireAuth, async (req: Request, res: Response, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:create', 'compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+      requirePermissionOr(['compliance:create'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
     documentUpload.array('files', 10)(req, res, async (err) => {
@@ -1094,15 +1097,22 @@ complianceRouter.post('/files', requireAuth, async (req: Request, res: Response,
  */
 complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
   try {
-    await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
-    );
-
     const { id } = req.params;
     const action = req.query.action as string | undefined;
 
     if (!id) {
       throw new HttpError(400, 'File ID is required');
+    }
+
+    // Check appropriate permission based on action
+    if (action === 'download') {
+      await new Promise<void>((resolve, reject) =>
+        requirePermissionOr(['compliance:download'])(req, res, (err) => err ? reject(err) : resolve())
+      );
+    } else {
+      await new Promise<void>((resolve, reject) =>
+        requirePermissionOr(['compliance:view'])(req, res, (err) => err ? reject(err) : resolve())
+      );
     }
 
     const file = await prisma.documentFile.findUnique({

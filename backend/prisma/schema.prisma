@@ -605,7 +605,7 @@ model DocumentFolder {
 // Document Repository - Phase 3: File Management
 model DocumentFile {
   id               String   @id @default(cuid())
-  folderId         String
+  folderId         String?   // Nullable to allow files at root level
   fileName         String
   originalFileName String
   fileExtension    String
@@ -620,7 +620,7 @@ model DocumentFile {
   downloadCount    Int      @default(0)
   version          Int      @default(1)
 
-  folder   DocumentFolder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folder   DocumentFolder?   @relation(fields: [folderId], references: [id], onDelete: Cascade)
   fileTags DocumentFileTag[]
 
   @@index([folderId])
