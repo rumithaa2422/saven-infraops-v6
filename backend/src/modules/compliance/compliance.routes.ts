@@ -1611,8 +1611,7 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
       throw new HttpError(400, 'Item IDs are required for selected export');
     }
 
-    const archiver = (await import('archiver')).default;
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
 
     // Set response headers
     res.setHeader('Content-Type', 'application/zip');
