@@ -541,8 +541,13 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
     const totalSubfolders = folders.length;
     
     // Get file counts and storage for current level
+    const fileWhere: any = {};
+    if (parentFolderId !== null) {
+      fileWhere.folderId = parentFolderId;
+    }
+    
     const fileStats = await prisma.documentFile.aggregate({
-      where: { folderId: parentFolderId },
+      where: fileWhere,
       _count: true,
       _sum: { fileSize: true }
     });
@@ -559,7 +564,7 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
     });
     
     const recentFiles = await prisma.documentFile.findMany({
-      where: { folderId: parentFolderId },
+      where: fileWhere,
       orderBy: { modifiedAt: 'desc' },
       take: 3,
       select: { id: true, originalFileName: true, modifiedAt: true }
@@ -903,8 +908,11 @@ complianceRouter.get('/files', requireAuth, async (req: Request, res: Response, 
     const sortBy = (req.query.sortBy as 'fileName' | 'uploadedAt' | 'fileSize') || 'uploadedAt';
     const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
 
-    // Build where clause
-    const where: any = { folderId: folderId || null };
+    // Build where clause - only include folderId if it has a value
+    const where: any = {};
+    if (folderId !== undefined && folderId !== null) {
+      where.folderId = folderId;
+    }
     
     if (search) {
       where.OR = [
