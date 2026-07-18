@@ -356,16 +356,40 @@ export function DocumentRepositoryPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Close folder actions menu
       if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
         setShowActionsMenu(null);
       }
-      if (fileActionsMenuRef.current && !fileActionsMenuRef.current.contains(event.target as Node)) {
+      // Close file actions menu - check all dropdown menus on the page
+      const activeMenu = document.querySelector('.file-actions .actions-dropdown');
+      if (activeMenu && !activeMenu.contains(event.target as Node)) {
+        // Only close if click is outside the entire file-actions container
+        const fileActions = document.querySelectorAll('.file-actions');
+        let clickedInsideAnyMenu = false;
+        fileActions.forEach(container => {
+          if (container.contains(event.target as Node)) {
+            clickedInsideAnyMenu = true;
+          }
+        });
+        if (!clickedInsideAnyMenu) {
+          setShowFileActionsMenu(null);
+        }
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowActionsMenu(null);
         setShowFileActionsMenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -419,8 +443,78 @@ export function DocumentRepositoryPage() {
   // File details handlers
   const handleShowFileDetails = (item: Item) => {
     if (item.itemType === 'file') {
+      setShowFileActionsMenu(null);
       fetchFileDetails(item.id);
       setShowDetailsPanel(true);
+    }
+  };
+
+  const handlePreviewFile = (item: Item) => {
+    setShowFileActionsMenu(null);
+    setPreviewFile(item);
+    setShowPreviewDialog(true);
+  };
+
+  const handleDownloadFile = async (fileId: string, fileName: string) => {
+    setShowFileActionsMenu(null);
+    try {
+      await api.post(`/compliance/files/${fileId}/download`, {
+        userName: user?.name,
+        userEmail: user?.email
+      });
+      
+      const response = await api.get(`/compliance/files/${fileId}?action=download`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      fetchRecentActivity();
+      if (fileDetails?.id === fileId) {
+        fetchFileDetails(fileId);
+      }
+    } catch (err: any) {
+      setError('Failed to download file');
+    }
+  };
+
+  const openRenameFileDialog = (file: Item) => {
+    setShowFileActionsMenu(null);
+    setEditingFile(file);
+    const nameWithoutExt = (file.originalFileName || '').replace(/\.[^/.]+$/, '');
+    setNewFileName(nameWithoutExt);
+    setShowRenameFileDialog(true);
+  };
+
+  const handleOpenMoveDialog = (file: Item) => {
+    setShowFileActionsMenu(null);
+    setMovingFile(file);
+    setSelectedMoveFolder('');
+    fetchAllFolders();
+    setShowMoveDialog(true);
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    setShowFileActionsMenu(null);
+    if (!confirm('Delete this file?')) return;
+
+    try {
+      await api.delete(`/compliance/items`, {
+        data: { itemIds: [fileId] }
+      });
+      setMessage('File deleted');
+      if (fileDetails?.id === fileId) {
+        setShowDetailsPanel(false);
+        setFileDetails(null);
+      }
+      fetchData(true);
+      fetchSummary();
+      fetchRecentActivity();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete file');
     }
   };
 
@@ -459,32 +553,6 @@ export function DocumentRepositoryPage() {
       setError(err.response?.data?.message || 'Failed to update tags');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleDownloadFile = async (fileId: string, fileName: string) => {
-    try {
-      // Increment download count
-      await api.post(`/compliance/files/${fileId}/download`, {
-        userName: user?.name,
-        userEmail: user?.email
-      });
-      
-      const response = await api.get(`/compliance/files/${fileId}?action=download`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      fetchRecentActivity();
-      if (fileDetails?.id === fileId) {
-        fetchFileDetails(fileId);
-      }
-    } catch (err: any) {
-      setError('Failed to download file');
     }
   };
 
@@ -650,14 +718,6 @@ export function DocumentRepositoryPage() {
     } catch (err: any) {
       setError('Failed to load folders');
     }
-  };
-
-  const handleOpenMoveDialog = (file: Item) => {
-    setMovingFile(file);
-    setSelectedMoveFolder('');
-    fetchAllFolders();
-    setShowMoveDialog(true);
-    setShowFileActionsMenu(null);
   };
 
   const handleCreateFolder = async () => {
@@ -829,40 +889,6 @@ export function DocumentRepositoryPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleDeleteFile = async (fileId: string) => {
-    if (!confirm('Delete this file?')) return;
-
-    try {
-      await api.delete(`/compliance/items`, {
-        data: { itemIds: [fileId] }
-      });
-      setMessage('File deleted');
-      setShowFileActionsMenu(null);
-      if (fileDetails?.id === fileId) {
-        setShowDetailsPanel(false);
-        setFileDetails(null);
-      }
-      fetchData(true);
-      fetchSummary();
-      fetchRecentActivity();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete file');
-    }
-  };
-
-  const handlePreviewFile = (file: Item) => {
-    setPreviewFile(file);
-    setShowPreviewDialog(true);
-  };
-
-  const openRenameFileDialog = (file: Item) => {
-    setEditingFile(file);
-    const nameWithoutExt = (file.originalFileName || '').replace(/\.[^/.]+$/, '');
-    setNewFileName(nameWithoutExt);
-    setShowRenameFileDialog(true);
-    setShowFileActionsMenu(null);
   };
 
   const currentFolderName = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Document Repository';
