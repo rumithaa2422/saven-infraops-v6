@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
@@ -16,6 +15,21 @@ type Folder = {
   fileCount: number;
 };
 
+type DocFile = {
+  id: string;
+  folderId: string | null;
+  originalFileName: string;
+  fileExtension: string;
+  mimeType: string;
+  fileSize: number;
+  iconType: string;
+  uploadedBy: string | null;
+  uploadedByEmail: string | null;
+  uploadedAt: string;
+  modifiedAt: string;
+  description: string | null;
+};
+
 type BreadcrumbItem = {
   id: string | null;
   name: string;
@@ -25,7 +39,7 @@ type FolderSummary = {
   totalSubfolders: number;
   totalFiles: number;
   storageUsed: number;
-  recentlyModified: { id: string; name: string; updatedAt: string }[];
+  recentlyModified: { id: string; name: string; updatedAt: string; type: string }[];
 };
 
 type SortOption = 'name_asc' | 'name_desc' | 'newest' | 'oldest' | 'recent';
@@ -44,14 +58,35 @@ const formatDate = (dateStr: string | undefined): string => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+const FileIcon = ({ type }: { type: string }) => {
+  const iconColors: Record<string, string> = {
+    pdf: '#ef4444',
+    word: '#3b82f6',
+    excel: '#22c55e',
+    powerpoint: '#f97316',
+    image: '#8b5cf6',
+    text: '#6b7280',
+    archive: '#eab308',
+    file: '#9ca3af'
+  };
+  const color = iconColors[type] || iconColors.file;
+
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 2V8H20" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+};
+
 export function DocumentRepositoryPage() {
-  const navigate = useNavigate();
   const { user, isSuperAdmin } = useAuth();
   const isAdmin = user?.roles.includes('Admin') ?? false;
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [files, setFiles] = useState<DocFile[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [summary, setSummary] = useState<FolderSummary>({
@@ -61,112 +96,144 @@ export function DocumentRepositoryPage() {
     recentlyModified: []
   });
 
-  // Search and filters
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [dateFilter, setDateFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [showRenameFileDialog, setShowRenameFileDialog] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [editingFile, setEditingFile] = useState<DocFile | null>(null);
+  const [movingFile, setMovingFile] = useState<DocFile | null>(null);
+  const [previewFile, setPreviewFile] = useState<DocFile | null>(null);
+  const [allFolders, setAllFolders] = useState<{ id: string; name: string; parentFolderId: string | null }[]>([]);
+  const [selectedMoveFolder, setSelectedMoveFolder] = useState<string>('');
   const [showActionsMenu, setShowActionsMenu] = useState<string | null>(null);
+  const [showFileActionsMenu, setShowFileActionsMenu] = useState<string | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const fileActionsMenuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Dialog state
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderDescription, setNewFolderDescription] = useState('');
+  const [newFileName, setNewFileName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const fetchFolders = useCallback(async (isRefresh = false, folderId: string | null = currentFolderId) => {
+  const fetchData = useCallback(async (isRefresh = false, folderId: string | null = currentFolderId) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError('');
 
     try {
-      // Convert sort option to backend params
-      let sortByParam: string = 'createdAt';
-      let sortOrder: string = 'desc';
-      
+      let sortByParam = 'createdAt';
+      let sortOrder = 'desc';
+      let fileSortBy = 'uploadedAt';
+
       switch (sortBy) {
         case 'name_asc':
           sortByParam = 'name';
           sortOrder = 'asc';
+          fileSortBy = 'originalFileName';
           break;
         case 'name_desc':
           sortByParam = 'name';
           sortOrder = 'desc';
+          fileSortBy = 'originalFileName';
           break;
         case 'newest':
           sortByParam = 'createdAt';
           sortOrder = 'desc';
+          fileSortBy = 'uploadedAt';
           break;
         case 'oldest':
           sortByParam = 'createdAt';
           sortOrder = 'asc';
+          fileSortBy = 'uploadedAt';
           break;
         case 'recent':
           sortByParam = 'updatedAt';
           sortOrder = 'desc';
+          fileSortBy = 'modifiedAt';
           break;
       }
 
-      const res = await api.get('/compliance/folders', {
-        params: {
-          parentFolderId: folderId || undefined,
-          search: search || undefined,
-          sortBy: sortByParam,
-          sortOrder
-        }
-      });
+      const [foldersRes, filesRes] = await Promise.all([
+        api.get('/compliance/folders', {
+          params: {
+            parentFolderId: folderId || undefined,
+            search: search || undefined,
+            sortBy: sortByParam,
+            sortOrder
+          }
+        }),
+        api.get('/compliance/files', {
+          params: {
+            folderId: folderId || undefined,
+            search: search || undefined,
+            sortBy: fileSortBy,
+            sortOrder
+          }
+        })
+      ]);
 
-      let folderList: Folder[] = res.data.items || [];
-      
-      // Apply date filter on frontend
+      let folderList: Folder[] = foldersRes.data.items || [];
+      let fileList: DocFile[] = filesRes.data.items || [];
+
       if (dateFilter) {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        folderList = folderList.filter(folder => {
-          const folderDate = new Date(folder.updatedAt);
-          const folderDateOnly = new Date(folderDate.getFullYear(), folderDate.getMonth(), folderDate.getDate());
-          
+
+        const filterByDate = (date: string) => {
+          const itemDate = new Date(date);
+          const itemDateOnly = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+
           switch (dateFilter) {
             case 'today':
-              return folderDateOnly.getTime() === today.getTime();
+              return itemDateOnly.getTime() === today.getTime();
             case 'yesterday':
               const yesterday = new Date(today);
               yesterday.setDate(yesterday.getDate() - 1);
-              return folderDateOnly.getTime() === yesterday.getTime();
+              return itemDateOnly.getTime() === yesterday.getTime();
             case 'last7days':
               const sevenDaysAgo = new Date(today);
               sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-              return folderDateOnly >= sevenDaysAgo;
+              return itemDateOnly >= sevenDaysAgo;
             case 'last30days':
               const thirtyDaysAgo = new Date(today);
               thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-              return folderDateOnly >= thirtyDaysAgo;
+              return itemDateOnly >= thirtyDaysAgo;
             case 'thisMonth':
               const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-              return folderDateOnly >= firstOfMonth;
+              return itemDateOnly >= firstOfMonth;
             case 'thisYear':
               const firstOfYear = new Date(today.getFullYear(), 0, 1);
-              return folderDateOnly >= firstOfYear;
+              return itemDateOnly >= firstOfYear;
             default:
               return true;
           }
-        });
+        };
+
+        folderList = folderList.filter(folder => filterByDate(folder.updatedAt));
+        fileList = fileList.filter(file => filterByDate(file.modifiedAt));
       }
 
       setFolders(folderList);
-      setBreadcrumbs(res.data.breadcrumbs || []);
-      setCurrentFolderId(res.data.currentFolderId || null);
-      if (res.data.summary) {
-        setSummary(res.data.summary);
+      setFiles(fileList);
+      setBreadcrumbs(foldersRes.data.breadcrumbs || []);
+      setCurrentFolderId(foldersRes.data.currentFolderId || null);
+      if (foldersRes.data.summary) {
+        setSummary(foldersRes.data.summary);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load folders');
+      setError(err.response?.data?.message || 'Failed to load data');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -174,14 +241,16 @@ export function DocumentRepositoryPage() {
   }, [search, sortBy, dateFilter, currentFolderId]);
 
   useEffect(() => {
-    fetchFolders();
-  }, [fetchFolders]);
+    fetchData();
+  }, [fetchData]);
 
-  // Close actions menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
         setShowActionsMenu(null);
+      }
+      if (fileActionsMenuRef.current && !fileActionsMenuRef.current.contains(event.target as Node)) {
+        setShowFileActionsMenu(null);
       }
     };
 
@@ -191,11 +260,11 @@ export function DocumentRepositoryPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchFolders();
+    fetchData();
   };
 
   const handleRefresh = () => {
-    fetchFolders(true);
+    fetchData(true);
   };
 
   const handleSort = (option: SortOption) => {
@@ -206,7 +275,7 @@ export function DocumentRepositoryPage() {
     setCurrentFolderId(folderId);
     setSearch('');
     setDateFilter('');
-    fetchFolders(true, folderId);
+    fetchData(true, folderId);
   };
 
   const handleExport = async () => {
@@ -222,8 +291,25 @@ export function DocumentRepositoryPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to export documents');
+      setError(err.response?.data?.message || 'Failed to export documents');
     }
+  };
+
+  const fetchAllFolders = async () => {
+    try {
+      const res = await api.get('/compliance/folders/all');
+      setAllFolders(res.data.items || []);
+    } catch (err: any) {
+      setError('Failed to load folders');
+    }
+  };
+
+  const handleOpenMoveDialog = (file: DocFile) => {
+    setMovingFile(file);
+    setSelectedMoveFolder('');
+    fetchAllFolders();
+    setShowMoveDialog(true);
+    setShowFileActionsMenu(null);
   };
 
   const handleCreateFolder = async () => {
@@ -246,9 +332,9 @@ export function DocumentRepositoryPage() {
       setShowCreateDialog(false);
       setNewFolderName('');
       setNewFolderDescription('');
-      fetchFolders(true);
+      fetchData(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create folder');
+      setError(err.response?.data?.message || 'Failed to create folder');
     } finally {
       setSaving(false);
     }
@@ -274,9 +360,9 @@ export function DocumentRepositoryPage() {
       setEditingFolder(null);
       setNewFolderName('');
       setNewFolderDescription('');
-      fetchFolders(true);
+      fetchData(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to rename folder');
+      setError(err.response?.data?.message || 'Failed to rename folder');
     } finally {
       setSaving(false);
     }
@@ -289,7 +375,7 @@ export function DocumentRepositoryPage() {
       await api.delete(`/compliance/folders/${folderId}`);
       setMessage('Folder deleted successfully');
       setShowActionsMenu(null);
-      fetchFolders(true);
+      fetchData(true);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete folder');
     }
@@ -303,20 +389,145 @@ export function DocumentRepositoryPage() {
     setShowActionsMenu(null);
   };
 
-  const hasActiveFilters = dateFilter !== '';
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-  // Get current folder name for header
+    setUploading(true);
+    setUploadProgress(0);
+    setError('');
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+    formData.append('folderId', currentFolderId || '');
+
+    try {
+      await api.post('/compliance/files', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            setUploadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+          }
+        }
+      });
+
+      setMessage(`Successfully uploaded ${files.length} file(s)`);
+      setShowUploadDialog(false);
+      fetchData(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to upload files');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRenameFile = async () => {
+    if (!editingFile || !newFileName.trim()) {
+      setError('File name is required');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      await api.patch(`/compliance/files/${editingFile.id}`, {
+        originalFileName: newFileName.trim()
+      });
+
+      setMessage('File renamed successfully');
+      setShowRenameFileDialog(false);
+      setEditingFile(null);
+      setNewFileName('');
+      fetchData(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to rename file');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMoveFile = async () => {
+    if (!movingFile) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      await api.patch(`/compliance/files/${movingFile.id}`, {
+        folderId: selectedMoveFolder || null
+      });
+
+      setMessage('File moved successfully');
+      setShowMoveDialog(false);
+      setMovingFile(null);
+      setSelectedMoveFolder('');
+      fetchData(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to move file');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    if (!confirm('Are you sure you want to delete this file?')) return;
+
+    try {
+      await api.delete(`/compliance/files/${fileId}`);
+      setMessage('File deleted successfully');
+      setShowFileActionsMenu(null);
+      fetchData(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete file');
+    }
+  };
+
+  const handleDownloadFile = async (fileId: string, fileName: string) => {
+    try {
+      const response = await api.get(`/compliance/files/${fileId}?action=download`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError('Failed to download file');
+    }
+  };
+
+  const handlePreviewFile = (file: DocFile) => {
+    setPreviewFile(file);
+    setShowPreviewDialog(true);
+  };
+
+  const openRenameFileDialog = (file: DocFile) => {
+    setEditingFile(file);
+    const nameWithoutExt = file.originalFileName.replace(/\.[^/.]+$/, '');
+    setNewFileName(nameWithoutExt);
+    setShowRenameFileDialog(true);
+    setShowFileActionsMenu(null);
+  };
+
+  const hasActiveFilters = dateFilter !== '';
   const currentFolderName = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Document Repository';
+  const totalItems = folders.length + files.length;
 
   return (
     <div className="doc-repo-page">
       <div className="page-container">
-        {/* Breadcrumbs */}
         <div className="doc-repo-breadcrumbs">
           {breadcrumbs.map((crumb, index) => (
             <span key={crumb.id || 'root'} className="breadcrumb-item">
               {index > 0 && <span className="breadcrumb-separator">&gt;</span>}
-              <button 
+              <button
                 type="button"
                 className={`breadcrumb-link ${index === breadcrumbs.length - 1 ? 'active' : ''}`}
                 onClick={() => handleNavigateToFolder(crumb.id)}
@@ -328,20 +539,15 @@ export function DocumentRepositoryPage() {
           ))}
         </div>
 
-        {/* Page Header */}
         <div className="page-header">
           <div className="page-title-section">
             <h1>{currentFolderName}</h1>
             <p className="page-subtitle">
-              {currentFolderId 
-                ? `Managing subfolders and files within this folder`
-                : 'Organize and manage your documents in folders'
-              }
+              {currentFolderId ? 'Managing subfolders and files' : 'Organize and manage your documents'}
             </p>
           </div>
         </div>
 
-        {/* Messages */}
         {message && (
           <div className="alert alert-success">
             {message}
@@ -355,7 +561,6 @@ export function DocumentRepositoryPage() {
           </div>
         )}
 
-        {/* Summary Cards */}
         <div className="doc-repo-summary-cards">
           <div className="doc-repo-summary-card">
             <div className="doc-repo-summary-icon folders">
@@ -364,7 +569,7 @@ export function DocumentRepositoryPage() {
               </svg>
             </div>
             <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Total Subfolders</span>
+              <span className="doc-repo-summary-label">Folders</span>
               <span className="doc-repo-summary-value">{loading ? '...' : summary.totalSubfolders}</span>
             </div>
           </div>
@@ -377,7 +582,7 @@ export function DocumentRepositoryPage() {
               </svg>
             </div>
             <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Total Files</span>
+              <span className="doc-repo-summary-label">Files</span>
               <span className="doc-repo-summary-value">{loading ? '...' : summary.totalFiles}</span>
             </div>
           </div>
@@ -410,7 +615,6 @@ export function DocumentRepositoryPage() {
           </div>
         </div>
 
-        {/* Toolbar */}
         <div className="toolbar">
           <form className="search-form" onSubmit={handleSearch}>
             <div className="search-input-wrapper">
@@ -420,7 +624,7 @@ export function DocumentRepositoryPage() {
               </svg>
               <input
                 type="text"
-                placeholder="Search folders..."
+                placeholder="Search folders and files..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="search-input"
@@ -430,11 +634,7 @@ export function DocumentRepositoryPage() {
           </form>
 
           <div className="toolbar-actions">
-            <button
-              type="button"
-              className={`toolbar-btn ${showFilters ? 'active' : ''}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
+            <button type="button" className={`toolbar-btn ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 4H21V6H3V4ZM7 11H17V13H7V11ZM10 18H14V20H10V18Z" stroke="currentColor" strokeWidth="2"/>
               </svg>
@@ -450,30 +650,15 @@ export function DocumentRepositoryPage() {
                 Sort
               </button>
               <div className="sort-dropdown-content">
-                <button className={sortBy === 'name_asc' ? 'active' : ''} onClick={() => handleSort('name_asc')}>
-                  Name A-Z
-                </button>
-                <button className={sortBy === 'name_desc' ? 'active' : ''} onClick={() => handleSort('name_desc')}>
-                  Name Z-A
-                </button>
-                <button className={sortBy === 'newest' ? 'active' : ''} onClick={() => handleSort('newest')}>
-                  Newest
-                </button>
-                <button className={sortBy === 'oldest' ? 'active' : ''} onClick={() => handleSort('oldest')}>
-                  Oldest
-                </button>
-                <button className={sortBy === 'recent' ? 'active' : ''} onClick={() => handleSort('recent')}>
-                  Recently Modified
-                </button>
+                <button className={sortBy === 'name_asc' ? 'active' : ''} onClick={() => handleSort('name_asc')}>Name A-Z</button>
+                <button className={sortBy === 'name_desc' ? 'active' : ''} onClick={() => handleSort('name_desc')}>Name Z-A</button>
+                <button className={sortBy === 'newest' ? 'active' : ''} onClick={() => handleSort('newest')}>Newest</button>
+                <button className={sortBy === 'oldest' ? 'active' : ''} onClick={() => handleSort('oldest')}>Oldest</button>
+                <button className={sortBy === 'recent' ? 'active' : ''} onClick={() => handleSort('recent')}>Recently Modified</button>
               </div>
             </div>
 
-            <button
-              type="button"
-              className={`toolbar-btn ${refreshing ? 'refreshing' : ''}`}
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
+            <button type="button" className={`toolbar-btn ${refreshing ? 'refreshing' : ''}`} onClick={handleRefresh} disabled={refreshing}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={refreshing ? 'spin' : ''}>
                 <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -492,17 +677,26 @@ export function DocumentRepositoryPage() {
             )}
 
             {isSuperAdmin && (
-              <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                New Folder
-              </button>
+              <>
+                <button type="button" className="toolbar-btn" onClick={() => setShowUploadDialog(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Upload
+                </button>
+                <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  New Folder
+                </button>
+              </>
             )}
           </div>
         </div>
 
-        {/* Filters Panel */}
         {showFilters && (
           <div className="filters-panel">
             <div className="filters-grid">
@@ -521,52 +715,46 @@ export function DocumentRepositoryPage() {
             </div>
             {hasActiveFilters && (
               <div className="filter-actions">
-                <button type="button" className="clear-filters-btn" onClick={() => setDateFilter('')}>
-                  Clear Filters
-                </button>
-                <button type="button" className="apply-filters-btn" onClick={() => fetchFolders()}>
-                  Apply Filters
-                </button>
+                <button type="button" className="clear-filters-btn" onClick={() => setDateFilter('')}>Clear Filters</button>
+                <button type="button" className="apply-filters-btn" onClick={() => fetchData()}>Apply Filters</button>
               </div>
             )}
           </div>
         )}
 
-        {/* Folders Grid */}
         <div className="doc-repo-grid-section">
           <div className="section-header">
-            <h3>Subfolders</h3>
-            <span className="section-count">{folders.length} items</span>
+            <h3>Contents</h3>
+            <span className="section-count">{totalItems} items</span>
           </div>
 
           {loading ? (
             <div className="table-loading">
               <div className="loading-spinner"></div>
-              <p>Loading folders...</p>
+              <p>Loading...</p>
             </div>
-          ) : folders.length === 0 && !hasActiveFilters && !search ? (
+          ) : totalItems === 0 && !hasActiveFilters && !search ? (
             <div className="doc-repo-empty">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              <p>No folders found</p>
-              <span>{currentFolderId ? 'This folder is empty' : 'Create your first folder to organize documents'}</span>
+              <p>No folders or files found</p>
+              <span>{currentFolderId ? 'This folder is empty' : 'Create your first folder or upload files'}</span>
               {isSuperAdmin && (
-                <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>
-                  Create Folder
-                </button>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                  <button type="button" className="secondary" onClick={() => setShowUploadDialog(true)}>Upload Files</button>
+                  <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>Create Folder</button>
+                </div>
               )}
             </div>
-          ) : folders.length === 0 ? (
+          ) : totalItems === 0 ? (
             <div className="doc-repo-empty">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
                 <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <p>No folders match your filters</p>
-              <button type="button" className="secondary" onClick={() => { setSearch(''); setDateFilter(''); fetchFolders(); }}>
-                Clear Filters
-              </button>
+              <p>No results match your filters</p>
+              <button type="button" className="secondary" onClick={() => { setSearch(''); setDateFilter(''); fetchData(); }}>Clear Filters</button>
             </div>
           ) : (
             <div className="doc-repo-grid">
@@ -575,16 +763,12 @@ export function DocumentRepositoryPage() {
                   <div className="folder-card-header">
                     <div className="folder-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="#5468ff" strokeWidth="2"/>
                       </svg>
                     </div>
                     {(isSuperAdmin || isAdmin) && (
                       <div className="folder-actions" ref={showActionsMenu === folder.id ? undefined : actionsMenuRef} onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="actions-menu-btn"
-                          onClick={(e) => { e.stopPropagation(); setShowActionsMenu(showActionsMenu === folder.id ? null : folder.id); }}
-                        >
+                        <button type="button" className="actions-menu-btn" onClick={(e) => { e.stopPropagation(); setShowActionsMenu(showActionsMenu === folder.id ? null : folder.id); }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="12" cy="5" r="2" fill="currentColor"/>
                             <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -593,28 +777,8 @@ export function DocumentRepositoryPage() {
                         </button>
                         {showActionsMenu === folder.id && (
                           <div className="actions-dropdown">
-                            <button onClick={() => openRenameDialog(folder)}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Rename
-                            </button>
-                            <button onClick={() => handleDeleteFolder(folder.id)} className="delete">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Delete
-                            </button>
-                            <button>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                                <path d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                                <path d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              </svg>
-                              Properties
-                            </button>
+                            <button onClick={() => openRenameDialog(folder)}>Rename</button>
+                            <button onClick={() => handleDeleteFolder(folder.id)} className="delete">Delete</button>
                           </div>
                         )}
                       </div>
@@ -622,17 +786,57 @@ export function DocumentRepositoryPage() {
                   </div>
                   <div className="folder-card-body">
                     <h4 className="folder-name">{folder.name}</h4>
-                    {folder.description && (
-                      <p className="folder-description">{folder.description}</p>
-                    )}
+                    {folder.description && <p className="folder-description">{folder.description}</p>}
                     <div className="folder-stats">
-                      <span>{folder.subfolderCount} subfolders</span>
+                      <span>{folder.subfolderCount} folders</span>
                       <span>{folder.fileCount} files</span>
                     </div>
                   </div>
                   <div className="folder-card-footer">
                     <span className="folder-date">Created {formatDate(folder.createdAt)}</span>
-                    <span className="folder-date">Modified {formatDate(folder.updatedAt)}</span>
+                  </div>
+                </div>
+              ))}
+
+              {files.map((file) => (
+                <div key={file.id} className="doc-repo-file-card">
+                  <div className="file-card-header">
+                    <div className="file-icon">
+                      <FileIcon type={file.iconType} />
+                    </div>
+                    {(isSuperAdmin || isAdmin) && (
+                      <div className="file-actions" ref={showFileActionsMenu === file.id ? undefined : fileActionsMenuRef}>
+                        <button type="button" className="actions-menu-btn" onClick={() => setShowFileActionsMenu(showFileActionsMenu === file.id ? null : file.id)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="5" r="2" fill="currentColor"/>
+                            <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                            <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                          </svg>
+                        </button>
+                        {showFileActionsMenu === file.id && (
+                          <div className="actions-dropdown">
+                            {(file.iconType === 'pdf' || file.iconType === 'image') && (
+                              <button onClick={() => handlePreviewFile(file)}>Preview</button>
+                            )}
+                            <button onClick={() => handleDownloadFile(file.id, file.originalFileName)}>Download</button>
+                            <button onClick={() => openRenameFileDialog(file)}>Rename</button>
+                            <button onClick={() => handleOpenMoveDialog(file)}>Move</button>
+                            <button onClick={() => handleDeleteFile(file.id)} className="delete">Delete</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="file-card-body">
+                    <h4 className="file-name">{file.originalFileName}</h4>
+                    <div className="file-stats">
+                      <span>{file.fileExtension.toUpperCase()}</span>
+                      <span>{formatBytes(file.fileSize)}</span>
+                    </div>
+                  </div>
+                  <div className="file-card-footer">
+                    <span className="file-date">{file.uploadedByEmail || 'Unknown'}</span>
+                    <span className="file-date">Modified {formatDate(file.modifiedAt)}</span>
                   </div>
                 </div>
               ))}
@@ -641,97 +845,180 @@ export function DocumentRepositoryPage() {
         </div>
       </div>
 
-      {/* Create Folder Dialog */}
       {showCreateDialog && (
         <div className="modal-overlay" onClick={() => setShowCreateDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Create New Folder</h2>
               <button type="button" className="modal-close" onClick={() => setShowCreateDialog(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
             </div>
             <div className="modal-body">
               {error && <div className="alert alert-error">{error}</div>}
               <div className="form-group">
-                <label htmlFor="folderName">Folder Name *</label>
-                <input
-                  type="text"
-                  id="folderName"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Enter folder name"
-                  autoFocus
-                />
+                <label>Folder Name *</label>
+                <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Enter folder name" autoFocus />
               </div>
               <div className="form-group">
-                <label htmlFor="folderDescription">Description (optional)</label>
-                <textarea
-                  id="folderDescription"
-                  value={newFolderDescription}
-                  onChange={(e) => setNewFolderDescription(e.target.value)}
-                  placeholder="Enter folder description"
-                  rows={3}
-                />
+                <label>Description (optional)</label>
+                <textarea value={newFolderDescription} onChange={(e) => setNewFolderDescription(e.target.value)} placeholder="Enter folder description" rows={3} />
               </div>
             </div>
             <div className="modal-footer">
-              <button type="button" className="secondary" onClick={() => setShowCreateDialog(false)}>
-                Cancel
-              </button>
-              <button type="button" className="primary" onClick={handleCreateFolder} disabled={saving}>
-                {saving ? 'Creating...' : 'Create Folder'}
-              </button>
+              <button type="button" className="secondary" onClick={() => setShowCreateDialog(false)}>Cancel</button>
+              <button type="button" className="primary" onClick={handleCreateFolder} disabled={saving}>{saving ? 'Creating...' : 'Create Folder'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Rename Folder Dialog */}
       {showRenameDialog && editingFolder && (
         <div className="modal-overlay" onClick={() => setShowRenameDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Rename Folder</h2>
               <button type="button" className="modal-close" onClick={() => setShowRenameDialog(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
             </div>
             <div className="modal-body">
               {error && <div className="alert alert-error">{error}</div>}
               <div className="form-group">
-                <label htmlFor="folderName">Folder Name *</label>
-                <input
-                  type="text"
-                  id="folderName"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Enter folder name"
-                  autoFocus
-                />
+                <label>Folder Name *</label>
+                <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Enter folder name" autoFocus />
               </div>
               <div className="form-group">
-                <label htmlFor="folderDescription">Description (optional)</label>
-                <textarea
-                  id="folderDescription"
-                  value={newFolderDescription}
-                  onChange={(e) => setNewFolderDescription(e.target.value)}
-                  placeholder="Enter folder description"
-                  rows={3}
-                />
+                <label>Description (optional)</label>
+                <textarea value={newFolderDescription} onChange={(e) => setNewFolderDescription(e.target.value)} placeholder="Enter folder description" rows={3} />
               </div>
             </div>
             <div className="modal-footer">
-              <button type="button" className="secondary" onClick={() => setShowRenameDialog(false)}>
-                Cancel
+              <button type="button" className="secondary" onClick={() => setShowRenameDialog(false)}>Cancel</button>
+              <button type="button" className="primary" onClick={handleRenameFolder} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUploadDialog && (
+        <div className="modal-overlay" onClick={() => !uploading && setShowUploadDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Upload Files</h2>
+              <button type="button" className="modal-close" onClick={() => !uploading && setShowUploadDialog(false)} disabled={uploading}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
-              <button type="button" className="primary" onClick={handleRenameFolder} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
+            </div>
+            <div className="modal-body">
+              {error && <div className="alert alert-error">{error}</div>}
+              <div className="upload-dropzone">
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.zip" disabled={uploading} style={{ display: 'none' }} />
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <p>Click to select files</p>
+                <span>PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, PNG, JPG, JPEG, TXT, ZIP (Max 50MB each)</span>
+                <button type="button" className="primary" onClick={() => fileInputRef.current?.click()} disabled={uploading}>Select Files</button>
+              </div>
+              {uploading && (
+                <div className="upload-progress">
+                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div></div>
+                  <span>Uploading... {uploadProgress}%</span>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="secondary" onClick={() => setShowUploadDialog(false)} disabled={uploading}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRenameFileDialog && editingFile && (
+        <div className="modal-overlay" onClick={() => setShowRenameFileDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Rename File</h2>
+              <button type="button" className="modal-close" onClick={() => setShowRenameFileDialog(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
+            </div>
+            <div className="modal-body">
+              {error && <div className="alert alert-error">{error}</div>}
+              <p style={{ marginBottom: '16px', color: 'var(--muted)' }}>Extension: .{editingFile.fileExtension}</p>
+              <div className="form-group">
+                <label>File Name *</label>
+                <input type="text" value={newFileName} onChange={(e) => setNewFileName(e.target.value)} placeholder="Enter file name" autoFocus />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="secondary" onClick={() => setShowRenameFileDialog(false)}>Cancel</button>
+              <button type="button" className="primary" onClick={handleRenameFile} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMoveDialog && movingFile && (
+        <div className="modal-overlay" onClick={() => setShowMoveDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Move File</h2>
+              <button type="button" className="modal-close" onClick={() => setShowMoveDialog(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              {error && <div className="alert alert-error">{error}</div>}
+              <p style={{ marginBottom: '16px' }}>Moving: <strong>{movingFile.originalFileName}</strong></p>
+              <div className="form-group">
+                <label>Destination Folder</label>
+                <select value={selectedMoveFolder} onChange={(e) => setSelectedMoveFolder(e.target.value)}>
+                  <option value="">Root (Document Repository)</option>
+                  {allFolders.filter(f => f.id !== movingFile.folderId).map(folder => (
+                    <option key={folder.id} value={folder.id}>{folder.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="secondary" onClick={() => setShowMoveDialog(false)}>Cancel</button>
+              <button type="button" className="primary" onClick={handleMoveFile} disabled={saving}>{saving ? 'Moving...' : 'Move File'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPreviewDialog && previewFile && (
+        <div className="modal-overlay" onClick={() => setShowPreviewDialog(false)}>
+          <div className="modal-content preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{previewFile.originalFileName}</h2>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" className="toolbar-btn" onClick={() => handleDownloadFile(previewFile.id, previewFile.originalFileName)}>
+                  Download
+                </button>
+                <button type="button" className="modal-close" onClick={() => setShowPreviewDialog(false)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+            </div>
+            <div className="modal-body preview-body">
+              {(previewFile.iconType === 'pdf' || previewFile.iconType === 'image') ? (
+                <iframe src={`/api/compliance/files/${previewFile.id}?action=preview`} title={previewFile.originalFileName} className="preview-iframe" />
+              ) : (
+                <div className="preview-unavailable">
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p>Preview unavailable for this file type</p>
+                  <button type="button" className="primary" onClick={() => handleDownloadFile(previewFile.id, previewFile.originalFileName)}>Download to view</button>
+                </div>
+              )}
             </div>
           </div>
         </div>

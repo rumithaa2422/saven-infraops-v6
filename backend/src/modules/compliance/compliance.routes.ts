@@ -507,7 +507,18 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
           select: { children: true }
         }
       }
-    }) as FolderWithCount[];
+    });
+
+    // Get file counts for each folder
+    const folderIds = folders.map(f => f.id);
+    const fileCounts = await prisma.documentFile.groupBy({
+      by: ['folderId'],
+      _count: true,
+      _sum: { fileSize: true },
+      where: { folderId: { in: folderIds } }
+    });
+
+    const fileCountMap = new Map(fileCounts.map(fc => [fc.folderId, { count: fc._count, size: fc._sum.fileSize || 0 }]));
 
     // Format folders with counts
     const formattedFolders = folders.map(folder => ({
@@ -520,24 +531,45 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
       createdAt: folder.createdAt,
       updatedAt: folder.updatedAt,
       subfolderCount: folder._count.children,
-      fileCount: 0 // Will be updated when files are implemented
+      fileCount: fileCountMap.get(folder.id)?.count || 0
     }));
 
     // Get breadcrumbs
     const breadcrumbs = await getBreadcrumbs(parentFolderId);
 
-    // Get summary for current folder level
+    // Get summary for current folder level (files at this level only)
     const totalSubfolders = folders.length;
-    const totalFiles = 0; // Will be updated when files are implemented
-    const storageUsed = 0; // Will be updated when files are implemented
+    
+    // Get file counts and storage for current level
+    const fileStats = await prisma.documentFile.aggregate({
+      where: { folderId: parentFolderId },
+      _count: true,
+      _sum: { fileSize: true }
+    });
+    
+    const totalFiles = fileStats._count;
+    const storageUsed = fileStats._sum.fileSize || 0;
 
-    // Get recently modified folders at this level
+    // Get recently modified items (folders and files combined, sorted by updatedAt)
     const recentFolders = await prisma.documentFolder.findMany({
       where: { parentFolderId },
       orderBy: { updatedAt: 'desc' },
-      take: 5,
+      take: 3,
       select: { id: true, name: true, updatedAt: true }
     });
+    
+    const recentFiles = await prisma.documentFile.findMany({
+      where: { folderId: parentFolderId },
+      orderBy: { modifiedAt: 'desc' },
+      take: 3,
+      select: { id: true, originalFileName: true, modifiedAt: true }
+    });
+
+    // Combine and sort by most recent
+    const recentItems = [
+      ...recentFolders.map(f => ({ id: f.id, name: f.name, updatedAt: f.updatedAt, type: 'folder' })),
+      ...recentFiles.map(f => ({ id: f.id, name: f.originalFileName, updatedAt: f.modifiedAt, type: 'file' }))
+    ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5);
 
     res.json({
       items: formattedFolders,
@@ -547,9 +579,35 @@ complianceRouter.get('/folders', requireAuth, async (req: Request, res: Response
         totalSubfolders,
         totalFiles,
         storageUsed,
-        recentlyModified: recentFolders
+        recentlyModified: recentItems
       }
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/folders/all
+ * Get all folders for folder picker (move dialog)
+ */
+complianceRouter.get('/folders/all', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    // Get all folders with their path for tree view
+    const folders = await prisma.documentFolder.findMany({
+      select: {
+        id: true,
+        name: true,
+        parentFolderId: true
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    res.json({ items: folders });
   } catch (error) {
     next(error);
   }
@@ -735,6 +793,482 @@ complianceRouter.get('/folders/:id/breadcrumbs', requireAuth, async (req: Reques
     const breadcrumbs = await getBreadcrumbs(id);
 
     res.json({ breadcrumbs });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// Document Repository - File Management (Phase 3)
+// ============================================
+
+// Allowed file extensions and their MIME types
+const ALLOWED_EXTENSIONS = new Map([
+  ['pdf', 'application/pdf'],
+  ['doc', 'application/msword'],
+  ['docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  ['xls', 'application/vnd.ms-excel'],
+  ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  ['ppt', 'application/vnd.ms-powerpoint'],
+  ['pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+  ['png', 'image/png'],
+  ['jpg', 'image/jpeg'],
+  ['jpeg', 'image/jpeg'],
+  ['txt', 'text/plain'],
+  ['zip', 'application/zip'],
+]);
+
+const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// Helper to ensure upload directory exists
+async function ensureUploadDir(dirPath: string): Promise<void> {
+  const fs = await import('fs');
+  const path = await import('path');
+  const fullPath = path.join(process.cwd(), dirPath);
+  try {
+    await fs.promises.access(fullPath);
+  } catch {
+    await fs.promises.mkdir(fullPath, { recursive: true });
+  }
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: async (_req, _file, cb) => {
+    await ensureUploadDir('uploads/documents');
+    cb(null, path.join(process.cwd(), 'uploads', 'documents'));
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `doc-${uniqueSuffix}${ext}`);
+  }
+});
+
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = path.extname(file.originalname).toLowerCase().slice(1);
+  if (ALLOWED_EXTENSIONS.has(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`File type .${ext} is not allowed. Allowed types: ${[...ALLOWED_EXTENSIONS.keys()].join(', ')}`));
+  }
+};
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: MAX_FILE_SIZE_BYTES,
+    files: 10 // Max 10 files per upload
+  },
+  fileFilter
+});
+
+// Get file icon based on extension
+function getFileIcon(fileExtension: string): string {
+  const icons: Record<string, string> = {
+    pdf: 'pdf',
+    doc: 'word',
+    docx: 'word',
+    xls: 'excel',
+    xlsx: 'excel',
+    ppt: 'powerpoint',
+    pptx: 'powerpoint',
+    png: 'image',
+    jpg: 'image',
+    jpeg: 'image',
+    txt: 'text',
+    zip: 'archive',
+  };
+  return icons[fileExtension.toLowerCase()] || 'file';
+}
+
+/**
+ * GET /api/compliance/files
+ * List files in a folder
+ * Query params:
+ *   - folderId: (optional) ID of folder, null for root
+ *   - search: Search term
+ *   - sortBy: fileName | uploadedAt | fileSize
+ *   - sortOrder: asc | desc
+ */
+complianceRouter.get('/files', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const folderId = req.query.folderId as string | null;
+    const search = req.query.search as string | undefined;
+    const sortBy = (req.query.sortBy as 'fileName' | 'uploadedAt' | 'fileSize') || 'uploadedAt';
+    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
+
+    // Build where clause
+    const where: any = { folderId: folderId || null };
+    
+    if (search) {
+      where.OR = [
+        { originalFileName: { contains: search } },
+        { description: { contains: search } }
+      ];
+    }
+
+    // Fetch files
+    const files = await prisma.documentFile.findMany({
+      where,
+      orderBy: { [sortBy]: sortOrder }
+    });
+
+    // Format files with icon type
+    const formattedFiles = files.map(file => ({
+      id: file.id,
+      folderId: file.folderId,
+      originalFileName: file.originalFileName,
+      fileExtension: file.fileExtension,
+      mimeType: file.mimeType,
+      fileSize: file.fileSize,
+      iconType: getFileIcon(file.fileExtension),
+      uploadedBy: file.uploadedBy,
+      uploadedByEmail: file.uploadedByEmail,
+      uploadedAt: file.uploadedAt,
+      modifiedAt: file.modifiedAt,
+      description: file.description
+    }));
+
+    res.json({ items: formattedFiles });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/compliance/files
+ * Upload one or multiple files
+ */
+complianceRouter.post('/files', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:create', 'compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    upload.array('files', 10)(req, res, async (err) => {
+      if (err) {
+        if (err.message && err.message.includes('not allowed')) {
+          return res.status(400).json({ message: err.message });
+        }
+        if (err.message && err.message.includes('File too large')) {
+          return res.status(400).json({ message: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.` });
+        }
+        return res.status(400).json({ message: 'File upload failed' });
+      }
+
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: 'No files uploaded' });
+      }
+
+      const folderId = req.body.folderId || null;
+
+      // Validate folder exists if provided
+      if (folderId) {
+        const folder = await prisma.documentFolder.findUnique({ where: { id: folderId } });
+        if (!folder) {
+          // Clean up uploaded files
+          for (const file of files) {
+            try {
+              await fs.unlink(path.join(process.cwd(), 'uploads', 'documents', file.filename));
+            } catch { /* ignore */ }
+          }
+          return res.status(404).json({ message: 'Folder not found' });
+        }
+      }
+
+      const uploadedFiles = [];
+      const errors = [];
+
+      for (const file of files) {
+        const ext = path.extname(file.originalname).toLowerCase().slice(1);
+        
+        // Double-check extension
+        if (!ALLOWED_EXTENSIONS.has(ext)) {
+          errors.push({ fileName: file.originalname, error: `File type .${ext} is not allowed` });
+          try {
+            await fs.unlink(path.join(process.cwd(), 'uploads', 'documents', file.filename));
+          } catch { /* ignore */ }
+          continue;
+        }
+
+        try {
+          const docFile = await prisma.documentFile.create({
+            data: {
+              folderId: folderId,
+              fileName: file.filename,
+              originalFileName: file.originalname,
+              fileExtension: ext,
+              mimeType: file.mimetype,
+              fileSize: file.size,
+              storagePath: path.join('uploads', 'documents', file.filename),
+              uploadedBy: req.user?.id || null,
+              uploadedByEmail: req.user?.email || null
+            }
+          });
+
+          uploadedFiles.push({
+            id: docFile.id,
+            folderId: docFile.folderId,
+            originalFileName: docFile.originalFileName,
+            fileExtension: docFile.fileExtension,
+            mimeType: docFile.mimeType,
+            fileSize: docFile.fileSize,
+            iconType: getFileIcon(docFile.fileExtension),
+            uploadedBy: docFile.uploadedBy,
+            uploadedByEmail: docFile.uploadedByEmail,
+            uploadedAt: docFile.uploadedAt,
+            modifiedAt: docFile.modifiedAt,
+            description: docFile.description
+          });
+        } catch (dbErr) {
+          errors.push({ fileName: file.originalname, error: 'Failed to save file metadata' });
+          try {
+            await fs.unlink(path.join(process.cwd(), 'uploads', 'documents', file.filename));
+          } catch { /* ignore */ }
+        }
+      }
+
+      res.status(201).json({
+        uploaded: uploadedFiles,
+        errors,
+        totalUploaded: uploadedFiles.length,
+        totalErrors: errors.length
+      });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/files/:id
+ * Download or preview a file
+ * Query params:
+ *   - action: 'download' | 'preview'
+ */
+complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const action = (req.query.action as string) || 'download';
+
+    if (!id) {
+      throw new HttpError(400, 'File ID is required');
+    }
+
+    const file = await prisma.documentFile.findUnique({ where: { id } });
+    if (!file) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    const filePath = path.join(process.cwd(), file.storagePath);
+    
+    try {
+      await fs.access(filePath);
+    } catch {
+      throw new HttpError(404, 'File not found on disk');
+    }
+
+    if (action === 'preview') {
+      // Check if file is previewable (images and PDFs)
+      const previewableTypes = ['png', 'jpg', 'jpeg', 'pdf'];
+      if (previewableTypes.includes(file.fileExtension.toLowerCase())) {
+        res.setHeader('Content-Type', file.mimeType);
+        res.setHeader('Content-Disposition', `inline; filename="${file.originalFileName}"`);
+      } else {
+        return res.status(400).json({ 
+          message: 'Preview unavailable for this file type',
+          downloadUrl: `/api/compliance/files/${id}?action=download`
+        });
+      }
+    } else {
+      res.setHeader('Content-Type', file.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${file.originalFileName}"`);
+    }
+
+    res.setHeader('Content-Length', file.fileSize);
+    const fileStream = await fs.readFile(filePath);
+    res.send(fileStream);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/compliance/files/:id
+ * Rename or move a file
+ */
+complianceRouter.patch('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const { originalFileName, folderId, description } = req.body;
+
+    if (!id) {
+      throw new HttpError(400, 'File ID is required');
+    }
+
+    const existingFile = await prisma.documentFile.findUnique({ where: { id } });
+    if (!existingFile) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    const updateData: any = {};
+
+    // Handle rename - keep extension
+    if (originalFileName !== undefined) {
+      if (originalFileName.trim() === '') {
+        throw new HttpError(400, 'File name cannot be empty');
+      }
+      // Preserve original extension
+      const currentExt = existingFile.fileExtension;
+      const newName = originalFileName.trim();
+      // Only update if name changed (keep extension logic handled by frontend)
+      updateData.originalFileName = newName.endsWith(`.${currentExt}`) ? newName : `${newName}.${currentExt}`;
+    }
+
+    // Handle move to different folder
+    if (folderId !== undefined) {
+      if (folderId === null) {
+        updateData.folderId = null;
+      } else {
+        const targetFolder = await prisma.documentFolder.findUnique({ where: { id: folderId } });
+        if (!targetFolder) {
+          throw new HttpError(404, 'Target folder not found');
+        }
+        updateData.folderId = folderId;
+      }
+    }
+
+    if (description !== undefined) {
+      updateData.description = description?.trim() || null;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new HttpError(400, 'No valid fields to update');
+    }
+
+    const file = await prisma.documentFile.update({
+      where: { id },
+      data: updateData
+    });
+
+    res.json({ 
+      item: {
+        id: file.id,
+        folderId: file.folderId,
+        originalFileName: file.originalFileName,
+        fileExtension: file.fileExtension,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+        iconType: getFileIcon(file.fileExtension),
+        uploadedBy: file.uploadedBy,
+        uploadedByEmail: file.uploadedByEmail,
+        uploadedAt: file.uploadedAt,
+        modifiedAt: file.modifiedAt,
+        description: file.description
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/compliance/files/:id
+ * Delete a file
+ */
+complianceRouter.delete('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage', 'compliance:delete'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+
+    if (!id) {
+      throw new HttpError(400, 'File ID is required');
+    }
+
+    const file = await prisma.documentFile.findUnique({ where: { id } });
+    if (!file) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    // Delete physical file
+    const filePath = path.join(process.cwd(), file.storagePath);
+    try {
+      await fs.unlink(filePath);
+    } catch {
+      // File might already be deleted, continue with database deletion
+    }
+
+    // Delete metadata
+    await prisma.documentFile.delete({ where: { id } });
+
+    res.json({ success: true, message: 'File deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/files/:id/info
+ * Get file info
+ */
+complianceRouter.get('/files/:id/info', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+
+    if (!id) {
+      throw new HttpError(400, 'File ID is required');
+    }
+
+    const file = await prisma.documentFile.findUnique({ where: { id } });
+    if (!file) {
+      throw new HttpError(404, 'File not found');
+    }
+
+    // Get folder path for breadcrumbs
+    let folderPath: { id: string; name: string }[] = [];
+    if (file.folderId) {
+      folderPath = await getBreadcrumbs(file.folderId);
+    }
+
+    res.json({
+      item: {
+        id: file.id,
+        folderId: file.folderId,
+        originalFileName: file.originalFileName,
+        fileExtension: file.fileExtension,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+        iconType: getFileIcon(file.fileExtension),
+        uploadedBy: file.uploadedBy,
+        uploadedByEmail: file.uploadedByEmail,
+        uploadedAt: file.uploadedAt,
+        modifiedAt: file.modifiedAt,
+        description: file.description
+      },
+      folderPath
+    });
   } catch (error) {
     next(error);
   }
