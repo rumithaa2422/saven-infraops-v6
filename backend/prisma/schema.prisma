@@ -107,6 +107,7 @@ model User {
   requestedTickets     ServiceRequest[]      @relation("RequesterTickets")
   assignedTickets      ServiceRequest[]      @relation("AssigneeTickets")
   inventoryAssignments InventoryAssignment[]
+  vendorRelationships  Vendor[]              @relation("VendorOwner")
 }
 
 model UserActivationToken {
@@ -580,7 +581,7 @@ model Vendor {
   updatedAt            DateTime  @updatedAt
 
   // Relations
-  internalOwner        User?               @relation(fields: [internalOwnerId], references: [id])
+  internalOwner        User?               @relation("VendorOwner", fields: [internalOwnerId], references: [id])
   inventory           InventoryMaster[]
   licenses            VendorLicense[]
   projects            ProjectEnvironment[]
