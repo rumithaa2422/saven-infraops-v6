@@ -86,26 +86,26 @@ enum AccessStatus {
 }
 
 model User {
-  id               String               @id @default(cuid())
-  name             String
-  email            String               @unique
-  phoneNumber      String?
-  passwordHash     String?
-  employeeId       String?
-  department       String?
-  designation      String?
-  employmentType   String?
-  dateJoined       DateTime?
-  address          String?
-  remarks          String?
-  team             String?
-  status           UserStatus           @default(PENDING_ACTIVATION)
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  roles            UserRole[]
-  activationToken  UserActivationToken?
-  requestedTickets ServiceRequest[]     @relation("RequesterTickets")
-  assignedTickets  ServiceRequest[]     @relation("AssigneeTickets")
+  id                   String                @id @default(cuid())
+  name                 String
+  email                String                @unique
+  phoneNumber          String?
+  passwordHash         String?
+  employeeId           String?
+  department           String?
+  designation          String?
+  employmentType       String?
+  dateJoined           DateTime?
+  address              String?
+  remarks              String?
+  team                 String?
+  status               UserStatus            @default(PENDING_ACTIVATION)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  roles                UserRole[]
+  activationToken      UserActivationToken?
+  requestedTickets     ServiceRequest[]      @relation("RequesterTickets")
+  assignedTickets      ServiceRequest[]      @relation("AssigneeTickets")
   inventoryAssignments InventoryAssignment[]
 }
 
@@ -218,40 +218,40 @@ model ServiceRequestTimeline {
 }
 
 model Incident {
-  id                       String           @id @default(cuid())
-  incidentNo               String           @unique
-  title                    String
-  description              String?          @db.Text
-  severity                 IncidentSeverity @default(SEV3)
-  status                   IncidentStatus   @default(OPEN)
-  impactedService          String?
-  impactedProject          String?
-  startedAt                DateTime?
-  resolvedAt               DateTime?
-  rca                      String?          @db.Text
-  correctiveAction         String?          @db.Text
-  preventiveAction         String?          @db.Text
-  ownerName                String?
-  resolutionDocUploadedAt  DateTime?
-  resolutionDocReplacedAt  DateTime?
-  statusChangedAt          DateTime?
-  statusChangedBy          String?
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
-  resolutionDocument       IncidentResolutionDocument?
+  id                      String                      @id @default(cuid())
+  incidentNo              String                      @unique
+  title                   String
+  description             String?                     @db.Text
+  severity                IncidentSeverity            @default(SEV3)
+  status                  IncidentStatus              @default(OPEN)
+  impactedService         String?
+  impactedProject         String?
+  startedAt               DateTime?
+  resolvedAt              DateTime?
+  rca                     String?                     @db.Text
+  correctiveAction        String?                     @db.Text
+  preventiveAction        String?                     @db.Text
+  ownerName               String?
+  resolutionDocUploadedAt DateTime?
+  resolutionDocReplacedAt DateTime?
+  statusChangedAt         DateTime?
+  statusChangedBy         String?
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
+  resolutionDocument      IncidentResolutionDocument?
 }
 
 model IncidentResolutionDocument {
-  id           String    @id @default(cuid())
-  incidentId   String    @unique
-  fileName     String
-  storedName  String    @unique
-  mimeType     String
-  fileSize     Int
-  uploadedBy   String?
+  id             String   @id @default(cuid())
+  incidentId     String   @unique
+  fileName       String
+  storedName     String   @unique
+  mimeType       String
+  fileSize       Int
+  uploadedBy     String?
   uploadedByName String?
-  uploadedAt   DateTime  @default(now())
-  incident     Incident  @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  uploadedAt     DateTime @default(now())
+  incident       Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
   @@index([incidentId])
 }
@@ -283,18 +283,18 @@ model ChangeRequest {
 }
 
 model Asset {
-  id             String      @id @default(cuid())
-  assetNo        String      @unique
+  id             String                @id @default(cuid())
+  assetNo        String                @unique
   assetType      String
   make           String?
   model          String?
-  serialNo       String?     @unique
-  status         AssetStatus @default(AVAILABLE)
+  serialNo       String?               @unique
+  status         AssetStatus           @default(AVAILABLE)
   assignedToName String?
   location       String?
   warrantyEndAt  DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
   categoryId     String?
   subcategoryId  String?
   category       InventoryCategory?    @relation(fields: [categoryId], references: [id])
@@ -302,27 +302,27 @@ model Asset {
 }
 
 model InventoryCategory {
-  id          String                @id @default(cuid())
-  name        String                @unique
-  description String?
-  status      String                @default("ACTIVE")
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  subcategories InventorySubCategory[]
-  assets      Asset[]
+  id             String                 @id @default(cuid())
+  name           String                 @unique
+  description    String?
+  status         String                 @default("ACTIVE")
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  subcategories  InventorySubCategory[]
+  assets         Asset[]
   inventoryItems InventoryMaster[]
 }
 
 model InventorySubCategory {
-  id          String           @id @default(cuid())
-  name        String
-  description String?
-  status      String           @default("ACTIVE")
-  categoryId  String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  category    InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  assets      Asset[]
+  id             String            @id @default(cuid())
+  name           String
+  description    String?
+  status         String            @default("ACTIVE")
+  categoryId     String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  category       InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  assets         Asset[]
   inventoryItems InventoryMaster[]
 
   @@unique([categoryId, name])
@@ -330,89 +330,89 @@ model InventorySubCategory {
 
 // Inventory Master - separate from Asset allocation
 model InventoryMaster {
-  id              String               @id @default(cuid())
-  itemNo          String               @unique
-  itemName        String
-  brand           String?
-  model           String?
-  vendor          String?
-  invoiceNo       String?
-  purchaseCost    Float?
-  gst             Float?
-  purchaseDate    DateTime?
-  warrantyMonths  Int?
-  warrantyExpiry  DateTime?
-  location        String?
-  minStock        Int?
-  currentQty      Int                  @default(0)
-  status          String               @default("ACTIVE")
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  
+  id             String    @id @default(cuid())
+  itemNo         String    @unique
+  itemName       String
+  brand          String?
+  model          String?
+  vendor         String?
+  invoiceNo      String?
+  purchaseCost   Float?
+  gst            Float?
+  purchaseDate   DateTime?
+  warrantyMonths Int?
+  warrantyExpiry DateTime?
+  location       String?
+  minStock       Int?
+  currentQty     Int       @default(0)
+  status         String    @default("ACTIVE")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   // Relations
-  categoryId      String
-  subcategoryId   String
-  category        InventoryCategory    @relation(fields: [categoryId], references: [id])
-  subcategory     InventorySubCategory @relation(fields: [subcategoryId], references: [id])
-  history         InventoryHistory[]
-  documents       InventoryDocument[]
-  assignments     InventoryAssignment[]
-  
+  categoryId    String
+  subcategoryId String
+  category      InventoryCategory     @relation(fields: [categoryId], references: [id])
+  subcategory   InventorySubCategory  @relation(fields: [subcategoryId], references: [id])
+  history       InventoryHistory[]
+  documents     InventoryDocument[]
+  assignments   InventoryAssignment[]
+
   @@index([categoryId])
   @@index([subcategoryId])
 }
 
 model InventoryHistory {
-  id           String         @id @default(cuid())
-  inventoryId  String
-  action       String
-  description  String?        @db.Text
-  performedBy  String
-  userId       String?
-  createdAt    DateTime       @default(now())
-  
-  inventory    InventoryMaster @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  
+  id          String   @id @default(cuid())
+  inventoryId String
+  action      String
+  description String?  @db.Text
+  performedBy String
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  inventory InventoryMaster @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
   @@index([inventoryId])
 }
 
 model InventoryDocument {
-  id           String         @id @default(cuid())
+  id           String   @id @default(cuid())
   inventoryId  String
   fileName     String
   fileType     String
   fileSize     Int
   url          String
-  documentType String         @default("Other")
+  documentType String   @default("Other")
   uploadedBy   String?
   userId       String?
-  createdAt    DateTime       @default(now())
-  
-  inventory    InventoryMaster @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  
+  createdAt    DateTime @default(now())
+
+  inventory InventoryMaster @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
   @@index([inventoryId])
 }
 
 // Inventory Assignment - tracks who has been assigned what inventory
 model InventoryAssignment {
-  id            String    @id @default(cuid())
-  inventoryId   String
-  userId        String?
-  projectId     String?
-  assignedBy    String
+  id             String    @id @default(cuid())
+  inventoryId    String
+  userId         String?
+  projectId      String?
+  assignedBy     String
   assignedByName String
-  assignedDate  DateTime  @default(now())
-  status        String    @default("ACTIVE") // ACTIVE, RETURNED, TRANSFERRED
-  remarks       String?   @db.Text
-  returnedDate  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  assignedDate   DateTime  @default(now())
+  status         String    @default("ACTIVE") // ACTIVE, RETURNED, TRANSFERRED
+  remarks        String?   @db.Text
+  returnedDate   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   // Relations
-  inventory     InventoryMaster   @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  user         User?            @relation(fields: [userId], references: [id])
-  project      ProjectEnvironment? @relation(fields: [projectId], references: [id])
-  
+  inventory InventoryMaster     @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  user      User?               @relation(fields: [userId], references: [id])
+  project   ProjectEnvironment? @relation(fields: [projectId], references: [id])
+
   @@index([inventoryId])
   @@index([userId])
   @@index([projectId])
@@ -446,68 +446,68 @@ model ComplianceDocument {
 }
 
 model ProjectEnvironment {
-  id              String   @id @default(cuid())
+  id              String  @id @default(cuid())
   projectName     String
-  projectCode     String   @unique
+  projectCode     String  @unique
   environmentName String?
   serviceName     String?
   serverName      String?
   databaseName    String?
   ownerName       String?
   monitoringUrl   String?
-  backupEnabled   Boolean  @default(false)
-  
+  backupEnabled   Boolean @default(false)
+
   // Extended Project Fields
   client          String?
   description     String?
   department      String?
   technologyStack String?
-  priority        String   @default("MEDIUM")
-  status          String   @default("ACTIVE")
-  budget          Decimal? @db.Decimal(12, 2)
+  priority        String    @default("MEDIUM")
+  status          String    @default("ACTIVE")
+  budget          Decimal?  @db.Decimal(12, 2)
   startDate       DateTime?
   expectedEndDate DateTime?
   actualEndDate   DateTime?
   projectType     String?
   projectLocation String?
   remarks         String?
-  
+
   // Team Management
-  managerId       String?
-  teamMemberIds    String?  // JSON array of user IDs
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  managerId     String?
+  teamMemberIds String? // JSON array of user IDs
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Documents
-  documents       ProjectDocument[]
-  
+  documents ProjectDocument[]
+
   // Activities
-  activities      ProjectActivity[]
-  
+  activities ProjectActivity[]
+
   // Inventory Assignments
   inventoryAssignments InventoryAssignment[]
 }
 
 model ProjectDocument {
-  id                String   @id @default(cuid())
-  projectId         String
-  fileName          String
-  originalFileName  String
-  fileType          String
-  fileSize          Int
-  uploadedBy        String?
-  uploadedAt        DateTime @default(now())
-  remarks           String?
-  
+  id               String   @id @default(cuid())
+  projectId        String
+  fileName         String
+  originalFileName String
+  fileType         String
+  fileSize         Int
+  uploadedBy       String?
+  uploadedAt       DateTime @default(now())
+  remarks          String?
+
   // Relationship
-  project           ProjectEnvironment @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+  project ProjectEnvironment @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([projectId])
 }
 
 model ProjectActivity {
-  id            String   @id @default(cuid())
+  id           String   @id @default(cuid())
   projectId    String
   activityType String
   title        String
@@ -515,10 +515,10 @@ model ProjectActivity {
   performedBy  String?
   performedAt  DateTime @default(now())
   metadata     Json?
-  
+
   // Relationship
-  project      ProjectEnvironment @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+  project ProjectEnvironment @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([projectId])
   @@index([performedAt])
 }
@@ -587,17 +587,17 @@ model DocumentFolder {
   id             String   @id @default(cuid())
   name           String
   description    String?  @db.Text
-  parentFolderId String?  // For unlimited hierarchy support
+  parentFolderId String? // For unlimited hierarchy support
   createdBy      String?
   createdByEmail String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
-  parent         DocumentFolder?  @relation("FolderHierarchy", fields: [parentFolderId], references: [id])
-  children       DocumentFolder[] @relation("FolderHierarchy")
-  files          DocumentFile[]
-  
+  parent   DocumentFolder?  @relation("FolderHierarchy", fields: [parentFolderId], references: [id])
+  children DocumentFolder[] @relation("FolderHierarchy")
+  files    DocumentFile[]
+
   @@index([parentFolderId])
   @@index([createdAt])
 }
@@ -606,24 +606,23 @@ model DocumentFolder {
 model DocumentFile {
   id               String   @id @default(cuid())
   folderId         String
-  fileName         String   // System filename (stored)
-  originalFileName String   // Original user filename
-  fileExtension    String   // e.g., pdf, docx, png
+  fileName         String
+  originalFileName String
+  fileExtension    String
   mimeType         String
-  fileSize         Int      // Size in bytes
-  storagePath      String   // Path to physical file
+  fileSize         Int
+  storagePath      String
   uploadedBy       String?
   uploadedByEmail  String?
   uploadedAt       DateTime @default(now())
   modifiedAt       DateTime @updatedAt
   description      String?  @db.Text
   downloadCount    Int      @default(0)
-  version         Int      @default(1)
+  version          Int      @default(1)
 
-  // Relations
-  folder           DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  tags             DocumentTag[]
-  
+  folder   DocumentFolder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  fileTags DocumentFileTag[]
+
   @@index([folderId])
   @@index([uploadedAt])
 }
@@ -635,31 +634,31 @@ model DocumentTag {
   color     String   @default("#5468ff")
   createdAt DateTime @default(now())
 
-  files     DocumentFile[]
+  fileTags DocumentFileTag[]
 }
 
 // Document-File Tags junction table
 model DocumentFileTag {
-  fileId    String
-  tagId     String
-  addedAt   DateTime @default(now())
+  fileId  String
+  tagId   String
+  addedAt DateTime @default(now())
 
-  file      DocumentFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  tag       DocumentTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  file DocumentFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  tag  DocumentTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([fileId, tagId])
 }
 
 // Phase 5: Document Activity Log
 model DocumentActivity {
-  id          String   @id @default(cuid())
-  fileId      String?
-  folderId    String?
-  action      String   // uploaded, downloaded, renamed, moved, deleted, version_created
-  details     String?  @db.Text
-  performedBy String?
+  id               String   @id @default(cuid())
+  fileId           String?
+  folderId         String?
+  action           String
+  details          String?  @db.Text
+  performedBy      String?
   performedByEmail String?
-  createdAt   DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   @@index([fileId])
   @@index([folderId])

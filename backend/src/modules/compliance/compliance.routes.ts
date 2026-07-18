@@ -1885,7 +1885,7 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
       where: { id },
       include: {
         folder: true,
-        tags: {
+        fileTags: {
           include: { tag: true }
         }
       }
@@ -1960,7 +1960,7 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
         version: file.version,
         storagePath: file.storagePath,
         folder: file.folder,
-        tags: file.tags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+        fileTags: file.fileTags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
       },
       folderPath,
       versions,
@@ -2046,7 +2046,7 @@ complianceRouter.patch('/files/:id', requireAuth, async (req: Request, res: Resp
       success: true,
       file: updatedFile ? {
         ...updatedFile,
-        tags: updatedFile.tags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+        fileTags: updatedFile.fileTags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
       } : null
     });
   } catch (error) {
@@ -2110,7 +2110,7 @@ complianceRouter.post('/files/:id/replace', requireAuth, async (req: Request, re
 
     const existingFile = await prisma.documentFile.findUnique({
       where: { id },
-      include: { tags: true }
+      include: { fileTags: true }
     });
 
     if (!existingFile) {
@@ -2157,7 +2157,7 @@ complianceRouter.post('/files/:id/replace', requireAuth, async (req: Request, re
     });
 
     // Copy tags to new version
-    for (const tag of existingFile.tags) {
+    for (const tag of existingFile.fileTags) {
       await prisma.documentFileTag.create({
         data: {
           fileId: newFile.id,
@@ -2204,7 +2204,7 @@ complianceRouter.post('/files/:id/restore', requireAuth, async (req: Request, re
 
     const sourceFile = await prisma.documentFile.findUnique({
       where: { id: targetVersionId },
-      include: { tags: true }
+      include: { fileTags: true }
     });
 
     if (!sourceFile) {
@@ -2256,7 +2256,7 @@ complianceRouter.post('/files/:id/restore', requireAuth, async (req: Request, re
     });
 
     // Copy tags
-    for (const tag of sourceFile.tags) {
+    for (const tag of sourceFile.fileTags) {
       await prisma.documentFileTag.create({
         data: {
           fileId: newFile.id,
