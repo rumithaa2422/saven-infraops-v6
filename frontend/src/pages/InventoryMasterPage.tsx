@@ -19,6 +19,7 @@ type InventoryItem = {
   brand?: string;
   model?: string;
   vendor?: string;
+  vendorId?: string;
   invoiceNo?: string;
   purchaseCost?: number;
   gst?: number;
@@ -35,6 +36,12 @@ type InventoryItem = {
   subcategory?: { id: string; name: string };
   createdAt?: string;
   updatedAt?: string;
+};
+
+type VendorOption = {
+  id: string;
+  vendorName: string;
+  vendorCode: string;
 };
 
 type ValidationErrors = {
@@ -64,6 +71,10 @@ export function InventoryMasterPage() {
   // Categories for dropdowns
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Vendors for dropdown
+  const [vendors, setVendors] = useState<VendorOption[]>([]);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
 
   // Check if coming from a category page (pre-selected category)
   const preCategoryId = searchParams.get('categoryId');
@@ -113,6 +124,19 @@ export function InventoryMasterPage() {
     }
   }
 
+  // Load vendors for dropdown
+  async function loadVendors() {
+    try {
+      setVendorsLoading(true);
+      const res = await api.get('/vendors?status=ACTIVE&per_page=1000');
+      setVendors(res.data.vendors || []);
+    } catch {
+      setVendors([]);
+    } finally {
+      setVendorsLoading(false);
+    }
+  }
+
   // Load existing item for edit
   async function loadItem() {
     if (!id) return;
@@ -126,6 +150,7 @@ export function InventoryMasterPage() {
         brand: item.brand || '',
         model: item.model || '',
         vendor: item.vendor || '',
+        vendorId: item.vendorId || '',
         invoiceNo: item.invoiceNo || '',
         purchaseCost: item.purchaseCost,
         gst: item.gst,
@@ -148,6 +173,7 @@ export function InventoryMasterPage() {
 
   useEffect(() => {
     loadCategories();
+    loadVendors();
     if (isEditMode) {
       loadItem();
     } else {
@@ -478,13 +504,22 @@ export function InventoryMasterPage() {
 
                 <div className="detail-field">
                   <label>Vendor</label>
-                  <input
-                    type="text"
-                    value={form.vendor}
-                    onChange={(e) => updateField('vendor', e.target.value)}
+                  <select
+                    value={form.vendorId || ''}
+                    onChange={(e) => {
+                      const selectedVendor = vendors.find(v => v.id === e.target.value);
+                      updateField('vendorId', e.target.value);
+                      updateField('vendor', selectedVendor?.vendorName || '');
+                    }}
                     disabled={!isSuperAdmin}
-                    placeholder="Enter vendor name"
-                  />
+                  >
+                    <option value="">Select a vendor</option>
+                    {vendors.map(vendor => (
+                      <option key={vendor.id} value={vendor.id}>
+                        {vendor.vendorName} ({vendor.vendorCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

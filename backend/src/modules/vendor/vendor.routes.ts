@@ -349,7 +349,8 @@ vendorRouter.post('/', requireAuth, async (req: Request, res: Response, next) =>
       contractStartDate,
       contractExpiryDate,
       renewalDate,
-      paymentTerms
+      paymentTerms,
+      internalOwnerId
     } = req.body;
 
     // Validation
@@ -391,7 +392,8 @@ vendorRouter.post('/', requireAuth, async (req: Request, res: Response, next) =>
         contractStartDate: contractStartDate ? new Date(contractStartDate) : null,
         contractExpiryDate: contractExpiryDate ? new Date(contractExpiryDate) : null,
         renewalDate: renewalDate ? new Date(renewalDate) : null,
-        paymentTerms: paymentTerms || null
+        paymentTerms: paymentTerms || null,
+        internalOwnerId: internalOwnerId || null
       }
     });
 
@@ -448,7 +450,8 @@ vendorRouter.put('/:id', requireAuth, async (req: Request, res: Response, next) 
       contractStartDate,
       contractExpiryDate,
       renewalDate,
-      paymentTerms
+      paymentTerms,
+      internalOwnerId
     } = req.body;
 
     // Validation
@@ -493,7 +496,8 @@ vendorRouter.put('/:id', requireAuth, async (req: Request, res: Response, next) 
         contractStartDate: contractStartDate ? new Date(contractStartDate) : null,
         contractExpiryDate: contractExpiryDate ? new Date(contractExpiryDate) : null,
         renewalDate: renewalDate ? new Date(renewalDate) : null,
-        paymentTerms: paymentTerms || null
+        paymentTerms: paymentTerms || null,
+        internalOwnerId: internalOwnerId || null
       }
     });
 
@@ -534,22 +538,31 @@ vendorRouter.delete('/:id', requireAuth, async (req: Request, res: Response, nex
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Check for associated assets
-    const associatedAssets = await prisma.asset.count({
+    // Check for associated inventory
+    const associatedInventory = await prisma.inventoryMaster.count({
       where: { vendorId: id }
     });
     
     // Check for associated licenses
     const associatedLicenses = await prisma.vendorLicense.count({
-      where: { vendorName: vendor.vendorName }
+      where: { vendorId: id }
     });
 
-    if (associatedAssets > 0) {
-      throw new HttpError(400, `Cannot delete vendor: ${associatedAssets} asset(s) are associated with this vendor`);
+    // Check for associated projects
+    const associatedProjects = await prisma.projectEnvironment.count({
+      where: { primaryVendorId: id }
+    });
+
+    if (associatedInventory > 0) {
+      throw new HttpError(400, `Cannot delete vendor: ${associatedInventory} inventory item(s) are associated with this vendor`);
     }
 
     if (associatedLicenses > 0) {
       throw new HttpError(400, `Cannot delete vendor: ${associatedLicenses} license(s) are associated with this vendor`);
+    }
+
+    if (associatedProjects > 0) {
+      throw new HttpError(400, `Cannot delete vendor: ${associatedProjects} project(s) are associated with this vendor`);
     }
 
     await prisma.vendor.delete({ where: { id } });
@@ -720,26 +733,49 @@ vendorRouter.get('/:id/details', requireAuth, async (req: Request, res: Response
     );
 
     const { id } = req.params;
-    const vendor = await prisma.vendor.findUnique({ where: { id } });
+    
+    const vendor = await prisma.vendor.findUnique({
+      where: { id },
+      include: {
+        internalOwner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+            roles: {
+              select: {
+                role: {
+                  select: { name: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
 
     if (!vendor) {
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Get licenses for this vendor (safe query - vendorLicense exists)
-    let licenses: any[] = [];
-    let licenseCount = 0;
-    try {
-      licenses = await prisma.vendorLicense.findMany({
-        where: { vendorName: vendor.vendorName },
-        orderBy: { createdAt: 'desc' }
-      });
-      licenseCount = licenses.length;
-    } catch {
-      // vendorLicense table might not exist
-    }
+    // Get inventory count
+    const inventoryCount = await prisma.inventoryMaster.count({
+      where: { vendorId: id }
+    });
 
-    // Get audit log for this vendor (safe query - auditLog exists)
+    // Get licenses for this vendor
+    const licenses = await prisma.vendorLicense.findMany({
+      where: { vendorId: id },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Get projects count
+    const projectCount = await prisma.projectEnvironment.count({
+      where: { primaryVendorId: id }
+    });
+
+    // Get audit log for this vendor
     let auditLogs: any[] = [];
     try {
       const logs = await prisma.auditLog.findMany({
@@ -776,9 +812,9 @@ vendorRouter.get('/:id/details', requireAuth, async (req: Request, res: Response
 
     res.json({
       ...vendor,
-      assetCount: 0, // Will be implemented in Phase 3
-      licenseCount,
-      documentsCount: 0, // Will be implemented in Phase 3
+      inventoryCount,
+      licenseCount: licenses.length,
+      projectCount,
       licenses,
       contractStatus,
       auditLogs
@@ -805,9 +841,21 @@ vendorRouter.get('/:id/linked-projects', requireAuth, async (req: Request, res: 
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Return empty array - vendor-project linking will be implemented in Phase 3
-    // Currently no relation exists between vendors and projects
-    res.json({ projects: [] });
+    // Get projects that have this vendor as primary
+    const projects = await prisma.projectEnvironment.findMany({
+      where: { primaryVendorId: id },
+      select: {
+        id: true,
+        projectName: true,
+        projectCode: true,
+        status: true,
+        startDate: true,
+        ownerName: true
+      },
+      take: 10
+    });
+
+    res.json({ projects });
   } catch (error) {
     next(error);
   }
@@ -830,9 +878,51 @@ vendorRouter.get('/:id/inventory', requireAuth, async (req: Request, res: Respon
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Return empty array - vendor-inventory linking will be implemented in Phase 3
-    // Currently inventoryMaster does not have vendorId relation
-    res.json({ inventory: [] });
+    // Get inventory items from this vendor
+    const inventory = await prisma.inventoryMaster.findMany({
+      where: { vendorId: id },
+      select: {
+        id: true,
+        itemNo: true,
+        itemName: true,
+        serialNumber: true,
+        status: true,
+        warrantyExpiry: true,
+        purchaseDate: true
+      },
+      take: 20
+    });
+
+    res.json({ inventory });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/vendors/:id/licenses
+// Get licenses for this vendor
+// ============================================================
+vendorRouter.get('/:id/licenses', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const vendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!vendor) {
+      throw new HttpError(404, 'Vendor not found');
+    }
+
+    // Get licenses for this vendor
+    const licenses = await prisma.vendorLicense.findMany({
+      where: { vendorId: id },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ licenses });
   } catch (error) {
     next(error);
   }
@@ -855,9 +945,253 @@ vendorRouter.get('/:id/documents', requireAuth, async (req: Request, res: Respon
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Return empty array - vendor-document linking will be implemented in Phase 3
-    // Currently no reliable way to link documents to vendors
-    res.json({ documents: [] });
+    // Search for documents in vendor folder by name
+    const vendorFolder = await prisma.documentFolder.findFirst({
+      where: {
+        name: { equals: vendor.vendorName }
+      }
+    });
+
+    if (!vendorFolder) {
+      return res.json({ documents: [], folderId: null });
+    }
+
+    // Get documents from this folder
+    const documents = await prisma.documentFile.findMany({
+      where: { folderId: vendorFolder.id },
+      select: {
+        id: true,
+        fileName: true,
+        originalFileName: true,
+        fileExtension: true,
+        fileSize: true,
+        mimeType: true,
+        uploadedAt: true,
+        uploadedByEmail: true
+      },
+      orderBy: { uploadedAt: 'desc' }
+    });
+
+    res.json({ documents, folderId: vendorFolder.id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// License Management Routes
+// ============================================================
+
+// GET /api/vendors/licenses
+// Get all licenses
+vendorRouter.get('/licenses/all', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const licenses = await prisma.vendorLicense.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            vendorName: true,
+            vendorCode: true
+          }
+        }
+      }
+    });
+
+    res.json({ licenses });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/vendors/licenses/:id
+// Get single license
+vendorRouter.get('/licenses/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const license = await prisma.vendorLicense.findUnique({
+      where: { id },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            vendorName: true,
+            vendorCode: true
+          }
+        }
+      }
+    });
+
+    if (!license) {
+      throw new HttpError(404, 'License not found');
+    }
+
+    res.json({ license });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/vendors/licenses
+// Create new license
+vendorRouter.post('/licenses', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:create', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const {
+      vendorName,
+      vendorId,
+      licenseName,
+      licenseCount = 0,
+      assignedCount = 0,
+      cost,
+      renewalAt,
+      ownerName
+    } = req.body;
+
+    if (!licenseName) {
+      throw new HttpError(400, 'License name is required');
+    }
+    if (!vendorName) {
+      throw new HttpError(400, 'Vendor name is required');
+    }
+
+    const license = await prisma.vendorLicense.create({
+      data: {
+        vendorName,
+        vendorId: vendorId || null,
+        licenseName,
+        licenseCount: Number(licenseCount),
+        assignedCount: Number(assignedCount),
+        cost: cost ? Number(cost) : null,
+        renewalAt: renewalAt ? new Date(renewalAt) : null,
+        ownerName: ownerName || null
+      }
+    });
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id || null,
+        actorEmail: req.user?.email || null,
+        action: 'CREATE',
+        entityType: 'VendorLicense',
+        entityId: license.id,
+        newValue: license as any,
+        ipAddress: req.ip || null
+      }
+    });
+
+    res.status(201).json(license);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/vendors/licenses/:id
+// Update license
+vendorRouter.put('/licenses/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:write', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const existing = await prisma.vendorLicense.findUnique({ where: { id } });
+    if (!existing) {
+      throw new HttpError(404, 'License not found');
+    }
+
+    const {
+      vendorName,
+      vendorId,
+      licenseName,
+      licenseCount,
+      assignedCount,
+      cost,
+      renewalAt,
+      ownerName
+    } = req.body;
+
+    if (!licenseName) {
+      throw new HttpError(400, 'License name is required');
+    }
+
+    const license = await prisma.vendorLicense.update({
+      where: { id },
+      data: {
+        vendorName: vendorName || existing.vendorName,
+        vendorId: vendorId !== undefined ? (vendorId || null) : existing.vendorId,
+        licenseName,
+        licenseCount: licenseCount !== undefined ? Number(licenseCount) : existing.licenseCount,
+        assignedCount: assignedCount !== undefined ? Number(assignedCount) : existing.assignedCount,
+        cost: cost !== undefined ? (cost ? Number(cost) : null) : existing.cost,
+        renewalAt: renewalAt !== undefined ? (renewalAt ? new Date(renewalAt) : null) : existing.renewalAt,
+        ownerName: ownerName !== undefined ? (ownerName || null) : existing.ownerName
+      }
+    });
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id || null,
+        actorEmail: req.user?.email || null,
+        action: 'UPDATE',
+        entityType: 'VendorLicense',
+        entityId: license.id,
+        oldValue: existing as any,
+        newValue: license as any,
+        ipAddress: req.ip || null
+      }
+    });
+
+    res.json(license);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/vendors/licenses/:id
+// Delete license
+vendorRouter.delete('/licenses/:id', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['vendors:delete', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { id } = req.params;
+    const existing = await prisma.vendorLicense.findUnique({ where: { id } });
+    if (!existing) {
+      throw new HttpError(404, 'License not found');
+    }
+
+    await prisma.vendorLicense.delete({ where: { id } });
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user?.id || null,
+        actorEmail: req.user?.email || null,
+        action: 'DELETE',
+        entityType: 'VendorLicense',
+        entityId: id,
+        oldValue: existing as any,
+        ipAddress: req.ip || null
+      }
+    });
+
+    res.json({ message: 'License deleted successfully' });
   } catch (error) {
     next(error);
   }

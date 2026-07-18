@@ -11,6 +11,7 @@ import { useAuth } from '../auth/AuthContext';
 
 type VendorLicense = {
   id: string;
+  vendorId: string | null;
   vendorName: string;
   licenseName: string;
   licenseCount: number;
@@ -30,6 +31,14 @@ type AuditLog = {
   performedAt: string;
   newValue: any;
   oldValue: any;
+};
+
+type InternalOwner = {
+  id: string;
+  name: string;
+  email: string;
+  department: string | null;
+  roles: { role: { name: string } }[];
 };
 
 type VendorDetails = {
@@ -52,12 +61,15 @@ type VendorDetails = {
   contractExpiryDate: string | null;
   renewalDate: string | null;
   paymentTerms: string | null;
+  internalOwnerId: string | null;
   createdAt: string;
   updatedAt: string;
-  assetCount: number;
+  inventoryCount: number;
   licenseCount: number;
+  projectCount: number;
   documentsCount: number;
   licenses: VendorLicense[];
+  internalOwner: InternalOwner | null;
   contractStatus: string;
   auditLogs: AuditLog[];
 };
@@ -517,21 +529,21 @@ export function VendorDetailsPage() {
           </div>
 
           {/* Licenses */}
-          {vendor.licenses && vendor.licenses.length > 0 && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M7 11V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V11" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  Licenses ({vendor.licenses.length})
-                </h3>
-              </div>
-              <div className="detail-card-body">
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M7 11V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V11" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Licenses ({vendor.licenses.length})
+              </h3>
+            </div>
+            <div className="detail-card-body">
+              {vendor.licenses && vendor.licenses.length > 0 ? (
                 <div className="license-list">
                   {vendor.licenses.map(license => (
-                    <div key={license.id} className="license-item">
+                    <div key={license.id} className="license-item" onClick={() => navigate(`/licenses/${license.id}`)} style={{ cursor: 'pointer' }}>
                       <div className="license-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                           <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
@@ -548,9 +560,11 @@ export function VendorDetailsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="empty-state">No linked data available</div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Linked Projects */}
           <div className="detail-card">
@@ -715,12 +729,12 @@ export function VendorDetailsPage() {
                 <span className="quick-info-value">{formatDate(vendor.updatedAt)}</span>
               </div>
               <div className="quick-info-item">
-                <span className="quick-info-label">Total Assets</span>
-                <span className="quick-info-value">{vendor.assetCount}</span>
+                <span className="quick-info-label">Inventory</span>
+                <span className="quick-info-value">{vendor.inventoryCount}</span>
               </div>
               <div className="quick-info-item">
                 <span className="quick-info-label">Projects</span>
-                <span className="quick-info-value">{linkedProjects.length}</span>
+                <span className="quick-info-value">{vendor.projectCount}</span>
               </div>
               <div className="quick-info-item">
                 <span className="quick-info-label">Documents</span>
@@ -732,6 +746,43 @@ export function VendorDetailsPage() {
               </div>
             </div>
           </div>
+
+          {/* Internal Owner */}
+          {vendor.internalOwner && (
+            <div className="sidebar-card">
+              <h4>Internal Owner</h4>
+              <div className="owner-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  borderRadius: '50%', 
+                  background: 'var(--brand-soft)', 
+                  color: 'var(--brand)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: '600',
+                  fontSize: '14px'
+                }}>
+                  {vendor.internalOwner.name.charAt(0).toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/users/${vendor.internalOwner?.id}`); }} style={{ color: 'var(--brand)', fontWeight: '600' }}>
+                    {vendor.internalOwner.name}
+                  </a>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                    {vendor.internalOwner.department || 'No department'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                    {vendor.internalOwner.roles?.[0]?.role?.name || 'User'}
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--muted)' }}>
+                {vendor.internalOwner.email}
+              </div>
+            </div>
+          )}
 
           {/* Remarks */}
           {vendor.remarks && (

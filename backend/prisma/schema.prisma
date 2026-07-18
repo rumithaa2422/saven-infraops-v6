@@ -336,6 +336,7 @@ model InventoryMaster {
   brand          String?
   model          String?
   vendor         String?
+  vendorId       String?   // Vendor relation
   invoiceNo      String?
   purchaseCost   Float?
   gst            Float?
@@ -354,12 +355,14 @@ model InventoryMaster {
   subcategoryId String
   category      InventoryCategory     @relation(fields: [categoryId], references: [id])
   subcategory   InventorySubCategory  @relation(fields: [subcategoryId], references: [id])
+  vendor        Vendor?              @relation(fields: [vendorId], references: [id])
   history       InventoryHistory[]
   documents     InventoryDocument[]
   assignments   InventoryAssignment[]
 
   @@index([categoryId])
   @@index([subcategoryId])
+  @@index([vendorId])
 }
 
 model InventoryHistory {
@@ -476,9 +479,15 @@ model ProjectEnvironment {
   managerId     String?
   teamMemberIds String? // JSON array of user IDs
 
+  // Vendor relation
+  primaryVendorId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  primaryVendor Vendor?        @relation(fields: [primaryVendorId], references: [id])
+  
   // Documents
   documents ProjectDocument[]
 
@@ -487,6 +496,8 @@ model ProjectEnvironment {
 
   // Inventory Assignments
   inventoryAssignments InventoryAssignment[]
+
+  @@index([primaryVendorId])
 }
 
 model ProjectDocument {
@@ -525,7 +536,8 @@ model ProjectActivity {
 
 model VendorLicense {
   id            String    @id @default(cuid())
-  vendorName    String
+  vendorName    String    // Keep for backwards compatibility
+  vendorId      String?   // Vendor relation
   licenseName   String
   licenseCount  Int       @default(0)
   assignedCount Int       @default(0)
@@ -534,6 +546,11 @@ model VendorLicense {
   ownerName     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // Relations
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
 }
 
 // Vendor Management - Phase 1
@@ -557,14 +574,23 @@ model Vendor {
   contractExpiryDate   DateTime?
   renewalDate          DateTime?
   paymentTerms         String?
+  internalOwnerId      String?   // User who owns this vendor relationship
+  
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+
+  // Relations
+  internalOwner        User?               @relation(fields: [internalOwnerId], references: [id])
+  inventory           InventoryMaster[]
+  licenses            VendorLicense[]
+  projects            ProjectEnvironment[]
 
   @@index([vendorCode])
   @@index([status])
   @@index([category])
   @@index([contractExpiryDate])
   @@index([renewalDate])
+  @@index([internalOwnerId])
 }
 
 model KnowledgeBaseArticle {

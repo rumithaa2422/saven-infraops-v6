@@ -11,6 +11,12 @@ type User = {
   roles: { role: { name: string } }[];
 };
 
+type VendorOption = {
+  id: string;
+  vendorName: string;
+  vendorCode: string;
+};
+
 type Project = {
   id: string;
   projectName: string;
@@ -31,6 +37,7 @@ type Project = {
   remarks?: string;
   managerId?: string;
   teamMemberIds?: string;
+  primaryVendorId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -43,9 +50,11 @@ export function ProjectEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<User[]>([]);
+  const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [managerSearch, setManagerSearch] = useState('');
 
@@ -66,7 +75,8 @@ export function ProjectEditPage() {
     description: '',
     remarks: '',
     managerId: '',
-    teamMemberIds: [] as string[]
+    teamMemberIds: [] as string[],
+    primaryVendorId: ''
   });
 
   const fetchUsers = useCallback(async () => {
@@ -84,7 +94,20 @@ export function ProjectEditPage() {
   useEffect(() => {
     loadProject();
     fetchUsers();
+    fetchVendors();
   }, [id, fetchUsers]);
+
+  const fetchVendors = useCallback(async () => {
+    try {
+      setVendorsLoading(true);
+      const response = await api.get('/vendors?status=ACTIVE&per_page=1000');
+      setVendors(response.data.vendors || []);
+    } catch (err) {
+      console.error('Failed to fetch vendors:', err);
+    } finally {
+      setVendorsLoading(false);
+    }
+  }, []);
 
   async function loadProject() {
     if (!id) return;
@@ -120,7 +143,8 @@ export function ProjectEditPage() {
         description: project.description || '',
         remarks: project.remarks || '',
         managerId: project.managerId || '',
-        teamMemberIds: teamMemberIdsArray
+        teamMemberIds: teamMemberIdsArray,
+        primaryVendorId: project.primaryVendorId || ''
       });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load project');
@@ -238,7 +262,8 @@ export function ProjectEditPage() {
         description: formData.description || null,
         remarks: formData.remarks || null,
         managerId: formData.managerId,
-        teamMemberIds: formData.teamMemberIds
+        teamMemberIds: formData.teamMemberIds,
+        primaryVendorId: formData.primaryVendorId || null
       });
       
       navigate(`/projects-environments/${id}`);
@@ -366,6 +391,23 @@ export function ProjectEditPage() {
                     className={errors.client ? 'input-error' : ''}
                   />
                   {errors.client && <span className="error-text">{errors.client}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label>Primary Vendor</label>
+                  <select
+                    name="primaryVendorId"
+                    value={formData.primaryVendorId}
+                    onChange={handleChange}
+                    disabled={vendorsLoading}
+                  >
+                    <option value="">Select vendor</option>
+                    {vendors.map(vendor => (
+                      <option key={vendor.id} value={vendor.id}>
+                        {vendor.vendorName} ({vendor.vendorCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">

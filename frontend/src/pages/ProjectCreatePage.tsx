@@ -11,15 +11,23 @@ type User = {
   roles: { role: { name: string } }[];
 };
 
+type VendorOption = {
+  id: string;
+  vendorName: string;
+  vendorCode: string;
+};
+
 export function ProjectCreatePage() {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<User[]>([]);
+  const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [managerSearch, setManagerSearch] = useState('');
 
@@ -39,7 +47,8 @@ export function ProjectCreatePage() {
     description: '',
     remarks: '',
     managerId: '',
-    teamMemberIds: [] as string[]
+    teamMemberIds: [] as string[],
+    primaryVendorId: ''
   });
 
   const fetchUsers = useCallback(async () => {
@@ -54,9 +63,22 @@ export function ProjectCreatePage() {
     }
   }, []);
 
+  const fetchVendors = useCallback(async () => {
+    try {
+      setVendorsLoading(true);
+      const response = await api.get('/vendors?status=ACTIVE&per_page=1000');
+      setVendors(response.data.vendors || []);
+    } catch (err) {
+      console.error('Failed to fetch vendors:', err);
+    } finally {
+      setVendorsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchVendors();
+  }, [fetchUsers, fetchVendors]);
 
   const filteredManagers = users.filter(u => {
     const search = managerSearch.toLowerCase();
@@ -170,7 +192,8 @@ export function ProjectCreatePage() {
         description: formData.description || null,
         remarks: formData.remarks || null,
         managerId: formData.managerId,
-        teamMemberIds: formData.teamMemberIds
+        teamMemberIds: formData.teamMemberIds,
+        primaryVendorId: formData.primaryVendorId || null
       });
       
       navigate('/projects-environments');
@@ -270,6 +293,23 @@ export function ProjectCreatePage() {
                     className={errors.client ? 'input-error' : ''}
                   />
                   {errors.client && <span className="error-text">{errors.client}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label>Primary Vendor</label>
+                  <select
+                    name="primaryVendorId"
+                    value={formData.primaryVendorId}
+                    onChange={handleChange}
+                    disabled={vendorsLoading}
+                  >
+                    <option value="">Select vendor</option>
+                    {vendors.map(vendor => (
+                      <option key={vendor.id} value={vendor.id}>
+                        {vendor.vendorName} ({vendor.vendorCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">

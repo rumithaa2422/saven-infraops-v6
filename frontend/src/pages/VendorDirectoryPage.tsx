@@ -800,8 +800,20 @@ type VendorFormDialogProps = {
   title: string;
 };
 
+type UserOption = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 function VendorFormDialog({ vendor, onClose, onSubmit, title }: VendorFormDialogProps) {
-  const [form, setForm] = useState<Partial<Vendor>>(vendor || {
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+
+  const [form, setForm] = useState<Partial<Vendor> & { internalOwnerId?: string }>(vendor ? {
+    ...vendor,
+    internalOwnerId: (vendor as any).internalOwnerId || ''
+  } : {
     vendorName: '',
     vendorCode: '',
     category: '',
@@ -819,17 +831,34 @@ function VendorFormDialog({ vendor, onClose, onSubmit, title }: VendorFormDialog
     contractStartDate: '',
     contractExpiryDate: '',
     renewalDate: '',
-    paymentTerms: ''
+    paymentTerms: '',
+    internalOwnerId: ''
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  async function loadUsers() {
+    try {
+      setUsersLoading(true);
+      const res = await api.get('/users?per_page=1000');
+      setUsers(res.data.users || []);
+    } catch {
+      setUsers([]);
+    } finally {
+      setUsersLoading(false);
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSaving(true);
     try {
-      await onSubmit(form);
+      await onSubmit({ ...form, internalOwnerId: form.internalOwnerId || undefined } as Partial<Vendor>);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -908,6 +937,25 @@ function VendorFormDialog({ vendor, onClose, onSubmit, title }: VendorFormDialog
             <div className="form-group full-width">
               <label>Address</label>
               <textarea value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} rows={2} />
+            </div>
+          </div>
+
+          <h4>Internal Owner</h4>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Owner</label>
+              <select 
+                value={form.internalOwnerId || ''} 
+                onChange={e => setForm({ ...form, internalOwnerId: e.target.value || undefined })}
+                disabled={usersLoading}
+              >
+                <option value="">Select Owner</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

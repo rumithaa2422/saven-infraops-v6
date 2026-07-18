@@ -38,6 +38,7 @@ type InventoryItem = {
   brand?: string;
   model?: string;
   vendor?: string;
+  vendorId?: string;
   invoiceNo?: string;
   purchaseDate?: string;
   purchaseCost?: number;
@@ -579,7 +580,13 @@ export function InventoryDetailPage() {
                 </div>
                 <div className="detail-field">
                   <label>Vendor</label>
-                  <span className="detail-field-value">{item.vendor || '-'}</span>
+                  {item.vendorId ? (
+                    <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/vendors-licenses/${item.vendorId}`); }} className="detail-link">
+                      {item.vendor || 'View Vendor'}
+                    </a>
+                  ) : (
+                    <span className="detail-field-value">{item.vendor || '-'}</span>
+                  )}
                 </div>
                 <div className="detail-field">
                   <label>Location</label>
@@ -686,7 +693,13 @@ export function InventoryDetailPage() {
               </div>
               <div className="detail-sidebar-field">
                 <label>Vendor</label>
-                <span>{item.vendor || '-'}</span>
+                {item.vendorId ? (
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/vendors-licenses/${item.vendorId}`); }} className="detail-link">
+                    {item.vendor || 'View Vendor'}
+                  </a>
+                ) : (
+                  <span>{item.vendor || '-'}</span>
+                )}
               </div>
             </div>
           </div>
