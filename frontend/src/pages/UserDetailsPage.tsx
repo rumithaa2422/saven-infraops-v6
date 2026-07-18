@@ -20,6 +20,19 @@ type User = {
   remarks?: string;
   employeeId?: string;
   roles: { role: { id: string; name: string } }[];
+  currentProject?: {
+    id: string;
+    projectName: string;
+    projectCode: string;
+    client?: string;
+    department?: string;
+    status: string;
+    startDate?: string;
+    expectedEndDate?: string;
+    manager?: { id: string; name: string; email: string };
+    managerName?: string;
+    userProjectRole: string;
+  } | null;
 };
 
 export function UserDetailsPage() {
@@ -159,6 +172,14 @@ export function UserDetailsPage() {
             <span className="detail-meta-label">Email</span>
             <span className="detail-meta-value">{user.email}</span>
           </div>
+          {user.currentProject && (
+            <div className="detail-meta-item">
+              <span className="detail-meta-label">Current Project</span>
+              <span className="detail-meta-value project-link" onClick={() => navigate(`/projects-environments/${user.currentProject?.id}`)}>
+                {user.currentProject.projectName}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -271,13 +292,67 @@ export function UserDetailsPage() {
               </h3>
             </div>
             <div className="detail-card-body">
-              <div className="detail-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-                  <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <p>Not assigned to any project.</p>
-              </div>
+              {user.currentProject ? (
+                <div className="project-info">
+                  <div className="project-header">
+                    <div className="project-title">
+                      <h4>{user.currentProject.projectName}</h4>
+                      <span className="project-code">{user.currentProject.projectCode}</span>
+                    </div>
+                    <span className={`status-badge status-${user.currentProject.status.toLowerCase()}`}>
+                      {user.currentProject.status}
+                    </span>
+                  </div>
+                  <div className="project-details">
+                    <div className="project-detail-row">
+                      <span className="detail-label">Client</span>
+                      <span className="detail-value">{user.currentProject.client || '-'}</span>
+                    </div>
+                    <div className="project-detail-row">
+                      <span className="detail-label">Project Manager</span>
+                      <span className="detail-value">{user.currentProject.manager?.name || user.currentProject.managerName || '-'}</span>
+                    </div>
+                    <div className="project-detail-row">
+                      <span className="detail-label">User's Role</span>
+                      <span className="detail-value">
+                        <span className={`role-badge ${user.currentProject.userProjectRole === 'Project Manager' ? 'role-admin' : 'role-employee'}`}>
+                          {user.currentProject.userProjectRole}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="project-detail-row">
+                      <span className="detail-label">Department</span>
+                      <span className="detail-value">{user.currentProject.department || '-'}</span>
+                    </div>
+                    <div className="project-detail-row">
+                      <span className="detail-label">Start Date</span>
+                      <span className="detail-value">{formatDate(user.currentProject.startDate)}</span>
+                    </div>
+                    <div className="project-detail-row">
+                      <span className="detail-label">Expected End</span>
+                      <span className="detail-value">{formatDate(user.currentProject.expectedEndDate)}</span>
+                    </div>
+                  </div>
+                  <button 
+                    className="btn-view-project"
+                    onClick={() => navigate(`/projects-environments/${user.currentProject?.id}`)}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                      <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    View Project
+                  </button>
+                </div>
+              ) : (
+                <div className="detail-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                    <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <p>No project assigned.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

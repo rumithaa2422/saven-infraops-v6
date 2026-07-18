@@ -15955,3 +15955,135 @@ input:disabled {
 .import-instructions + .import-reference {
   margin-top: 24px;
 }
+
+/* ========================================
+   User Details - Project Information Card
+   ======================================== */
+
+.project-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.project-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-title h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.project-code {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: monospace;
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.project-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-detail-row .detail-label {
+  font-size: 13px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.project-detail-row .detail-value {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  text-align: right;
+}
+
+.btn-view-project {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 8px;
+}
+
+.btn-view-project:hover {
+  background: var(--brand);
+  color: white;
+}
+
+.detail-placeholder {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.detail-placeholder svg {
+  color: var(--muted);
+  opacity: 0.5;
+  margin-bottom: 12px;
+}
+
+.detail-placeholder p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Dark mode adjustments */
+:root.dark .project-title h4,
+:root.dark .project-detail-row .detail-value {
+  color: var(--text);
+}
+
+:root.dark .project-code {
+  background: var(--panel);
+}
+
+:root.dark .btn-view-project {
+  background: var(--panel);
+}
+
+/* Project link in detail header */
+.detail-meta-value.project-link {
+  color: var(--brand);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.detail-meta-value.project-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}

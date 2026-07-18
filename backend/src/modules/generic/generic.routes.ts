@@ -347,8 +347,8 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
       case 'access-management':
         item = await prisma.accessRequest.findUnique({ where: { id } });
         break;
-      case 'users-teams':
-        item = await prisma.user.findUnique({ 
+      case 'users-teams': {
+        const userRecord = await prisma.user.findUnique({ 
           where: { id },
           select: {
             id: true,
@@ -375,7 +375,83 @@ genericModuleRouter.get('/:module/:id', requireAuth, async (req, res, next) => {
             }
           }
         });
+        
+        if (userRecord) {
+          // Find if user is a team member or manager in any project
+          const projects = await prisma.projectEnvironment.findMany({
+            where: {
+              OR: [
+                { managerId: id },
+                { teamMemberIds: { contains: id } }
+              ],
+              status: { not: 'COMPLETED' }
+            },
+            orderBy: { startDate: 'desc' }
+          });
+          
+          // Find the most recent project where user is active
+          const currentProject = projects.find(p => {
+            // Check if user is manager
+            if (p.managerId === id) return true;
+            // Check if user is in team members
+            if (p.teamMemberIds) {
+              try {
+                const memberIds = JSON.parse(p.teamMemberIds);
+                return memberIds.includes(id);
+              } catch {
+                return false;
+              }
+            }
+            return false;
+          });
+          
+          // Fetch all users for enrichment
+          const users = await prisma.user.findMany({
+            select: { id: true, name: true, email: true, department: true, roles: { include: { role: { select: { name: true } } } } }
+          });
+          
+          // Build current project info
+          let projectInfo: any = null;
+          if (currentProject) {
+            const manager = currentProject.managerId ? users.find(u => u.id === currentProject.managerId) : null;
+            let teamMembers: typeof users = [];
+            if (currentProject.teamMemberIds) {
+              try {
+                const memberIds = JSON.parse(currentProject.teamMemberIds);
+                teamMembers = users.filter(u => memberIds.includes(u.id));
+              } catch {
+                teamMembers = [];
+              }
+            }
+            
+            // Determine user's role in project
+            let userProjectRole = 'Team Member';
+            if (currentProject.managerId === id) {
+              userProjectRole = 'Project Manager';
+            }
+            
+            projectInfo = {
+              id: currentProject.id,
+              projectName: currentProject.projectName,
+              projectCode: currentProject.projectCode,
+              client: currentProject.client,
+              department: currentProject.department,
+              status: currentProject.status,
+              startDate: currentProject.startDate,
+              expectedEndDate: currentProject.expectedEndDate,
+              manager: manager,
+              managerName: manager?.name || null,
+              teamMembers: teamMembers,
+              userProjectRole: userProjectRole
+            };
+          }
+          
+          item = { ...userRecord, currentProject: projectInfo };
+        } else {
+          item = null;
+        }
         break;
+      }
       case 'projects-environments': {
         const project = await prisma.projectEnvironment.findUnique({ where: { id } });
         if (project) {
