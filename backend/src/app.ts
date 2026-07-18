@@ -22,6 +22,7 @@ import { inventoryMasterRouter } from './modules/inventory/inventoryMaster.route
 import { inventoryHistoryRouter } from './modules/inventory/inventoryHistory.routes.js';
 import { inventoryAnalyticsRouter } from './modules/inventory/inventoryAnalytics.routes.js';
 import { inventoryAssignmentRouter } from './modules/inventory/inventoryAssignment.routes.js';
+import { vendorRouter } from './modules/vendor/vendor.routes.js';
 
 export function createApp() {
   const app = express();
@@ -51,6 +52,7 @@ export function createApp() {
   app.use('/api/inventory-master', inventoryMasterRouter);
   app.use('/api/inventory-master', inventoryHistoryRouter);
   app.use('/api/inventory-assignments', inventoryAssignmentRouter);
+  app.use('/api/vendors', vendorRouter);
   app.use('/api', genericModuleRouter);
 
   app.use(errorHandler);

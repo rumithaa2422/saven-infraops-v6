@@ -29,6 +29,7 @@ import { CreateUserPage } from '../pages/CreateUserPage';
 import { EditUserPage } from '../pages/EditUserPage';
 import { UsersImportExportPage } from '../pages/UsersImportExportPage';
 import { DocumentRepositoryPage } from '../pages/DocumentRepositoryPage';
+import { VendorDirectoryPage } from '../pages/VendorDirectoryPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -291,7 +292,7 @@ export function App() {
           path="vendors-licenses" 
           element={
             <PermissionRoute permission={modulePermissions['vendors-licenses']}>
-              <ModulePage moduleKey="vendors-licenses" title="Vendors & Licenses" />
+              <VendorDirectoryPage />
             </PermissionRoute>
           } 
         />

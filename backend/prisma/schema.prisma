@@ -536,6 +536,37 @@ model VendorLicense {
   updatedAt     DateTime  @updatedAt
 }
 
+// Vendor Management - Phase 1
+model Vendor {
+  id                   String    @id @default(cuid())
+  vendorName           String
+  vendorCode           String    @unique
+  category             String
+  status               String    @default("ACTIVE")
+  website              String?
+  country              String?
+  gstNumber            String?
+  registrationNumber    String?
+  primaryContactName   String
+  designation           String?
+  email                String
+  phone                String
+  address              String?    @db.Text
+  remarks              String?    @db.Text
+  contractStartDate    DateTime?
+  contractExpiryDate   DateTime?
+  renewalDate          DateTime?
+  paymentTerms         String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([vendorCode])
+  @@index([status])
+  @@index([category])
+  @@index([contractExpiryDate])
+  @@index([renewalDate])
+}
+
 model KnowledgeBaseArticle {
   id         String   @id @default(cuid())
   title      String
