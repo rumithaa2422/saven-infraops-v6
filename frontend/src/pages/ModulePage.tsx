@@ -2239,7 +2239,6 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           </tbody>
         </table>
       </div>
-        </>
       )}
 
       {/* Create/Upload Modal - Different for document repository */}
