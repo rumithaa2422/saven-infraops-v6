@@ -31,7 +31,9 @@ export function CreateUserPage() {
     designation: '',
     roleId: '',
     employmentType: '',
-    dateJoined: ''
+    dateJoined: '',
+    address: '',
+    remarks: ''
   });
 
   const fetchRoles = useCallback(async () => {
@@ -119,7 +121,9 @@ export function CreateUserPage() {
         designation: formData.designation,
         roleId: formData.roleId,
         employmentType: formData.employmentType,
-        dateJoined: formData.dateJoined
+        dateJoined: formData.dateJoined,
+        address: formData.address || undefined,
+        remarks: formData.remarks || undefined
       };
 
       await api.post('/users-teams', payload);
@@ -330,6 +334,43 @@ export function CreateUserPage() {
                   className={errors.dateJoined ? 'error' : ''}
                 />
                 {errors.dateJoined && <span className="error-message">{errors.dateJoined}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Additional Information */}
+        <div className="form-card">
+          <div className="form-card-header">
+            <h2>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Additional Information
+            </h2>
+          </div>
+          <div className="form-card-body">
+            <div className="form-grid">
+              <div className="form-group full-width">
+                <label>Address</label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Enter address (optional)"
+                  rows={3}
+                />
+              </div>
+              <div className="form-group full-width">
+                <label>Remarks</label>
+                <textarea
+                  name="remarks"
+                  value={formData.remarks}
+                  onChange={handleChange}
+                  placeholder="Additional notes (optional)"
+                  rows={3}
+                />
               </div>
             </div>
           </div>
