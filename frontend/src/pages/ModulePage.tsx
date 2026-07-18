@@ -1057,6 +1057,17 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const dueCount = useMemo(() => items.filter((item) => config.dateKey && item[config.dateKey]).length, [items, config.dateKey]);
   const riskCount = useMemo(() => items.filter((item) => ['HIGH', 'CRITICAL', 'SEV1', 'SEV2'].includes(String(item.priority || item.riskRating || item.severity || ''))).length, [items]);
 
+  // Incident-specific statistics
+  const incidentStats = useMemo(() => {
+    if (moduleKey !== 'incidents') return null;
+    return {
+      total: items.length,
+      open: items.filter(item => ['OPEN', 'NEW', 'ASSIGNED'].includes(String(item.status))).length,
+      highCritical: items.filter(item => ['SEV1', 'SEV2'].includes(String(item.severity))).length,
+      resolved: items.filter(item => ['RESOLVED', 'CLOSED'].includes(String(item.status))).length
+    };
+  }, [items, moduleKey]);
+
   async function load(search?: string) {
     setLoading(true);
     try {
@@ -2030,11 +2041,70 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         <>
           {/* Regular Module Content */}
           {!config.isDocumentRepository && (
-            <section className="grid cards-3">
-              <StatCard label="Active" value={String(openCount)} hint="Current working queue" />
-              <StatCard label="Tracked" value={String(items.length)} hint="Loaded records" />
-              <StatCard label="Risk / Due" value={String(riskCount || dueCount)} hint="Needs review" />
-            </section>
+            <>
+              {/* Incident Summary Cards */}
+              {moduleKey === 'incidents' && incidentStats && (
+                <div className="summary-cards-grid">
+                  <div className="summary-card">
+                    <div className="summary-card-icon total">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div className="summary-card-content">
+                      <span className="summary-card-label">Total Incidents</span>
+                      <span className="summary-card-value">{incidentStats.total}</span>
+                    </div>
+                  </div>
+
+                  <div className="summary-card">
+                    <div className="summary-card-icon info">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div className="summary-card-content">
+                      <span className="summary-card-label">Open Incidents</span>
+                      <span className="summary-card-value">{incidentStats.open}</span>
+                    </div>
+                  </div>
+
+                  <div className="summary-card">
+                    <div className="summary-card-icon danger">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div className="summary-card-content">
+                      <span className="summary-card-label">High/Critical</span>
+                      <span className="summary-card-value">{incidentStats.highCritical}</span>
+                    </div>
+                  </div>
+
+                  <div className="summary-card">
+                    <div className="summary-card-icon available">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                    </div>
+                    <div className="summary-card-content">
+                      <span className="summary-card-label">Resolved</span>
+                      <span className="summary-card-value">{incidentStats.resolved}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Regular Stats for non-incident modules */}
+              {moduleKey !== 'incidents' && (
+                <section className="grid cards-3">
+                  <StatCard label="Active" value={String(openCount)} hint="Current working queue" />
+                  <StatCard label="Tracked" value={String(items.length)} hint="Loaded records" />
+                  <StatCard label="Risk / Due" value={String(riskCount || dueCount)} hint="Needs review" />
+                </section>
+              )}
+            </>
           )}
 
           {/* Document Repository Stats */}
@@ -2045,6 +2115,11 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           )}
 
           <div className="table-card">
+            <div className="table-header">
+              <h3>{title}</h3>
+              <span className="table-count">{items.length} record{items.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="table-wrapper">
             <table>
               <thead>
                 <tr>

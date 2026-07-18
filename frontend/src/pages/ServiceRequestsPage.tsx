@@ -18,6 +18,13 @@ type ServiceRequest = {
   projectName?: string;
 };
 
+type SummaryStats = {
+  total: number;
+  open: number;
+  inProgress: number;
+  closed: number;
+};
+
 const initialForm = {
   title: '',
   description: '',
@@ -46,6 +53,14 @@ export function ServiceRequestsPage() {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Calculate summary statistics
+  const summaryStats: SummaryStats = {
+    total: items.length,
+    open: items.filter(item => item.status === 'OPEN' || item.status === 'NEW' || item.status === 'ASSIGNED').length,
+    inProgress: items.filter(item => item.status === 'IN_PROGRESS' || item.status === 'IN_PROGRESS').length,
+    closed: items.filter(item => item.status === 'CLOSED' || item.status === 'RESOLVED').length
+  };
 
   // Permission checks
   const canCreate = hasPermission('tickets:create');
@@ -228,21 +243,97 @@ export function ServiceRequestsPage() {
 
   return (
     <div className="page-stack">
-      <div className="page-title-row">
-        <div>
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="page-header-left">
           <span className="eyebrow">ITSM</span>
           <h2>Service Requests</h2>
         </div>
-        <div className="action-row">
-          <button className="secondary" onClick={load}>Refresh</button>
-          {canCreate && <button className="secondary" onClick={exportCsv}>Export CSV</button>}
-          {canCreate && <button className="primary" onClick={() => setCreateOpen(true)}>Create Request</button>}
+      </div>
+
+      {/* Summary Cards */}
+      <div className="summary-cards-grid">
+        <div className="summary-card">
+          <div className="summary-card-icon total">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </div>
+          <div className="summary-card-content">
+            <span className="summary-card-label">Total Requests</span>
+            <span className="summary-card-value">{summaryStats.total}</span>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-card-icon info">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="summary-card-content">
+            <span className="summary-card-label">Open Requests</span>
+            <span className="summary-card-value">{summaryStats.open}</span>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-card-icon warning">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="summary-card-content">
+            <span className="summary-card-label">In Progress</span>
+            <span className="summary-card-value">{summaryStats.inProgress}</span>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-card-icon available">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </div>
+          <div className="summary-card-content">
+            <span className="summary-card-label">Closed Requests</span>
+            <span className="summary-card-value">{summaryStats.closed}</span>
+          </div>
         </div>
       </div>
 
-      {message && <div className={`notice ${message.includes('Failed') || message.includes('Error') ? 'notice-error' : 'notice-success'}`}>{message}</div>}
+      {message && <div className={`alert ${message.includes('Failed') || message.includes('Error') ? 'alert-error' : 'alert-success'}`}>{message}</div>}
+
+      {/* Toolbar */}
+      <div className="listing-toolbar">
+        <div className="toolbar-left">
+          <button className="toolbar-btn" onClick={load}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Refresh
+          </button>
+          {canCreate && (
+            <button className="toolbar-btn" onClick={exportCsv}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>
+              Export
+            </button>
+          )}
+        </div>
+        <div className="toolbar-right">
+          {canCreate && (
+            <button className="toolbar-btn primary" onClick={() => setCreateOpen(true)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Create Request
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="table-card">
+        <div className="table-header">
+          <h3>All Requests</h3>
+          <span className="table-count">{items.length} request{items.length !== 1 ? 's' : ''}</span>
+        </div>
         {items.length === 0 ? (
           <div className="empty-state">
             <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -257,48 +348,50 @@ export function ServiceRequestsPage() {
             )}
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Ticket</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Requester</th>
-                <th>Assignee</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => {
-                const isRestricted = isAdmin && !canAdminOpenTicket(item);
-                return (
-                  <tr key={item.id} className={isRestricted ? 'restricted-row' : ''}>
-                    <td style={{ fontWeight: 600 }}>{item.ticketNo}</td>
-                    <td>{item.title}</td>
-                    <td>{item.category}</td>
-                    <td><span className={`priority-badge priority-${item.priority.toLowerCase()}`}>{item.priority}</span></td>
-                    <td><span className={`status-badge status-${item.status.toLowerCase()}`}>{item.status.replace(/_/g, ' ')}</span></td>
-                    <td>{item.requesterName}</td>
-                    <td>{item.assigneeName || '—'}</td>
-                    <td>
-                      <div className="action-buttons">
-                        {isRestricted ? (
-                          <span className="restricted-badge">Restricted</span>
-                        ) : (
-                          <>
-                            <button className="link-button" onClick={() => handleOpenTicket(item)} title="Open">Open</button>
-                            {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Requester</th>
+                  <th>Assignee</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const isRestricted = isAdmin && !canAdminOpenTicket(item);
+                  return (
+                    <tr key={item.id} className={isRestricted ? 'restricted-row' : ''} onClick={() => !isRestricted && handleOpenTicket(item)}>
+                      <td><span className="project-code">{item.ticketNo}</span></td>
+                      <td><span className="project-name">{item.title}</span></td>
+                      <td>{item.category}</td>
+                      <td><span className={`priority-badge priority-${item.priority.toLowerCase()}`}>{item.priority}</span></td>
+                      <td><span className={`status-badge status-${item.status.toLowerCase()}`}>{item.status.replace(/_/g, ' ')}</span></td>
+                      <td>{item.requesterName}</td>
+                      <td>{item.assigneeName || '—'}</td>
+                      <td>
+                        <div className="action-buttons">
+                          {isRestricted ? (
+                            <span className="restricted-badge">Restricted</span>
+                          ) : (
+                            <>
+                              <button className="link-button" onClick={() => handleOpenTicket(item)} title="Open">Open</button>
+                              {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
