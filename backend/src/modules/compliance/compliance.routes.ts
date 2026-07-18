@@ -1110,7 +1110,7 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
       include: {
         folder: true,
         fileTags: {
-          include: { tag: true }
+          include: { taggedFiles: true }
         }
       }
     });
@@ -1119,8 +1119,8 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
       throw new HttpError(404, 'File not found');
     }
 
-    // If action is specified, return file binary (download or preview)
-    if (action === 'download' || action === 'preview') {
+    // If action is specified, return file binary (download)
+    if (action === 'download') {
       const filePath = path.join(process.cwd(), file.storagePath);
       
       try {
@@ -1129,22 +1129,8 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
         throw new HttpError(404, 'File not found on disk');
       }
 
-      if (action === 'preview') {
-        // Check if file is previewable (images and PDFs)
-        const previewableTypes = ['png', 'jpg', 'jpeg', 'pdf'];
-        if (previewableTypes.includes(file.fileExtension.toLowerCase())) {
-          res.setHeader('Content-Type', file.mimeType);
-          res.setHeader('Content-Disposition', `inline; filename="${file.originalFileName}"`);
-        } else {
-          return res.status(400).json({ 
-            message: 'Preview unavailable for this file type',
-            downloadUrl: `/api/compliance/files/${id}?action=download`
-          });
-        }
-      } else {
-        res.setHeader('Content-Type', file.mimeType);
-        res.setHeader('Content-Disposition', `attachment; filename="${file.originalFileName}"`);
-      }
+      res.setHeader('Content-Type', file.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${file.originalFileName}"`);
 
       res.setHeader('Content-Length', file.fileSize);
       const fileStream = await fs.readFile(filePath);
@@ -1233,7 +1219,7 @@ complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Respon
         version: file.version,
         storagePath: file.storagePath,
         folder: file.folder,
-        tags: file.fileTags.map(t => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color }))
+        tags: file.fileTags.map(t => ({ id: t.taggedFiles.id, name: t.taggedFiles.name, color: t.taggedFiles.color }))
       },
       folderPath,
       versions,
@@ -1365,54 +1351,6 @@ complianceRouter.delete('/files/:id', requireAuth, async (req: Request, res: Res
   }
 });
 
-/**
- * GET /api/compliance/files/:id/info
- * Get file info
- */
-complianceRouter.get('/files/:id/info', requireAuth, async (req: Request, res: Response, next) => {
-  try {
-    await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
-    );
-
-    const { id } = req.params;
-
-    if (!id) {
-      throw new HttpError(400, 'File ID is required');
-    }
-
-    const file = await prisma.documentFile.findUnique({ where: { id } });
-    if (!file) {
-      throw new HttpError(404, 'File not found');
-    }
-
-    // Get folder path for breadcrumbs
-    let folderPath: { id: string; name: string }[] = [];
-    if (file.folderId) {
-      folderPath = await getBreadcrumbs(file.folderId);
-    }
-
-    res.json({
-      item: {
-        id: file.id,
-        folderId: file.folderId,
-        originalFileName: file.originalFileName,
-        fileExtension: file.fileExtension,
-        mimeType: file.mimeType,
-        fileSize: file.fileSize,
-        iconType: getFileIcon(file.fileExtension),
-        uploadedBy: file.uploadedBy,
-        uploadedByEmail: file.uploadedByEmail,
-        uploadedAt: file.uploadedAt,
-        modifiedAt: file.modifiedAt,
-        description: file.description
-      },
-      folderPath
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 /**
  * GET /api/compliance/items
@@ -1838,6 +1776,7 @@ complianceRouter.get('/export', requireAuth, async (req: Request, res: Response,
  * DELETE /api/compliance/items
  * Delete multiple items (files and folders)
  * Body: { itemIds: string[] }
+ * Note: Folders with subfolders cannot be deleted
  */
 complianceRouter.delete('/items', requireAuth, async (req: Request, res: Response, next) => {
   try {
@@ -1853,44 +1792,38 @@ complianceRouter.delete('/items', requireAuth, async (req: Request, res: Respons
 
     const results = { deleted: { folders: 0, files: 0 }, errors: [] as string[] };
 
-    // Helper to recursively delete folder and contents
-    const deleteFolderRecursive = async (folderId: string): Promise<void> => {
-      // Delete all files in this folder
-      const files = await prisma.documentFile.findMany({
-        where: { folderId },
-        select: { id: true, storagePath: true }
-      });
-
-      for (const file of files) {
-        try {
-          await fs.unlink(path.join(process.cwd(), file.storagePath));
-        } catch { /* ignore */ }
-        await prisma.documentFile.delete({ where: { id: file.id } });
-        results.deleted.files++;
-      }
-
-      // Get subfolders
-      const subfolders = await prisma.documentFolder.findMany({
-        where: { parentFolderId: folderId },
-        select: { id: true }
-      });
-
-      // Recursively delete subfolders
-      for (const subfolder of subfolders) {
-        await deleteFolderRecursive(subfolder.id);
-      }
-
-      // Delete this folder
-      await prisma.documentFolder.delete({ where: { id: folderId } });
-      results.deleted.folders++;
-    };
-
     for (const id of itemIds) {
       try {
         // Check if it's a folder
-        const folder = await prisma.documentFolder.findUnique({ where: { id } });
+        const folder = await prisma.documentFolder.findUnique({ 
+          where: { id },
+          include: { _count: { select: { children: true } } }
+        });
+        
         if (folder) {
-          await deleteFolderRecursive(id);
+          // Check if folder has subfolders - prevent deletion
+          if (folder._count.children > 0) {
+            results.errors.push(`Cannot delete folder "${folder.name}": contains subfolders`);
+            continue;
+          }
+          
+          // Delete all files in this folder
+          const files = await prisma.documentFile.findMany({
+            where: { folderId: id },
+            select: { id: true, storagePath: true }
+          });
+
+          for (const file of files) {
+            try {
+              await fs.unlink(path.join(process.cwd(), file.storagePath));
+            } catch { /* ignore - file may already be deleted */ }
+            await prisma.documentFile.delete({ where: { id: file.id } });
+            results.deleted.files++;
+          }
+
+          // Delete the folder
+          await prisma.documentFolder.delete({ where: { id } });
+          results.deleted.folders++;
         } else {
           // It's a file
           const file = await prisma.documentFile.findUnique({
@@ -1900,7 +1833,7 @@ complianceRouter.delete('/items', requireAuth, async (req: Request, res: Respons
           if (file) {
             try {
               await fs.unlink(path.join(process.cwd(), file.storagePath));
-            } catch { /* ignore */ }
+            } catch { /* ignore - file may already be deleted */ }
             await prisma.documentFile.delete({ where: { id } });
             results.deleted.files++;
           }
@@ -1920,138 +1853,7 @@ complianceRouter.delete('/items', requireAuth, async (req: Request, res: Respons
   }
 });
 
-/**
- * GET /api/compliance/tags
- * Get all tags
- */
-complianceRouter.get('/tags', requireAuth, async (req: Request, res: Response, next) => {
-  try {
-    await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
-    );
 
-    const tags = await prisma.documentTag.findMany({
-      orderBy: { name: 'asc' }
-    });
-
-    res.json({ tags });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * POST /api/compliance/tags
- * Create a new tag
- * Body: { name: string, color?: string }
- */
-complianceRouter.post('/tags', requireAuth, async (req: Request, res: Response, next) => {
-  try {
-    await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
-    );
-
-    const { name, color } = req.body as { name: string; color?: string };
-
-    if (!name || !name.trim()) {
-      throw new HttpError(400, 'Tag name is required');
-    }
-
-    const tag = await prisma.documentTag.create({
-      data: {
-        name: name.trim(),
-        color: color || '#5468ff'
-      }
-    });
-
-    res.status(201).json({ tag });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * PATCH /api/compliance/files/:id
- * Update file description or tags
- * Body: { description?: string, tagIds?: string[] }
- */
-complianceRouter.patch('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
-  try {
-    await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
-    );
-
-    const { id } = req.params;
-    const { description, tagIds, action } = req.body as { 
-      description?: string; 
-      tagIds?: string[];
-      action?: string;
-    };
-
-    const file = await prisma.documentFile.findUnique({ where: { id } });
-    if (!file) {
-      throw new HttpError(404, 'File not found');
-    }
-
-    // Update description
-    if (description !== undefined) {
-      await prisma.documentFile.update({
-        where: { id },
-        data: { description }
-      });
-
-      // Log activity if description changed
-      if (action === 'description_updated') {
-        await prisma.documentActivity.create({
-          data: {
-            fileId: id,
-            action: 'renamed',
-            details: 'Description updated',
-            performedBy: req.body.userName || 'Unknown',
-            performedByEmail: req.body.userEmail || ''
-          }
-        });
-      }
-    }
-
-    // Update tags
-    if (tagIds !== undefined) {
-      // Remove existing tags
-      await prisma.documentFileTag.deleteMany({
-        where: { fileId: id }
-      });
-
-      // Add new tags
-      if (tagIds.length > 0) {
-        await prisma.documentFileTag.createMany({
-          data: tagIds.map(tagId => ({
-            fileId: id,
-            tagId
-          }))
-        });
-      }
-    }
-
-    // Fetch updated file
-    const updatedFile = await prisma.documentFile.findUnique({
-      where: { id },
-      include: {
-        folder: true,
-        tags: { include: { tag: true } }
-      }
-    });
-
-    res.json({
-      success: true,
-      file: updatedFile ? {
-        ...updatedFile,
-        fileTags: updatedFile.fileTags.map(t => ({ id: t.taggedFiles.id, name: t.taggedFiles.name, color: t.taggedFiles.color }))
-      } : null
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 /**
  * POST /api/compliance/files/:id/download
@@ -2285,38 +2087,6 @@ complianceRouter.post('/files/:id/restore', requireAuth, async (req: Request, re
   }
 });
 
-/**
- * GET /api/compliance/activity
- * Get recent activity
- * Query params: folderId (optional), limit (default 10)
- */
-complianceRouter.get('/activity', requireAuth, async (req: Request, res: Response, next) => {
-  try {
-    await new Promise<void>((resolve, reject) =>
-      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
-    );
-
-    const folderId = req.query.folderId as string | undefined;
-    const limit = parseInt(req.query.limit as string) || 10;
-
-    const where: any = {};
-    if (folderId) {
-      where.folderId = folderId;
-    }
-
-    const activities = await prisma.documentActivity.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: Math.min(limit, 50)
-    });
-
-    const total = await prisma.documentActivity.count({ where });
-
-    res.json({ activities, total });
-  } catch (error) {
-    next(error);
-  }
-});
 
 /**
  * GET /api/compliance/summary

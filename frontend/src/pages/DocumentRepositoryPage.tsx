@@ -28,53 +28,6 @@ type Item = {
   version?: number;
 };
 
-type FileDetails = {
-  id: string;
-  folderId: string;
-  originalFileName: string;
-  fileExtension: string;
-  mimeType: string;
-  fileSize: number;
-  iconType: string;
-  uploadedBy: string | null;
-  uploadedByEmail: string | null;
-  uploadedAt: string;
-  modifiedAt: string;
-  description: string | null;
-  downloadCount: number;
-  version: number;
-  storagePath: string;
-  folder: { id: string; name: string };
-  tags: { id: string; name: string; color: string }[];
-};
-
-type Version = {
-  id: string;
-  version: number;
-  uploadedBy: string | null;
-  uploadedByEmail: string | null;
-  uploadedAt: string;
-  fileSize: number;
-  modifiedAt: string;
-};
-
-type Activity = {
-  id: string;
-  fileId: string | null;
-  folderId: string | null;
-  action: string;
-  details: string | null;
-  performedBy: string | null;
-  performedByEmail: string | null;
-  createdAt: string;
-};
-
-type Tag = {
-  id: string;
-  name: string;
-  color: string;
-};
-
 type BreadcrumbItem = {
   id: string | null;
   name: string;
@@ -100,37 +53,7 @@ const formatDate = (dateStr: string | undefined): string => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const formatDateTime = (dateStr: string | undefined): string => {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-};
-
-const getActivityIcon = (action: string) => {
-  const icons: Record<string, React.ReactElement> = {
-    uploaded: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>,
-    downloaded: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2"/><path d="M12 15V3" stroke="currentColor" strokeWidth="2"/></svg>,
-    renamed: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 20H21" stroke="currentColor" strokeWidth="2"/><path d="M18.34 5.76C18.99 5.11 19.69 4.54 20.45 4.05M3 21H21M14.12 8.88L14.37 9C15.22 9.67 15.88 10.54 16.36 11.54" stroke="currentColor" strokeWidth="2"/></svg>,
-    moved: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 9L2 12M2 12L5 15M2 12H14" stroke="currentColor" strokeWidth="2"/><path d="M19 15L22 12M22 12L19 9M22 12H10" stroke="currentColor" strokeWidth="2"/></svg>,
-    deleted: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6H5H21" stroke="currentColor" strokeWidth="2"/><path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2"/></svg>,
-    version_created: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2"/><path d="M12 18V12" stroke="currentColor" strokeWidth="2"/><path d="M9 15H15" stroke="currentColor" strokeWidth="2"/></svg>
-  };
-  return icons[action] || icons.uploaded;
-};
-
-const getActivityLabel = (action: string): string => {
-  const labels: Record<string, string> = {
-    uploaded: 'Uploaded',
-    downloaded: 'Downloaded',
-    renamed: 'Renamed',
-    moved: 'Moved',
-    deleted: 'Deleted',
-    version_created: 'Version Created'
-  };
-  return labels[action] || action;
-};
-
-const FileIcon = ({ type }: { type: string }) => {
+const getFileIcon = (type: string) => {
   const iconColors: Record<string, string> = {
     pdf: '#ef4444',
     word: '#3b82f6',
@@ -151,87 +74,6 @@ const FileIcon = ({ type }: { type: string }) => {
   );
 };
 
-// PreviewViewer component - fetches file directly from API and displays it
-function PreviewViewer({ fileId, fileName, fileType }: { fileId: string; fileName: string; fileType: string }) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let url: string | null = null;
-
-    const fetchPreview = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const baseUrl = import.meta.env.VITE_API_URL || '';
-        const response = await fetch(`${baseUrl}/api/compliance/files/${fileId}?action=preview`, {
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to load preview');
-        }
-
-        const blob = await response.blob();
-        url = URL.createObjectURL(blob);
-        setBlobUrl(url);
-      } catch (err) {
-        setError('Failed to load preview');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPreview();
-
-    return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
-    };
-  }, [fileId]);
-
-  if (loading) {
-    return (
-      <div className="preview-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading preview...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="preview-unavailable">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        <p>Preview unavailable for this file type</p>
-      </div>
-    );
-  }
-
-  if (fileType === 'pdf') {
-    return (
-      <iframe 
-        src={blobUrl || ''} 
-        title={fileName} 
-        className="preview-iframe"
-      />
-    );
-  }
-
-  // For images
-  return (
-    <img 
-      src={blobUrl || ''} 
-      alt={fileName} 
-      className="preview-image"
-      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-    />
-  );
-}
-
 export function DocumentRepositoryPage() {
   const { user, isSuperAdmin } = useAuth();
   const isAdmin = user?.roles.includes('Admin') ?? false;
@@ -250,20 +92,6 @@ export function DocumentRepositoryPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
 
-  // File details panel
-  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
-  const [fileDetails, setFileDetails] = useState<FileDetails | null>(null);
-  const [fileVersions, setFileVersions] = useState<Version[]>([]);
-  const [fileActivities, setFileActivities] = useState<Activity[]>([]);
-  const [folderPath, setFolderPath] = useState<BreadcrumbItem[]>([]);
-  const [editingDescription, setEditingDescription] = useState(false);
-  const [newDescription, setNewDescription] = useState('');
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const [showTagsDialog, setShowTagsDialog] = useState(false);
-  const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
-
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showFilters, setShowFilters] = useState(false);
@@ -271,13 +99,10 @@ export function DocumentRepositoryPage() {
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [showRenameFileDialog, setShowRenameFileDialog] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
-  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
   const [editingFolder, setEditingFolder] = useState<Item | null>(null);
   const [editingFile, setEditingFile] = useState<Item | null>(null);
   const [movingFile, setMovingFile] = useState<Item | null>(null);
-  const [previewFile, setPreviewFile] = useState<Item | null>(null);
   const [allFolders, setAllFolders] = useState<{ id: string; name: string; parentFolderId: string | null }[]>([]);
   const [selectedMoveFolder, setSelectedMoveFolder] = useState<string>('');
   const [showActionsMenu, setShowActionsMenu] = useState<string | null>(null);
@@ -289,14 +114,9 @@ export function DocumentRepositoryPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [exporting, setExporting] = useState(false);
 
-  // Filters
-  const [fileTypes, setFileTypes] = useState<string[]>([]);
+  // Filters - Simplified to only Calendar, From, To, Year
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [sizeFilter, setSizeFilter] = useState<string>('');
-  const [uploadedBy, setUploadedBy] = useState('');
-  const [contentType, setContentType] = useState<'both' | 'folders' | 'files'>('both');
-  const [uploaders, setUploaders] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<string>('');
   
   // Generate available years from current year going back 10 years
@@ -312,30 +132,6 @@ export function DocumentRepositoryPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  // Fetch uploaders for filter dropdown
-  const fetchUploaders = useCallback(async () => {
-    try {
-      const res = await api.get('/compliance/uploaders');
-      setUploaders(res.data.uploaders || []);
-    } catch { /* ignore */ }
-  }, []);
-
-  // Fetch all tags
-  const fetchTags = useCallback(async () => {
-    try {
-      const res = await api.get('/compliance/tags');
-      setAllTags(res.data.tags || []);
-    } catch { /* ignore */ }
-  }, []);
-
-  // Fetch recent activity
-  const fetchRecentActivity = useCallback(async () => {
-    try {
-      const res = await api.get('/compliance/activity', { params: { limit: 10 } });
-      setRecentActivities(res.data.activities || []);
-    } catch { /* ignore */ }
-  }, []);
-
   // Fetch summary
   const fetchSummary = useCallback(async () => {
     try {
@@ -345,27 +141,6 @@ export function DocumentRepositoryPage() {
       setSummary(res.data || { totalFolders: 0, totalFiles: 0, storageUsed: 0, recentActivityCount: 0 });
     } catch { /* ignore */ }
   }, [currentFolderId]);
-
-  useEffect(() => {
-    fetchUploaders();
-    fetchTags();
-    fetchRecentActivity();
-  }, [fetchUploaders, fetchTags, fetchRecentActivity]);
-
-  // Fetch file details
-  const fetchFileDetails = useCallback(async (fileId: string) => {
-    try {
-      const res = await api.get(`/compliance/files/${fileId}`);
-      setFileDetails(res.data.file);
-      setFileVersions(res.data.versions || []);
-      setFileActivities(res.data.activities || []);
-      setFolderPath(res.data.folderPath || []);
-      setNewDescription(res.data.file?.description || '');
-      setSelectedTags(res.data.file?.tags?.map((t: any) => t.id) || []);
-    } catch (err: any) {
-      setError('Failed to load file details');
-    }
-  }, []);
 
   const fetchData = useCallback(async (isRefresh = false, folderId: string | null = currentFolderId) => {
     if (isRefresh) setRefreshing(true);
@@ -389,17 +164,6 @@ export function DocumentRepositoryPage() {
         case 'files_first': foldersFirst = true; sortByParam = 'name'; sortOrder = 'asc'; break;
       }
 
-      let sizeMin: number | undefined;
-      let sizeMax: number | undefined;
-      if (sizeFilter) {
-        switch (sizeFilter) {
-          case 'lt1mb': sizeMax = 1024 * 1024; break;
-          case '1-10mb': sizeMin = 1024 * 1024; sizeMax = 10 * 1024 * 1024; break;
-          case '10-50mb': sizeMin = 10 * 1024 * 1024; sizeMax = 50 * 1024 * 1024; break;
-          case 'gt50mb': sizeMin = 50 * 1024 * 1024; break;
-        }
-      }
-
       // Calculate date range based on year filter
       let effectiveDateFrom = dateFrom;
       let effectiveDateTo = dateTo;
@@ -412,13 +176,9 @@ export function DocumentRepositoryPage() {
         params: {
           folderId: folderId || undefined,
           search: search || undefined,
-          type: contentType,
-          fileTypes: fileTypes.length > 0 ? fileTypes.join(',') : undefined,
+          type: 'both',
           dateFrom: effectiveDateFrom || undefined,
           dateTo: effectiveDateTo || undefined,
-          sizeMin,
-          sizeMax,
-          uploadedBy: uploadedBy || undefined,
           sortBy: sortByParam,
           sortOrder,
           foldersFirst: foldersFirst || undefined
@@ -443,41 +203,32 @@ export function DocumentRepositoryPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [search, sortBy, fileTypes, dateFrom, dateTo, sizeFilter, uploadedBy, contentType, currentFolderId, yearFilter]);
+  }, [search, sortBy, dateFrom, dateTo, currentFolderId, yearFilter]);
 
   useEffect(() => {
     fetchData();
     fetchSummary();
   }, [fetchData, fetchSummary]);
 
+  // Menu close handling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Close folder actions menu if click is outside
       if (showActionsMenu !== null) {
         const folderActions = document.querySelectorAll('.folder-actions');
-        let clickedInsideFolderMenu = false;
+        let clickedInside = false;
         folderActions.forEach(container => {
-          if (container.contains(event.target as Node)) {
-            clickedInsideFolderMenu = true;
-          }
+          if (container.contains(event.target as Node)) clickedInside = true;
         });
-        if (!clickedInsideFolderMenu) {
-          setShowActionsMenu(null);
-        }
+        if (!clickedInside) setShowActionsMenu(null);
       }
       
-      // Close file actions menu if click is outside
       if (showFileActionsMenu !== null) {
         const fileActions = document.querySelectorAll('.file-actions');
-        let clickedInsideFileMenu = false;
+        let clickedInside = false;
         fileActions.forEach(container => {
-          if (container.contains(event.target as Node)) {
-            clickedInsideFileMenu = true;
-          }
+          if (container.contains(event.target as Node)) clickedInside = true;
         });
-        if (!clickedInsideFileMenu) {
-          setShowFileActionsMenu(null);
-        }
+        if (!clickedInside) setShowFileActionsMenu(null);
       }
     };
 
@@ -514,16 +265,10 @@ export function DocumentRepositoryPage() {
     setSearch('');
     setDateFrom('');
     setDateTo('');
-    setSizeFilter('');
-    setUploadedBy('');
-    setFileTypes([]);
-    setContentType('both');
     setYearFilter('');
-    setShowDetailsPanel(false);
     fetchData(true, folderId);
   };
 
-  // Selection handlers
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedItems);
     if (newSelected.has(id)) {
@@ -545,21 +290,7 @@ export function DocumentRepositoryPage() {
     }
   };
 
-  // File details handlers
-  const handleShowFileDetails = (item: Item) => {
-    if (item.itemType === 'file') {
-      setShowFileActionsMenu(null);
-      fetchFileDetails(item.id);
-      setShowDetailsPanel(true);
-    }
-  };
-
-  const handlePreviewFile = (item: Item) => {
-    setShowFileActionsMenu(null);
-    setPreviewFile(item);
-    setShowPreviewDialog(true);
-  };
-
+  // Download file
   const handleDownloadFile = async (fileId: string, fileName: string) => {
     setShowFileActionsMenu(null);
     try {
@@ -568,8 +299,18 @@ export function DocumentRepositoryPage() {
         userEmail: user?.email
       });
       
-      const response = await api.get(`/compliance/files/${fileId}?action=download`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${baseUrl}/api/compliance/files/${fileId}?action=download`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Download failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
@@ -577,12 +318,8 @@ export function DocumentRepositoryPage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      fetchRecentActivity();
-      if (fileDetails?.id === fileId) {
-        fetchFileDetails(fileId);
-      }
     } catch (err: any) {
-      setError('Failed to download file');
+      setError(err.message || 'Failed to download file');
     }
   };
 
@@ -602,364 +339,31 @@ export function DocumentRepositoryPage() {
     setShowMoveDialog(true);
   };
 
+  // Delete file
   const handleDeleteFile = async (fileId: string) => {
     setShowFileActionsMenu(null);
     if (!confirm('Delete this file?')) return;
 
     try {
-      await api.delete(`/compliance/items`, {
+      await api.delete('/compliance/items', {
         data: { itemIds: [fileId] }
       });
       setMessage('File deleted');
-      if (fileDetails?.id === fileId) {
-        setShowDetailsPanel(false);
-        setFileDetails(null);
-      }
       fetchData(true);
       fetchSummary();
-      fetchRecentActivity();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete file');
     }
   };
 
-  const handleSaveDescription = async () => {
-    if (!fileDetails) return;
-    
-    setSaving(true);
-    try {
-      await api.patch(`/compliance/files/${fileDetails.id}`, {
-        description: newDescription,
-        action: 'description_updated'
-      });
-      setMessage('Description updated');
-      setEditingDescription(false);
-      fetchFileDetails(fileDetails.id);
-      fetchRecentActivity();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update description');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveTags = async () => {
-    if (!fileDetails) return;
-    
-    setSaving(true);
-    try {
-      await api.patch(`/compliance/files/${fileDetails.id}`, {
-        tagIds: selectedTags
-      });
-      setMessage('Tags updated');
-      setShowTagsDialog(false);
-      fetchFileDetails(fileDetails.id);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update tags');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Export handlers
-  const handleExportSelected = async () => {
-    if (selectedItems.size === 0) return;
-    setExporting(true);
-    setMessage('Preparing export...');
-    
-    try {
-      const response = await api.get('/compliance/export', {
-        params: { type: 'selected', itemIds: Array.from(selectedItems).join(',') },
-        responseType: 'blob',
-        validateStatus: (status) => status < 500
-      });
-      
-      const contentType = String(response.headers?.['content-type'] || '');
-      if (typeof response.data === 'object' && contentType.includes('application/json')) {
-        setError(response.data?.message || 'Export failed');
-        setExporting(false);
-        return;
-      }
-      
-      if (response.status >= 400) {
-        setError(response.data?.message || 'Export failed');
-        setExporting(false);
-        return;
-      }
-      
-      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/zip' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `selected-items-${Date.now()}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      setMessage(`Exported ${selectedItems.size} item(s)`);
-      setShowExportDialog(false);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to export');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleExportFolder = async (folderId: string) => {
-    setExporting(true);
-    setMessage('Preparing export...');
-    
-    try {
-      const response = await api.get('/compliance/export', {
-        params: { type: 'folder', folderId },
-        responseType: 'blob',
-        validateStatus: (status) => status < 500
-      });
-      
-      const contentType = String(response.headers?.['content-type'] || '');
-      if (typeof response.data === 'object' && contentType.includes('application/json')) {
-        setError(response.data?.message || 'Export failed');
-        setExporting(false);
-        return;
-      }
-      
-      if (response.status >= 400) {
-        setError(response.data?.message || 'Export failed');
-        setExporting(false);
-        return;
-      }
-      
-      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/zip' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `folder-${Date.now()}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      setMessage('Folder exported');
-      setShowExportDialog(false);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to export folder');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleExportCurrent = async () => {
-    setExporting(true);
-    setMessage('Preparing export...');
-    
-    try {
-      const params = currentFolderId 
-        ? { type: 'folder', folderId: currentFolderId }
-        : { type: 'all' };
-      
-      const response = await api.get('/compliance/export', {
-        params,
-        responseType: 'blob',
-        validateStatus: (status) => status < 500
-      });
-      
-      const contentType = String(response.headers?.['content-type'] || '');
-      if (typeof response.data === 'object' && contentType.includes('application/json')) {
-        setError(response.data?.message || 'Export failed');
-        setExporting(false);
-        return;
-      }
-      
-      if (response.status >= 400) {
-        setError(response.data?.message || 'Export failed');
-        setExporting(false);
-        return;
-      }
-      
-      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/zip' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `documents-${Date.now()}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      setMessage('Export successful');
-      setShowExportDialog(false);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to export');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedItems.size === 0) return;
-    if (!confirm(`Delete ${selectedItems.size} item(s)?`)) return;
-
-    try {
-      await api.delete('/compliance/items', {
-        data: { itemIds: Array.from(selectedItems) }
-      });
-      setMessage(`Deleted ${selectedItems.size} item(s)`);
-      setSelectedItems(new Set());
-      setSelectAll(false);
-      fetchData(true);
-      fetchSummary();
-      fetchRecentActivity();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete');
-    }
-  };
-
-  const handleExport = async () => {
-    setShowExportDialog(true);
-  };
-
-  const fetchAllFolders = async () => {
-    try {
-      const res = await api.get('/compliance/folders/all');
-      setAllFolders(res.data.items || []);
-    } catch (err: any) {
-      setError('Failed to load folders');
-    }
-  };
-
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) {
-      setError('Folder name is required');
-      return;
-    }
-
-    setSaving(true);
-    setError('');
-
-    try {
-      await api.post('/compliance/folders', {
-        name: newFolderName.trim(),
-        description: newFolderDescription.trim() || null,
-        parentFolderId: currentFolderId
-      });
-
-      setMessage('Folder created successfully');
-      setShowCreateDialog(false);
-      setNewFolderName('');
-      setNewFolderDescription('');
-      fetchData(true);
-      fetchSummary();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create folder');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRenameFolder = async () => {
-    if (!editingFolder || !newFolderName.trim()) {
-      setError('Folder name is required');
-      return;
-    }
-
-    setSaving(true);
-    setError('');
-
-    try {
-      await api.patch(`/compliance/folders/${editingFolder.id}`, {
-        name: newFolderName.trim(),
-        description: newFolderDescription.trim() || null
-      });
-
-      setMessage('Folder renamed successfully');
-      setShowRenameDialog(false);
-      setEditingFolder(null);
-      setNewFolderName('');
-      setNewFolderDescription('');
-      fetchData(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to rename folder');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteFolder = async (folderId: string) => {
-    if (!confirm('Delete this folder and all its contents?')) return;
-
-    try {
-      await api.delete(`/compliance/items`, {
-        data: { itemIds: [folderId] }
-      });
-      setMessage('Folder deleted');
-      setShowActionsMenu(null);
-      fetchData(true);
-      fetchSummary();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete folder');
-    }
-  };
-
-  const openRenameDialog = (folder: Item) => {
-    setEditingFolder(folder);
-    setNewFolderName(folder.name || '');
-    setNewFolderDescription(folder.description || '');
-    setShowRenameDialog(true);
-    setShowActionsMenu(null);
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-    setUploadProgress(0);
-    setError('');
-
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append('files', files[i]);
-    }
-    formData.append('folderId', currentFolderId || '');
-    formData.append('userName', user?.name || '');
-    formData.append('userEmail', user?.email || '');
-
-    try {
-      await api.post('/compliance/files', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            setUploadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
-          }
-        }
-      });
-
-      setMessage(`Uploaded ${files.length} file(s)`);
-      setShowUploadDialog(false);
-      fetchData(true);
-      fetchSummary();
-      fetchRecentActivity();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to upload files');
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
+  // Rename file
   const handleRenameFile = async () => {
-    if (!editingFile || !newFileName.trim()) {
-      setError('File name is required');
-      return;
-    }
-
+    if (!editingFile) return;
     setSaving(true);
-    setError('');
-
     try {
       await api.patch(`/compliance/files/${editingFile.id}`, {
-        originalFileName: newFileName.trim()
+        originalFileName: newFileName
       });
-
       setMessage('File renamed successfully');
       setShowRenameFileDialog(false);
       setEditingFile(null);
@@ -972,17 +376,14 @@ export function DocumentRepositoryPage() {
     }
   };
 
+  // Move file
   const handleMoveFile = async () => {
     if (!movingFile) return;
-
     setSaving(true);
-    setError('');
-
     try {
       await api.patch(`/compliance/files/${movingFile.id}`, {
         folderId: selectedMoveFolder || null
       });
-
       setMessage('File moved successfully');
       setShowMoveDialog(false);
       setMovingFile(null);
@@ -996,724 +397,498 @@ export function DocumentRepositoryPage() {
     }
   };
 
-  const currentFolderName = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Document Repository';
-  const totalItems = items.length;
-  const folders = items.filter(i => i.itemType === 'folder');
-  const files = items.filter(i => i.itemType === 'file');
-  
-  const hasActiveFilters = fileTypes.length > 0 || dateFrom || dateTo || sizeFilter || uploadedBy || contentType !== 'both' || yearFilter;
-  const hasSearch = search.trim() !== '';
-
-  const getEmptyMessage = () => {
-    if (hasSearch || hasActiveFilters) {
-      if (contentType === 'folders') return 'No folders match your search.';
-      if (contentType === 'files') return 'No files match your search.';
-      return 'No items match your search.';
-    }
-    return currentFolderId ? 'This folder is empty.' : 'No folders or files found.';
+  // Fetch all folders for move dialog
+  const fetchAllFolders = async () => {
+    try {
+      const res = await api.get('/compliance/folders/all');
+      setAllFolders(res.data.items || []);
+    } catch { /* ignore */ }
   };
 
+  // Create folder
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      setError('Folder name is required');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.post('/compliance/folders', {
+        name: newFolderName,
+        description: newFolderDescription,
+        parentFolderId: currentFolderId
+      });
+      setMessage('Folder created');
+      setShowCreateDialog(false);
+      setNewFolderName('');
+      setNewFolderDescription('');
+      fetchData(true);
+      fetchSummary();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to create folder');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Rename folder
+  const handleRenameFolder = async () => {
+    if (!editingFolder) return;
+    setSaving(true);
+    try {
+      await api.patch(`/compliance/folders/${editingFolder.id}`, {
+        name: newFolderName,
+        description: newFolderDescription
+      });
+      setMessage('Folder renamed');
+      setShowRenameDialog(false);
+      setEditingFolder(null);
+      fetchData(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to rename folder');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete folder
+  const handleDeleteFolder = async (folderId: string) => {
+    setShowActionsMenu(null);
+    if (!confirm('Delete this folder?')) return;
+
+    try {
+      await api.delete('/compliance/items', {
+        data: { itemIds: [folderId] }
+      });
+      setMessage('Folder deleted');
+      fetchData(true);
+      fetchSummary();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete folder');
+    }
+  };
+
+  const openRenameDialog = (folder: Item) => {
+    setShowActionsMenu(null);
+    setEditingFolder(folder);
+    setNewFolderName(folder.name || '');
+    setNewFolderDescription(folder.description || '');
+    setShowRenameDialog(true);
+  };
+
+  // Upload files
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setUploadProgress(0);
+    setError('');
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
+    try {
+      const res = await api.post('/compliance/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            setUploadProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+          }
+        }
+      });
+      
+      setMessage(`Successfully uploaded ${res.data.imported?.length || 0} files`);
+      if (res.data.skipped?.length > 0) {
+        setMessage(prev => `${prev} (${res.data.skipped.length} skipped)`);
+      }
+      setShowUploadDialog(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      fetchData(true);
+      fetchSummary();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Upload failed');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  // Export all
+  const handleExport = async () => {
+    setExporting(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/compliance/export?type=all`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `documents-${Date.now()}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setMessage('Export completed');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportSelected = async () => {
+    setExporting(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/compliance/export?type=selected&itemIds=${Array.from(selectedItems).join(',')}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `selected-items-${Date.now()}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setMessage('Export completed');
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Delete selected items
+  const handleDeleteSelected = async () => {
+    if (selectedItems.size === 0) return;
+    if (!confirm(`Delete ${selectedItems.size} items?`)) return;
+
+    try {
+      await api.delete('/compliance/items', {
+        data: { itemIds: Array.from(selectedItems) }
+      });
+      setMessage(`Deleted ${selectedItems.size} items`);
+      fetchData(true);
+      fetchSummary();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete items');
+    }
+  };
+
+  const folders = items.filter(i => i.itemType === 'folder');
+  const files = items.filter(i => i.itemType === 'file');
+  const totalItems = items.length;
+  
+  const hasActiveFilters = dateFrom || dateTo || yearFilter;
+  const hasSearch = search.trim() !== '';
+
   return (
-    <div className="doc-repo-page">
-      <div className="page-container">
-        <div className="doc-repo-breadcrumbs">
-          <span className="breadcrumb-item">
-            <button type="button" className={`breadcrumb-link ${breadcrumbs.length === 0 ? 'active' : ''}`} onClick={() => handleNavigateToFolder(null)}>
-              Document Repository
-            </button>
-          </span>
-          {breadcrumbs.map((crumb, index) => (
-            <span key={crumb.id || 'root'} className="breadcrumb-item">
-              <span className="breadcrumb-separator">&gt;</span>
-              <button type="button" className={`breadcrumb-link ${index === breadcrumbs.length - 1 ? 'active' : ''}`} onClick={() => handleNavigateToFolder(crumb.id)}>
-                {crumb.name}
+    <div className="doc-repository">
+      <div className="doc-repository-header">
+        <div className="header-left">
+          <h2>Document Repository</h2>
+          {currentFolderId && breadcrumbs.length > 0 && (
+            <div className="breadcrumbs">
+              <button type="button" className={`breadcrumb-link ${breadcrumbs.length === 0 ? 'active' : ''}`} onClick={() => handleNavigateToFolder(null)}>
+                Root
               </button>
-            </span>
-          ))}
-        </div>
-
-        <div className="page-header">
-          <div className="page-title-section">
-            <h1>{currentFolderName}</h1>
-            <p className="page-subtitle">
-              {currentFolderId ? `${summary.totalFolders} folders, ${summary.totalFiles} files` : 'Document Repository'}
-            </p>
-          </div>
-        </div>
-
-        {message && (
-          <div className="alert alert-success">
-            {message}
-            <button onClick={() => setMessage('')}>&times;</button>
-          </div>
-        )}
-        {error && (
-          <div className="alert alert-error">
-            {error}
-            <button onClick={() => setError('')}>&times;</button>
-          </div>
-        )}
-
-        <div className="doc-repo-summary-cards">
-          <div className="doc-repo-summary-card">
-            <div className="doc-repo-summary-icon folders">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Folders</span>
-              <span className="doc-repo-summary-value">{loading ? '...' : summary.totalFolders}</span>
-            </div>
-          </div>
-
-          <div className="doc-repo-summary-card">
-            <div className="doc-repo-summary-icon files">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Files</span>
-              <span className="doc-repo-summary-value">{loading ? '...' : summary.totalFiles}</span>
-            </div>
-          </div>
-
-          <div className="doc-repo-summary-card">
-            <div className="doc-repo-summary-icon storage">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Storage</span>
-              <span className="doc-repo-summary-value">{loading ? '...' : formatBytes(summary.storageUsed || 0)}</span>
-            </div>
-          </div>
-
-          <div className="doc-repo-summary-card">
-            <div className="doc-repo-summary-icon activity">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </div>
-            <div className="doc-repo-summary-content">
-              <span className="doc-repo-summary-label">Activity</span>
-              <span className="doc-repo-summary-value">{recentActivities.length}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="toolbar">
-          <form className="search-form" onSubmit={handleSearch}>
-            <div className="search-input-wrapper">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <input type="text" placeholder="Search folders and files..." value={search} onChange={(e) => setSearch(e.target.value)} className="search-input" />
-            </div>
-            <button type="submit" className="toolbar-btn primary">Search</button>
-          </form>
-
-          <div className="toolbar-actions">
-            <button type="button" className={`toolbar-btn ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 4H21V6H3V4ZM7 11H17V13H7V11ZM10 18H14V20H10V18Z" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              Filters
-              {hasActiveFilters && <span className="filter-badge"></span>}
-            </button>
-
-            <div className="sort-dropdown">
-              <button type="button" className="toolbar-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Sort
-              </button>
-              <div className="sort-dropdown-content">
-                <button className={sortBy === 'name_asc' ? 'active' : ''} onClick={() => handleSort('name_asc')}>Name A-Z</button>
-                <button className={sortBy === 'name_desc' ? 'active' : ''} onClick={() => handleSort('name_desc')}>Name Z-A</button>
-                <button className={sortBy === 'newest' ? 'active' : ''} onClick={() => handleSort('newest')}>Newest</button>
-                <button className={sortBy === 'oldest' ? 'active' : ''} onClick={() => handleSort('oldest')}>Oldest</button>
-                <button className={sortBy === 'recent' ? 'active' : ''} onClick={() => handleSort('recent')}>Recently Modified</button>
-                <button className={sortBy === 'largest' ? 'active' : ''} onClick={() => handleSort('largest')}>Largest File</button>
-                <button className={sortBy === 'smallest' ? 'active' : ''} onClick={() => handleSort('smallest')}>Smallest File</button>
-                <button className={sortBy === 'folders_first' ? 'active' : ''} onClick={() => handleSort('folders_first')}>Folders First</button>
-                <button className={sortBy === 'files_first' ? 'active' : ''} onClick={() => handleSort('files_first')}>Files First</button>
-              </div>
-            </div>
-
-            <button type="button" className={`toolbar-btn ${refreshing ? 'refreshing' : ''}`} onClick={handleRefresh} disabled={refreshing}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={refreshing ? 'spin' : ''}>
-                <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Refresh
-            </button>
-
-            {(isSuperAdmin || isAdmin) && selectedItems.size > 0 && (
-              <>
-                <button type="button" className="toolbar-btn" onClick={handleExportSelected} disabled={exporting}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  {exporting ? 'Exporting...' : 'Export Selected'}
-                </button>
-                <button type="button" className="toolbar-btn danger" onClick={handleDeleteSelected}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Delete Selected
-                </button>
-              </>
-            )}
-
-            {(isSuperAdmin || isAdmin) && (
-              <button type="button" className="toolbar-btn" onClick={handleExport} disabled={exporting}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Export
-              </button>
-            )}
-
-            {isSuperAdmin && (
-              <>
-                <button type="button" className="toolbar-btn" onClick={() => setShowUploadDialog(true)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Upload
-                </button>
-                <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  New Folder
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {showFilters && (
-          <div className="filters-panel">
-            <div className="filters-grid">
-              <div className="filter-group">
-                <label>Show</label>
-                <select value={contentType} onChange={(e) => { setContentType(e.target.value as any); }}>
-                  <option value="both">Both</option>
-                  <option value="folders">Folders Only</option>
-                  <option value="files">Files Only</option>
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>File Type</label>
-                <div className="checkbox-group">
-                  {['pdf', 'word', 'excel', 'powerpoint', 'image', 'text', 'zip', 'other'].map(type => (
-                    <label key={type} className="checkbox-label">
-                      <input type="checkbox" checked={fileTypes.includes(type)} onChange={(e) => {
-                        if (e.target.checked) setFileTypes([...fileTypes, type]);
-                        else setFileTypes(fileTypes.filter(t => t !== type));
-                      }} />
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="filter-group">
-                <label>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
-                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Created Date
-                </label>
-                <div className="date-range-row">
-                  <div className="date-inputs">
-                    <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
-                    <span className="date-separator">to</span>
-                    <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
-                  </div>
-                  <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="year-select">
-                    <option value="">All Years</option>
-                    {availableYears.map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="filter-group">
-                <label>File Size</label>
-                <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
-                  <option value="">Any Size</option>
-                  <option value="lt1mb">Less than 1 MB</option>
-                  <option value="1-10mb">1 MB - 10 MB</option>
-                  <option value="10-50mb">10 MB - 50 MB</option>
-                  <option value="gt50mb">Greater than 50 MB</option>
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>Uploaded By</label>
-                <select value={uploadedBy} onChange={(e) => setUploadedBy(e.target.value)}>
-                  <option value="">Anyone</option>
-                  {uploaders.map(u => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="filter-actions">
-              <button type="button" className="clear-filters-btn" onClick={() => {
-                setFileTypes([]);
-                setDateFrom('');
-                setDateTo('');
-                setSizeFilter('');
-                setUploadedBy('');
-                setContentType('both');
-                setYearFilter('');
-              }}>Clear Filters</button>
-              <button type="button" className="apply-filters-btn" onClick={() => fetchData()}>Apply Filters</button>
-            </div>
-          </div>
-        )}
-
-        <div className="doc-repo-grid-section">
-          <div className="section-header">
-            <label className="select-all-checkbox">
-              <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
-              <span>Select All ({totalItems})</span>
-            </label>
-            <span className="section-count">{folders.length} folders, {files.length} files</span>
-          </div>
-
-          {loading ? (
-            <div className="table-loading">
-              <div className="loading-spinner"></div>
-              <p>Loading...</p>
-            </div>
-          ) : totalItems === 0 ? (
-            <div className="doc-repo-empty">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              <p>{getEmptyMessage()}</p>
-              {isSuperAdmin && !hasSearch && !hasActiveFilters && (
-                <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                  <button type="button" className="secondary" onClick={() => setShowUploadDialog(true)}>Upload Files</button>
-                  <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>Create Folder</button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="doc-repo-grid">
-              {items.map((item) => (
-                item.itemType === 'folder' ? (
-                  <div key={item.id} className={`doc-repo-folder-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
-                    <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
-                      <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
-                    </div>
-                    <div className="folder-card-header" onClick={() => handleNavigateToFolder(item.id)}>
-                      <div className="folder-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="#5468ff" strokeWidth="2"/>
-                        </svg>
-                      </div>
-                      {(isSuperAdmin || isAdmin) && (
-                        <div className="folder-actions" ref={actionsMenuRef} onClick={(e) => e.stopPropagation()}>
-                          <button type="button" className="actions-menu-btn" onClick={(e) => { e.stopPropagation(); setShowFileActionsMenu(null); setShowActionsMenu(showActionsMenu === item.id ? null : item.id); }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="5" r="2" fill="currentColor"/>
-                              <circle cx="12" cy="12" r="2" fill="currentColor"/>
-                              <circle cx="12" cy="19" r="2" fill="currentColor"/>
-                            </svg>
-                          </button>
-                          {showActionsMenu === item.id && (
-                            <div className="actions-dropdown">
-                              <button onClick={() => handleExportFolder(item.id)}>Export Folder</button>
-                              <button onClick={() => openRenameDialog(item)}>Rename</button>
-                              <button onClick={() => handleDeleteFolder(item.id)} className="delete">Delete</button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="folder-card-body" onClick={() => handleNavigateToFolder(item.id)}>
-                      <h4 className="folder-name">{item.name}</h4>
-                      {item.description && <p className="folder-description">{item.description}</p>}
-                      <div className="folder-stats">
-                        <span>{item.subfolderCount || 0} folders</span>
-                        <span>{item.fileCount || 0} files</span>
-                      </div>
-                    </div>
-                    <div className="folder-card-footer">
-                      <span className="folder-date">Created {formatDate(item.createdAt)}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div key={item.id} className={`doc-repo-file-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
-                    <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
-                      <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
-                    </div>
-                    <div className="file-card-header">
-                      <div className="file-icon" onClick={() => (item.iconType === 'pdf' || item.iconType === 'image') ? handlePreviewFile(item) : handleShowFileDetails(item)}>
-                        <FileIcon type={item.iconType || 'file'} />
-                      </div>
-                      {(isSuperAdmin || isAdmin) && (
-                        <div className="file-actions" ref={fileActionsMenuRef}>
-                          <button type="button" className="actions-menu-btn" onClick={() => { setShowActionsMenu(null); setShowFileActionsMenu(showFileActionsMenu === item.id ? null : item.id); }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="5" r="2" fill="currentColor"/>
-                              <circle cx="12" cy="12" r="2" fill="currentColor"/>
-                              <circle cx="12" cy="19" r="2" fill="currentColor"/>
-                            </svg>
-                          </button>
-                          {showFileActionsMenu === item.id && (
-                            <div className="actions-dropdown">
-                              <button onClick={() => handleShowFileDetails(item)}>Details</button>
-                              {(item.iconType === 'pdf' || item.iconType === 'image') && (
-                                <button onClick={() => handlePreviewFile(item)}>Preview</button>
-                              )}
-                              <button onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>Download</button>
-                              <button onClick={() => openRenameFileDialog(item)}>Rename</button>
-                              <button onClick={() => handleOpenMoveDialog(item)}>Move</button>
-                              <button onClick={() => handleDeleteFile(item.id)} className="delete">Delete</button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="file-card-body" onClick={() => handleShowFileDetails(item)}>
-                      <h4 className="file-name">{item.originalFileName}</h4>
-                      <div className="file-stats">
-                        <span>{item.fileExtension?.toUpperCase()}</span>
-                        <span>{formatBytes(item.fileSize || 0)}</span>
-                      </div>
-                    </div>
-                    <div className="file-card-footer">
-                      <span className="file-date">{item.uploadedByEmail || 'Unknown'}</span>
-                      <span className="file-date">v{item.version || 1}</span>
-                    </div>
-                  </div>
-                )
+              {breadcrumbs.map((crumb, index) => (
+                <React.Fragment key={crumb.id || index}>
+                  <span className="breadcrumb-separator">/</span>
+                  <button type="button" className={`breadcrumb-link ${index === breadcrumbs.length - 1 ? 'active' : ''}`} onClick={() => handleNavigateToFolder(crumb.id)}>
+                    {crumb.name}
+                  </button>
+                </React.Fragment>
               ))}
             </div>
           )}
         </div>
+        <div className="header-right">
+          <span className="stat-badge">{summary.totalFolders} folders</span>
+          <span className="stat-badge">{summary.totalFiles} files</span>
+          <span className="stat-badge">{formatBytes(summary.storageUsed)}</span>
+        </div>
+      </div>
 
-        {/* Recent Activity Section */}
-        {recentActivities.length > 0 && (
-          <div className="activity-section">
-            <h3>Recent Activity</h3>
-            <div className="activity-list">
-              {recentActivities.slice(0, 5).map(activity => (
-                <div key={activity.id} className="activity-item">
-                  <span className="activity-icon">{getActivityIcon(activity.action)}</span>
-                  <div className="activity-content">
-                    <span className="activity-action">{getActivityLabel(activity.action)}</span>
-                    <span className="activity-details">{activity.details}</span>
-                  </div>
-                  <span className="activity-time">{formatDateTime(activity.createdAt)}</span>
-                </div>
-              ))}
+      {(error || message) && (
+        <div className={`alert ${error ? 'alert-error' : 'alert-success'}`}>
+          {error || message}
+          <button onClick={() => { setError(''); setMessage(''); }}>×</button>
+        </div>
+      )}
+
+      <div className="toolbar">
+        <form onSubmit={handleSearch} className="search-form">
+          <div className="search-input-wrapper">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            <input type="text" placeholder="Search folders and files..." value={search} onChange={(e) => setSearch(e.target.value)} className="search-input" />
+          </div>
+          <button type="submit" className="toolbar-btn primary">Search</button>
+        </form>
+
+        <div className="toolbar-actions">
+          <button type="button" className={`toolbar-btn ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 4H21V6H3V4ZM7 11H17V13H7V11ZM10 18H14V20H10V18Z" stroke="currentColor" strokeWidth="2"/></svg>
+            Filters
+            {hasActiveFilters && <span className="filter-badge"></span>}
+          </button>
+
+          <div className="sort-dropdown">
+            <button type="button" className="toolbar-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              Sort
+            </button>
+            <div className="sort-dropdown-content">
+              <button className={sortBy === 'name_asc' ? 'active' : ''} onClick={() => handleSort('name_asc')}>Name A-Z</button>
+              <button className={sortBy === 'name_desc' ? 'active' : ''} onClick={() => handleSort('name_desc')}>Name Z-A</button>
+              <button className={sortBy === 'newest' ? 'active' : ''} onClick={() => handleSort('newest')}>Newest</button>
+              <button className={sortBy === 'oldest' ? 'active' : ''} onClick={() => handleSort('oldest')}>Oldest</button>
+              <button className={sortBy === 'recent' ? 'active' : ''} onClick={() => handleSort('recent')}>Recently Modified</button>
+              <button className={sortBy === 'largest' ? 'active' : ''} onClick={() => handleSort('largest')}>Largest File</button>
+              <button className={sortBy === 'smallest' ? 'active' : ''} onClick={() => handleSort('smallest')}>Smallest File</button>
+              <button className={sortBy === 'folders_first' ? 'active' : ''} onClick={() => handleSort('folders_first')}>Folders First</button>
             </div>
+          </div>
+
+          <button type="button" className={`toolbar-btn ${refreshing ? 'refreshing' : ''}`} onClick={handleRefresh} disabled={refreshing}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={refreshing ? 'spin' : ''}><path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Refresh
+          </button>
+
+          {(isSuperAdmin || isAdmin) && selectedItems.size > 0 && (
+            <>
+              <button type="button" className="toolbar-btn" onClick={handleExportSelected} disabled={exporting}>
+                Export Selected
+              </button>
+              <button type="button" className="toolbar-btn danger" onClick={handleDeleteSelected}>
+                Delete Selected ({selectedItems.size})
+              </button>
+            </>
+          )}
+
+          {(isSuperAdmin || isAdmin) && (
+            <>
+              <button type="button" className="toolbar-btn" onClick={handleExport} disabled={exporting}>
+                {exporting ? 'Exporting...' : 'Export All'}
+              </button>
+              <button type="button" className="toolbar-btn" onClick={() => setShowUploadDialog(true)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>
+                Upload
+              </button>
+              <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                New Folder
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {showFilters && (
+        <div className="filters-panel">
+          <div className="filters-grid">
+            <div className="filter-group">
+              <label>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Created Date
+              </label>
+              <div className="date-range-row">
+                <div className="date-inputs">
+                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
+                  <span className="date-separator">to</span>
+                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
+                </div>
+                <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="year-select">
+                  <option value="">All Years</option>
+                  {availableYears.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="filter-actions">
+            <button type="button" className="clear-filters-btn" onClick={() => {
+              setDateFrom('');
+              setDateTo('');
+              setYearFilter('');
+            }}>Clear Filters</button>
+            <button type="button" className="apply-filters-btn" onClick={() => fetchData()}>Apply Filters</button>
+          </div>
+        </div>
+      )}
+
+      <div className="doc-repo-grid-section">
+        <div className="section-header">
+          <label className="select-all-checkbox">
+            <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
+            <span>Select All ({totalItems})</span>
+          </label>
+          <span className="section-count">{folders.length} folders, {files.length} files</span>
+        </div>
+
+        {loading ? (
+          <div className="table-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading...</p>
+          </div>
+        ) : totalItems === 0 ? (
+          <div className="doc-repo-empty">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/></svg>
+            <p>{hasSearch || hasActiveFilters ? 'No items match your search' : 'No items in this folder'}</p>
+            {isSuperAdmin && !hasSearch && !hasActiveFilters && (
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button type="button" className="secondary" onClick={() => setShowUploadDialog(true)}>Upload Files</button>
+                <button type="button" className="primary" onClick={() => setShowCreateDialog(true)}>Create Folder</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="doc-repo-grid">
+            {items.map((item) => (
+              item.itemType === 'folder' ? (
+                <div key={item.id} className={`doc-repo-folder-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
+                  <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
+                    <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
+                  </div>
+                  <div className="folder-card-header" onClick={() => handleNavigateToFolder(item.id)}>
+                    <div className="folder-icon">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="#5468ff" strokeWidth="2"/></svg>
+                    </div>
+                    {(isSuperAdmin || isAdmin) && (
+                      <div className="folder-actions" ref={actionsMenuRef} onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className="actions-menu-btn" onClick={() => { setShowFileActionsMenu(null); setShowActionsMenu(showActionsMenu === item.id ? null : item.id); }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>
+                        </button>
+                        {showActionsMenu === item.id && (
+                          <div className="actions-dropdown">
+                            <button onClick={() => openRenameDialog(item)}>Rename</button>
+                            <button onClick={() => handleDeleteFolder(item.id)} className="delete">Delete</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="folder-card-body" onClick={() => handleNavigateToFolder(item.id)}>
+                    <h4 className="folder-name">{item.name}</h4>
+                    {item.description && <p className="folder-description">{item.description}</p>}
+                    <div className="folder-stats">
+                      <span>{item.subfolderCount || 0} folders</span>
+                      <span>{item.fileCount || 0} files</span>
+                    </div>
+                  </div>
+                  <div className="folder-card-footer">
+                    <span className="folder-date">Created {formatDate(item.createdAt)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div key={item.id} className={`doc-repo-file-card ${selectedItems.has(item.id) ? 'selected' : ''}`}>
+                  <div className="item-checkbox" onClick={() => toggleSelect(item.id)}>
+                    <input type="checkbox" checked={selectedItems.has(item.id)} onChange={() => {}} />
+                  </div>
+                  <div className="file-card-header">
+                    <div className="file-icon" onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>
+                      {getFileIcon(item.iconType || 'file')}
+                    </div>
+                    {(isSuperAdmin || isAdmin) && (
+                      <div className="file-actions" ref={fileActionsMenuRef}>
+                        <button type="button" className="actions-menu-btn" onClick={() => { setShowActionsMenu(null); setShowFileActionsMenu(showFileActionsMenu === item.id ? null : item.id); }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>
+                        </button>
+                        {showFileActionsMenu === item.id && (
+                          <div className="actions-dropdown">
+                            <button onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>Download</button>
+                            <button onClick={() => openRenameFileDialog(item)}>Rename</button>
+                            <button onClick={() => handleOpenMoveDialog(item)}>Move</button>
+                            <button onClick={() => handleDeleteFile(item.id)} className="delete">Delete</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="file-card-body" onClick={() => handleDownloadFile(item.id, item.originalFileName || '')}>
+                    <h4 className="file-name">{item.originalFileName}</h4>
+                    <div className="file-stats">
+                      <span>{item.fileExtension?.toUpperCase()}</span>
+                      <span>{formatBytes(item.fileSize || 0)}</span>
+                    </div>
+                  </div>
+                  <div className="file-card-footer">
+                    <span className="file-date">{item.uploadedByEmail || 'Unknown'}</span>
+                    <span className="file-date">v{item.version || 1}</span>
+                  </div>
+                </div>
+              )
+            ))}
           </div>
         )}
       </div>
 
-      {/* File Details Panel */}
-      {showDetailsPanel && fileDetails && (
-        <div className="details-panel-overlay" onClick={() => setShowDetailsPanel(false)}>
-          <div className="details-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="details-panel-header">
-              <h2>File Details</h2>
-              <button type="button" className="modal-close" onClick={() => setShowDetailsPanel(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              </button>
-            </div>
-
-            <div className="details-panel-content">
-              <div className="file-preview-large">
-                <FileIcon type={fileDetails.iconType} />
-                <h3>{fileDetails.originalFileName}</h3>
-                <span className="version-badge">Version {fileDetails.version}</span>
-              </div>
-
-              <div className="details-section">
-                <h4>Folder Path</h4>
-                <p className="folder-path">
-                  {folderPath.map((f, i) => (
-                    <span key={f.id || i}>{i > 0 && ' > '}{f.name}</span>
-                  ))}
-                </p>
-              </div>
-
-              <div className="details-section">
-                <div className="details-row">
-                  <span className="details-label">File Type</span>
-                  <span className="details-value">{fileDetails.mimeType}</span>
-                </div>
-                <div className="details-row">
-                  <span className="details-label">Extension</span>
-                  <span className="details-value">.{fileDetails.fileExtension}</span>
-                </div>
-                <div className="details-row">
-                  <span className="details-label">File Size</span>
-                  <span className="details-value">{formatBytes(fileDetails.fileSize)}</span>
-                </div>
-                <div className="details-row">
-                  <span className="details-label">Downloads</span>
-                  <span className="details-value">{fileDetails.downloadCount}</span>
-                </div>
-              </div>
-
-              <div className="details-section">
-                <div className="details-row">
-                  <span className="details-label">Uploaded By</span>
-                  <span className="details-value">{fileDetails.uploadedByEmail || 'Unknown'}</span>
-                </div>
-                <div className="details-row">
-                  <span className="details-label">Created</span>
-                  <span className="details-value">{formatDate(fileDetails.uploadedAt)}</span>
-                </div>
-                <div className="details-row">
-                  <span className="details-label">Modified</span>
-                  <span className="details-value">{formatDate(fileDetails.modifiedAt)}</span>
-                </div>
-              </div>
-
-              <div className="details-section">
-                <div className="details-section-header">
-                  <h4>Description</h4>
-                  {!editingDescription && (
-                    <button type="button" className="edit-btn" onClick={() => setEditingDescription(true)}>
-                      Edit
-                    </button>
-                  )}
-                </div>
-                {editingDescription ? (
-                  <div className="description-edit">
-                    <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={3} />
-                    <div className="edit-actions">
-                      <button type="button" className="secondary" onClick={() => { setEditingDescription(false); setNewDescription(fileDetails.description || ''); }}>Cancel</button>
-                      <button type="button" className="primary" onClick={handleSaveDescription} disabled={saving}>
-                        {saving ? 'Saving...' : 'Save'}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="description-text">{fileDetails.description || 'No description'}</p>
-                )}
-              </div>
-
-              <div className="details-section">
-                <div className="details-section-header">
-                  <h4>Tags</h4>
-                  <button type="button" className="edit-btn" onClick={() => setShowTagsDialog(true)}>
-                    {fileDetails.tags.length > 0 ? 'Edit' : 'Add'}
-                  </button>
-                </div>
-                <div className="tags-display">
-                  {fileDetails.tags.length > 0 ? (
-                    fileDetails.tags.map(tag => (
-                      <span key={tag.id} className="tag" style={{ backgroundColor: tag.color + '20', color: tag.color }}>
-                        {tag.name}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="no-tags">No tags</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="details-section">
-                <div className="details-section-header">
-                  <h4>Storage Location</h4>
-                </div>
-                <p className="storage-path">{fileDetails.storagePath}</p>
-              </div>
-
-              <div className="details-section">
-                <div className="details-section-header">
-                  <h4>Version History</h4>
-                  <button type="button" className="edit-btn" onClick={() => setShowVersionHistory(true)}>
-                    View All ({fileVersions.length})
-                  </button>
-                </div>
-                {fileVersions.length > 1 ? (
-                  <div className="version-list">
-                    {fileVersions.slice(0, 3).map(v => (
-                      <div key={v.id} className="version-item">
-                        <span className="version-number">v{v.version}</span>
-                        <span className="version-info">{formatDate(v.uploadedAt)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="no-versions">Only one version</p>
-                )}
-              </div>
-
-              <div className="details-section">
-                <div className="details-section-header">
-                  <h4>Activity</h4>
-                </div>
-                {fileActivities.length > 0 ? (
-                  <div className="activity-list-small">
-                    {fileActivities.slice(0, 5).map(activity => (
-                      <div key={activity.id} className="activity-item-small">
-                        <span className="activity-icon-small">{getActivityIcon(activity.action)}</span>
-                        <span className="activity-text">{getActivityLabel(activity.action)}</span>
-                        <span className="activity-time-small">{formatDateTime(activity.createdAt)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="no-activity">No activity</p>
-                )}
-              </div>
-
-              <div className="details-actions">
-                <button type="button" className="primary" onClick={() => handleDownloadFile(fileDetails.id, fileDetails.originalFileName)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2"/><path d="M12 15V3" stroke="currentColor" strokeWidth="2"/></svg>
-                  Download
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Version History Dialog */}
-      {showVersionHistory && fileDetails && (
-        <div className="modal-overlay" onClick={() => setShowVersionHistory(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Version History - {fileDetails.originalFileName}</h2>
-              <button type="button" className="modal-close" onClick={() => setShowVersionHistory(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              </button>
-            </div>
-            <div className="modal-body">
-              {fileVersions.length > 0 ? (
-                <div className="version-history-list">
-                  {fileVersions.map((version, index) => (
-                    <div key={version.id} className={`version-history-item ${index === 0 ? 'latest' : ''}`}>
-                      <div className="version-info-col">
-                        <span className="version-badge-large">Version {version.version}</span>
-                        {index === 0 && <span className="latest-badge">Latest</span>}
-                      </div>
-                      <div className="version-details-col">
-                        <span>{version.uploadedByEmail || 'Unknown'}</span>
-                        <span>{formatDateTime(version.uploadedAt)}</span>
-                        <span>{formatBytes(version.fileSize)}</span>
-                      </div>
-                      <div className="version-actions-col">
-                        <button type="button" className="toolbar-btn" onClick={() => handleDownloadFile(version.id, fileDetails.originalFileName)}>
-                          Download
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>No version history available</p>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="secondary" onClick={() => setShowVersionHistory(false)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tags Dialog */}
-      {showTagsDialog && (
-        <div className="modal-overlay" onClick={() => setShowTagsDialog(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Manage Tags</h2>
-              <button type="button" className="modal-close" onClick={() => setShowTagsDialog(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="tags-selection">
-                {allTags.map(tag => (
-                  <label key={tag.id} className="tag-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={selectedTags.includes(tag.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedTags([...selectedTags, tag.id]);
-                        } else {
-                          setSelectedTags(selectedTags.filter(id => id !== tag.id));
-                        }
-                      }}
-                    />
-                    <span className="tag" style={{ backgroundColor: tag.color + '20', color: tag.color }}>
-                      {tag.name}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="secondary" onClick={() => setShowTagsDialog(false)}>Cancel</button>
-              <button type="button" className="primary" onClick={handleSaveTags} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Tags'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Dialogs */}
+      {/* Create Folder Dialog */}
       {showCreateDialog && (
         <div className="modal-overlay" onClick={() => setShowCreateDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Create New Folder</h2>
+              <h2>Create Folder</h2>
               <button type="button" className="modal-close" onClick={() => setShowCreateDialog(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
             </div>
             <div className="modal-body">
-              {error && <div className="alert alert-error">{error}</div>}
-              <div className="form-group"><label>Folder Name *</label><input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Enter folder name" autoFocus /></div>
-              <div className="form-group"><label>Description (optional)</label><textarea value={newFolderDescription} onChange={(e) => setNewFolderDescription(e.target.value)} placeholder="Enter folder description" rows={3} /></div>
+              <div className="form-group">
+                <label>Folder Name *</label>
+                <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus />
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea value={newFolderDescription} onChange={(e) => setNewFolderDescription(e.target.value)} rows={3} />
+              </div>
             </div>
             <div className="modal-footer">
               <button type="button" className="secondary" onClick={() => setShowCreateDialog(false)}>Cancel</button>
-              <button type="button" className="primary" onClick={handleCreateFolder} disabled={saving}>{saving ? 'Creating...' : 'Create Folder'}</button>
+              <button type="button" className="primary" onClick={handleCreateFolder} disabled={saving}>{saving ? 'Creating...' : 'Create'}</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Rename Folder Dialog */}
       {showRenameDialog && editingFolder && (
         <div className="modal-overlay" onClick={() => setShowRenameDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><h2>Rename Folder</h2><button type="button" className="modal-close" onClick={() => setShowRenameDialog(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
+            <div className="modal-header">
+              <h2>Rename Folder</h2>
+              <button type="button" className="modal-close" onClick={() => setShowRenameDialog(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
+            </div>
             <div className="modal-body">
-              {error && <div className="alert alert-error">{error}</div>}
-              <div className="form-group"><label>Folder Name *</label><input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus /></div>
-              <div className="form-group"><label>Description</label><textarea value={newFolderDescription} onChange={(e) => setNewFolderDescription(e.target.value)} rows={3} /></div>
+              <div className="form-group">
+                <label>Folder Name *</label>
+                <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} autoFocus />
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea value={newFolderDescription} onChange={(e) => setNewFolderDescription(e.target.value)} rows={3} />
+              </div>
             </div>
             <div className="modal-footer">
               <button type="button" className="secondary" onClick={() => setShowRenameDialog(false)}>Cancel</button>
@@ -1723,15 +898,18 @@ export function DocumentRepositoryPage() {
         </div>
       )}
 
+      {/* Upload Dialog */}
       {showUploadDialog && (
         <div className="modal-overlay" onClick={() => !uploading && setShowUploadDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><h2>Upload Files</h2><button type="button" className="modal-close" onClick={() => !uploading && setShowUploadDialog(false)} disabled={uploading}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
+            <div className="modal-header">
+              <h2>Upload Files</h2>
+              <button type="button" className="modal-close" onClick={() => !uploading && setShowUploadDialog(false)} disabled={uploading}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
+            </div>
             <div className="modal-body">
-              {error && <div className="alert alert-error">{error}</div>}
-              <div className="upload-dropzone">
-                <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.zip" disabled={uploading} style={{ display: 'none' }} />
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              <input type="file" ref={fileInputRef} onChange={handleUpload} multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.zip" style={{ display: 'none' }} />
+              <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>
                 <p>Click to select files</p>
                 <span>PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, PNG, JPG, JPEG, TXT, ZIP (Max 50MB each)</span>
                 <button type="button" className="primary" onClick={() => fileInputRef.current?.click()} disabled={uploading}>Select Files</button>
@@ -1743,12 +921,12 @@ export function DocumentRepositoryPage() {
         </div>
       )}
 
+      {/* Rename File Dialog */}
       {showRenameFileDialog && editingFile && (
         <div className="modal-overlay" onClick={() => setShowRenameFileDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header"><h2>Rename File</h2><button type="button" className="modal-close" onClick={() => setShowRenameFileDialog(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
             <div className="modal-body">
-              {error && <div className="alert alert-error">{error}</div>}
               <p style={{ marginBottom: '16px', color: 'var(--muted)' }}>Extension: .{editingFile.fileExtension}</p>
               <div className="form-group"><label>File Name *</label><input type="text" value={newFileName} onChange={(e) => setNewFileName(e.target.value)} autoFocus /></div>
             </div>
@@ -1757,66 +935,16 @@ export function DocumentRepositoryPage() {
         </div>
       )}
 
+      {/* Move File Dialog */}
       {showMoveDialog && movingFile && (
         <div className="modal-overlay" onClick={() => setShowMoveDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header"><h2>Move File</h2><button type="button" className="modal-close" onClick={() => setShowMoveDialog(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
             <div className="modal-body">
-              {error && <div className="alert alert-error">{error}</div>}
               <p style={{ marginBottom: '16px' }}>Moving: <strong>{movingFile.originalFileName}</strong></p>
               <div className="form-group"><label>Destination Folder</label><select value={selectedMoveFolder} onChange={(e) => setSelectedMoveFolder(e.target.value)}><option value="">Root</option>{allFolders.filter(f => f.id !== movingFile.folderId).map(folder => (<option key={folder.id} value={folder.id}>{folder.name}</option>))}</select></div>
             </div>
             <div className="modal-footer"><button type="button" className="secondary" onClick={() => setShowMoveDialog(false)}>Cancel</button><button type="button" className="primary" onClick={handleMoveFile} disabled={saving}>{saving ? 'Moving...' : 'Move File'}</button></div>
-          </div>
-        </div>
-      )}
-
-      {showExportDialog && (
-        <div className="modal-overlay" onClick={() => !exporting && setShowExportDialog(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><h2>Export</h2><button type="button" className="modal-close" onClick={() => !exporting && setShowExportDialog(false)} disabled={exporting}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button></div>
-            <div className="modal-body">
-              <div className="export-options">
-                <button className="export-option" onClick={handleExportCurrent} disabled={exporting}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H12L10 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/></svg>
-                  <span>{exporting ? 'Exporting...' : 'Export Current View'}</span>
-                  <small>{currentFolderId ? 'This folder and contents' : 'Entire repository'}</small>
-                </button>
-                {selectedItems.size > 0 && (
-                  <button className="export-option" onClick={handleExportSelected} disabled={exporting}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12L12 15L15 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M20 20H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M12 4V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                    <span>{exporting ? 'Exporting...' : `Export Selected (${selectedItems.size})`}</span>
-                    <small>Download as ZIP</small>
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="modal-footer"><button type="button" className="secondary" onClick={() => setShowExportDialog(false)} disabled={exporting}>Cancel</button></div>
-          </div>
-        </div>
-      )}
-
-      {showPreviewDialog && previewFile && (
-        <div className="modal-overlay" onClick={() => setShowPreviewDialog(false)}>
-          <div className="modal-content preview-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{previewFile.originalFileName}</h2>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button type="button" className="toolbar-btn" onClick={() => handleDownloadFile(previewFile.id, previewFile.originalFileName || '')}>Download</button>
-                <button type="button" className="modal-close" onClick={() => setShowPreviewDialog(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></button>
-              </div>
-            </div>
-            <div className="modal-body preview-body">
-              {(previewFile.iconType === 'pdf' || previewFile.iconType === 'image') ? (
-                <PreviewViewer fileId={previewFile.id} fileName={previewFile.originalFileName || ''} fileType={previewFile.iconType || 'file'} />
-              ) : (
-                <div className="preview-unavailable">
-                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <p>Preview unavailable for this file type</p>
-                  <button type="button" className="primary" onClick={() => handleDownloadFile(previewFile.id, previewFile.originalFileName || '')}>Download to view</button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
