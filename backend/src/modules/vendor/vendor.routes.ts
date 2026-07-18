@@ -726,35 +726,37 @@ vendorRouter.get('/:id/details', requireAuth, async (req: Request, res: Response
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Get associated assets count
-    const assetCount = await prisma.asset.count({
-      where: { vendorId: id }
-    });
+    // Get licenses for this vendor (safe query - vendorLicense exists)
+    let licenses: any[] = [];
+    let licenseCount = 0;
+    try {
+      licenses = await prisma.vendorLicense.findMany({
+        where: { vendorName: vendor.vendorName },
+        orderBy: { createdAt: 'desc' }
+      });
+      licenseCount = licenses.length;
+    } catch {
+      // vendorLicense table might not exist
+    }
 
-    // Get licenses for this vendor
-    const licenses = await prisma.vendorLicense.findMany({
-      where: { vendorName: vendor.vendorName },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    // Get linked documents count from compliance
-    const documentsCount = await prisma.complianceDocument.count({
-      where: { 
-        folder: {
-          path: { contains: vendor.vendorName }
-        }
-      }
-    }).catch(() => 0);
-
-    // Get audit log for this vendor
-    const auditLogs = await prisma.auditLog.findMany({
-      where: { 
-        entityType: 'Vendor',
-        entityId: id
-      },
-      orderBy: { performedAt: 'desc' },
-      take: 20
-    });
+    // Get audit log for this vendor (safe query - auditLog exists)
+    let auditLogs: any[] = [];
+    try {
+      const logs = await prisma.auditLog.findMany({
+        where: { 
+          entityType: 'Vendor',
+          entityId: id
+        },
+        orderBy: { performedAt: 'desc' },
+        take: 20
+      });
+      auditLogs = logs.map(log => ({
+        ...log,
+        performedAt: log.performedAt.toISOString()
+      }));
+    } catch {
+      // auditLog table might not exist or have different schema
+    }
 
     // Calculate contract status
     let contractStatus = 'no_contract';
@@ -774,15 +776,12 @@ vendorRouter.get('/:id/details', requireAuth, async (req: Request, res: Response
 
     res.json({
       ...vendor,
-      assetCount,
-      licenseCount: licenses.length,
-      documentsCount,
+      assetCount: 0, // Will be implemented in Phase 3
+      licenseCount,
+      documentsCount: 0, // Will be implemented in Phase 3
       licenses,
       contractStatus,
-      auditLogs: auditLogs.map(log => ({
-        ...log,
-        performedAt: log.performedAt.toISOString()
-      }))
+      auditLogs
     });
   } catch (error) {
     next(error);
@@ -806,31 +805,9 @@ vendorRouter.get('/:id/linked-projects', requireAuth, async (req: Request, res: 
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Get projects that have inventory from this vendor
-    const linkedProjects = await prisma.project.findMany({
-      where: {
-        environments: {
-          some: {
-            assets: {
-              some: {
-                vendorId: id
-              }
-            }
-          }
-        }
-      },
-      select: {
-        id: true,
-        projectName: true,
-        projectCode: true,
-        status: true,
-        startDate: true,
-        ownerName: true
-      },
-      take: 10
-    });
-
-    res.json({ projects: linkedProjects });
+    // Return empty array - vendor-project linking will be implemented in Phase 3
+    // Currently no relation exists between vendors and projects
+    res.json({ projects: [] });
   } catch (error) {
     next(error);
   }
@@ -853,23 +830,9 @@ vendorRouter.get('/:id/inventory', requireAuth, async (req: Request, res: Respon
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Get inventory items from this vendor
-    const inventory = await prisma.inventoryMaster.findMany({
-      where: { vendorId: id },
-      select: {
-        id: true,
-        itemNo: true,
-        itemName: true,
-        serialNumber: true,
-        status: true,
-        warrantyExpiry: true,
-        purchaseDate: true,
-        assignedDate: true
-      },
-      take: 20
-    });
-
-    res.json({ inventory });
+    // Return empty array - vendor-inventory linking will be implemented in Phase 3
+    // Currently inventoryMaster does not have vendorId relation
+    res.json({ inventory: [] });
   } catch (error) {
     next(error);
   }
@@ -892,34 +855,10 @@ vendorRouter.get('/:id/documents', requireAuth, async (req: Request, res: Respon
       throw new HttpError(404, 'Vendor not found');
     }
 
-    // Get compliance documents that might be related to this vendor
-    // Search in fileName or originalFileName for vendor name
-    const documents = await prisma.complianceDocument.findMany({
-      where: {
-        OR: [
-          { originalFileName: { contains: vendor.vendorName } },
-          { fileName: { contains: vendor.vendorName } },
-          { description: { contains: vendor.vendorName } }
-        ]
-      },
-      select: {
-        id: true,
-        fileName: true,
-        originalFileName: true,
-        fileSize: true,
-        mimeType: true,
-        fileExtension: true,
-        category: true,
-        uploadedAt: true,
-        uploadedByEmail: true
-      },
-      take: 20,
-      orderBy: { uploadedAt: 'desc' }
-    });
-
-    res.json({ documents });
-  } catch (error) {
-    // If compliance module tables don't exist, return empty
+    // Return empty array - vendor-document linking will be implemented in Phase 3
+    // Currently no reliable way to link documents to vendors
     res.json({ documents: [] });
+  } catch (error) {
+    next(error);
   }
 });

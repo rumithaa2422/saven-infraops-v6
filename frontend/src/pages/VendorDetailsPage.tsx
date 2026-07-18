@@ -553,18 +553,18 @@ export function VendorDetailsPage() {
           )}
 
           {/* Linked Projects */}
-          {linkedProjects.length > 0 && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  Linked Projects ({linkedProjects.length})
-                </h3>
-              </div>
-              <div className="detail-card-body">
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Linked Projects ({linkedProjects.length})
+              </h3>
+            </div>
+            <div className="detail-card-body">
+              {linkedProjects.length > 0 ? (
                 <div className="project-list">
                   {linkedProjects.map(project => (
                     <div key={project.id} className="project-item" onClick={() => navigate(`/projects-environments/${project.id}`)}>
@@ -578,23 +578,25 @@ export function VendorDetailsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="empty-state">No linked data available</div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Purchased Inventory */}
-          {vendorInventory.length > 0 && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  Purchased Inventory ({vendorInventory.length})
-                </h3>
-              </div>
-              <div className="detail-card-body">
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Purchased Inventory ({vendorInventory.length})
+              </h3>
+            </div>
+            <div className="detail-card-body">
+              {vendorInventory.length > 0 ? (
                 <div className="inventory-table">
                   <table>
                     <thead>
@@ -620,23 +622,25 @@ export function VendorDetailsPage() {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              ) : (
+                <div className="empty-state">No linked data available</div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Documents */}
-          {vendorDocuments.length > 0 && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  Documents ({vendorDocuments.length})
-                </h3>
-              </div>
-              <div className="detail-card-body">
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Documents ({vendorDocuments.length})
+              </h3>
+            </div>
+            <div className="detail-card-body">
+              {vendorDocuments.length > 0 ? (
                 <div className="document-list">
                   {vendorDocuments.map(doc => (
                     <div key={doc.id} className="document-item">
@@ -655,23 +659,25 @@ export function VendorDetailsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="empty-state">No linked data available</div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Activity Timeline */}
-          {vendor.auditLogs && vendor.auditLogs.length > 0 && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  Activity Timeline
-                </h3>
-              </div>
-              <div className="detail-card-body">
+          <div className="detail-card">
+            <div className="detail-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Activity Timeline
+              </h3>
+            </div>
+            <div className="detail-card-body">
+              {vendor.auditLogs && vendor.auditLogs.length > 0 ? (
                 <div className="activity-timeline">
                   {vendor.auditLogs.map((log, index) => (
                     <div key={log.id} className="timeline-item">
@@ -687,9 +693,11 @@ export function VendorDetailsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              ) : (
+                <div className="empty-state">No linked data available</div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Right Sidebar */}
