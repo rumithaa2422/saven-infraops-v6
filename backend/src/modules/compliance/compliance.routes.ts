@@ -1312,3 +1312,470 @@ complianceRouter.get('/files/:id/info', requireAuth, async (req: Request, res: R
     next(error);
   }
 });
+
+/**
+ * GET /api/compliance/items
+ * Combined endpoint for listing folders and files with filtering and sorting
+ * Query params:
+ *   - folderId: (optional) ID of folder, null for root
+ *   - search: Search term
+ *   - type: 'both' | 'folders' | 'files'
+ *   - fileTypes: comma-separated list of file types (pdf,word,excel,powerpoint,image,text,zip,other)
+ *   - dateFrom: Start date (ISO string)
+ *   - dateTo: End date (ISO string)
+ *   - sizeMin: Minimum file size in bytes
+ *   - sizeMax: Maximum file size in bytes
+ *   - uploadedBy: Filter by uploader email
+ *   - sortBy: 'name' | 'createdAt' | 'updatedAt' | 'uploadedAt' | 'modifiedAt' | 'fileSize'
+ *   - sortOrder: 'asc' | 'desc'
+ *   - foldersFirst: boolean - show folders before files
+ */
+complianceRouter.get('/items', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const folderId = req.query.folderId as string | null || null;
+    const search = req.query.search as string | undefined;
+    const type = (req.query.type as 'both' | 'folders' | 'files') || 'both';
+    const fileTypes = req.query.fileTypes as string | undefined;
+    const dateFrom = req.query.dateFrom as string | undefined;
+    const dateTo = req.query.dateTo as string | undefined;
+    const sizeMin = req.query.sizeMin ? Number(req.query.sizeMin) : undefined;
+    const sizeMax = req.query.sizeMax ? Number(req.query.sizeMax) : undefined;
+    const uploadedBy = req.query.uploadedBy as string | undefined;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc';
+    const foldersFirst = req.query.foldersFirst === 'true';
+
+    // Parse file types
+    const fileTypeExtensions: Record<string, string[]> = {
+      pdf: ['pdf'],
+      word: ['doc', 'docx'],
+      excel: ['xls', 'xlsx'],
+      powerpoint: ['ppt', 'pptx'],
+      image: ['png', 'jpg', 'jpeg'],
+      text: ['txt'],
+      zip: ['zip']
+    };
+
+    let selectedExtensions: string[] | undefined;
+    if (fileTypes) {
+      const types = fileTypes.split(',').map(t => t.trim().toLowerCase());
+      selectedExtensions = [];
+      for (const t of types) {
+        if (t === 'other') {
+          // 'other' means extensions not in the predefined list
+          // We'll handle this separately
+        } else if (fileTypeExtensions[t]) {
+          selectedExtensions.push(...fileTypeExtensions[t]);
+        }
+      }
+    }
+
+    // Get folders
+    let folders: any[] = [];
+    if (type === 'both' || type === 'folders') {
+      const folderWhere: any = { parentFolderId: folderId };
+      
+      if (search) {
+        folderWhere.OR = [
+          { name: { contains: search } },
+          { description: { contains: search } }
+        ];
+      }
+
+      const folderSortBy = ['name', 'createdAt', 'updatedAt'].includes(sortBy) ? sortBy : 'createdAt';
+      
+      const rawFolders = await prisma.documentFolder.findMany({
+        where: folderWhere,
+        orderBy: { [folderSortBy]: sortOrder },
+        include: {
+          _count: { select: { children: true, files: true } }
+        }
+      });
+
+      // Get file counts for folders
+      const folderIds = rawFolders.map(f => f.id);
+      const fileCounts = folderIds.length > 0 ? await prisma.documentFile.groupBy({
+        by: ['folderId'],
+        _count: true,
+        where: { folderId: { in: folderIds } }
+      }) : [];
+      
+      const fileCountMap = new Map(fileCounts.map(fc => [fc.folderId, fc._count]));
+
+      folders = rawFolders.map(folder => ({
+        id: folder.id,
+        name: folder.name,
+        description: folder.description,
+        parentFolderId: folder.parentFolderId,
+        createdBy: folder.createdBy,
+        createdByEmail: folder.createdByEmail,
+        createdAt: folder.createdAt,
+        updatedAt: folder.updatedAt,
+        itemType: 'folder',
+        subfolderCount: folder._count.children,
+        fileCount: fileCountMap.get(folder.id) || folder._count.files || 0
+      }));
+    }
+
+    // Get files
+    let files: any[] = [];
+    if ((type === 'both' || type === 'files') && folderId) {
+      const fileWhere: any = { folderId };
+      
+      // Search in file name and description
+      if (search) {
+        fileWhere.OR = [
+          { originalFileName: { contains: search } },
+          { description: { contains: search } }
+        ];
+      }
+
+      // Filter by file extensions
+      if (selectedExtensions && selectedExtensions.length > 0) {
+        fileWhere.fileExtension = { in: selectedExtensions };
+      } else if (fileTypes?.includes('other')) {
+        // Other means extensions not in standard list
+        const standardExtensions = Object.values(fileTypeExtensions).flat();
+        fileWhere.NOT = { fileExtension: { in: standardExtensions } };
+      }
+
+      // Date filters
+      if (dateFrom || dateTo) {
+        fileWhere.uploadedAt = {};
+        if (dateFrom) fileWhere.uploadedAt.gte = new Date(dateFrom);
+        if (dateTo) {
+          const endDate = new Date(dateTo);
+          endDate.setHours(23, 59, 59, 999);
+          fileWhere.uploadedAt.lte = endDate;
+        }
+      }
+
+      // Size filters
+      if (sizeMin !== undefined || sizeMax !== undefined) {
+        fileWhere.fileSize = {};
+        if (sizeMin !== undefined) fileWhere.fileSize.gte = sizeMin;
+        if (sizeMax !== undefined) fileWhere.fileSize.lte = sizeMax;
+      }
+
+      // Filter by uploader
+      if (uploadedBy) {
+        fileWhere.uploadedByEmail = uploadedBy;
+      }
+
+      // Handle sortBy for files
+      let fileSortBy: any = 'uploadedAt';
+      if (sortBy === 'name') fileSortBy = 'originalFileName';
+      else if (sortBy === 'modifiedAt' || sortBy === 'updatedAt') fileSortBy = 'modifiedAt';
+      else if (sortBy === 'fileSize') fileSortBy = 'fileSize';
+      else if (sortBy === 'createdAt') fileSortBy = 'uploadedAt';
+
+      const rawFiles = await prisma.documentFile.findMany({
+        where: fileWhere,
+        orderBy: { [fileSortBy]: sortOrder }
+      });
+
+      files = rawFiles.map(file => ({
+        id: file.id,
+        folderId: file.folderId,
+        originalFileName: file.originalFileName,
+        fileExtension: file.fileExtension,
+        mimeType: file.mimeType,
+        fileSize: file.fileSize,
+        iconType: getFileIcon(file.fileExtension),
+        uploadedBy: file.uploadedBy,
+        uploadedByEmail: file.uploadedByEmail,
+        uploadedAt: file.uploadedAt,
+        modifiedAt: file.modifiedAt,
+        description: file.description,
+        itemType: 'file'
+      }));
+    }
+
+    // Combine and sort
+    let items: any[];
+    if (foldersFirst) {
+      items = [...folders, ...files];
+      // Sort folders and files separately
+      folders.sort((a, b) => {
+        const aVal = sortBy === 'name' ? a.name : (sortBy === 'updatedAt' ? a.updatedAt : a.createdAt);
+        const bVal = sortBy === 'name' ? b.name : (sortBy === 'updatedAt' ? b.updatedAt : b.createdAt);
+        if (sortOrder === 'asc') return aVal > bVal ? 1 : -1;
+        return aVal < bVal ? 1 : -1;
+      });
+      files.sort((a, b) => {
+        let aVal: any, bVal: any;
+        if (sortBy === 'name') { aVal = a.originalFileName; bVal = b.originalFileName; }
+        else if (sortBy === 'modifiedAt' || sortBy === 'updatedAt') { aVal = a.modifiedAt; bVal = b.modifiedAt; }
+        else if (sortBy === 'fileSize') { aVal = a.fileSize; bVal = b.fileSize; }
+        else { aVal = a.uploadedAt; bVal = b.uploadedAt; }
+        if (sortOrder === 'asc') return aVal > bVal ? 1 : -1;
+        return aVal < bVal ? 1 : -1;
+      });
+      items = [...folders, ...files];
+    } else {
+      items = [...folders, ...files];
+      // Mixed sort
+      items.sort((a, b) => {
+        let aVal: any, bVal: any;
+        if (sortBy === 'name') {
+          aVal = a.name || a.originalFileName;
+          bVal = b.name || b.originalFileName;
+        } else if (sortBy === 'modifiedAt' || sortBy === 'updatedAt') {
+          aVal = a.modifiedAt || a.updatedAt;
+          bVal = b.modifiedAt || b.updatedAt;
+        } else if (sortBy === 'fileSize') {
+          aVal = a.fileSize || 0;
+          bVal = b.fileSize || 0;
+        } else {
+          aVal = a.uploadedAt || a.createdAt;
+          bVal = b.uploadedAt || b.createdAt;
+        }
+        if (sortOrder === 'asc') return aVal > bVal ? 1 : -1;
+        return aVal < bVal ? 1 : -1;
+      });
+    }
+
+    // Summary stats
+    let summary = { totalFolders: folders.length, totalFiles: files.length };
+    if (folderId === null) {
+      // Root level - get total repository stats
+      const [totalStats] = await Promise.all([
+        prisma.documentFile.aggregate({ _count: true, _sum: { fileSize: true } })
+      ]);
+      summary = {
+        totalFolders: folders.length,
+        totalFiles: totalStats._count
+      };
+    }
+
+    res.json({ items, summary });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/uploaders
+ * Get list of unique uploaders for filter dropdown
+ */
+complianceRouter.get('/uploaders', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const files = await prisma.documentFile.findMany({
+      select: { uploadedByEmail: true },
+      distinct: ['uploadedByEmail'],
+      where: { uploadedByEmail: { not: null } }
+    });
+
+    const uploaders = files
+      .map(f => f.uploadedByEmail)
+      .filter(Boolean)
+      .sort();
+
+    res.json({ uploaders });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/compliance/export
+ * Export files/folders as ZIP
+ * Query params:
+ *   - type: 'selected' | 'folder' | 'all'
+ *   - folderId: (required for 'folder' type)
+ *   - itemIds: (required for 'selected' type) - comma-separated IDs
+ */
+complianceRouter.get('/export', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const exportType = (req.query.type as 'selected' | 'folder' | 'all') || 'all';
+    const folderId = req.query.folderId as string | undefined;
+    const itemIds = req.query.itemIds as string | undefined;
+
+    if (exportType === 'folder' && !folderId) {
+      throw new HttpError(400, 'Folder ID is required for folder export');
+    }
+
+    if (exportType === 'selected' && !itemIds) {
+      throw new HttpError(400, 'Item IDs are required for selected export');
+    }
+
+    const archiver = (await import('archiver')).default;
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="document-repository-${Date.now()}.zip"`);
+
+    archive.pipe(res);
+
+    const addFilesFromFolder = async (fid: string, basePath: string) => {
+      // Add files in this folder
+      const files = await prisma.documentFile.findMany({
+        where: { folderId: fid }
+      });
+
+      for (const file of files) {
+        const filePath = path.join(process.cwd(), file.storagePath);
+        try {
+          const fullPath = path.join(basePath, file.originalFileName);
+          archive.file(filePath, { name: fullPath });
+        } catch {
+          // File not found on disk, skip
+        }
+      }
+
+      // Recursively add subfolders
+      const subfolders = await prisma.documentFolder.findMany({
+        where: { parentFolderId: fid }
+      });
+
+      for (const subfolder of subfolders) {
+        await addFilesFromFolder(subfolder.id, path.join(basePath, subfolder.name));
+      }
+    };
+
+    if (exportType === 'all') {
+      // Export entire repository
+      const rootFolders = await prisma.documentFolder.findMany({
+        where: { parentFolderId: null }
+      });
+
+      for (const folder of rootFolders) {
+        await addFilesFromFolder(folder.id, folder.name);
+      }
+    } else if (exportType === 'folder' && folderId) {
+      // Export specific folder
+      const folder = await prisma.documentFolder.findUnique({
+        where: { id: folderId }
+      });
+
+      if (!folder) {
+        throw new HttpError(404, 'Folder not found');
+      }
+
+      await addFilesFromFolder(folderId, folder.name);
+    } else if (exportType === 'selected' && itemIds) {
+      const ids = itemIds.split(',');
+
+      for (const id of ids) {
+        // Check if it's a folder
+        const folder = await prisma.documentFolder.findUnique({ where: { id } });
+        if (folder) {
+          await addFilesFromFolder(folder.id, folder.name);
+        } else {
+          // It's a file
+          const file = await prisma.documentFile.findUnique({ where: { id } });
+          if (file) {
+            const filePath = path.join(process.cwd(), file.storagePath);
+            try {
+              archive.file(filePath, { name: file.originalFileName });
+            } catch {
+              // File not found
+            }
+          }
+        }
+      }
+    }
+
+    archive.finalize();
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/compliance/items
+ * Delete multiple items (files and folders)
+ * Body: { itemIds: string[] }
+ */
+complianceRouter.delete('/items', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const { itemIds } = req.body as { itemIds: string[] };
+
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      throw new HttpError(400, 'Item IDs are required');
+    }
+
+    const results = { deleted: { folders: 0, files: 0 }, errors: [] as string[] };
+
+    // Helper to recursively delete folder and contents
+    const deleteFolderRecursive = async (folderId: string): Promise<void> => {
+      // Delete all files in this folder
+      const files = await prisma.documentFile.findMany({
+        where: { folderId },
+        select: { id: true, storagePath: true }
+      });
+
+      for (const file of files) {
+        try {
+          await fs.unlink(path.join(process.cwd(), file.storagePath));
+        } catch { /* ignore */ }
+        await prisma.documentFile.delete({ where: { id: file.id } });
+        results.deleted.files++;
+      }
+
+      // Get subfolders
+      const subfolders = await prisma.documentFolder.findMany({
+        where: { parentFolderId: folderId },
+        select: { id: true }
+      });
+
+      // Recursively delete subfolders
+      for (const subfolder of subfolders) {
+        await deleteFolderRecursive(subfolder.id);
+      }
+
+      // Delete this folder
+      await prisma.documentFolder.delete({ where: { id: folderId } });
+      results.deleted.folders++;
+    };
+
+    for (const id of itemIds) {
+      try {
+        // Check if it's a folder
+        const folder = await prisma.documentFolder.findUnique({ where: { id } });
+        if (folder) {
+          await deleteFolderRecursive(id);
+        } else {
+          // It's a file
+          const file = await prisma.documentFile.findUnique({
+            where: { id },
+            select: { storagePath: true }
+          });
+          if (file) {
+            try {
+              await fs.unlink(path.join(process.cwd(), file.storagePath));
+            } catch { /* ignore */ }
+            await prisma.documentFile.delete({ where: { id } });
+            results.deleted.files++;
+          }
+        }
+      } catch (err: any) {
+        results.errors.push(`Failed to delete ${id}: ${err.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      deleted: results.deleted,
+      errors: results.errors.length > 0 ? results.errors : undefined
+    });
+  } catch (error) {
+    next(error);
+  }
+});
