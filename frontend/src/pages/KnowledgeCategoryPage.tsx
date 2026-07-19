@@ -200,7 +200,9 @@ export function KnowledgeCategoryPage() {
 
   // Load articles for a category
   const loadArticles = useCallback(async () => {
-    if (!selectedCategory) return;
+    if (!selectedCategory?.id) {
+      return;
+    }
     
     try {
       setArticleError('');
@@ -215,14 +217,24 @@ export function KnowledgeCategoryPage() {
       params.sortOrder = sortOrder;
 
       const response = await api.get('/knowledge/articles', { params });
-      setArticles(response.data.articles || []);
+      
+      // Handle different response formats
+      let articlesData = [];
+      if (response.data?.articles) {
+        articlesData = response.data.articles;
+      } else if (Array.isArray(response.data)) {
+        articlesData = response.data;
+      }
+      
+      setArticles(articlesData);
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       setArticleError(axiosError.response?.data?.message || 'Failed to load articles');
+      setArticles([]);
     } finally {
       setArticleLoading(false);
     }
-  }, [selectedCategory, search, sortBy, sortOrder]);
+  }, [selectedCategory?.id, search, sortBy, sortOrder]);
 
   useEffect(() => {
     loadCategories();
@@ -427,8 +439,15 @@ export function KnowledgeCategoryPage() {
         showToast('success', 'Article created successfully');
       }
 
+      // Close modal first
       closeArticleForm();
-      loadArticles();
+      
+      // Then reload both articles and category counts
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        loadArticles();
+        loadCategories();
+      }, 0);
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       setArticleFormError(axiosError.response?.data?.message || 'Failed to save article');
@@ -458,7 +477,12 @@ export function KnowledgeCategoryPage() {
       await api.delete(`/knowledge/articles/${deletingArticle.id}`);
       showToast('success', 'Article deleted successfully');
       closeDeleteArticleConfirm();
-      loadArticles();
+      
+      // Reload both articles and category counts
+      setTimeout(() => {
+        loadArticles();
+        loadCategories();
+      }, 0);
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       showToast('error', axiosError.response?.data?.message || 'Failed to delete article');
