@@ -637,10 +637,28 @@ model KnowledgeBaseArticle {
 
   // Relations
   categoryInfo  KnowledgeCategory? @relation(fields: [categoryId], references: [id])
+  attachments   KnowledgeBaseAttachment[]
 
   @@index([categoryId])
   @@index([status])
   @@index([featured])
+}
+
+// Knowledge Base Attachment - stores file attachments for articles
+model KnowledgeBaseAttachment {
+  id                String   @id @default(cuid())
+  articleId         String
+  originalFileName  String
+  storedFileName    String
+  mimeType          String
+  fileSize          Int      // Size in bytes
+  uploadedBy        String?
+  uploadedAt        DateTime @default(now())
+
+  // Relations
+  article           KnowledgeBaseArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
 }
 
 model SystemSetting {

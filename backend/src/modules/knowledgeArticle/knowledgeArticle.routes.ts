@@ -6,13 +6,90 @@
  */
 
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
+import path from 'path';
 import { requireAuth } from '../../middleware/auth.js';
 import { requirePermissionOr } from '../../middleware/rbac.js';
 import { HttpError } from '../../common/httpError.js';
 import { logger } from '../../common/logger.js';
 import { prisma } from '../../common/prisma.js';
+import { env } from '../../config/env.js';
+import { promises as fs } from 'fs';
 
 export const knowledgeArticleRouter = Router();
+
+// ============================================================
+// Multer configuration for KB attachments
+// ============================================================
+
+const KB_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'knowledge-base');
+
+// Allowed file extensions
+const ALLOWED_EXTENSIONS = new Set([
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+  '.txt', '.zip', '.png', '.jpg', '.jpeg'
+]);
+
+// Allowed MIME types
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'application/zip',
+  'image/png',
+  'image/jpeg'
+]);
+
+// Ensure upload directory exists
+async function ensureKbuploadDir(): Promise<void> {
+  try {
+    await fs.access(KB_UPLOAD_DIR);
+  } catch {
+    await fs.mkdir(KB_UPLOAD_DIR, { recursive: true });
+  }
+}
+
+// Get file path for attachment
+function getAttachmentFilePath(storedFileName: string): string {
+  return path.join(KB_UPLOAD_DIR, storedFileName);
+}
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: async (_req, _file, cb) => {
+    await ensureKbuploadDir();
+    cb(null, KB_UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `kb-attachment-${uniqueSuffix}${ext}`);
+  }
+});
+
+// File filter for allowed types
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ALLOWED_EXTENSIONS.has(ext) && ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`File type not allowed. Allowed types: ${[...ALLOWED_EXTENSIONS].join(', ')}`));
+  }
+};
+
+// Multer upload configuration
+const uploadAttachment = multer({
+  storage,
+  limits: {
+    fileSize: env.KB_MAX_FILE_SIZE_MB * 1024 * 1024
+  },
+  fileFilter
+});
 
 // Helper to extract IP address from request
 function getClientIp(req: Request): string | null | undefined {
@@ -88,7 +165,7 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
     // Get total count
     const total = await prisma.knowledgeBaseArticle.count({ where });
 
-    // Get articles with category info
+    // Get articles with category info and attachment count
     const articles = await prisma.knowledgeBaseArticle.findMany({
       where,
       orderBy,
@@ -97,15 +174,19 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
       include: {
         categoryInfo: {
           select: { id: true, name: true }
+        },
+        _count: {
+          select: { attachments: true }
         }
       }
     });
 
-    // Transform to include category name
+    // Transform to include category name and attachment count
     const transformedArticles = articles.map((article: any) => ({
       ...article,
       categoryName: article.categoryInfo?.name || article.category,
-      tags: article.tags ? JSON.parse(article.tags) : []
+      tags: article.tags ? JSON.parse(article.tags) : [],
+      attachmentCount: article._count?.attachments || 0
     }));
 
     logger.info({
@@ -182,6 +263,17 @@ knowledgeArticleRouter.get('/:id', requireAuth, async (req: Request, res: Respon
       include: {
         categoryInfo: {
           select: { id: true, name: true }
+        },
+        attachments: {
+          select: {
+            id: true,
+            originalFileName: true,
+            mimeType: true,
+            fileSize: true,
+            uploadedBy: true,
+            uploadedAt: true
+          },
+          orderBy: { uploadedAt: 'desc' }
         }
       }
     });
@@ -424,6 +516,231 @@ knowledgeArticleRouter.delete('/:id', requireAuth, async (req: Request, res: Res
     }, 'Deleted knowledge article');
 
     res.json({ message: 'Article deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// ATTACHMENT ENDPOINTS
+// ============================================================
+
+// IMPORTANT: More specific routes must come first to avoid conflicts
+
+// ============================================================
+// GET /api/knowledge/attachments/:attachmentId/download
+// Download an attachment
+// ============================================================
+knowledgeArticleRouter.get('/attachments/:attachmentId/download', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    const attachmentId = getStringParam(req.params.attachmentId) as string;
+
+    const attachment = await prisma.knowledgeBaseAttachment.findUnique({
+      where: { id: attachmentId }
+    });
+
+    if (!attachment) {
+      throw new HttpError(404, 'Attachment not found');
+    }
+
+    const filePath = getAttachmentFilePath(attachment.storedFileName);
+
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch {
+      throw new HttpError(404, 'File not found on server');
+    }
+
+    logger.info({
+      action: 'DOWNLOAD_ATTACHMENT',
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      attachmentId,
+      fileName: attachment.originalFileName
+    }, 'Downloaded attachment');
+
+    // Set headers for download
+    res.setHeader('Content-Type', attachment.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.originalFileName)}"`);
+    res.setHeader('Content-Length', attachment.fileSize);
+
+    // Stream the file
+    const fileStream = await fs.readFile(filePath);
+    res.send(fileStream);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// DELETE /api/knowledge/attachments/:attachmentId
+// Delete an attachment (Admin/Super Admin only)
+// ============================================================
+knowledgeArticleRouter.delete('/attachments/:attachmentId', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    // Check permission - Admin or Super Admin only
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['kb:manage', 'admin:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const attachmentId = getStringParam(req.params.attachmentId) as string;
+
+    const attachment = await prisma.knowledgeBaseAttachment.findUnique({
+      where: { id: attachmentId }
+    });
+
+    if (!attachment) {
+      throw new HttpError(404, 'Attachment not found');
+    }
+
+    // Delete file from disk
+    const filePath = getAttachmentFilePath(attachment.storedFileName);
+    try {
+      await fs.unlink(filePath);
+    } catch {
+      // File might already be deleted, continue with DB deletion
+      logger.warn({ filePath }, 'Attachment file not found on disk');
+    }
+
+    // Delete database record
+    await prisma.knowledgeBaseAttachment.delete({
+      where: { id: attachmentId }
+    });
+
+    logger.info({
+      action: 'DELETE_ATTACHMENT',
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      attachmentId,
+      fileName: attachment.originalFileName
+    }, 'Deleted attachment');
+
+    res.json({ message: 'Attachment deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// GET /api/knowledge/articles/:articleId/attachments
+// List all attachments for an article
+// ============================================================
+knowledgeArticleRouter.get('/:articleId/attachments', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    const articleId = getStringParam(req.params.articleId) as string;
+
+    // Verify article exists
+    const article = await prisma.knowledgeBaseArticle.findUnique({
+      where: { id: articleId },
+      select: { id: true, title: true }
+    });
+
+    if (!article) {
+      throw new HttpError(404, 'Article not found');
+    }
+
+    // Get attachments
+    const attachments = await prisma.knowledgeBaseAttachment.findMany({
+      where: { articleId },
+      orderBy: { uploadedAt: 'desc' },
+      select: {
+        id: true,
+        originalFileName: true,
+        mimeType: true,
+        fileSize: true,
+        uploadedBy: true,
+        uploadedAt: true
+      }
+    });
+
+    res.json({
+      articleId,
+      articleTitle: article.title,
+      attachments,
+      count: attachments.length
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================
+// POST /api/knowledge/articles/:articleId/attachments
+// Upload attachment(s) to an article
+// ============================================================
+knowledgeArticleRouter.post('/:articleId/attachments', requireAuth, async (req: Request, res: Response, next) => {
+  try {
+    // Check permission
+    await new Promise<void>((resolve, reject) =>
+      requirePermissionOr(['knowledge.article:create', 'knowledge.article:update', 'kb:manage'])(req, res, (err) => err ? reject(err) : resolve())
+    );
+
+    const articleId = getStringParam(req.params.articleId) as string;
+
+    // Verify article exists
+    const article = await prisma.knowledgeBaseArticle.findUnique({
+      where: { id: articleId },
+      select: { id: true, title: true }
+    });
+
+    if (!article) {
+      throw new HttpError(404, 'Article not found');
+    }
+
+    // Handle file upload
+    uploadAttachment.array('files', 10)(req, res, async (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return next(new HttpError(400, `File too large. Maximum size is ${env.KB_MAX_FILE_SIZE_MB}MB`));
+          }
+          return next(new HttpError(400, err.message));
+        }
+        return next(new HttpError(400, err.message));
+      }
+
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return next(new HttpError(400, 'No files provided'));
+      }
+
+      // Create attachment records
+      const attachments = await Promise.all(
+        files.map(async (file) => {
+          return prisma.knowledgeBaseAttachment.create({
+            data: {
+              articleId,
+              originalFileName: file.originalname,
+              storedFileName: file.filename,
+              mimeType: file.mimetype,
+              fileSize: file.size,
+              uploadedBy: req.user?.email || null
+            }
+          });
+        })
+      );
+
+      logger.info({
+        action: 'UPLOAD_ATTACHMENT',
+        actorId: req.user?.id,
+        actorEmail: req.user?.email,
+        articleId,
+        fileCount: attachments.length
+      }, `Uploaded ${attachments.length} attachment(s) to article`);
+
+      res.status(201).json({
+        message: `${attachments.length} file(s) uploaded successfully`,
+        attachments: attachments.map(a => ({
+          id: a.id,
+          originalFileName: a.originalFileName,
+          mimeType: a.mimeType,
+          fileSize: a.fileSize,
+          uploadedBy: a.uploadedBy,
+          uploadedAt: a.uploadedAt
+        }))
+      });
+    });
   } catch (error) {
     next(error);
   }

@@ -12,3 +12,6 @@ prisma/dev.db
 
 npm-debug.log*
 .DS_Store
+
+# Uploaded files
+uploads/

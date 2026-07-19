@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { api } from '../services/api';
+import { api, knowledgeAttachmentApi } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -17,6 +17,15 @@ interface KnowledgeCategory {
   articleCount: number;
 }
 
+interface Attachment {
+  id: string;
+  originalFileName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy: string | null;
+  uploadedAt: string;
+}
+
 interface KnowledgeArticle {
   id: string;
   title: string;
@@ -29,6 +38,8 @@ interface KnowledgeArticle {
   authorName: string | null;
   createdAt: string;
   updatedAt: string;
+  attachments?: Attachment[];
+  attachmentCount?: number;
 }
 
 interface ArticleFormData {
@@ -163,6 +174,10 @@ export function KnowledgeCategoryPage() {
 
   // Article view state
   const [viewingArticle, setViewingArticle] = useState<KnowledgeArticle | null>(null);
+
+  // Attachment upload state
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
 
   // Toast state
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -460,12 +475,21 @@ export function KnowledgeCategoryPage() {
         tags: articleFormData.tags
       };
 
+      let savedArticleId: string;
+
       if (editingArticle) {
         await api.put(`/knowledge/articles/${editingArticle.id}`, payload);
+        savedArticleId = editingArticle.id;
         showToast('success', 'Article updated successfully');
       } else {
-        await api.post('/knowledge/articles', payload);
+        const response = await api.post('/knowledge/articles', payload);
+        savedArticleId = response.data.id;
         showToast('success', 'Article created successfully');
+      }
+
+      // Upload attachments if any selected
+      if (selectedFiles.length > 0) {
+        await uploadAttachments(savedArticleId);
       }
 
       // Close modal first
@@ -577,6 +601,91 @@ export function KnowledgeCategoryPage() {
   const getSortIndicator = (field: string) => {
     if (sortBy !== field) return null;
     return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  // Get file icon based on MIME type
+  const getFileIcon = (mimeType: string): string => {
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType === 'application/pdf') return '📄';
+    if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📽️';
+    if (mimeType === 'text/plain') return '📃';
+    if (mimeType.includes('zip') || mimeType.includes('compressed')) return '📦';
+    return '📎';
+  };
+
+  // Handle file selection for upload
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      setSelectedFiles(prev => [...prev, ...fileArray]);
+    }
+    e.target.value = '';
+  };
+
+  // Remove file from selection
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Upload attachments to article
+  const uploadAttachments = async (articleId: string): Promise<boolean> => {
+    if (selectedFiles.length === 0) return true;
+
+    setUploadingAttachments(true);
+    try {
+      const response = await knowledgeAttachmentApi.upload(articleId, selectedFiles);
+      showToast('success', response.message);
+      setSelectedFiles([]);
+      return true;
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to upload attachments');
+      return false;
+    } finally {
+      setUploadingAttachments(false);
+    }
+  };
+
+  // Delete attachment
+  const deleteAttachment = async (attachmentId: string): Promise<void> => {
+    if (!confirm('Are you sure you want to delete this attachment?')) return;
+
+    try {
+      await knowledgeAttachmentApi.delete(attachmentId);
+      showToast('success', 'Attachment deleted successfully');
+
+      // Update viewing article attachments
+      if (viewingArticle) {
+        setViewingArticle({
+          ...viewingArticle,
+          attachments: viewingArticle.attachments?.filter(a => a.id !== attachmentId)
+        });
+      }
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to delete attachment');
+    }
+  };
+
+  // Download attachment
+  const downloadAttachment = (attachmentId: string, fileName: string) => {
+    const url = knowledgeAttachmentApi.getDownloadUrl(attachmentId);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -1008,6 +1117,97 @@ export function KnowledgeCategoryPage() {
               dangerouslySetInnerHTML={{ __html: viewingArticle.body }}
             />
           </div>
+
+          {/* Article Attachments */}
+          {(viewingArticle.attachments && viewingArticle.attachments.length > 0 || canUpdateArticles) && (
+            <div className="article-attachments-section">
+              <h3>Attachments</h3>
+              
+              {viewingArticle.attachments && viewingArticle.attachments.length > 0 && (
+                <div className="attachments-list">
+                  {viewingArticle.attachments.map((attachment) => (
+                    <div key={attachment.id} className="attachment-item">
+                      <span className="attachment-icon">{getFileIcon(attachment.mimeType)}</span>
+                      <div className="attachment-info">
+                        <span className="attachment-name">{attachment.originalFileName}</span>
+                        <span className="attachment-meta">
+                          {formatFileSize(attachment.fileSize)} • Uploaded {formatDate(attachment.uploadedAt)}
+                        </span>
+                      </div>
+                      <div className="attachment-actions">
+                        <button 
+                          className="btn-icon" 
+                          onClick={() => downloadAttachment(attachment.id, attachment.originalFileName)}
+                          title="Download"
+                        >
+                          ⬇️
+                        </button>
+                        {(hasPermission('kb:manage') || isSuperAdmin) && (
+                          <button 
+                            className="btn-icon danger" 
+                            onClick={() => deleteAttachment(attachment.id)}
+                            title="Delete"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {canUpdateArticles && (
+                <div className="attachment-upload-area">
+                  <input
+                    type="file"
+                    id="attachment-upload-detail"
+                    multiple
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="attachment-upload-detail" className="upload-label">
+                    + Add Attachments
+                  </label>
+                  {selectedFiles.length > 0 && (
+                    <div className="selected-files">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="selected-file">
+                          <span>{getFileIcon(file.type)} {file.name}</span>
+                          <button 
+                            type="button" 
+                            className="btn-remove"
+                            onClick={() => removeSelectedFile(index)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      {uploadingAttachments ? (
+                        <div className="upload-progress">Uploading...</div>
+                      ) : (
+                        <button 
+                          type="button" 
+                          className="btn-upload"
+                          onClick={async () => {
+                            const success = await uploadAttachments(viewingArticle.id);
+                            if (success) {
+                              // Refresh article to get updated attachments
+                              const updatedArticle = await api.get(`/knowledge/articles/${viewingArticle.id}`);
+                              setViewingArticle(updatedArticle.data);
+                            }
+                          }}
+                        >
+                          Upload Selected Files
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1207,6 +1407,40 @@ export function KnowledgeCategoryPage() {
                   />
                   <button type="button" className="secondary" onClick={addTag}>Add</button>
                 </div>
+              </div>
+            </div>
+
+            {/* Attachment Upload Section */}
+            <div className="form-group">
+              <label>Attachments</label>
+              <div className="form-attachments">
+                <input
+                  type="file"
+                  id="article-attachment-upload"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="article-attachment-upload" className="upload-label">
+                  + Add Attachments
+                </label>
+                {selectedFiles.length > 0 && (
+                  <div className="selected-files">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="selected-file">
+                        <span>{getFileIcon(file.type)} {file.name}</span>
+                        <button 
+                          type="button" 
+                          className="btn-remove"
+                          onClick={() => removeSelectedFile(index)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2446,6 +2680,231 @@ export function KnowledgeCategoryPage() {
 
           .article-detail-content {
             padding: 20px;
+          }
+
+          /* Article Attachments */
+          .article-attachments-section {
+            padding: 20px;
+            border-top: 1px solid var(--line);
+            background: var(--panel-soft);
+          }
+
+          .article-attachments-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+          }
+
+          .attachments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+          }
+
+          .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+          }
+
+          .attachment-item:hover {
+            border-color: var(--brand);
+            box-shadow: 0 2px 8px rgba(84, 104, 255, 0.08);
+          }
+
+          .attachment-icon {
+            font-size: 24px;
+          }
+
+          .attachment-info {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .attachment-name {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .attachment-meta {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+          }
+
+          .attachment-actions {
+            display: flex;
+            gap: 8px;
+          }
+
+          .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+          }
+
+          .btn-icon:hover {
+            background: var(--brand);
+            border-color: var(--brand);
+          }
+
+          .btn-icon.danger:hover {
+            background: var(--error);
+            border-color: var(--error);
+          }
+
+          /* Attachment Upload Area */
+          .attachment-upload-area {
+            margin-top: 16px;
+          }
+
+          .upload-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: white;
+            border: 2px dashed var(--line);
+            border-radius: 8px;
+            color: var(--brand);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+          }
+
+          .upload-label:hover {
+            border-color: var(--brand);
+            background: var(--panel-soft);
+          }
+
+          .selected-files {
+            margin-top: 12px;
+            padding: 12px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+          }
+
+          .selected-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--panel-soft);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+          }
+
+          .selected-file:last-of-type {
+            margin-bottom: 0;
+          }
+
+          .selected-file span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .btn-remove {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0 4px;
+          }
+
+          .btn-remove:hover {
+            color: var(--error);
+          }
+
+          .btn-upload {
+            margin-top: 12px;
+            padding: 10px 20px;
+            background: var(--brand);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+          }
+
+          .btn-upload:hover {
+            background: var(--brand-dark);
+          }
+
+          .upload-progress {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--panel-soft);
+            border-radius: 8px;
+            text-align: center;
+            color: var(--brand);
+            font-size: 14px;
+          }
+
+          /* Form Attachments */
+          .form-attachments {
+            margin-top: 8px;
+          }
+
+          .form-attachments .upload-label {
+            display: inline-block;
+            padding: 8px 16px;
+            background: white;
+            border: 2px dashed var(--line);
+            border-radius: 6px;
+            color: var(--brand);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+          }
+
+          .form-attachments .upload-label:hover {
+            border-color: var(--brand);
+            background: var(--panel-soft);
+          }
+
+          .form-attachments .selected-files {
+            margin-top: 8px;
+          }
+
+          .form-attachments .selected-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            background: var(--panel-soft);
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 12px;
           }
         }
       `}</style>
