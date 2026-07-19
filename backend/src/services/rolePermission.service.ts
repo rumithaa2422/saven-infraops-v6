@@ -3,6 +3,9 @@
  * 
  * Handles role permission management with delta updates and audit logging.
  * Only sends/changes the permissions that were actually modified.
+ * 
+ * FIX: Use createMany instead of individual create() calls to prevent
+ * transaction timeout when updating roles with many permissions (190+).
  */
 
 import { prisma } from '../common/prisma.js';
@@ -85,6 +88,9 @@ export async function getRolePermissions(roleId: string): Promise<string[]> {
 
 /**
  * Update role permissions using delta (only changed permissions)
+ * 
+ * FIX: Use createMany instead of individual create() calls to prevent
+ * transaction timeout when updating roles with many permissions (190+).
  */
 export async function updateRolePermissionsDelta(
   roleId: string,
@@ -165,25 +171,42 @@ export async function updateRolePermissionsDelta(
     };
   }
   
-  // Get permission records for new permissions
-  const permissions = await prisma.permission.findMany({
-    where: { code: { in: newPermissions } }
-  });
-  
-  // Update in transaction
+  // FIX: Fetch permissions INSIDE the transaction to ensure consistency
+  // and use createMany to prevent timeout with large permission sets
   const updatedRole = await prisma.$transaction(async (tx) => {
     // Delete all existing role permissions
-    await tx.rolePermission.deleteMany({
+    const deleteCount = await tx.rolePermission.deleteMany({
       where: { roleId }
     });
     
-    // Create new role permissions
-    for (const permission of permissions) {
-      await tx.rolePermission.create({
-        data: {
-          roleId,
-          permissionId: permission.id
+    // If no new permissions, return early
+    if (newPermissions.length === 0) {
+      return tx.role.findUnique({
+        where: { id: roleId },
+        include: {
+          permissions: {
+            include: { permission: true }
+          }
         }
+      });
+    }
+    
+    // Get permission records for new permissions INSIDE the transaction
+    const permissions = await tx.permission.findMany({
+      where: { code: { in: newPermissions } }
+    });
+    
+    // FIX: Use createMany instead of individual create() calls
+    // This prevents transaction timeout for roles with many permissions (190+)
+    if (permissions.length > 0) {
+      // Deduplicate to prevent unique constraint violations
+      const uniquePermissionIds = [...new Set(permissions.map(p => p.id))];
+      
+      await tx.rolePermission.createMany({
+        data: uniquePermissionIds.map(permissionId => ({
+          roleId,
+          permissionId
+        }))
       });
     }
     
