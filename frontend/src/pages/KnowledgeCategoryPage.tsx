@@ -7,9 +7,6 @@ interface KnowledgeCategory {
   id: string;
   name: string;
   description: string | null;
-  color: string | null;
-  icon: string | null;
-  displayOrder: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -21,22 +18,16 @@ interface KnowledgeCategory {
 interface CategoryFormData {
   name: string;
   description: string;
-  color: string;
-  icon: string;
-  displayOrder: number;
   isActive: boolean;
 }
 
 const DEFAULT_FORM_DATA: CategoryFormData = {
   name: '',
   description: '',
-  color: '#5468ff',
-  icon: '',
-  displayOrder: 0,
   isActive: true
 };
 
-type SortField = 'name' | 'createdAt' | 'updatedAt' | 'displayOrder' | 'isActive';
+type SortField = 'name' | 'createdAt' | 'updatedAt' | 'isActive';
 type SortOrder = 'asc' | 'desc';
 
 export function KnowledgeCategoryPage() {
@@ -60,7 +51,7 @@ export function KnowledgeCategoryPage() {
   // Search and sort state
   const [search, setSearch] = useState('');
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
-  const [sortBy, setSortBy] = useState<SortField>('displayOrder');
+  const [sortBy, setSortBy] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Modal state
@@ -173,9 +164,6 @@ export function KnowledgeCategoryPage() {
         case 'updatedAt':
           comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
           break;
-        case 'displayOrder':
-          comparison = a.displayOrder - b.displayOrder;
-          break;
         case 'isActive':
           comparison = (a.isActive === b.isActive) ? 0 : a.isActive ? -1 : 1;
           break;
@@ -211,9 +199,6 @@ export function KnowledgeCategoryPage() {
     setFormData({
       name: category.name,
       description: category.description || '',
-      color: category.color || '#5468ff',
-      icon: category.icon || '',
-      displayOrder: category.displayOrder,
       isActive: category.isActive
     });
     setFormError('');
@@ -241,12 +226,6 @@ export function KnowledgeCategoryPage() {
       return;
     }
 
-    // Validate color format
-    if (formData.color && !/^#[0-9A-Fa-f]{6}$/.test(formData.color)) {
-      setFormError('Invalid color format. Use hex format (e.g., #5468ff)');
-      return;
-    }
-
     setSaving(true);
     setFormError('');
 
@@ -254,9 +233,6 @@ export function KnowledgeCategoryPage() {
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
-        color: formData.color || '#5468ff',
-        icon: formData.icon.trim() || null,
-        displayOrder: formData.displayOrder,
         isActive: formData.isActive
       };
 
@@ -438,20 +414,12 @@ export function KnowledgeCategoryPage() {
                   Category Name{getSortIndicator('name')}
                 </th>
                 <th>Description</th>
-                <th>Color</th>
-                <th>Icon</th>
                 <th>Articles</th>
                 <th 
                   className="sortable"
                   onClick={() => handleSort('isActive')}
                 >
                   Status{getSortIndicator('isActive')}
-                </th>
-                <th 
-                  className="sortable"
-                  onClick={() => handleSort('displayOrder')}
-                >
-                  Order{getSortIndicator('displayOrder')}
                 </th>
                 <th 
                   className="sortable"
@@ -472,31 +440,10 @@ export function KnowledgeCategoryPage() {
               {filteredCategories.map((category) => (
                 <tr key={category.id}>
                   <td>
-                    <div className="category-name-cell">
-                      {category.color && (
-                        <span 
-                          className="category-color" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                      )}
-                      <strong>{category.name}</strong>
-                    </div>
+                    <strong>{category.name}</strong>
                   </td>
                   <td className="description-cell">
                     {category.description || '-'}
-                  </td>
-                  <td>
-                    {category.color && (
-                      <span 
-                        className="color-badge" 
-                        style={{ backgroundColor: category.color }}
-                      >
-                        {category.color}
-                      </span>
-                    )}
-                  </td>
-                  <td className="icon-cell">
-                    {category.icon || '-'}
                   </td>
                   <td className="count-cell">
                     <span className="count-badge">{category.articleCount}</span>
@@ -506,7 +453,6 @@ export function KnowledgeCategoryPage() {
                       {category.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td>{category.displayOrder}</td>
                   <td>{formatDate(category.createdAt)}</td>
                   <td>{formatDate(category.updatedAt)}</td>
                   {canManage && (
@@ -565,7 +511,6 @@ export function KnowledgeCategoryPage() {
                 maxLength={100}
                 autoFocus
               />
-              <span className="char-count">{formData.name.length}/100</span>
             </div>
 
             <div className="form-group">
@@ -578,57 +523,15 @@ export function KnowledgeCategoryPage() {
               />
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Color</label>
-                <div className="color-input-group">
-                  <input
-                    type="color"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  />
-                  <input
-                    type="text"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    placeholder="#5468ff"
-                    pattern="^#[0-9A-Fa-f]{6}$"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Icon</label>
-                <input
-                  type="text"
-                  value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  placeholder="e.g., ⚙️"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Display Order</label>
-                <input
-                  type="number"
-                  value={formData.displayOrder}
-                  onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                  min={0}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Status</label>
-                <select
-                  value={formData.isActive ? 'true' : 'false'}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
-                >
-                  <option value="true">Active</option>
-                  <option value="false">Inactive</option>
-                </select>
-              </div>
+            <div className="form-group">
+              <label>Status</label>
+              <select
+                value={formData.isActive ? 'true' : 'false'}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
+              >
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
             </div>
 
             <div className="form-actions">
@@ -843,39 +746,12 @@ export function KnowledgeCategoryPage() {
           background: var(--panel-soft);
         }
 
-        .category-name-cell {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .category-color {
-          width: 16px;
-          height: 16px;
-          border-radius: 4px;
-          flex-shrink: 0;
-        }
-
         .description-cell {
           max-width: 200px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
           color: var(--muted);
-        }
-
-        .color-badge {
-          display: inline-block;
-          padding: 4px 10px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 600;
-          color: white;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
-
-        .icon-cell {
-          font-size: 18px;
         }
 
         .count-cell {
@@ -952,35 +828,6 @@ export function KnowledgeCategoryPage() {
         .form-group select:focus {
           outline: none;
           border-color: var(--brand);
-        }
-
-        .char-count {
-          position: absolute;
-          right: 12px;
-          top: 36px;
-          font-size: 11px;
-          color: var(--muted);
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        .color-input-group {
-          display: flex;
-          gap: 8px;
-        }
-
-        .color-input-group input[type="color"] {
-          width: 48px;
-          padding: 4px;
-          cursor: pointer;
-        }
-
-        .color-input-group input[type="text"] {
-          flex: 1;
         }
 
         .warning-box {
