@@ -178,6 +178,13 @@ export function KnowledgeCategoryPage() {
   // Attachment upload state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingAttachments, setUploadingAttachments] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  // Attachment modals
+  const [previewAttachment, setPreviewAttachment] = useState<{ id: string; name: string; url: string; type: string } | null>(null);
+  const [deleteConfirmAttachment, setDeleteConfirmAttachment] = useState<{ id: string; name: string } | null>(null);
+  const [deletingAttachment, setDeletingAttachment] = useState(false);
 
   // Toast state
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -612,16 +619,49 @@ export function KnowledgeCategoryPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  // Get file icon based on MIME type
+  // Get file type info from MIME type
+  const getFileTypeInfo = (mimeType: string): { type: string; color: string; label: string } => {
+    if (mimeType === 'application/pdf') return { type: 'pdf', color: '#ef4444', label: 'PDF' };
+    if (mimeType.includes('word') || mimeType.includes('document')) return { type: 'word', color: '#3b82f6', label: 'Word' };
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return { type: 'excel', color: '#22c55e', label: 'Excel' };
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return { type: 'powerpoint', color: '#f97316', label: 'PPT' };
+    if (mimeType.startsWith('image/')) return { type: 'image', color: '#8b5cf6', label: 'Image' };
+    if (mimeType === 'text/plain') return { type: 'text', color: '#6b7280', label: 'Text' };
+    if (mimeType.includes('zip') || mimeType.includes('compressed')) return { type: 'archive', color: '#eab308', label: 'ZIP' };
+    return { type: 'file', color: '#9ca3af', label: 'File' };
+  };
+
+  // Get SVG file icon based on MIME type
+  const getFileIconSvg = (mimeType: string) => {
+    const { type, color } = getFileTypeInfo(mimeType);
+    return (
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M14 2V8H20" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        {type === 'pdf' && <path d="M16 18V15H14.5C14.22 15 14 14.78 14 14.5V12.5C14 12.22 14.22 12 14.5 12H16V9.5C16 9.22 15.78 9 15.5 9H13.5C13.22 9 13 9.22 13 9.5V12.5H12.5C12.22 12.5 12 12.72 12 13V14.5C12 14.78 12.22 15 12.5 15H13V18C13 18.28 13.22 18.5 13.5 18.5H15.5C15.78 18.5 16 18.28 16 18Z" fill={color} opacity="0.3"/>}
+        {type === 'word' && <path d="M9 15L9 9L12 9L12 15L9 15ZM9 15L12 15L12 18L9 15ZM12 10L15 10L15 13L12 13L12 10ZM12 14L15 14L15 17L12 17L12 14Z" fill={color} opacity="0.3"/>}
+        {type === 'excel' && <path d="M9 9H15V12H9V9ZM9 13H15V16H9V13ZM9 16H15V19H9V16Z" fill={color} opacity="0.3"/>}
+        {type === 'powerpoint' && <circle cx="12" cy="12" r="4" fill={color} opacity="0.3"/>}
+        {type === 'image' && <path d="M12 15C14.21 15 16 13.21 16 11C16 8.79 14.21 7 12 7C9.79 7 8 8.79 8 11C8 13.21 9.79 15 12 15ZM12 9C13.66 9 15 10.34 15 12C15 13.66 13.66 15 12 15C10.34 15 9 13.66 9 12C9 10.34 10.34 9 12 9ZM19 19H5V5H7V17H19V19Z" fill={color} opacity="0.3"/>}
+        {type === 'text' && <path d="M7 6H17V8H7V6ZM7 10H17V12H7V10ZM7 14H17V16H7V14Z" fill={color} opacity="0.3"/>}
+        {type === 'archive' && <path d="M20 6H12L10 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V18C2 18.5304 2.21071 19.0391 2.58579 19.4142C2.96086 19.7893 3.46957 20 4 20H20C20.5304 20 21.0391 19.7893 21.4142 19.4142C21.7893 19.0391 22 18.5304 22 18V8C22 7.46957 21.7893 6.96086 21.4142 6.58579C21.0391 6.21071 20.5304 6 20 6ZM20 18H4V6H9L11 8H20V18Z" fill={color} opacity="0.3"/>}
+      </svg>
+    );
+  };
+
+  // Legacy function for compatibility
   const getFileIcon = (mimeType: string): string => {
-    if (mimeType.startsWith('image/')) return '🖼️';
-    if (mimeType === 'application/pdf') return '📄';
-    if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📽️';
-    if (mimeType === 'text/plain') return '📃';
-    if (mimeType.includes('zip') || mimeType.includes('compressed')) return '📦';
-    return '📎';
+    const { type } = getFileTypeInfo(mimeType);
+    const icons: Record<string, string> = {
+      pdf: '📄', word: '📝', excel: '📊', powerpoint: '📽️', image: '🖼️', text: '📃', archive: '📦', file: '📎'
+    };
+    return icons[type] || '📎';
+  };
+
+  // Get file extension from filename
+  const getFileExtension = (filename: string): string => {
+    const parts = filename.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '';
   };
 
   // Handle file selection for upload
@@ -634,6 +674,30 @@ export function KnowledgeCategoryPage() {
     e.target.value = '';
   };
 
+  // Handle drag events
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      setSelectedFiles(prev => [...prev, ...fileArray]);
+    }
+  };
+
   // Remove file from selection
   const removeSelectedFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
@@ -644,13 +708,51 @@ export function KnowledgeCategoryPage() {
     if (selectedFiles.length === 0) return true;
 
     setUploadingAttachments(true);
+    setUploadProgress({});
+
+    // Initialize progress for all files
+    const initialProgress: { [key: string]: number } = {};
+    selectedFiles.forEach((_, index) => {
+      initialProgress[`file-${index}`] = 0;
+    });
+    setUploadProgress(initialProgress);
+
     try {
+      // Simulate progress (actual upload doesn't support progress)
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          const newProgress = { ...prev };
+          let allDone = true;
+          Object.keys(newProgress).forEach(key => {
+            if (newProgress[key] < 90) {
+              newProgress[key] = Math.min(90, newProgress[key] + Math.random() * 20);
+            }
+            if (newProgress[key] < 90) allDone = false;
+          });
+          return newProgress;
+        });
+      }, 200);
+
       const response = await knowledgeAttachmentApi.upload(articleId, selectedFiles);
+
+      clearInterval(progressInterval);
+
+      // Complete all progress
+      setUploadProgress(prev => {
+        const finalProgress = { ...prev };
+        Object.keys(finalProgress).forEach(key => {
+          finalProgress[key] = 100;
+        });
+        return finalProgress;
+      });
+
       showToast('success', response.message);
       setSelectedFiles([]);
+      setTimeout(() => setUploadProgress({}), 500);
       return true;
     } catch (err: any) {
       showToast('error', err.response?.data?.message || 'Failed to upload attachments');
+      setUploadProgress({});
       return false;
     } finally {
       setUploadingAttachments(false);
@@ -658,22 +760,26 @@ export function KnowledgeCategoryPage() {
   };
 
   // Delete attachment
-  const deleteAttachment = async (attachmentId: string): Promise<void> => {
-    if (!confirm('Are you sure you want to delete this attachment?')) return;
+  const handleDeleteAttachment = async (): Promise<void> => {
+    if (!deleteConfirmAttachment) return;
 
+    setDeletingAttachment(true);
     try {
-      await knowledgeAttachmentApi.delete(attachmentId);
+      await knowledgeAttachmentApi.delete(deleteConfirmAttachment.id);
       showToast('success', 'Attachment deleted successfully');
 
       // Update viewing article attachments
       if (viewingArticle) {
         setViewingArticle({
           ...viewingArticle,
-          attachments: viewingArticle.attachments?.filter(a => a.id !== attachmentId)
+          attachments: viewingArticle.attachments?.filter(a => a.id !== deleteConfirmAttachment.id)
         });
       }
+      setDeleteConfirmAttachment(null);
     } catch (err: any) {
       showToast('error', err.response?.data?.message || 'Failed to delete attachment');
+    } finally {
+      setDeletingAttachment(false);
     }
   };
 
@@ -686,6 +792,23 @@ export function KnowledgeCategoryPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Preview attachment
+  const previewAttachmentFile = (attachment: Attachment) => {
+    const { type } = getFileTypeInfo(attachment.mimeType);
+    if (['pdf', 'image', 'text'].includes(type) || attachment.mimeType.startsWith('image/')) {
+      const url = knowledgeAttachmentApi.getDownloadUrl(attachment.id);
+      setPreviewAttachment({
+        id: attachment.id,
+        name: attachment.originalFileName,
+        url,
+        type: attachment.mimeType
+      });
+    } else {
+      // For non-previewable files, just download
+      downloadAttachment(attachment.id, attachment.originalFileName);
+    }
   };
 
   return (
@@ -1119,95 +1242,227 @@ export function KnowledgeCategoryPage() {
           </div>
 
           {/* Article Attachments */}
-          {(viewingArticle.attachments && viewingArticle.attachments.length > 0 || canUpdateArticles) && (
-            <div className="article-attachments-section">
-              <h3>Attachments</h3>
-              
-              {viewingArticle.attachments && viewingArticle.attachments.length > 0 && (
-                <div className="attachments-list">
-                  {viewingArticle.attachments.map((attachment) => (
-                    <div key={attachment.id} className="attachment-item">
-                      <span className="attachment-icon">{getFileIcon(attachment.mimeType)}</span>
-                      <div className="attachment-info">
-                        <span className="attachment-name">{attachment.originalFileName}</span>
-                        <span className="attachment-meta">
-                          {formatFileSize(attachment.fileSize)} • Uploaded {formatDate(attachment.uploadedAt)}
+          <div className="article-attachments-section">
+            <div className="attachments-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Attachments
+                {viewingArticle.attachments && viewingArticle.attachments.length > 0 && (
+                  <span className="attachment-count">{viewingArticle.attachments.length}</span>
+                )}
+              </h3>
+            </div>
+
+            {/* Empty State */}
+            {!viewingArticle.attachments?.length && !canUpdateArticles && (
+              <div className="attachments-empty">
+                <div className="empty-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <p className="empty-title">No attachments available</p>
+                <p className="empty-subtitle">Upload files to provide additional resources.</p>
+              </div>
+            )}
+
+            {/* Attachments List */}
+            {viewingArticle.attachments && viewingArticle.attachments.length > 0 && (
+              <div className="attachments-grid" role="list" aria-label="Attachments list">
+                {viewingArticle.attachments.map((attachment) => (
+                  <div key={attachment.id} className="attachment-card" role="listitem">
+                    <div className="attachment-card-icon">
+                      {getFileIconSvg(attachment.mimeType)}
+                    </div>
+                    <div className="attachment-card-content">
+                      <button 
+                        type="button"
+                        className="attachment-card-name"
+                        onClick={() => previewAttachmentFile(attachment)}
+                        aria-label={`Preview ${attachment.originalFileName}`}
+                        title="Click to preview"
+                      >
+                        {attachment.originalFileName}
+                      </button>
+                      <div className="attachment-card-meta">
+                        <span className="file-type-badge" style={{ backgroundColor: getFileTypeInfo(attachment.mimeType).color + '20', color: getFileTypeInfo(attachment.mimeType).color }}>
+                          {getFileTypeInfo(attachment.mimeType).label}
+                        </span>
+                        <span className="file-size">{formatFileSize(attachment.fileSize)}</span>
+                      </div>
+                      <div className="attachment-card-footer">
+                        <span className="upload-info">
+                          Uploaded {formatDate(attachment.uploadedAt)}
+                          {attachment.uploadedBy && ` by ${attachment.uploadedBy}`}
                         </span>
                       </div>
-                      <div className="attachment-actions">
-                        <button 
-                          className="btn-icon" 
-                          onClick={() => downloadAttachment(attachment.id, attachment.originalFileName)}
-                          title="Download"
-                        >
-                          ⬇️
-                        </button>
-                        {(hasPermission('kb:manage') || isSuperAdmin) && (
-                          <button 
-                            className="btn-icon danger" 
-                            onClick={() => deleteAttachment(attachment.id)}
-                            title="Delete"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="attachment-card-actions">
+                      <button 
+                        className="action-btn download-btn"
+                        onClick={() => downloadAttachment(attachment.id, attachment.originalFileName)}
+                        title="Download"
+                        aria-label={`Download ${attachment.originalFileName}`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>Download</span>
+                      </button>
+                      {(hasPermission('kb:manage') || isSuperAdmin) && (
+                        <button 
+                          className="action-btn delete-btn"
+                          onClick={() => setDeleteConfirmAttachment({ id: attachment.id, name: attachment.originalFileName })}
+                          title="Delete"
+                          aria-label={`Delete ${attachment.originalFileName}`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-              {canUpdateArticles && (
-                <div className="attachment-upload-area">
+            {/* Upload Area */}
+            {canUpdateArticles && (
+              <div className="upload-section">
+                {/* Drag & Drop Zone */}
+                <div 
+                  className={`upload-dropzone ${isDraggingOver ? 'dragging' : ''}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Upload attachments. Drag and drop files here or click to browse."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      document.getElementById('attachment-upload-detail')?.click();
+                    }
+                  }}
+                >
                   <input
                     type="file"
                     id="attachment-upload-detail"
                     multiple
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg"
                     onChange={handleFileSelect}
-                    style={{ display: 'none' }}
+                    className="file-input"
+                    aria-hidden="true"
                   />
-                  <label htmlFor="attachment-upload-detail" className="upload-label">
-                    + Add Attachments
-                  </label>
-                  {selectedFiles.length > 0 && (
-                    <div className="selected-files">
-                      {selectedFiles.map((file, index) => (
-                        <div key={index} className="selected-file">
-                          <span>{getFileIcon(file.type)} {file.name}</span>
-                          <button 
-                            type="button" 
-                            className="btn-remove"
-                            onClick={() => removeSelectedFile(index)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                      {uploadingAttachments ? (
-                        <div className="upload-progress">Uploading...</div>
-                      ) : (
+                  <div className="dropzone-content">
+                    <div className="dropzone-icon">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div className="dropzone-text">
+                      <p className="dropzone-primary">
+                        <strong>Drag & Drop</strong> or <span className="browse-link">click to browse</span>
+                      </p>
+                      <p className="dropzone-secondary">
+                        Support: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, PNG, JPG
+                      </p>
+                      <p className="dropzone-limit">Maximum file size: 25 MB</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selected Files */}
+                {selectedFiles.length > 0 && (
+                  <div className="selected-files-list">
+                    <div className="selected-files-header">
+                      <span>Selected files ({selectedFiles.length})</span>
+                      {!uploadingAttachments && (
                         <button 
                           type="button" 
-                          className="btn-upload"
-                          onClick={async () => {
-                            const success = await uploadAttachments(viewingArticle.id);
-                            if (success) {
-                              // Refresh article to get updated attachments
-                              const updatedArticle = await api.get(`/knowledge/articles/${viewingArticle.id}`);
-                              setViewingArticle(updatedArticle.data);
-                            }
-                          }}
+                          className="clear-all-btn"
+                          onClick={() => setSelectedFiles([])}
                         >
-                          Upload Selected Files
+                          Clear all
                         </button>
                       )}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+                    <div className="selected-files-grid">
+                      {selectedFiles.map((file, index) => {
+                        const progress = uploadProgress[`file-${index}`];
+                        const isUploading = progress !== undefined && progress < 100;
+                        const isComplete = progress === 100;
+                        return (
+                          <div key={index} className={`selected-file-card ${isComplete ? 'complete' : ''}`}>
+                            <div className="selected-file-icon">
+                              {getFileIconSvg(file.type)}
+                            </div>
+                            <div className="selected-file-info">
+                              <span className="selected-file-name" title={file.name}>{file.name}</span>
+                              <span className="selected-file-meta">
+                                <span className="file-type-badge-small" style={{ backgroundColor: getFileTypeInfo(file.type).color + '20', color: getFileTypeInfo(file.type).color }}>
+                                  {getFileTypeInfo(file.type).label}
+                                </span>
+                                <span className="file-size-small">{formatFileSize(file.size)}</span>
+                              </span>
+                              {isUploading && (
+                                <div className="progress-bar-container">
+                                  <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                                </div>
+                              )}
+                              {isComplete && <span className="upload-complete">Uploaded</span>}
+                            </div>
+                            {!isUploading && !isComplete && (
+                              <button 
+                                type="button" 
+                                className="remove-file-btn"
+                                onClick={() => removeSelectedFile(index)}
+                                aria-label={`Remove ${file.name}`}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </button>
+                            )}
+                            {isUploading && (
+                              <div className="upload-spinner"></div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {!uploadingAttachments && (
+                      <button 
+                        type="button" 
+                        className="upload-btn"
+                        onClick={async () => {
+                          const success = await uploadAttachments(viewingArticle.id);
+                          if (success) {
+                            const updatedArticle = await api.get(`/knowledge/articles/${viewingArticle.id}`);
+                            setViewingArticle(updatedArticle.data);
+                          }
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Upload {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''}
+                      </button>
+                    )}
+                    {uploadingAttachments && (
+                      <div className="uploading-status">
+                        <div className="spinner"></div>
+                        <span>Uploading...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1412,30 +1667,72 @@ export function KnowledgeCategoryPage() {
 
             {/* Attachment Upload Section */}
             <div className="form-group">
-              <label>Attachments</label>
+              <label>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '6px' }}>
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Attachments
+              </label>
               <div className="form-attachments">
-                <input
-                  type="file"
-                  id="article-attachment-upload"
-                  multiple
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg"
-                  onChange={handleFileSelect}
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="article-attachment-upload" className="upload-label">
-                  + Add Attachments
-                </label>
+                {/* Drop Zone */}
+                <div 
+                  className={`form-dropzone ${isDraggingOver ? 'dragging' : ''}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Upload attachments. Drag and drop files here or click to browse."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      document.getElementById('article-attachment-upload')?.click();
+                    }
+                  }}
+                >
+                  <input
+                    type="file"
+                    id="article-attachment-upload"
+                    multiple
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg"
+                    onChange={handleFileSelect}
+                    className="file-input"
+                    aria-hidden="true"
+                  />
+                  <div className="form-dropzone-content">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Drag & drop files or <span className="browse-link">browse</span></span>
+                    <span className="form-dropzone-limit">Max 25 MB per file</span>
+                  </div>
+                </div>
+
+                {/* Selected Files */}
                 {selectedFiles.length > 0 && (
-                  <div className="selected-files">
+                  <div className="form-selected-files">
                     {selectedFiles.map((file, index) => (
-                      <div key={index} className="selected-file">
-                        <span>{getFileIcon(file.type)} {file.name}</span>
+                      <div key={index} className="form-selected-file">
+                        <div className="form-file-icon">
+                          {getFileIconSvg(file.type)}
+                        </div>
+                        <div className="form-file-info">
+                          <span className="form-file-name">{file.name}</span>
+                          <span className="form-file-meta">
+                            <span className="file-type-badge-small" style={{ backgroundColor: getFileTypeInfo(file.type).color + '20', color: getFileTypeInfo(file.type).color }}>
+                              {getFileTypeInfo(file.type).label}
+                            </span>
+                            <span className="file-size-small">{formatFileSize(file.size)}</span>
+                          </span>
+                        </div>
                         <button 
                           type="button" 
-                          className="btn-remove"
+                          className="form-remove-btn"
                           onClick={() => removeSelectedFile(index)}
+                          aria-label={`Remove ${file.name}`}
                         >
-                          ×
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
                         </button>
                       </div>
                     ))}
@@ -1452,9 +1749,9 @@ export function KnowledgeCategoryPage() {
                 type="button" 
                 className="primary" 
                 onClick={handleSaveArticle}
-                disabled={savingArticle}
+                disabled={savingArticle || uploadingAttachments}
               >
-                {savingArticle ? 'Saving...' : (editingArticle ? 'Update' : 'Save')}
+                {savingArticle ? 'Saving...' : (uploadingAttachments ? 'Uploading...' : (editingArticle ? 'Update' : 'Save'))}
               </button>
             </div>
           </div>
@@ -1497,6 +1794,97 @@ export function KnowledgeCategoryPage() {
                 disabled={deleteArticleConfirmText !== 'DELETE' || deletingArticleInProgress}
               >
                 {deletingArticleInProgress ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attachment Delete Confirmation Modal */}
+      {deleteConfirmAttachment && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="delete-attachment-title">
+          <div className="modal modal-confirm">
+            <div className="modal-confirm-header">
+              <div className="modal-confirm-icon danger">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h3 id="delete-attachment-title">Delete Attachment?</h3>
+            </div>
+            <div className="modal-confirm-body">
+              <p className="modal-confirm-filename">{deleteConfirmAttachment.name}</p>
+              <p className="modal-confirm-warning">This action cannot be undone.</p>
+            </div>
+            <div className="modal-confirm-actions">
+              <button 
+                type="button" 
+                className="secondary"
+                onClick={() => setDeleteConfirmAttachment(null)}
+                disabled={deletingAttachment}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="danger"
+                onClick={handleDeleteAttachment}
+                disabled={deletingAttachment}
+              >
+                {deletingAttachment ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attachment Preview Modal */}
+      {previewAttachment && (
+        <div className="modal-backdrop preview-backdrop" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+          <div className="modal modal-preview">
+            <div className="modal-preview-header">
+              <h3 id="preview-title">{previewAttachment.name}</h3>
+              <button 
+                type="button" 
+                className="close-preview"
+                onClick={() => setPreviewAttachment(null)}
+                aria-label="Close preview"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-preview-content">
+              {previewAttachment.type.startsWith('image/') && (
+                <img src={previewAttachment.url} alt={previewAttachment.name} className="preview-image" />
+              )}
+              {previewAttachment.type === 'application/pdf' && (
+                <iframe src={previewAttachment.url} className="preview-pdf" title={previewAttachment.name} />
+              )}
+              {previewAttachment.type === 'text/plain' && (
+                <iframe src={previewAttachment.url} className="preview-text" title={previewAttachment.name} />
+              )}
+            </div>
+            <div className="modal-preview-footer">
+              <button 
+                type="button" 
+                className="secondary"
+                onClick={() => setPreviewAttachment(null)}
+              >
+                Close
+              </button>
+              <button 
+                type="button" 
+                className="primary"
+                onClick={() => {
+                  downloadAttachment(previewAttachment.id, previewAttachment.name);
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Download
               </button>
             </div>
           </div>
@@ -2694,43 +3082,323 @@ export function KnowledgeCategoryPage() {
             font-weight: 600;
             color: var(--text);
             margin-bottom: 16px;
-          }
-
-          .attachments-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 16px;
-          }
-
-          .attachment-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
+            gap: 8px;
+          }
+
+          .attachment-count {
+            background: var(--brand);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 4px;
+          }
+
+          /* Empty State */
+          .attachments-empty {
+            text-align: center;
+            padding: 48px 24px;
+            background: white;
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+          }
+
+          .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: var(--panel-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+          }
+
+          .empty-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 4px;
+          }
+
+          .empty-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0;
+          }
+
+          /* Attachments Grid */
+          .attachments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+          }
+
+          .attachment-card {
             background: white;
             border: 1px solid var(--line);
-            border-radius: 8px;
-            transition: border-color 0.15s, box-shadow 0.15s;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
           }
 
-          .attachment-item:hover {
+          .attachment-card:hover {
             border-color: var(--brand);
-            box-shadow: 0 2px 8px rgba(84, 104, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(84, 104, 255, 0.1);
+            transform: translateY(-1px);
           }
 
-          .attachment-icon {
-            font-size: 24px;
+          .attachment-card-icon {
+            flex-shrink: 0;
           }
 
-          .attachment-info {
+          .attachment-card-content {
             flex: 1;
             min-width: 0;
           }
 
-          .attachment-name {
+          .attachment-card-name {
             display: block;
             font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            text-align: left;
+            width: 100%;
+          }
+
+          .attachment-card-name:hover {
+            color: var(--brand);
+            text-decoration: underline;
+          }
+
+          .attachment-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+          }
+
+          .file-type-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+          }
+
+          .file-size {
+            font-size: 12px;
+            color: var(--muted);
+          }
+
+          .attachment-card-footer {
+            margin-top: 8px;
+          }
+
+          .upload-info {
+            font-size: 11px;
+            color: var(--muted);
+          }
+
+          .attachment-card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+          }
+
+          .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: none;
+          }
+
+          .action-btn.download-btn {
+            background: var(--brand);
+            color: white;
+          }
+
+          .action-btn.download-btn:hover {
+            background: var(--brand-dark);
+          }
+
+          .action-btn.delete-btn {
+            background: white;
+            color: var(--error);
+            border: 1px solid var(--line);
+          }
+
+          .action-btn.delete-btn:hover {
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
+          }
+
+          /* Upload Section */
+          .upload-section {
+            margin-top: 24px;
+          }
+
+          .upload-dropzone {
+            border: 2px dashed var(--line);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+          }
+
+          .upload-dropzone:hover,
+          .upload-dropzone.dragging {
+            border-color: var(--brand);
+            background: rgba(84, 104, 255, 0.02);
+          }
+
+          .upload-dropzone.dragging {
+            border-style: solid;
+            background: rgba(84, 104, 255, 0.05);
+          }
+
+          .file-input {
+            display: none;
+          }
+
+          .dropzone-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .dropzone-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--panel-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--brand);
+          }
+
+          .dropzone-text {
+            text-align: center;
+          }
+
+          .dropzone-primary {
+            font-size: 14px;
+            color: var(--text);
+            margin: 0 0 4px;
+          }
+
+          .browse-link {
+            color: var(--brand);
+            cursor: pointer;
+          }
+
+          .browse-link:hover {
+            text-decoration: underline;
+          }
+
+          .dropzone-secondary {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0;
+          }
+
+          .dropzone-limit {
+            font-size: 11px;
+            color: var(--muted);
+            margin: 4px 0 0;
+          }
+
+          /* Selected Files */
+          .selected-files-list {
+            margin-top: 16px;
+          }
+
+          .selected-files-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+          }
+
+          .clear-all-btn {
+            background: none;
+            border: none;
+            color: var(--brand);
+            font-size: 12px;
+            cursor: pointer;
+          }
+
+          .clear-all-btn:hover {
+            text-decoration: underline;
+          }
+
+          .selected-files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+          }
+
+          .selected-file-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            transition: all 0.15s;
+          }
+
+          .selected-file-card:hover {
+            border-color: var(--brand);
+          }
+
+          .selected-file-card.complete {
+            background: rgba(34, 197, 94, 0.05);
+            border-color: rgba(34, 197, 94, 0.3);
+          }
+
+          .selected-file-icon {
+            flex-shrink: 0;
+          }
+
+          .selected-file-info {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .selected-file-name {
+            display: block;
+            font-size: 13px;
             font-weight: 500;
             color: var(--text);
             white-space: nowrap;
@@ -2738,113 +3406,86 @@ export function KnowledgeCategoryPage() {
             text-overflow: ellipsis;
           }
 
-          .attachment-meta {
-            display: block;
-            font-size: 12px;
-            color: var(--muted);
-            margin-top: 2px;
-          }
-
-          .attachment-actions {
+          .selected-file-meta {
             display: flex;
-            gap: 8px;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
           }
 
-          .btn-icon {
-            width: 36px;
-            height: 36px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: white;
+          .file-type-badge-small {
+            font-size: 9px;
+            font-weight: 600;
+            padding: 1px 4px;
+            border-radius: 3px;
+            text-transform: uppercase;
+          }
+
+          .file-size-small {
+            font-size: 11px;
+            color: var(--muted);
+          }
+
+          .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: var(--panel-soft);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+          }
+
+          .progress-bar {
+            height: 100%;
+            background: var(--brand);
+            border-radius: 2px;
+            transition: width 0.2s;
+          }
+
+          .upload-complete {
+            display: inline-block;
+            font-size: 11px;
+            color: #22c55e;
+            font-weight: 500;
+            margin-top: 4px;
+          }
+
+          .remove-file-btn {
+            background: none;
+            border: none;
+            padding: 4px;
             cursor: pointer;
-            font-size: 16px;
+            color: var(--muted);
+            border-radius: 4px;
+            transition: all 0.15s;
+          }
+
+          .remove-file-btn:hover {
+            color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+          }
+
+          .upload-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--line);
+            border-top-color: var(--brand);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+
+          .upload-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s;
-          }
-
-          .btn-icon:hover {
-            background: var(--brand);
-            border-color: var(--brand);
-          }
-
-          .btn-icon.danger:hover {
-            background: var(--error);
-            border-color: var(--error);
-          }
-
-          /* Attachment Upload Area */
-          .attachment-upload-area {
-            margin-top: 16px;
-          }
-
-          .upload-label {
-            display: inline-block;
-            padding: 10px 20px;
-            background: white;
-            border: 2px dashed var(--line);
-            border-radius: 8px;
-            color: var(--brand);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s;
-          }
-
-          .upload-label:hover {
-            border-color: var(--brand);
-            background: var(--panel-soft);
-          }
-
-          .selected-files {
-            margin-top: 12px;
-            padding: 12px;
-            background: white;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-          }
-
-          .selected-file {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px;
-            background: var(--panel-soft);
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 13px;
-          }
-
-          .selected-file:last-of-type {
-            margin-bottom: 0;
-          }
-
-          .selected-file span {
-            display: flex;
-            align-items: center;
             gap: 8px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          .btn-remove {
-            background: none;
-            border: none;
-            font-size: 18px;
-            color: var(--muted);
-            cursor: pointer;
-            padding: 0 4px;
-          }
-
-          .btn-remove:hover {
-            color: var(--error);
-          }
-
-          .btn-upload {
-            margin-top: 12px;
-            padding: 10px 20px;
+            width: 100%;
+            margin-top: 16px;
+            padding: 12px;
             background: var(--brand);
             color: white;
             border: none;
@@ -2855,18 +3496,30 @@ export function KnowledgeCategoryPage() {
             transition: background 0.15s;
           }
 
-          .btn-upload:hover {
+          .upload-btn:hover {
             background: var(--brand-dark);
           }
 
-          .upload-progress {
-            margin-top: 12px;
+          .uploading-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
             padding: 12px;
             background: var(--panel-soft);
             border-radius: 8px;
-            text-align: center;
-            color: var(--brand);
             font-size: 14px;
+            color: var(--brand);
+          }
+
+          .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--line);
+            border-top-color: var(--brand);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
           }
 
           /* Form Attachments */
@@ -2874,37 +3527,234 @@ export function KnowledgeCategoryPage() {
             margin-top: 8px;
           }
 
-          .form-attachments .upload-label {
-            display: inline-block;
-            padding: 8px 16px;
-            background: white;
+          .form-dropzone {
             border: 2px dashed var(--line);
-            border-radius: 6px;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--panel-soft);
+          }
+
+          .form-dropzone:hover,
+          .form-dropzone.dragging {
+            border-color: var(--brand);
+            background: rgba(84, 104, 255, 0.05);
+          }
+
+          .form-dropzone-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+          }
+
+          .form-dropzone-content svg {
             color: var(--brand);
+          }
+
+          .form-dropzone-limit {
+            font-size: 11px;
+            color: var(--muted);
+          }
+
+          .form-selected-files {
+            margin-top: 12px;
+          }
+
+          .form-selected-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            margin-bottom: 8px;
+          }
+
+          .form-file-icon {
+            flex-shrink: 0;
+          }
+
+          .form-file-info {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .form-file-name {
+            display: block;
             font-size: 13px;
             font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .form-file-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+          }
+
+          .form-remove-btn {
+            background: none;
+            border: none;
+            padding: 4px;
             cursor: pointer;
+            color: var(--muted);
+            border-radius: 4px;
             transition: all 0.15s;
           }
 
-          .form-attachments .upload-label:hover {
-            border-color: var(--brand);
-            background: var(--panel-soft);
+          .form-remove-btn:hover {
+            color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
           }
 
-          .form-attachments .selected-files {
-            margin-top: 8px;
+          /* Modal Confirm */
+          .modal-confirm {
+            max-width: 400px;
+            text-align: center;
           }
 
-          .form-attachments .selected-file {
+          .modal-confirm-header {
+            margin-bottom: 16px;
+          }
+
+          .modal-confirm-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
+            justify-content: center;
+          }
+
+          .modal-confirm-icon.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+          }
+
+          .modal-confirm-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+          }
+
+          .modal-confirm-body {
+            margin-bottom: 24px;
+          }
+
+          .modal-confirm-filename {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin: 0 0 8px;
+            word-break: break-all;
+          }
+
+          .modal-confirm-warning {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0;
+          }
+
+          .modal-confirm-actions {
+            display: flex;
+            gap: 12px;
+          }
+
+          .modal-confirm-actions button {
+            flex: 1;
+          }
+
+          /* Preview Modal */
+          .preview-backdrop {
+            background: rgba(0, 0, 0, 0.8);
+          }
+
+          .modal-preview {
+            width: 90%;
+            max-width: 1000px;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+          }
+
+          .modal-preview-header {
+            display: flex;
             justify-content: space-between;
-            padding: 6px 10px;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+          }
+
+          .modal-preview-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .close-preview {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            color: var(--muted);
+            border-radius: 6px;
+            transition: all 0.15s;
+          }
+
+          .close-preview:hover {
             background: var(--panel-soft);
-            border-radius: 4px;
-            margin-bottom: 6px;
-            font-size: 12px;
+            color: var(--text);
+          }
+
+          .modal-preview-content {
+            flex: 1;
+            overflow: auto;
+            background: var(--panel-soft);
+          }
+
+          .preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          }
+
+          .preview-pdf,
+          .preview-text {
+            width: 100%;
+            height: 100%;
+            border: none;
+          }
+
+          .modal-preview-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--line);
+            background: white;
+          }
+
+          .modal-preview-footer button {
+            display: flex;
+            align-items: center;
+            gap: 6px;
           }
         }
       `}</style>
