@@ -69,10 +69,11 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createIncident({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateIncident(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 4: Problems Module - Granular Permissions
   problems: {
-    permission: 'incidents:read',
-    writePermission: 'incidents:write',
-    deletePermission: 'problems:manage',
+    permission: 'problems:view',
+    writePermission: 'problems:update',
+    deletePermission: 'problems:delete',
     viewPermission: 'problems:view',
     createPermission: 'problems:create',
     managePermission: 'problems:manage',
@@ -82,10 +83,11 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createProblem({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateProblem(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 4: Changes Module - Granular Permissions
   changes: {
-    permission: 'changes:read',
-    writePermission: 'changes:approve',
-    deletePermission: 'changes:manage',
+    permission: 'changes:view',
+    writePermission: 'changes:update',
+    deletePermission: 'changes:delete',
     viewPermission: 'changes:view',
     createPermission: 'changes:create',
     managePermission: 'changes:manage',
@@ -95,12 +97,13 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createChangeRequest({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateChangeRequest(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 4: Inventory Module - Granular Permissions
   inventory: {
-    permission: 'inventory:read',
-    writePermission: 'inventory:write',
-    deletePermission: 'inventory:manage',
+    permission: 'inventory:view',
+    writePermission: 'inventory:update_asset',
+    deletePermission: 'inventory:delete_asset',
     viewPermission: 'inventory:view',
-    createPermission: 'inventory:create',
+    createPermission: 'inventory:create_asset',
     managePermission: 'inventory:manage',
     exportPermission: 'inventory:export',
     entityType: 'Asset',
@@ -108,10 +111,11 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createAsset({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateAsset(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 4: Access Management Module - Granular Permissions
   'access-management': {
-    permission: 'access:read',
-    writePermission: 'access:approve',
-    deletePermission: 'access:manage',
+    permission: 'access:view',
+    writePermission: 'access:update',
+    deletePermission: 'access:delete',
     viewPermission: 'access:view',
     createPermission: 'access:request',
     managePermission: 'access:approve',
@@ -123,9 +127,9 @@ const moduleMap: Record<string, ModuleConfig> = {
   },
   // NOTE: 'compliance' module uses dedicated routes at /api/compliance for PDF document management
   'projects-environments': {
-    permission: 'dashboard:read',
-    writePermission: 'settings:write',
-    deletePermission: 'projects:manage',
+    permission: 'projects:view',
+    writePermission: 'projects:update',
+    deletePermission: 'projects:delete',
     viewPermission: 'projects:view',
     createPermission: 'projects:create',
     managePermission: 'projects:manage',
@@ -163,9 +167,9 @@ const moduleMap: Record<string, ModuleConfig> = {
     update: async (id, payload, actor, ip) => updateProjectEnvironment(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'vendors-licenses': {
-    permission: 'dashboard:read',
-    writePermission: 'settings:write',
-    deletePermission: 'vendors:manage',
+    permission: 'vendors:view',
+    writePermission: 'vendors:update',
+    deletePermission: 'vendors:delete',
     viewPermission: 'vendors:view',
     createPermission: 'vendors:create',
     managePermission: 'vendors:manage',
@@ -176,9 +180,9 @@ const moduleMap: Record<string, ModuleConfig> = {
     update: async (id, payload, actor, ip) => updateVendorLicense(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'knowledge-base': {
-    permission: 'dashboard:read',
-    writePermission: 'settings:write',
-    deletePermission: 'kb:manage',
+    permission: 'kb:view',
+    writePermission: 'kb:update',
+    deletePermission: 'kb:delete',
     viewPermission: 'kb:view',
     createPermission: 'kb:create',
     managePermission: 'kb:manage',
@@ -189,8 +193,8 @@ const moduleMap: Record<string, ModuleConfig> = {
     update: async (id, payload, actor, ip) => updateKnowledgeBaseArticle(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   'users-teams': {
-    permission: 'users:read',
-    writePermission: 'users:write',
+    permission: 'users:view',
+    writePermission: 'users:update',
     deletePermission: 'users:delete',
     viewPermission: 'users:view',
     createPermission: 'users:create',

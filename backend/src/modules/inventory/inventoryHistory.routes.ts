@@ -6,9 +6,9 @@ import { HttpError } from '../../common/httpError.js';
 
 export const inventoryHistoryRouter = Router();
 
-// Permission constants
-const SUPER_ADMIN_PERMISSION = 'inventory:manage';
-const ADMIN_VIEW_PERMISSION = 'inventory:view';
+// Permission constants - PART 4: Using granular permissions
+const VIEW_PERMISSION = 'inventory:view';
+const VIEW_HISTORY_PERMISSION = 'inventory:view_history';
 
 // Helper to check if user is Super Admin
 function isSuperAdmin(user: Express.Request['user']): boolean {
@@ -28,7 +28,7 @@ function isAdmin(user: Express.Request['user']): boolean {
 inventoryHistoryRouter.get('/inventory-master/:itemId/history', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const { itemId } = req.params;
@@ -110,7 +110,7 @@ const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 inventoryHistoryRouter.get('/inventory-master/:itemId/documents', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const { itemId } = req.params;

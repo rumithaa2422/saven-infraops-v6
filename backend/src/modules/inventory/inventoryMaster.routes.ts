@@ -5,9 +5,11 @@ import { prisma } from '../../common/prisma.js';
 
 export const inventoryMasterRouter = Router();
 
-// Permission constants
-const SUPER_ADMIN_PERMISSION = 'inventory:manage';
-const ADMIN_VIEW_PERMISSION = 'inventory:view';
+// Permission constants - PART 4: Using granular permissions
+const VIEW_PERMISSION = 'inventory:view';
+const CREATE_PERMISSION = 'inventory:create_asset';
+const UPDATE_PERMISSION = 'inventory:update_asset';
+const DELETE_PERMISSION = 'inventory:delete_asset';
 
 // Helper to check if user is Super Admin
 function isSuperAdmin(user: Express.Request['user']): boolean {
@@ -34,7 +36,7 @@ async function generateItemNo(): Promise<string> {
 inventoryMasterRouter.get('/', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const search = req.query.search as string | undefined;
@@ -106,7 +108,7 @@ inventoryMasterRouter.get('/', requireAuth, async (req, res, next) => {
 inventoryMasterRouter.get('/:id', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const id = req.params.id as string;
@@ -623,7 +625,7 @@ inventoryMasterRouter.delete('/:id', requireAuth, async (req, res, next) => {
 inventoryMasterRouter.get('/categories/list', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const categories = await prisma.inventoryCategory.findMany({

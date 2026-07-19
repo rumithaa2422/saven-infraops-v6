@@ -2,6 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { PermissionGate } from '../components/permissions';
+
+/**
+ * PART 4: Inventory Detail Permission Enforcement
+ * 
+ * This module now enforces granular permissions:
+ * - inventory:view - View inventory details
+ * - inventory:assign - Assign inventory
+ * - inventory:return - Return inventory
+ * - inventory:upload_document - Upload documents
+ * - inventory:download_document - Download documents
+ */
 
 type HistoryEntry = {
   id: string;
@@ -59,10 +71,17 @@ type InventoryItem = {
 export function InventoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { hasPermission, user } = useAuth();
+  
+  // PART 4: Permission checks using granular permissions
+  const canView = hasPermission('inventory:view');
+  const canAssign = hasPermission('inventory:assign');
+  const canReturn = hasPermission('inventory:return');
+  const canUploadDocument = hasPermission('inventory:upload_document');
+  const canDownloadDocument = hasPermission('inventory:download_document');
+  
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
-  const isEmployee = !isSuperAdmin && !isAdmin;
 
   const [item, setItem] = useState<InventoryItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,10 +96,20 @@ export function InventoryDetailPage() {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loadingAssignment, setLoadingAssignment] = useState(false);
 
+  // PART 4: Check access permissions
   useEffect(() => {
-    loadItem();
-    loadAssignment();
-  }, [id]);
+    if (!canView) {
+      setError('Access Restricted. You do not have permission to access this page.');
+      setLoading(false);
+    }
+  }, [canView]);
+
+  useEffect(() => {
+    if (canView) {
+      loadItem();
+      loadAssignment();
+    }
+  }, [id, canView]);
 
   async function loadItem() {
     if (!id) return;
@@ -319,7 +348,7 @@ export function InventoryDetailPage() {
     return 'default';
   }
 
-  if (isEmployee) {
+  if (!canView) {
     return (
       <div className="detail-page">
         <div className="detail-error">

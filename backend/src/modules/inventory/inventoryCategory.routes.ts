@@ -4,11 +4,24 @@ import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
 
+/**
+ * PART 4: Inventory Category Permission Enforcement
+ * 
+ * Permissions:
+ * - inventory:view - View categories
+ * - inventory:view_categories - View category details
+ * - inventory:create_category - Create categories
+ * - inventory:update_category - Update categories
+ * - inventory:delete_category - Delete categories
+ */
+
 export const inventoryCategoryRouter = Router();
 
-// Permission constants
-const SUPER_ADMIN_PERMISSION = 'inventory:manage';
-const ADMIN_VIEW_PERMISSION = 'inventory:view';
+// Permission constants - PART 4: Using granular permissions
+const VIEW_PERMISSION = 'inventory:view';
+const CREATE_PERMISSION = 'inventory:create_category';
+const UPDATE_PERMISSION = 'inventory:update_category';
+const DELETE_PERMISSION = 'inventory:delete_category';
 
 // Helper to check if user is Super Admin
 function isSuperAdmin(user: Express.Request['user']): boolean {
@@ -21,14 +34,14 @@ function isAdmin(user: Express.Request['user']): boolean {
 }
 
 // ============================================
-// Category Routes
+// Category Routes - PART 4: Permission Protected
 // ============================================
 
 // GET /categories - List all categories with subcategories
 inventoryCategoryRouter.get('/categories', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const search = req.query.search as string | undefined;
@@ -82,11 +95,11 @@ inventoryCategoryRouter.get('/categories', requireAuth, async (req, res, next) =
 inventoryCategoryRouter.get('/categories/:id', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const category = await prisma.inventoryCategory.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         subcategories: {
           orderBy: { name: 'asc' }
@@ -104,12 +117,12 @@ inventoryCategoryRouter.get('/categories/:id', requireAuth, async (req, res, nex
   }
 });
 
-// POST /categories - Create new category (Super Admin only)
+// POST /categories - Create new category (PART 4: inventory:create_category)
 inventoryCategoryRouter.post('/categories', requireAuth, async (req, res, next) => {
   try {
-    if (!isSuperAdmin(req.user)) {
-      throw new HttpError(403, 'Only Super Admin can create categories');
-    }
+    await new Promise<void>((resolve, reject) =>
+      requirePermission(CREATE_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+    );
 
     const { name, description, status } = req.body;
 
@@ -143,12 +156,12 @@ inventoryCategoryRouter.post('/categories', requireAuth, async (req, res, next) 
   }
 });
 
-// PATCH /categories/:id - Update category (Super Admin only)
+// PATCH /categories/:id - Update category (PART 4: inventory:update_category)
 inventoryCategoryRouter.patch('/categories/:id', requireAuth, async (req, res, next) => {
   try {
-    if (!isSuperAdmin(req.user)) {
-      throw new HttpError(403, 'Only Super Admin can update categories');
-    }
+    await new Promise<void>((resolve, reject) =>
+      requirePermission(UPDATE_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+    );
 
     const { name, description, status } = req.body;
     const { id } = req.params;

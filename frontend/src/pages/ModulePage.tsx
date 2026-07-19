@@ -91,6 +91,7 @@ const configs: Record<string, ModuleConfig> = {
     permissions: { create: 'incidents:create', write: 'incidents:manage', delete: 'incidents:manage', export: 'incidents:export', import: 'settings:write' },
     moduleType: 'incidents'
   },
+  // PART 4: Problems Module - Granular Permissions
   problems: {
     referenceKey: 'problemNo',
     titleKey: 'title',
@@ -111,9 +112,16 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'problems:create', write: 'problems:manage', delete: 'problems:manage', export: 'problems:export', import: 'settings:write' },
+    permissions: { 
+      view: 'problems:view',
+      create: 'problems:create', 
+      write: 'problems:update', 
+      delete: 'problems:delete', 
+      export: 'problems:export' 
+    },
     moduleType: 'problems'
   },
+  // PART 4: Changes Module - Granular Permissions
   changes: {
     referenceKey: 'changeNo',
     titleKey: 'title',
@@ -136,7 +144,13 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'rollbackPlan', label: 'Rollback Plan' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'changes:create', write: 'changes:approve', delete: 'changes:manage', export: 'changes:export', import: 'settings:write' },
+    permissions: { 
+      view: 'changes:view',
+      create: 'changes:create', 
+      write: 'changes:update', 
+      delete: 'changes:delete', 
+      export: 'changes:export' 
+    },
     moduleType: 'change-requests'
   },
   inventory: {
@@ -146,10 +160,17 @@ const configs: Record<string, ModuleConfig> = {
     dateKey: 'createdAt',
     fields: [],
     columns: [],
-    permissions: { view: 'inventory:view', create: 'inventory:manage', write: 'inventory:manage', delete: 'inventory:manage', export: 'inventory:export' },
+    permissions: { 
+      view: 'inventory:view', 
+      create: 'inventory:create_asset', 
+      write: 'inventory:update_asset', 
+      delete: 'inventory:delete_asset', 
+      export: 'inventory:export' 
+    },
     moduleType: 'inventory',
     isCategoryManagement: true
   },
+  // PART 4: Access Management Module - Granular Permissions
   'access-management': {
     referenceKey: 'requestNo',
     titleKey: 'systemName',
@@ -172,7 +193,13 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'justification', label: 'Justification' },
       { key: 'status', label: 'Status' }
     ],
-    permissions: { create: 'access:request', write: 'access:approve', delete: 'access:manage', export: 'access:export' }
+    permissions: { 
+      view: 'access:view',
+      create: 'access:request', 
+      write: 'access:update', 
+      delete: 'access:delete', 
+      export: 'access:export' 
+    }
   },
   compliance: {
     referenceKey: 'id',

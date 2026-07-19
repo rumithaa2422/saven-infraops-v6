@@ -1,19 +1,35 @@
 import { Router, Response } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
+import { requirePermission } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
+
+/**
+ * PART 4: Inventory Assignment Permission Enforcement
+ * Permissions:
+ * - inventory:assign - Assign inventory to users/projects
+ * - inventory:return - Return inventory
+ * - inventory:transfer - Transfer inventory
+ */
 
 export const inventoryAssignmentRouter = Router();
 
 // Non-assignable statuses
 const NON_ASSIGNABLE_STATUSES = ['UNDER_REPAIR', 'RETIRED', 'LOST', 'DAMAGED'];
 
+// Permission constants - PART 4
+const ASSIGN_PERMISSION = 'inventory:assign';
+
 // ============================================
-// Inventory Assignment Routes
+// Inventory Assignment Routes - PART 4: Permission Protected
 // ============================================
 
-// POST /inventory-assignments - Create new assignment
+// POST /inventory-assignments - Create new assignment (PART 4: inventory:assign)
 inventoryAssignmentRouter.post('/', requireAuth, async (req, res, next) => {
   try {
+    await new Promise<void>((resolve, reject) =>
+      requirePermission(ASSIGN_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+    );
+
     const { inventoryId, userId, projectId, remarks } = req.body;
     const user = req.user!;
 

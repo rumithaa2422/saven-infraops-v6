@@ -2,7 +2,19 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { PermissionGate } from '../components/permissions';
 import * as XLSX from 'xlsx';
+
+/**
+ * PART 4: Inventory Category Permission Enforcement
+ * 
+ * This module now enforces granular permissions:
+ * - inventory:view - View inventory categories
+ * - inventory:create_category - Create categories
+ * - inventory:update_category - Update categories
+ * - inventory:delete_category - Delete categories
+ * - inventory:export - Export inventory data
+ */
 
 type Subcategory = {
   id: string;
@@ -66,10 +78,17 @@ type FilterState = {
 export function InventoryCategoryPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { hasPermission, user } = useAuth();
+  
+  // PART 4: Permission checks using granular permissions
+  const canView = hasPermission('inventory:view');
+  const canCreateCategory = hasPermission('inventory:create_category');
+  const canUpdateCategory = hasPermission('inventory:update_category');
+  const canDeleteCategory = hasPermission('inventory:delete_category');
+  const canExport = hasPermission('inventory:export');
+  
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
-  const isEmployee = !isSuperAdmin && !isAdmin;
 
   const [category, setCategory] = useState<Category | null>(null);
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -169,13 +188,13 @@ export function InventoryCategoryPage() {
   }
 
   useEffect(() => {
-    if (isEmployee) {
+    if (!canView) {
       setError('Access Restricted. You do not have permission to view this page.');
       setLoading(false);
       return;
     }
     loadData();
-  }, [categoryId, isEmployee]);
+  }, [categoryId, !canView]);
 
   // Filtered and sorted items
   const filteredItems = useMemo(() => {
@@ -1013,7 +1032,7 @@ export function InventoryCategoryPage() {
     }
   }
 
-  if (isEmployee) {
+  if (!canView) {
     return (
       <div className="page-stack">
         <div className="detail-error">

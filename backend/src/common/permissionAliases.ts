@@ -112,34 +112,74 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
 
   // ============================================
-  // PROBLEMS MODULE
+  // PROBLEMS MODULE - PART 4: Granular Permissions
   // ============================================
   ['problems:manage', new Set([
     'problems:view',
     'problems:create',
     'problems:update',
+    'problems:delete',
     'problems:update_status',
+    'problems:resolve',
+    'problems:close',
+    'problems:reopen',
+    'problems:assign',
+    'problems:update_rca',
     'problems:link_incident',
+    'problems:comment',
+    'problems:upload_attachment',
+    'problems:download_attachment',
     'problems:export',
+  ])],
+  ['problems:update', new Set([
+    'problems:update',
+    'problems:update_status',
+    'problems:resolve',
+    'problems:close',
+    'problems:reopen',
+    'problems:assign',
+    'problems:update_rca',
+    'problems:comment',
+    'problems:upload_attachment',
   ])],
 
   // ============================================
-  // CHANGES MODULE
+  // CHANGES MODULE - PART 4: Granular Permissions
   // ============================================
   ['changes:manage', new Set([
     'changes:view',
     'changes:create',
     'changes:update',
+    'changes:delete',
     'changes:update_status',
+    'changes:submit',
     'changes:approve',
     'changes:reject',
+    'changes:schedule',
     'changes:implement',
     'changes:close',
+    'changes:reopen',
+    'changes:update_rollback',
+    'changes:assign',
+    'changes:upload_attachment',
+    'changes:download_attachment',
     'changes:export',
+  ])],
+  ['changes:update', new Set([
+    'changes:update',
+    'changes:update_status',
+    'changes:schedule',
+    'changes:implement',
+    'changes:close',
+    'changes:reopen',
+    'changes:update_rollback',
+    'changes:assign',
+    'changes:upload_attachment',
   ])],
   ['changes:approve', new Set([
     'changes:approve',
     'changes:reject',
+    'changes:close',
   ])],
   ['changes:read', new Set([
     'changes:view',
@@ -147,7 +187,7 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
 
   // ============================================
-  // INVENTORY MODULE
+  // INVENTORY MODULE - PART 4: Granular Permissions
   // ============================================
   ['inventory:manage', new Set([
     'inventory:view',
@@ -162,9 +202,12 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'inventory:create_asset',
     'inventory:update_asset',
     'inventory:delete_asset',
-    'inventory:assign_user',
-    'inventory:assign_project',
-    'inventory:unassign',
+    'inventory:assign',
+    'inventory:return',
+    'inventory:transfer',
+    'inventory:update_status',
+    'inventory:upload_document',
+    'inventory:download_document',
     'inventory:export',
   ])],
   ['inventory:write', new Set([
@@ -172,9 +215,11 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'inventory:update_category',
     'inventory:create_asset',
     'inventory:update_asset',
-    'inventory:assign_user',
-    'inventory:assign_project',
-    'inventory:unassign',
+    'inventory:assign',
+    'inventory:return',
+    'inventory:transfer',
+    'inventory:update_status',
+    'inventory:upload_document',
   ])],
   ['inventory:read', new Set([
     'inventory:view',
@@ -182,6 +227,7 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'inventory:view_items',
     'inventory:view_details',
     'inventory:view_history',
+    'inventory:download_document',
     'inventory:export',
   ])],
   ['inventory:delete', new Set([
@@ -190,13 +236,31 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
 
   // ============================================
-  // ACCESS MANAGEMENT MODULE
+  // ACCESS MANAGEMENT MODULE - PART 4: Granular Permissions
   // ============================================
+  ['access:manage', new Set([
+    'access:view',
+    'access:view_user',
+    'access:view_project',
+    'access:view_own',
+    'access:request',
+    'access:edit',
+    'access:delete',
+    'access:approve',
+    'access:reject',
+    'access:provision',
+    'access:revoke',
+    'access:extend',
+    'access:update_status',
+    'access:export',
+  ])],
   ['access:approve', new Set([
     'access:approve',
     'access:reject',
     'access:provision',
     'access:revoke',
+    'access:extend',
+    'access:update_status',
   ])],
   ['access:read', new Set([
     'access:view',

@@ -2,6 +2,18 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { PermissionGate } from '../components/permissions';
+
+/**
+ * PART 4: Inventory Master Permission Enforcement
+ * 
+ * This module now enforces granular permissions:
+ * - inventory:view - View inventory items
+ * - inventory:create_asset - Create new inventory assets
+ * - inventory:update_asset - Update inventory assets
+ * - inventory:delete_asset - Delete inventory assets
+ * - inventory:export - Export inventory data
+ */
 
 type Category = {
   id: string;
@@ -58,9 +70,16 @@ export function InventoryMasterPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { hasPermission, user } = useAuth();
+  
+  // PART 4: Permission checks using granular permissions
+  const canView = hasPermission('inventory:view');
+  const canCreate = hasPermission('inventory:create_asset');
+  const canUpdate = hasPermission('inventory:update_asset');
+  const canDelete = hasPermission('inventory:delete_asset');
+  const canExport = hasPermission('inventory:export');
+  
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
-  const isEmployee = !isSuperAdmin && !isAdmin;
   const isEditMode = Boolean(id);
 
   const [loading, setLoading] = useState(true);
@@ -103,13 +122,13 @@ export function InventoryMasterPage() {
 
   const [errors, setErrors] = useState<ValidationErrors>({});
 
-  // Check access permissions
+  // Check access permissions - PART 4: Use permission instead of role
   useEffect(() => {
-    if (isEmployee) {
+    if (!canView) {
       setError('Access Restricted. You do not have permission to access this page.');
       setLoading(false);
     }
-  }, [isEmployee]);
+  }, [canView]);
 
   // Load categories for dropdowns
   async function loadCategories() {
