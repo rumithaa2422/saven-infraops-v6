@@ -31,6 +31,7 @@ import { UsersImportExportPage } from '../pages/UsersImportExportPage';
 import { DocumentRepositoryPage } from '../pages/DocumentRepositoryPage';
 import { VendorDirectoryPage } from '../pages/VendorDirectoryPage';
 import { VendorDetailsPage } from '../pages/VendorDetailsPage';
+import { KnowledgeCategoryPage } from '../pages/KnowledgeCategoryPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -318,6 +319,14 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['knowledge-base']}>
               <ModulePage moduleKey="knowledge-base" title="Knowledge Base" />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="knowledge-categories" 
+          element={
+            <PermissionRoute permission={modulePermissions['knowledge-base']}>
+              <KnowledgeCategoryPage />
             </PermissionRoute>
           } 
         />

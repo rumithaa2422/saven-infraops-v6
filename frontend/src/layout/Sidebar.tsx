@@ -16,6 +16,7 @@ const menuPermissionMap: Record<string, string> = {
   '/vendors-licenses': 'vendors:view',       // NEW: Separated from settings namespace
   '/reports-analytics': 'reports:view',       // NEW: Separated from dashboard namespace
   '/knowledge-base': 'kb:view',               // NEW: Separated from dashboard namespace
+  '/knowledge-categories': 'kb:view',         // Knowledge Categories - uses KB view permission
   '/users-teams': 'users:view',
   '/roles-permissions': 'roles:view',           // NEW: Separated from users namespace
   '/settings': 'settings:view'
@@ -34,6 +35,7 @@ const allMenuItems = [
   { label: 'Vendors & Licenses', path: '/vendors-licenses', icon: 'VL' },
   { label: 'Reports & Analytics', path: '/reports-analytics', icon: 'RA' },
   { label: 'Knowledge Base', path: '/knowledge-base', icon: 'KB' },
+  { label: 'Knowledge Categories', path: '/knowledge-categories', icon: 'KC', indent: true },
   { label: 'Users & Teams', path: '/users-teams', icon: 'UT' },
   { label: 'Roles & Permissions', path: '/roles-permissions', icon: 'RP' },
   { label: 'Settings', path: '/settings', icon: '⚙' }
@@ -66,7 +68,7 @@ export function Sidebar() {
             key={item.path}
             to={item.path}
             title={item.label}
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''} ${item.indent ? 'nav-item-indent' : ''}`}
           >
             <span className="nav-icon">{item.icon}</span>
             <span>{item.label}</span>
