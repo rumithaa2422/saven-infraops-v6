@@ -31,13 +31,6 @@ function getStringParam(value: string | string[] | undefined): string | undefine
   return value;
 }
 
-// Helper to check if user is admin
-function isUserAdmin(user: any): boolean {
-  if (!user) return false;
-  const roles = user.roles || [];
-  return roles.includes('SUPER_ADMIN') || roles.includes('ADMIN');
-}
-
 // ============================================================
 // GET /api/knowledge/articles
 // List all articles with filtering and pagination
@@ -56,7 +49,6 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
     );
 
     const categoryId = getStringParam(req.query.categoryId as string | string[]);
-    const status = getStringParam(req.query.status as string | string[]);
     const search = getStringParam(req.query.search as string | string[]);
     const page = getStringParam(req.query.page as string | string[]) || '1';
     const limit = getStringParam(req.query.limit as string | string[]) || '50';
@@ -70,26 +62,9 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
     // Build where clause
     const where: any = {};
     
+    // Filter by category if specified
     if (categoryId) {
       where.categoryId = categoryId;
-    }
-    
-    // Status filter
-    if (status && status !== 'ALL') {
-      where.status = status;
-    }
-
-    // For regular users, only show published articles
-    // Admins and Super Admins see all articles (DRAFT, PUBLISHED, ARCHIVED)
-    const user = req.user;
-    const isAdmin = isUserAdmin(user);
-    if (!isAdmin && !status) {
-      // Regular users without status filter only see published
-      where.status = 'PUBLISHED';
-    }
-    // If regular user specifies a status filter, only PUBLISHED is allowed
-    if (!isAdmin && status && status !== 'PUBLISHED') {
-      where.status = 'PUBLISHED'; // Force to published
     }
 
     // Search filter
@@ -104,7 +79,7 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
     }
 
     // Build orderBy
-    const validSortFields = ['createdAt', 'updatedAt', 'title', 'status', 'viewCount', 'authorName'];
+    const validSortFields = ['createdAt', 'updatedAt', 'title', 'viewCount', 'authorName'];
     const orderByField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
     const orderBy: any = {};
     orderBy[orderByField] = sortOrder === 'asc' ? 'asc' : 'desc';
@@ -137,8 +112,7 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
       actorId: req.user?.id,
       actorEmail: req.user?.email,
       count: articles.length,
-      filters: { categoryId, status, search },
-      isAdmin
+      filters: { categoryId, search }
     }, 'Listed knowledge articles');
 
     res.json({
@@ -148,8 +122,7 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
         limit: limitNum,
         total,
         totalPages: Math.ceil(total / limitNum)
-      },
-      isAdmin
+      }
     });
   } catch (error) {
     next(error);
@@ -177,33 +150,10 @@ knowledgeArticleRouter.get('/stats', requireAuth, async (req: Request, res: Resp
       where.categoryId = categoryId;
     }
 
-    // Admins see all stats, regular users only see published
-    const user = req.user;
-    const isAdmin = isUserAdmin(user);
-
-    let total, published, draft, archived;
-
-    if (isAdmin) {
-      [total, published, draft, archived] = await Promise.all([
-        prisma.knowledgeBaseArticle.count({ where }),
-        prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'PUBLISHED' } }),
-        prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'DRAFT' } }),
-        prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'ARCHIVED' } })
-      ]);
-    } else {
-      // Regular users only see published
-      published = await prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'PUBLISHED' } });
-      total = published;
-      draft = 0;
-      archived = 0;
-    }
+    const total = await prisma.knowledgeBaseArticle.count({ where });
 
     res.json({
-      total,
-      published,
-      draft,
-      archived,
-      isAdmin
+      total
     });
   } catch (error) {
     next(error);
@@ -237,13 +187,6 @@ knowledgeArticleRouter.get('/:id', requireAuth, async (req: Request, res: Respon
 
     if (!article) {
       throw new HttpError(404, 'Article not found');
-    }
-
-    // Check if user can view non-published articles
-    const user = req.user;
-    const admin = isUserAdmin(user);
-    if (!admin && article.status !== 'PUBLISHED') {
-      throw new HttpError(403, 'You do not have permission to view this article');
     }
 
     // Increment view count
