@@ -88,6 +88,39 @@ export function RecentActivity() {
     fetchActivity();
   }, [fetchActivity]);
 
+  // FIX: useMemo MUST be declared BEFORE any early returns
+  // This was the bug - useMemo was placed AFTER loading/error early returns
+  const filteredActivities = useMemo(() => {
+    // Handle null/undefined activityData
+    if (!activityData) return [];
+    
+    const activities: ActivityItem[] = [];
+    
+    // Add activities only if user has permission
+    if (hasPermission('incidents:view')) {
+      activities.push(...activityData.incidents);
+    }
+    if (hasPermission('problems:view')) {
+      activities.push(...activityData.problems);
+    }
+    if (hasPermission('changes:view')) {
+      activities.push(...activityData.changes);
+    }
+    if (hasPermission('compliance:view')) {
+      activities.push(...activityData.complianceDocuments);
+    }
+    if (hasPermission('access:view')) {
+      activities.push(...activityData.accessRequests);
+    }
+    if (hasPermission('tickets:view')) {
+      activities.push(...activityData.serviceRequests);
+    }
+    
+    return activities
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+  }, [activityData, hasPermission]);
+
   const getActivityPath = (type: ActivityItem['type']) => {
     switch (type) {
       case 'incident': return '/incidents';
@@ -174,40 +207,8 @@ export function RecentActivity() {
     );
   }
 
-  // PART 1: Filter activities based on user permissions
-  // Only show activities that user has permission to view
-  const filteredActivities = useMemo(() => {
-    const activities: ActivityItem[] = [];
-    
-    // Add activities only if user has permission
-    if (hasPermission('incidents:view')) {
-      activities.push(...(activityData?.incidents || []));
-    }
-    if (hasPermission('problems:view')) {
-      activities.push(...(activityData?.problems || []));
-    }
-    if (hasPermission('changes:view')) {
-      activities.push(...(activityData?.changes || []));
-    }
-    if (hasPermission('compliance:view')) {
-      activities.push(...(activityData?.complianceDocuments || []));
-    }
-    if (hasPermission('access:view')) {
-      activities.push(...(activityData?.accessRequests || []));
-    }
-    if (hasPermission('tickets:view')) {
-      activities.push(...(activityData?.serviceRequests || []));
-    }
-    
-    return activities
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 10);
-  }, [activityData, hasPermission]);
-
-  // Combine all activities and sort by date
-  const allActivities: ActivityItem[] = filteredActivities;
-
-  if (allActivities.length === 0) {
+  // FIX: Early return for empty activities (after all hooks)
+  if (filteredActivities.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-4">
         <h2 className="text-sm font-semibold text-slate-900 mb-4">Recent Activity</h2>
@@ -227,7 +228,7 @@ export function RecentActivity() {
         <span className="text-xs text-slate-400">Live</span>
       </div>
       <div className="space-y-1">
-        {allActivities.map((activity, index) => {
+        {filteredActivities.map((activity, index) => {
           const Icon = typeIcons[activity.type] || Ticket;
           const colorClass = typeColors[activity.type] || 'bg-slate-100 text-slate-600';
           return (
