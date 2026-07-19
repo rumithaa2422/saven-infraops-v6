@@ -5,131 +5,297 @@ const prisma = new PrismaClient();
 
 async function main() {
   // ============================================
-  // RBAC PERMISSION CATALOG - Phase 3A Migration
+  // RBAC 2.0 PERMISSION CATALOG
   // ============================================
-  // New permissions added to support granular RBAC
-  // Old permissions kept for backward compatibility
+  // Phase 1: Add granular permissions alongside existing ones
+  // All old permissions are preserved for backward compatibility
+  // New granular permissions follow module:action naming convention
   
   const permissions = [
-    // Dashboard
-    'dashboard:read',        // Legacy - read dashboard
-    'dashboard:view',       // NEW - view dashboard
+    // ============================================
+    // DASHBOARD MODULE
+    // ============================================
+    'dashboard:view',           // View dashboard
+    'dashboard:view_my_tasks',  // View personal task counts
+    'dashboard:view_activity',  // View recent activity feed
+    'dashboard:view_health',    // View system health status
     
-    // Service Requests / Tickets
-    'tickets:read',         // Legacy - read tickets
-    'tickets:write',        // Legacy - write tickets
-    'tickets:assign',        // Legacy - assign tickets
-    'tickets:view',         // NEW - view tickets
-    'tickets:create',        // NEW - create tickets
-    'tickets:manage',        // NEW - manage tickets (status, close)
-    'tickets:comment',       // NEW - add comments
-    'tickets:export',        // NEW - export tickets
+    // ============================================
+    // SERVICE REQUESTS MODULE
+    // ============================================
+    // Legacy permissions (preserved for backward compatibility)
+    'tickets:read',             // Legacy read
+    'tickets:write',            // Legacy write
+    'tickets:assign',           // Legacy assign
+    'tickets:manage',           // Legacy manage (satisfies all granular)
     
-    // Incidents
-    'incidents:read',        // Legacy - read incidents
-    'incidents:write',       // Legacy - write incidents
-    'incidents:view',        // NEW - view incidents
-    'incidents:create',      // NEW - create incidents
-    'incidents:manage',       // NEW - manage incidents
-    'incidents:export',       // NEW - export incidents
+    // New granular permissions
+    'tickets:view',             // View service requests
+    'tickets:view_own',         // View own requests only
+    'tickets:view_all',         // View all requests (admin)
+    'tickets:create',           // Create new requests
+    'tickets:edit',             // Edit request details
+    'tickets:delete',           // Delete requests
+    'tickets:reassign',         // Reassign requests
+    'tickets:update_status',    // Update request status
+    'tickets:reopen',           // Reopen closed requests
+    'tickets:close',            // Close requests
+    'tickets:comment',          // Add comments
+    'tickets:view_comments',    // View comments
+    'tickets:view_timeline',    // View request timeline
+    'tickets:upload_attachment', // Upload attachments
+    'tickets:download_attachment', // Download attachments
+    'tickets:delete_attachment',  // Delete attachments
+    'tickets:export',           // Export requests
+    'tickets:print',            // Print requests
     
-    // Problems (NEW namespace - separated from incidents)
-    'problems:view',         // NEW - view problems
-    'problems:create',       // NEW - create problems
-    'problems:manage',       // NEW - manage problems
-    'problems:export',       // NEW - export problems
+    // ============================================
+    // INCIDENTS MODULE
+    // ============================================
+    // Legacy permissions
+    'incidents:read',           // Legacy read
+    'incidents:write',          // Legacy write
+    'incidents:manage',          // Legacy manage
     
-    // Changes
-    'changes:read',          // Legacy - read changes
-    'changes:approve',       // Legacy - approve changes
-    'changes:view',          // NEW - view changes
-    'changes:create',        // NEW - submit changes
-    'changes:manage',        // NEW - manage changes
-    'changes:export',        // NEW - export changes
+    // New granular permissions
+    'incidents:view',           // View incidents
+    'incidents:create',         // Create incidents
+    'incidents:update',         // Update incident details
+    'incidents:update_status',  // Update incident status
+    'incidents:update_severity', // Update severity level
+    'incidents:upload_resolution', // Upload resolution docs
+    'incidents:delete_resolution', // Delete resolution docs
+    'incidents:close',          // Close incidents
+    'incidents:export',         // Export incidents
     
-    // Inventory / Assets
-    'inventory:read',        // Legacy - read inventory
-    'inventory:write',       // Legacy - write inventory
-    'inventory:view',        // NEW - view inventory
-    'inventory:create',      // NEW - create assets
-    'inventory:manage',      // NEW - manage assets
-    'inventory:delete',      // NEW - delete assets
-    'inventory:export',      // NEW - export inventory
+    // ============================================
+    // PROBLEMS MODULE
+    // ============================================
+    'problems:view',            // View problems
+    'problems:create',          // Create problems
+    'problems:update',          // Update problem details
+    'problems:update_status',   // Update problem status
+    'problems:link_incident',   // Link incidents to problems
+    'problems:export',          // Export problems
     
-    // Access Management
-    'access:read',           // Legacy - read access
-    'access:approve',        // Legacy - approve access
-    'access:view',           // NEW - view access requests
-    'access:request',        // NEW - request access
-    'access:provision',      // NEW - provision access
-    'access:revoke',         // NEW - revoke access
-    'access:export',         // NEW - export access
+    // ============================================
+    // CHANGES MODULE
+    // ============================================
+    // Legacy permissions
+    'changes:read',             // Legacy read
+    'changes:approve',          // Legacy approve
+    'changes:manage',           // Legacy manage
     
-    // Compliance
-    'compliance:read',       // Legacy - read compliance
-    'compliance:write',      // Legacy - write compliance
-    'compliance:view',       // NEW - view compliance
-    'compliance:create',     // NEW - create controls
-    'compliance:manage',     // NEW - manage controls
-    'compliance:audit',      // NEW - audit controls
-    'compliance:export',     // NEW - export compliance
+    // New granular permissions
+    'changes:view',             // View change requests
+    'changes:create',           // Create change requests
+    'changes:update',           // Update change details
+    'changes:update_status',    // Update change status
+    'changes:reject',           // Reject changes
+    'changes:implement',        // Implement changes
+    'changes:close',            // Close changes
+    'changes:export',           // Export changes
     
-    // Projects & Environments (NEW namespace)
-    'projects:view',         // NEW - view projects
-    'projects:create',        // NEW - create projects
-    'projects:manage',       // NEW - manage projects
-    'projects:delete',       // NEW - delete projects
-    'projects:export',       // NEW - export projects
+    // ============================================
+    // INVENTORY MODULE
+    // ============================================
+    // Legacy permissions
+    'inventory:read',           // Legacy read
+    'inventory:write',          // Legacy write
+    'inventory:manage',         // Legacy manage
+    'inventory:delete',         // Legacy delete
     
-    // Vendors & Licenses (NEW namespace)
-    'vendors:view',          // NEW - view vendors
-    'vendors:create',        // NEW - create vendors
-    'vendors:manage',        // NEW - manage vendors
-    'vendors:delete',       // NEW - delete vendors
-    'vendors:export',        // NEW - export vendors
+    // New granular permissions
+    'inventory:view',           // View inventory
+    'inventory:view_categories', // View categories
+    'inventory:view_items',     // View items
+    'inventory:view_details',   // View item details
+    'inventory:view_history',   // View assignment history
+    'inventory:view_analytics', // View analytics
+    'inventory:create_category', // Create category
+    'inventory:update_category', // Update category
+    'inventory:delete_category', // Delete category
+    'inventory:create_asset',   // Create asset
+    'inventory:update_asset',   // Update asset
+    'inventory:delete_asset',   // Delete asset
+    'inventory:assign_user',    // Assign to user
+    'inventory:assign_project', // Assign to project
+    'inventory:unassign',       // Unassign asset
+    'inventory:export',         // Export inventory
     
-    // Knowledge Base (NEW namespace)
-    'kb:view',               // NEW - view knowledge base
-    'kb:create',             // NEW - create articles
-    'kb:manage',             // NEW - manage articles
-    'kb:publish',            // NEW - publish articles
-    'kb:archive',            // NEW - archive articles
-    'kb:export',             // NEW - export KB
+    // ============================================
+    // ACCESS MANAGEMENT MODULE
+    // ============================================
+    // Legacy permissions
+    'access:read',              // Legacy read
+    'access:approve',           // Legacy approve
     
-    // Knowledge Categories (NEW namespace)
-    'knowledge.category:view',    // NEW - view knowledge categories
-    'knowledge.category:create',  // NEW - create knowledge categories
-    'knowledge.category:update',  // NEW - update knowledge categories
-    'knowledge.category:delete',  // NEW - delete knowledge categories
+    // New granular permissions
+    'access:view',              // View access requests
+    'access:view_user',        // View user access
+    'access:view_project',     // View project access
+    'access:view_own',         // View own access
+    'access:request',          // Request access
+    'access:reject',            // Reject access
+    'access:provision',        // Provision access
+    'access:revoke',            // Revoke access
+    'access:export',            // Export access
     
-    // Reports & Analytics (NEW namespace)
-    'reports:view',          // NEW - view reports
-    'reports:create',        // NEW - create reports
-    'reports:export',        // NEW - export reports
+    // ============================================
+    // COMPLIANCE MODULE
+    // ============================================
+    // Legacy permissions
+    'compliance:read',          // Legacy read
+    'compliance:write',         // Legacy write
+    'compliance:manage',        // Legacy manage
+    'compliance:audit',         // Legacy audit
     
-    // Settings
-    'settings:read',         // Legacy - read settings
-    'settings:write',        // Legacy - write settings
-    'settings:view',         // NEW - view settings
-    'settings:manage',       // NEW - manage settings
+    // New granular permissions
+    'compliance:view',          // View compliance
+    'compliance:view_folder',   // View folders
+    'compliance:download_file', // Download files
+    'compliance:preview_file',  // Preview files
+    'compliance:view_activity', // View activity
+    'compliance:create_folder', // Create folder
+    'compliance:rename_folder',  // Rename folder
+    'compliance:move_folder',   // Move folder
+    'compliance:delete_folder', // Delete folder
+    'compliance:upload_file',   // Upload file
+    'compliance:rename_file',   // Rename file
+    'compliance:move_file',     // Move file
+    'compliance:delete_file',   // Delete file
+    'compliance:replace_version', // Replace version
+    'compliance:restore_version', // Restore version
+    'compliance:add_tag',       // Add tag
+    'compliance:remove_tag',    // Remove tag
+    'compliance:create_tag',    // Create tag
+    'compliance:bulk_upload',   // Bulk upload
+    'compliance:export',        // Export compliance
     
-    // Users
-    'users:read',            // Legacy - read users
-    'users:write',          // Legacy - write users
-    'users:delete',          // Legacy - delete users
-    'users:view',            // NEW - view users
-    'users:create',          // NEW - create users
-    'users:manage',          // NEW - manage users
-    'users:export',          // NEW - export users
+    // ============================================
+    // PROJECTS MODULE
+    // ============================================
+    'projects:view',            // View projects
+    'projects:view_details',    // View project details
+    'projects:view_documents',   // View documents
+    'projects:view_activities', // View activities
+    'projects:create',          // Create projects
+    'projects:update',          // Update projects
+    'projects:delete',          // Delete projects
+    'projects:upload_document', // Upload documents
+    'projects:download_document', // Download documents
+    'projects:delete_document', // Delete documents
+    'projects:export',          // Export projects
     
-    // Roles (NEW namespace - separated from users for display)
-    'roles:view',            // NEW - view roles
-    'roles:create',          // NEW - create roles
-    'roles:manage',          // NEW - manage roles
-    'roles:delete',          // NEW - delete roles
+    // ============================================
+    // VENDORS MODULE
+    // ============================================
+    'vendors:view',             // View vendors
+    'vendors:view_details',     // View vendor details
+    'vendors:view_inventory',   // View vendor inventory
+    'vendors:create',           // Create vendors
+    'vendors:update',           // Update vendors
+    'vendors:delete',           // Delete vendors
+    'vendors:update_status',    // Update vendor status
+    'vendors:set_owner',        // Set vendor owner
+    'vendors:export',           // Export vendors
     
-    // AI
-    'ai:ask'                 // Existing - AI access
+    // ============================================
+    // KNOWLEDGE BASE MODULE
+    // ============================================
+    // Legacy kb: namespace
+    'kb:view',                  // View knowledge base
+    'kb:create',                // Legacy create
+    'kb:manage',                // Legacy manage
+    'kb:publish',               // Legacy publish
+    'kb:archive',               // Legacy archive
+    'kb:export',                // Export KB
+    
+    // New granular permissions (kb: namespace)
+    'kb:view_articles',         // View articles
+    'kb:create_article',       // Create article
+    'kb:update_article',       // Update article
+    'kb:delete_article',       // Delete article
+    'kb:publish_article',      // Publish article
+    'kb:archive_article',      // Archive article
+    'kb:upload_attachment',     // Upload attachment
+    'kb:download_attachment',   // Download attachment
+    'kb:delete_attachment',    // Delete attachment
+    'kb:view_analytics',        // View analytics
+    
+    // Knowledge Categories (knowledge.category: namespace)
+    'knowledge.category:view',    // View categories
+    'knowledge.category:create',  // Create category
+    'knowledge.category:update',  // Update category
+    'knowledge.category:delete',  // Delete category
+    
+    // ============================================
+    // REPORTS MODULE
+    // ============================================
+    'reports:view',             // View reports
+    'reports:view_stats',       // View statistics
+    'reports:preview',          // Preview report
+    'reports:count',            // Get record counts
+    'reports:generate',         // Generate report
+    'reports:download',         // Download report
+    'reports:create',           // Create reports
+    'reports:export',           // Export reports
+    
+    // ============================================
+    // USERS MODULE
+    // ============================================
+    // Legacy permissions
+    'users:read',               // Legacy read
+    'users:write',              // Legacy write
+    'users:delete',             // Legacy delete
+    'users:manage',             // Legacy manage
+    
+    // New granular permissions
+    'users:view',               // View users
+    'users:view_list',          // View user list
+    'users:view_details',       // View user details
+    'users:view_own_profile',   // View own profile
+    'users:create',             // Create users
+    'users:update',             // Update users
+    'users:activate',           // Activate users
+    'users:deactivate',         // Deactivate users
+    'users:assign_role',         // Assign roles
+    'users:remove_role',        // Remove roles
+    'users:reset_password',     // Reset passwords
+    'users:update_own_profile', // Update own profile
+    'users:update_preferences', // Update preferences
+    'users:import',             // Import users
+    'users:export',             // Export users
+    
+    // ============================================
+    // ROLES MODULE
+    // ============================================
+    'roles:view',               // View roles
+    'roles:view_list',          // View roles list
+    'roles:view_details',       // View role details
+    'roles:view_permissions',   // View permissions
+    'roles:create',             // Create roles
+    'roles:update',             // Update roles
+    'roles:delete',             // Delete roles
+    'roles:update_permissions', // Update role permissions
+    'roles:manage',             // Legacy manage
+    
+    // ============================================
+    // SETTINGS MODULE
+    // ============================================
+    // Legacy permissions
+    'settings:read',            // Legacy read
+    'settings:write',           // Legacy write
+    'settings:manage',          // Legacy manage
+    
+    // New granular permissions
+    'settings:view',            // View settings
+    'settings:update',          // Update settings
+    
+    // ============================================
+    // AI MODULE
+    // ============================================
+    'ai:ask',                   // Use AI assistant
   ];
 
   console.log(`[RBAC] Seeding ${permissions.length} permissions...`);

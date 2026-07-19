@@ -14,3 +14,6 @@ export * from './projectEnvironment.service.js';
 export * from './role.service.js';
 export * from './serviceRequest.service.js';
 export * from './vendorLicense.service.js';
+
+// Export permission service
+export * from './permission.service.js';
