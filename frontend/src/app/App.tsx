@@ -318,14 +318,6 @@ export function App() {
           path="knowledge-base" 
           element={
             <PermissionRoute permission={modulePermissions['knowledge-base']}>
-              <ModulePage moduleKey="knowledge-base" title="Knowledge Base" />
-            </PermissionRoute>
-          } 
-        />
-        <Route 
-          path="knowledge-categories" 
-          element={
-            <PermissionRoute permission={modulePermissions['knowledge-base']}>
               <KnowledgeCategoryPage />
             </PermissionRoute>
           } 

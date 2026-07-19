@@ -116,8 +116,6 @@ tbody tr:hover { background: #f8faff; }
 /* v6 interaction fixes */
 .shell.assistant-collapsed { grid-template-columns: 260px 1fr 56px; }
 .nav-item { display: flex; align-items: center; gap: 10px; }
-.nav-item-indent { padding-left: 36px; font-size: 13px; }
-.nav-item-indent .nav-icon { min-width: 24px; height: 24px; font-size: 10px; }
 .nav-icon { display: inline-grid; place-items: center; min-width: 28px; height: 28px; border-radius: 9px; background: rgba(255,255,255,0.08); font-size: 12px; font-weight: 800; }
 .topbar-left { display: flex; align-items: center; gap: 14px; }
 .icon-button { border: 1px solid var(--line); background: white; border-radius: 10px; min-width: 38px; min-height: 38px; padding: 8px 10px; }
