@@ -12,6 +12,7 @@
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "axios": "latest",
+    "lucide-react": "^1.25.0",
     "react": "latest",
     "react-dom": "latest",
     "react-quill": "^2.0.0",
@@ -21,11 +22,16 @@
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "autoprefixer": "^10.5.4",
     "eslint": "latest",
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
+    "postcss": "^8.5.20",
+    "tailwindcss": "^4.3.3",
     "typescript": "latest",
     "vite": "latest"
   }
