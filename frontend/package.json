@@ -14,6 +14,7 @@
     "axios": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "react-quill": "^2.0.0",
     "react-router-dom": "latest",
     "saven-infraops-enterprise-v5": "file:..",
     "xlsx": "^0.18.5"
