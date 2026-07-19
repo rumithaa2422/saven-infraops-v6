@@ -71,11 +71,11 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
     if (search) {
       const searchTerm = search.toLowerCase();
       where.OR = [
-        { title: { contains: searchTerm, mode: 'insensitive' } },
-        { summary: { contains: searchTerm, mode: 'insensitive' } },
-        { body: { contains: searchTerm, mode: 'insensitive' } },
-        { tags: { contains: searchTerm, mode: 'insensitive' } },
-        { categoryInfo: { name: { contains: searchTerm, mode: 'insensitive' } } }
+        { title: { contains: searchTerm } },
+        { summary: { contains: searchTerm } },
+        { body: { contains: searchTerm } },
+        { tags: { contains: searchTerm } },
+        { categoryInfo: { name: { contains: searchTerm } } }
       ];
     }
 

@@ -47,10 +47,10 @@ export class ProjectDocumentService {
     const where: any = { projectId };
     if (search) {
       where.OR = [
-        { originalFileName: { contains: search, mode: 'insensitive' } },
-        { fileType: { contains: search, mode: 'insensitive' } },
-        { uploadedBy: { contains: search, mode: 'insensitive' } },
-        { remarks: { contains: search, mode: 'insensitive' } }
+        { originalFileName: { contains: search } },
+        { fileType: { contains: search } },
+        { uploadedBy: { contains: search } },
+        { remarks: { contains: search } }
       ];
     }
 

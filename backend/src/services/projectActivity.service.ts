@@ -81,10 +81,10 @@ export class ProjectActivityService {
 
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { activityType: { contains: search, mode: 'insensitive' } },
-        { performedBy: { contains: search, mode: 'insensitive' } }
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { activityType: { contains: search } },
+        { performedBy: { contains: search } }
       ];
     }
 

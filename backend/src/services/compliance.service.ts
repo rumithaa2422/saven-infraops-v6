@@ -117,9 +117,9 @@ export async function listComplianceDocumentsFiltered(options: ListDocumentsOpti
   if (search) {
     const searchLower = search.toLowerCase();
     where.OR = [
-      { fileName: { contains: search, mode: 'insensitive' } },
-      { uploadedByEmail: { contains: search, mode: 'insensitive' } },
-      { uploadedBy: { contains: search, mode: 'insensitive' } }
+      { fileName: { contains: search } },
+      { uploadedByEmail: { contains: search } },
+      { uploadedBy: { contains: search } }
     ];
   }
 
