@@ -7,11 +7,11 @@ export interface ReportDefinition {
   module: string;
   icon: string;
   filters: string[];
+  recordCount?: number;
 }
 
 interface ReportCardProps {
   report: ReportDefinition;
-  recordCount?: number;
   lastUpdated?: string;
   onGenerate: (reportId: string, filters?: Record<string, string>) => void;
   onOpenFilters: (report: ReportDefinition) => void;
@@ -139,7 +139,6 @@ const iconMap: Record<string, ReactNode> = {
 
 export function ReportCard({
   report,
-  recordCount,
   lastUpdated,
   onGenerate,
   onOpenFilters,
@@ -178,7 +177,7 @@ export function ReportCard({
       <div className="report-card-stats">
         <div className="report-stat">
           <span className="stat-label">Records</span>
-          <span className="stat-value">{recordCount !== undefined ? recordCount.toLocaleString() : '-'}</span>
+          <span className="stat-value">{report.recordCount !== undefined ? report.recordCount.toLocaleString() : '-'}</span>
         </div>
         <div className="report-stat">
           <span className="stat-label">Last Export</span>

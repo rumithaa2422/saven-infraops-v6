@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
+import axios from 'axios';
+import { api, setAuthToken } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { ReportCard, ReportFilterModal, ReportSummaryCard, ReportDefinition } from '../components/reports';
 
@@ -63,40 +64,68 @@ export function ReportsPage() {
         });
       }
 
-      const response = await fetch(`/api/reports/${reportId}/download?${params.toString()}`, {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      // Use Axios with responseType: 'blob' for binary data
+      const response = await axios.get(`/api/reports/${reportId}/download?${params.toString()}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${token}`
+        },
+        responseType: 'blob',
+        timeout: 60000 // 60 second timeout for large reports
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate report');
-      }
-
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition');
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
       let filename = `${reportId}_report_${new Date().toISOString().split('T')[0]}.xlsx`;
       if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) filename = match[1];
+        const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+        if (match && match[1]) {
+          filename = decodeURIComponent(match[1]);
+        }
       }
 
-      // Download the file
-      const blob = await response.blob();
+      // Check if the response is actually an error message (JSON)
+      const blob = response.data as Blob;
+      if (blob.type === 'application/json') {
+        const text = await blob.text();
+        const json = JSON.parse(text);
+        throw new Error(json.message || 'Failed to generate report');
+      }
+
+      // Create download link and trigger download
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
       // Refresh stats
       loadData();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate report';
-      setError(errorMessage);
+      if (axios.isAxiosError(err)) {
+        if (err.response?.data instanceof Blob) {
+          // Try to read error from blob
+          try {
+            const text = await (err.response.data as Blob).text();
+            const json = JSON.parse(text);
+            setError(json.message || 'Failed to generate report');
+          } catch {
+            setError('Failed to generate report. Please try again.');
+          }
+        } else {
+          setError(err.response?.data?.message || err.message || 'Failed to generate report');
+        }
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to generate report';
+        setError(errorMessage);
+      }
     } finally {
       setGenerating(null);
     }

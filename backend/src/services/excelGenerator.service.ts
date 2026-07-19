@@ -16,24 +16,24 @@ export function generateExcel(data: ExcelData): Buffer {
   // Create workbook and worksheet
   const workbook = XLSX.utils.book_new();
 
-  // Prepare data with headers as first row
+  // Prepare data with headers as first row (Array of Arrays)
   const worksheetData: unknown[][] = [];
 
   // Add header row
   worksheetData.push(data.headers);
 
-  // Add data rows
+  // Add data rows - each row is an array of values in the same order as headers
   for (const row of data.rows) {
     const rowValues: unknown[] = [];
     for (const header of data.headers) {
-      // Find the key that matches this header
-      const key = Object.keys(row).find(k => k.toLowerCase() === header.toLowerCase() || formatHeaderKey(k) === header.toLowerCase());
-      rowValues.push(row[key || header] ?? '');
+      // Direct lookup - the header should match the key exactly
+      const value = row[header];
+      rowValues.push(value !== undefined ? value : '');
     }
     worksheetData.push(rowValues);
   }
 
-  // Create worksheet from data
+  // Create worksheet from data using aoa_to_sheet (Array of Arrays)
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
 
   // Set column widths based on content
@@ -41,8 +41,8 @@ export function generateExcel(data: ExcelData): Buffer {
   for (let i = 0; i < data.headers.length; i++) {
     let maxLength = data.headers[i].length;
     for (const row of data.rows) {
-      const values = Object.values(row);
-      const value = values[i];
+      const header = data.headers[i];
+      const value = row[header];
       const valueLength = value ? String(value).length : 0;
       if (valueLength > maxLength) maxLength = Math.min(valueLength, 50);
     }
@@ -50,16 +50,16 @@ export function generateExcel(data: ExcelData): Buffer {
   }
   worksheet['!cols'] = colWidths;
 
-  // Freeze the first row
+  // Freeze the first row (header row)
   worksheet['!freeze'] = { xSplit: 0, ySplit: 1 };
 
   // Add worksheet to workbook
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
 
-  // Generate buffer
-  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  // Generate buffer with proper xlsx format
+  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx', compression: true });
 
-  return buffer;
+  return buffer as Buffer;
 }
 
 export function formatHeaderKey(key: string): string {

@@ -13,15 +13,64 @@ import {
 
 export const reportsRouter = Router();
 
-// GET /api/reports - List available report types
+// GET /api/reports - List available report types with counts
 reportsRouter.get('/', requireAuth, requirePermissionOr(['reports:view', 'reports:export']), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const reports = getAvailableReports();
-    res.json({ reports });
+    
+    // Get counts for each report type
+    const counts = await getAllReportCounts();
+    
+    // Attach counts to reports
+    const reportsWithCounts = reports.map(report => ({
+      ...report,
+      recordCount: counts[report.id] || 0
+    }));
+    
+    res.json({ reports: reportsWithCounts });
   } catch (error) {
     next(error);
   }
 });
+
+// Helper function to get counts for all report types
+async function getAllReportCounts() {
+  const [incidents, serviceRequests, changes, problems, inventory, accessRequests, compliance, projects, vendors, knowledgeBase, documents, users, roles, permissions, auditLogs] = await Promise.all([
+    prisma.incident.count(),
+    prisma.serviceRequest.count(),
+    prisma.changeRequest.count(),
+    prisma.problem.count(),
+    prisma.asset.count(),
+    prisma.accessRequest.count(),
+    prisma.complianceDocument.count(),
+    prisma.projectEnvironment.count(),
+    prisma.vendorLicense.count(),
+    prisma.knowledgeBaseArticle.count(),
+    prisma.projectDocument.count(),
+    prisma.user.count(),
+    prisma.role.count(),
+    prisma.permission.count(),
+    prisma.auditLog.count()
+  ]);
+  
+  return {
+    'incidents': incidents,
+    'service-requests': serviceRequests,
+    'changes': changes,
+    'problems': problems,
+    'inventory': inventory,
+    'access-requests': accessRequests,
+    'compliance': compliance,
+    'projects': projects,
+    'vendors': vendors,
+    'knowledge-base': knowledgeBase,
+    'documents': documents,
+    'users': users,
+    'roles': roles,
+    'permissions': permissions,
+    'audit-logs': auditLogs
+  };
+}
 
 // GET /api/reports/stats/summary - Get report statistics
 reportsRouter.get('/stats/summary', requireAuth, requirePermissionOr(['reports:view', 'reports:export']), async (req: Request, res: Response, next: NextFunction) => {
