@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { api, setAuthToken } from '../services/api';
+import { api, setAuthToken, API_BASE_URL } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { ReportCard, ReportFilterModal, ReportSummaryCard, ReportDefinition } from '../components/reports';
 
@@ -53,6 +53,7 @@ export function ReportsPage() {
   }, [canView, loadData]);
 
   const generateReport = async (reportId: string, filters?: Record<string, string>) => {
+    console.log('[ReportsPage] generateReport called with reportId:', reportId);
     try {
       setGenerating(reportId);
       setError('');
@@ -64,19 +65,25 @@ export function ReportsPage() {
         });
       }
 
-      const token = localStorage.getItem('token');
+      // Use the correct token key used by AuthContext
+      const token = localStorage.getItem('infraops.token');
+      console.log('[ReportsPage] Token found:', !!token);
       if (!token) {
-        throw new Error('Authentication required');
+        throw new Error('Authentication required. Please log in again.');
       }
 
-      // Use Axios with responseType: 'blob' for binary data
-      const response = await axios.get(`/api/reports/${reportId}/download?${params.toString()}`, {
+      // Use axios with the correct base URL and auth headers for blob download
+      const url = `${API_BASE_URL}/reports/${reportId}/download?${params.toString()}`;
+      console.log('[ReportsPage] Making request to:', url);
+      
+      const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${token}`
         },
         responseType: 'blob',
         timeout: 60000 // 60 second timeout for large reports
       });
+      console.log('[ReportsPage] Response received:', response.status);
 
       // Get filename from Content-Disposition header or use default
       const contentDisposition = response.headers['content-disposition'];
@@ -90,6 +97,7 @@ export function ReportsPage() {
 
       // Check if the response is actually an error message (JSON)
       const blob = response.data as Blob;
+      console.log('[ReportsPage] Blob type:', blob.type);
       if (blob.type === 'application/json') {
         const text = await blob.text();
         const json = JSON.parse(text);
@@ -97,18 +105,21 @@ export function ReportsPage() {
       }
 
       // Create download link and trigger download
-      const url = window.URL.createObjectURL(blob);
+      console.log('[ReportsPage] Triggering download for file:', filename);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
+      console.log('[ReportsPage] Download triggered successfully');
 
       // Refresh stats
       loadData();
     } catch (err: unknown) {
+      console.error('[ReportsPage] Error generating report:', err);
       if (axios.isAxiosError(err)) {
         if (err.response?.data instanceof Blob) {
           // Try to read error from blob

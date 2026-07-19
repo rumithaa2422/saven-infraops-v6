@@ -150,11 +150,19 @@ export function ReportCard({
   const icon = iconMap[report.icon] || iconMap['default'];
 
   const handleGenerate = async () => {
+    console.log('[ReportCard] handleGenerate called for report:', report.id, report.name);
+    console.log('[ReportCard] canExport:', canExport);
+    console.log('[ReportCard] isGenerating before:', isGenerating);
     setIsGenerating(true);
     try {
+      console.log('[ReportCard] Calling onGenerate with reportId:', report.id);
       await onGenerate(report.id);
+      console.log('[ReportCard] onGenerate completed successfully');
+    } catch (err) {
+      console.error('[ReportCard] onGenerate error:', err);
     } finally {
       setIsGenerating(false);
+      console.log('[ReportCard] isGenerating after finally:', isGenerating);
     }
   };
 

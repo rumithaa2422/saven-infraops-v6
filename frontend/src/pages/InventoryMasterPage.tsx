@@ -510,7 +510,7 @@ export function InventoryMasterPage() {
                     onChange={(e) => {
                       const selectedVendor = vendors.find(v => v.id === e.target.value);
                       updateField('vendorId', e.target.value);
-                      updateField('vendor', selectedVendor?.vendorName || '');
+                      updateField('vendorName', selectedVendor?.vendorName || '');
                     }}
                     disabled={!isSuperAdmin}
                   >
