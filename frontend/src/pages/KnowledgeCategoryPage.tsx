@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
@@ -117,8 +117,22 @@ export function KnowledgeCategoryPage() {
 
   // Filters and sorting
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // Raw input for immediate display
   const [sortBy, setSortBy] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // Debounced search value (300ms delay)
+  const debouncedSearch = useMemo(() => {
+    return searchInput;
+  }, [searchInput]);
+
+  // Effect to update search after debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Category form state
   const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -263,6 +277,7 @@ export function KnowledgeCategoryPage() {
     setSelectedCategory(category);
     setViewMode('articles');
     setSearch('');
+    setSearchInput('');
     setSortBy('createdAt');
     setSortOrder('desc');
   };
@@ -273,6 +288,8 @@ export function KnowledgeCategoryPage() {
     setSelectedCategory(null);
     setViewMode('browse');
     setArticles([]);
+    setSearch('');
+    setSearchInput('');
   };
 
   // View all articles (no category filter)
@@ -280,6 +297,7 @@ export function KnowledgeCategoryPage() {
     setSelectedCategory(null);
     setViewMode('articles');
     setSearch('');
+    setSearchInput('');
     setSortBy('createdAt');
     setSortOrder('desc');
   };
@@ -776,15 +794,29 @@ export function KnowledgeCategoryPage() {
           {/* Filters Bar */}
           <div className="filters-bar">
             <div className="search-box">
+              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search articles..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
+              {searchInput && (
+                <button 
+                  className="search-clear"
+                  onClick={() => setSearchInput('')}
+                  title="Clear search"
+                >
+                  ×
+                </button>
+              )}
             </div>
             <div className="sort-info">
-              {articles.length} article{articles.length !== 1 ? 's' : ''} found
+              {articleLoading ? (
+                <span className="searching">Searching...</span>
+              ) : (
+                <>{articles.length} article{articles.length !== 1 ? 's' : ''} found</>
+              )}
             </div>
           </div>
 
@@ -1495,20 +1527,75 @@ export function KnowledgeCategoryPage() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 16px;
+          gap: 16px;
+        }
+
+        .search-box {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 12px;
+          font-size: 14px;
+          color: var(--muted);
+          pointer-events: none;
         }
 
         .search-box input {
-          width: 280px;
+          width: 320px;
           border: 1px solid var(--line);
           border-radius: 8px;
-          padding: 10px 14px;
+          padding: 10px 36px 10px 36px;
           font-size: 14px;
           background: white;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .search-box input:focus {
+          outline: none;
+          border-color: var(--brand);
+          box-shadow: 0 0 0 3px rgba(84, 104, 255, 0.1);
+        }
+
+        .search-box input::placeholder {
+          color: var(--muted);
+        }
+
+        .search-clear {
+          position: absolute;
+          right: 8px;
+          background: var(--panel-soft);
+          border: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 16px;
+          line-height: 1;
+          color: var(--muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.15s, color 0.15s;
+        }
+
+        .search-clear:hover {
+          background: var(--line);
+          color: var(--text);
         }
 
         .sort-info {
           color: var(--muted);
           font-size: 13px;
+          white-space: nowrap;
+        }
+
+        .searching {
+          color: var(--brand);
+          font-style: italic;
         }
 
         /* Table Styles */
@@ -2068,8 +2155,16 @@ export function KnowledgeCategoryPage() {
             align-items: stretch;
           }
 
+          .search-box {
+            width: 100%;
+          }
+
           .search-box input {
             width: 100%;
+          }
+
+          .sort-info {
+            text-align: center;
           }
 
           .stats-grid {

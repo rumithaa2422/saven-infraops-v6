@@ -67,14 +67,15 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
       where.categoryId = categoryId;
     }
 
-    // Search filter
+    // Search filter - searches title, summary, body, tags, and category name
     if (search) {
       const searchTerm = search.toLowerCase();
       where.OR = [
         { title: { contains: searchTerm, mode: 'insensitive' } },
         { summary: { contains: searchTerm, mode: 'insensitive' } },
         { body: { contains: searchTerm, mode: 'insensitive' } },
-        { tags: { contains: searchTerm, mode: 'insensitive' } }
+        { tags: { contains: searchTerm, mode: 'insensitive' } },
+        { categoryInfo: { name: { contains: searchTerm, mode: 'insensitive' } } }
       ];
     }
 
