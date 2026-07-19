@@ -1,9 +1,12 @@
 -- Migration: Add Knowledge Categories
 -- Created: 2024-07-19
--- Description: Add KnowledgeCategory model and extend KnowledgeBaseArticle with new fields
+-- Description: Add KnowledgeCategory model and extend KnowledgeBaseArticle with genuinely new fields
+-- This migration is IDEMPOTENT and safe for existing databases
 
--- Create KnowledgeCategory table
-CREATE TABLE `KnowledgeCategory` (
+-- ============================================
+-- STEP 1: Create KnowledgeCategory table (if not exists)
+-- ============================================
+CREATE TABLE IF NOT EXISTS `KnowledgeCategory` (
     `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `description` TEXT NULL,
@@ -21,26 +24,119 @@ CREATE TABLE `KnowledgeCategory` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Add new columns to KnowledgeBaseArticle for extended metadata
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `categoryId` VARCHAR(191) NULL;
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `summary` TEXT NULL;
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `tags` LONGTEXT NULL;
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `status` ENUM('DRAFT', 'PUBLISHED', 'ARCHIVED') NOT NULL DEFAULT 'DRAFT';
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `featured` BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `viewCount` INT NOT NULL DEFAULT 0;
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `lastViewedAt` DATETIME(3) NULL;
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `publishedAt` DATETIME(3) NULL;
-ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `updatedBy` VARCHAR(191) NULL;
+-- ============================================
+-- STEP 2: Add genuinely NEW columns to KnowledgeBaseArticle
+-- These columns do NOT exist in the current database:
+-- - categoryId
+-- - summary
+-- - tags
+-- - featured
+-- - viewCount
+-- - lastViewedAt
+-- - publishedAt
+-- - updatedBy
+-- ============================================
 
--- Add foreign key constraint for categoryId
-ALTER TABLE `KnowledgeBaseArticle` ADD CONSTRAINT `KnowledgeBaseArticle_categoryId_fkey` FOREIGN KEY (`categoryId`) REFERENCES `KnowledgeCategory`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+-- Add categoryId column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'categoryId');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `categoryId` VARCHAR(191) NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
--- Create indexes for KnowledgeBaseArticle
-CREATE INDEX `KnowledgeBaseArticle_categoryId_idx` ON `KnowledgeBaseArticle`(`categoryId`);
-CREATE INDEX `KnowledgeBaseArticle_status_idx` ON `KnowledgeBaseArticle`(`status`);
-CREATE INDEX `KnowledgeBaseArticle_featured_idx` ON `KnowledgeBaseArticle`(`featured`);
+-- Add summary column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'summary');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `summary` TEXT NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
--- Insert default knowledge categories (idempotent with IGNORE)
+-- Add tags column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'tags');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `tags` LONGTEXT NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add featured column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'featured');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `featured` BOOLEAN NOT NULL DEFAULT false', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add viewCount column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'viewCount');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `viewCount` INT NOT NULL DEFAULT 0', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add lastViewedAt column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'lastViewedAt');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `lastViewedAt` DATETIME(3) NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add publishedAt column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'publishedAt');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `publishedAt` DATETIME(3) NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add updatedBy column (if not exists)
+SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' AND COLUMN_NAME = 'updatedBy');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD COLUMN `updatedBy` VARCHAR(191) NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- ============================================
+-- STEP 3: Add foreign key constraint (if not exists)
+-- ============================================
+SET @fk_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' 
+    AND CONSTRAINT_NAME = 'KnowledgeBaseArticle_categoryId_fkey');
+SET @sql = IF(@fk_exists = 0, 'ALTER TABLE `KnowledgeBaseArticle` ADD CONSTRAINT `KnowledgeBaseArticle_categoryId_fkey` FOREIGN KEY (`categoryId`) REFERENCES `KnowledgeCategory`(`id`) ON DELETE SET NULL ON UPDATE CASCADE', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- ============================================
+-- STEP 4: Create indexes (if not exists)
+-- ============================================
+
+-- categoryId index
+SET @idx_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' 
+    AND INDEX_NAME = 'KnowledgeBaseArticle_categoryId_idx');
+SET @sql = IF(@idx_exists = 0, 'CREATE INDEX `KnowledgeBaseArticle_categoryId_idx` ON `KnowledgeBaseArticle`(`categoryId`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- featured index
+SET @idx_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'KnowledgeBaseArticle' 
+    AND INDEX_NAME = 'KnowledgeBaseArticle_featured_idx');
+SET @sql = IF(@idx_exists = 0, 'CREATE INDEX `KnowledgeBaseArticle_featured_idx` ON `KnowledgeBaseArticle`(`featured`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- ============================================
+-- STEP 5: Insert default knowledge categories (idempotent with IGNORE)
+-- ============================================
 INSERT IGNORE INTO `KnowledgeCategory` (`id`, `name`, `description`, `color`, `displayOrder`, `isActive`, `createdAt`, `updatedAt`) VALUES
 ('kbcat_getting_started', 'Getting Started', 'Guides and tutorials for new users', '#10b981', 1, true, NOW(), NOW()),
 ('kbcat_infrastructure', 'Infrastructure', 'Infrastructure setup and management', '#3b82f6', 2, true, NOW(), NOW()),
