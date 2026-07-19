@@ -201,6 +201,7 @@ const configs: Record<string, ModuleConfig> = {
       export: 'access:export' 
     }
   },
+  // PART 5: Compliance Module - Granular Permissions
   compliance: {
     referenceKey: 'id',
     titleKey: 'fileName',
@@ -212,10 +213,17 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'createdAt', label: 'Uploaded Date' },
       { key: 'fileSize', label: 'File Size' }
     ],
-    permissions: { create: 'compliance:create', delete: 'compliance:manage', export: 'compliance:read' },
+    permissions: { 
+      view: 'compliance:view',
+      create: 'compliance:upload', 
+      write: 'compliance:edit',
+      delete: 'compliance:delete', 
+      export: 'compliance:export' 
+    },
     moduleType: 'compliance',
     isDocumentRepository: true
   },
+  // PART 5: Projects Module - Granular Permissions
   'projects-environments': {
     referenceKey: 'projectName',
     titleKey: 'environmentName',
@@ -237,9 +245,16 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'databaseName', label: 'Database Name' },
       { key: 'ownerName', label: 'Owner' }
     ],
-    permissions: { create: 'projects:create', write: 'projects:manage', delete: 'projects:manage', export: 'projects:export', import: 'settings:write' },
+    permissions: { 
+      view: 'projects:view',
+      create: 'projects:create', 
+      write: 'projects:edit', 
+      delete: 'projects:delete', 
+      export: 'projects:export' 
+    },
     moduleType: 'projects'
   },
+  // PART 5: Vendors Module - Granular Permissions
   'vendors-licenses': {
     referenceKey: 'vendorName',
     titleKey: 'licenseName',
@@ -261,9 +276,16 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'ownerName', label: 'Owner' },
       { key: 'renewalAt', label: 'Renewal Date' }
     ],
-    permissions: { create: 'vendors:create', write: 'vendors:manage', delete: 'vendors:manage', export: 'vendors:export', import: 'settings:write' },
+    permissions: { 
+      view: 'vendors:view',
+      create: 'vendors:create', 
+      write: 'vendors:edit', 
+      delete: 'vendors:delete', 
+      export: 'vendors:export' 
+    },
     moduleType: 'vendors'
   },
+  // PART 5: Knowledge Base Module - Granular Permissions
   'knowledge-base': {
     referenceKey: 'category',
     titleKey: 'title',
@@ -281,7 +303,13 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'authorName', label: 'Author' },
       { key: 'body', label: 'Body' }
     ],
-    permissions: { view: 'kb:view', create: 'kb:create', write: 'kb:manage', delete: 'kb:manage', export: 'kb:export', import: 'kb:import' },
+    permissions: { 
+      view: 'kb:view', 
+      create: 'kb:create', 
+      write: 'kb:edit', 
+      delete: 'kb:delete', 
+      export: 'kb:export' 
+    },
     moduleType: 'knowledge-base'
   },
   'users-teams': {

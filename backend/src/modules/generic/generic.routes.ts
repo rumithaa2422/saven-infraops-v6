@@ -126,9 +126,10 @@ const moduleMap: Record<string, ModuleConfig> = {
     update: async (id, payload, actor, ip) => updateAccessRequest(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
   // NOTE: 'compliance' module uses dedicated routes at /api/compliance for PDF document management
+  // PART 5: Projects Module - Granular Permissions
   'projects-environments': {
     permission: 'projects:view',
-    writePermission: 'projects:update',
+    writePermission: 'projects:edit',
     deletePermission: 'projects:delete',
     viewPermission: 'projects:view',
     createPermission: 'projects:create',
@@ -166,9 +167,10 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createProjectEnvironment({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateProjectEnvironment(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 5: Vendors Module - Granular Permissions
   'vendors-licenses': {
     permission: 'vendors:view',
-    writePermission: 'vendors:update',
+    writePermission: 'vendors:edit',
     deletePermission: 'vendors:delete',
     viewPermission: 'vendors:view',
     createPermission: 'vendors:create',
@@ -179,9 +181,10 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createVendorLicense({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateVendorLicense(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 5: Knowledge Base Module - Granular Permissions
   'knowledge-base': {
     permission: 'kb:view',
-    writePermission: 'kb:update',
+    writePermission: 'kb:edit',
     deletePermission: 'kb:delete',
     viewPermission: 'kb:view',
     createPermission: 'kb:create',
@@ -1143,7 +1146,8 @@ const projectDocUpload = multer({
 });
 
 // GET /projects-environments/:id/documents - List documents
-genericModuleRouter.get('/projects-environments/:id/documents', requireAuth, async (req, res, next) => {
+// PART 5: Requires projects:view or projects:view_documents
+genericModuleRouter.get('/projects-environments/:id/documents', requireAuth, requirePermissionOr(['projects:view', 'projects:view_documents']), async (req, res, next) => {
   try {
     const projectId = req.params.id;
     const { search, sortBy, sortOrder } = req.query;
@@ -1164,7 +1168,8 @@ genericModuleRouter.get('/projects-environments/:id/documents', requireAuth, asy
 });
 
 // POST /projects-environments/:id/documents - Upload document
-genericModuleRouter.post('/projects-environments/:id/documents', requireAuth, requirePermission('projects:manage'), projectDocUpload.single('file'), async (req, res, next) => {
+// PART 5: Requires projects:upload_document
+genericModuleRouter.post('/projects-environments/:id/documents', requireAuth, requirePermission('projects:upload_document'), projectDocUpload.single('file'), async (req, res, next) => {
   try {
     const projectId = req.params.id;
 
@@ -1212,7 +1217,8 @@ genericModuleRouter.post('/projects-environments/:id/documents', requireAuth, re
 });
 
 // GET /projects-environments/:id/documents/:docId - Download document
-genericModuleRouter.get('/projects-environments/:id/documents/:docId', requireAuth, async (req, res, next) => {
+// PART 5: Requires projects:view or projects:download_document
+genericModuleRouter.get('/projects-environments/:id/documents/:docId', requireAuth, requirePermissionOr(['projects:view', 'projects:download_document']), async (req, res, next) => {
   try {
     const { id: projectId, docId } = req.params;
 
@@ -1237,7 +1243,8 @@ genericModuleRouter.get('/projects-environments/:id/documents/:docId', requireAu
 });
 
 // DELETE /projects-environments/:id/documents/:docId - Delete document
-genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requireAuth, requirePermission('projects:manage'), async (req, res, next) => {
+// PART 5: Requires projects:delete_document
+genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requireAuth, requirePermission('projects:delete_document'), async (req, res, next) => {
   try {
     const { id: projectId, docId } = req.params;
 
@@ -1279,7 +1286,8 @@ genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requir
 });
 
 // GET /projects-environments/:id/activities - Get project activities (timeline)
-genericModuleRouter.get('/projects-environments/:id/activities', requireAuth, async (req, res, next) => {
+// PART 5: Requires projects:view or projects:view_activities
+genericModuleRouter.get('/projects-environments/:id/activities', requireAuth, requirePermissionOr(['projects:view', 'projects:view_activities']), async (req, res, next) => {
   try {
     const projectId = req.params.id;
     const { search, filter, sortBy, sortOrder } = req.query;

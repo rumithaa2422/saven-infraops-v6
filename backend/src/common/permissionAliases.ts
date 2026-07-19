@@ -272,7 +272,7 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
 
   // ============================================
-  // COMPLIANCE MODULE
+  // COMPLIANCE MODULE - Phase 5: Granular Permissions
   // ============================================
   ['compliance:manage', new Set([
     'compliance:view',
@@ -280,14 +280,18 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'compliance:download_file',
     'compliance:preview_file',
     'compliance:view_activity',
+    'compliance:upload',
+    'compliance:edit',
+    'compliance:delete',
+    'compliance:replace',
+    'compliance:archive',
+    'compliance:restore',
     'compliance:create_folder',
     'compliance:rename_folder',
     'compliance:move_folder',
     'compliance:delete_folder',
-    'compliance:upload_file',
     'compliance:rename_file',
     'compliance:move_file',
-    'compliance:delete_file',
     'compliance:replace_version',
     'compliance:restore_version',
     'compliance:add_tag',
@@ -297,10 +301,12 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'compliance:export',
   ])],
   ['compliance:write', new Set([
+    'compliance:upload',
+    'compliance:edit',
+    'compliance:replace',
     'compliance:create_folder',
     'compliance:rename_folder',
     'compliance:move_folder',
-    'compliance:upload_file',
     'compliance:rename_file',
     'compliance:move_file',
     'compliance:replace_version',
@@ -324,7 +330,7 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
 
   // ============================================
-  // PROJECTS MODULE
+  // PROJECTS MODULE - Phase 5: Granular Permissions
   // ============================================
   ['projects:manage', new Set([
     'projects:view',
@@ -332,78 +338,162 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'projects:view_documents',
     'projects:view_activities',
     'projects:create',
-    'projects:update',
+    'projects:edit',
     'projects:delete',
+    'projects:archive',
+    'projects:restore',
+    'projects:assign_owner',
+    'projects:manage_environment',
     'projects:upload_document',
     'projects:download_document',
     'projects:delete_document',
+    'projects:add_activity',
+    'projects:export',
+  ])],
+  ['projects:write', new Set([
+    'projects:create',
+    'projects:edit',
+    'projects:archive',
+    'projects:restore',
+    'projects:assign_owner',
+    'projects:manage_environment',
+    'projects:upload_document',
+    'projects:add_activity',
+  ])],
+  ['projects:read', new Set([
+    'projects:view',
+    'projects:view_details',
+    'projects:view_documents',
+    'projects:view_activities',
+    'projects:download_document',
     'projects:export',
   ])],
 
   // ============================================
-  // VENDORS MODULE
+  // VENDORS MODULE - Phase 5: Granular Permissions
   // ============================================
   ['vendors:manage', new Set([
     'vendors:view',
     'vendors:view_details',
     'vendors:view_inventory',
     'vendors:create',
-    'vendors:update',
+    'vendors:edit',
     'vendors:delete',
-    'vendors:update_status',
-    'vendors:set_owner',
+    'vendors:renew',
+    'vendors:update_contract',
+    'vendors:assign_owner',
+    'vendors:upload_document',
+    'vendors:download_document',
     'vendors:export',
+    // License permissions
+    'licenses:view',
+    'licenses:create',
+    'licenses:edit',
+    'licenses:delete',
+    'licenses:assign',
+    'licenses:revoke',
+    'licenses:renew',
+    'licenses:export',
+  ])],
+  ['vendors:write', new Set([
+    'vendors:create',
+    'vendors:edit',
+    'vendors:renew',
+    'vendors:update_contract',
+    'vendors:assign_owner',
+    'vendors:upload_document',
+    'licenses:create',
+    'licenses:edit',
+    'licenses:assign',
+    'licenses:revoke',
+    'licenses:renew',
+  ])],
+  ['vendors:read', new Set([
+    'vendors:view',
+    'vendors:view_details',
+    'vendors:view_inventory',
+    'vendors:download_document',
+    'vendors:export',
+    'licenses:view',
+    'licenses:export',
   ])],
 
   // ============================================
-  // KNOWLEDGE BASE MODULE
+  // KNOWLEDGE BASE MODULE - Phase 5: Granular Permissions
   // ============================================
   ['kb:manage', new Set([
     'kb:view',
     'kb:view_articles',
-    'kb:create_article',
-    'kb:update_article',
-    'kb:delete_article',
-    'kb:publish_article',
-    'kb:archive_article',
+    'kb:view_article',
+    'kb:create',
+    'kb:edit',
+    'kb:delete',
+    'kb:publish',
+    'kb:archive',
+    'kb:restore',
+    'kb:feature',
     'kb:upload_attachment',
     'kb:download_attachment',
     'kb:delete_attachment',
     'kb:view_analytics',
     'kb:export',
-    // Also satisfy knowledge.category permissions
-    'knowledge.category:view',
-    'knowledge.category:create',
-    'knowledge.category:update',
-    'knowledge.category:delete',
+    // Category permissions
+    'kb.category:view',
+    'kb.category:create',
+    'kb.category:edit',
+    'kb.category:delete',
+  ])],
+  ['kb:write', new Set([
+    'kb:create',
+    'kb:edit',
+    'kb:publish',
+    'kb:archive',
+    'kb:restore',
+    'kb:feature',
+    'kb:upload_attachment',
+    'kb:delete_attachment',
+    'kb.category:create',
+    'kb.category:edit',
+    'kb.category:delete',
+  ])],
+  ['kb:read', new Set([
+    'kb:view',
+    'kb:view_articles',
+    'kb:view_article',
+    'kb:download_attachment',
+    'kb:view_analytics',
+    'kb:export',
+    'kb.category:view',
   ])],
   ['kb:create', new Set([
-    'kb:create_article',
-    'knowledge.category:create',
+    'kb:create',
+    'kb:upload_attachment',
+    'kb.category:create',
   ])],
   ['kb:publish', new Set([
-    'kb:publish_article',
+    'kb:publish',
   ])],
   ['kb:archive', new Set([
-    'kb:archive_article',
+    'kb:archive',
+    'kb:restore',
   ])],
   // knowledge.category namespace aliases
   ['knowledge.category:view', new Set([
     'kb:view',
     'kb:view_articles',
-    'knowledge.category:view',
+    'kb.category:view',
   ])],
   ['knowledge.category:create', new Set([
-    'knowledge.category:create',
-    'kb:create_article',
+    'kb.category:create',
+    'kb:create',
   ])],
   ['knowledge.category:update', new Set([
-    'knowledge.category:update',
-    'kb:update_article',
+    'kb.category:edit',
+    'kb:edit',
   ])],
   ['knowledge.category:delete', new Set([
-    'knowledge.category:delete',
-    'kb:delete_article',
+    'kb.category:delete',
+    'kb:delete',
   ])],
 
   // ============================================
