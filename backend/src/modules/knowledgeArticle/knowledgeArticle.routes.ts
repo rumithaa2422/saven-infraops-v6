@@ -74,15 +74,22 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
       where.categoryId = categoryId;
     }
     
+    // Status filter
     if (status && status !== 'ALL') {
       where.status = status;
     }
 
     // For regular users, only show published articles
+    // Admins and Super Admins see all articles (DRAFT, PUBLISHED, ARCHIVED)
     const user = req.user;
     const isAdmin = isUserAdmin(user);
-    if (!isAdmin) {
+    if (!isAdmin && !status) {
+      // Regular users without status filter only see published
       where.status = 'PUBLISHED';
+    }
+    // If regular user specifies a status filter, only PUBLISHED is allowed
+    if (!isAdmin && status && status !== 'PUBLISHED') {
+      where.status = 'PUBLISHED'; // Force to published
     }
 
     // Search filter
@@ -97,7 +104,7 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
     }
 
     // Build orderBy
-    const validSortFields = ['createdAt', 'updatedAt', 'title', 'status', 'viewCount'];
+    const validSortFields = ['createdAt', 'updatedAt', 'title', 'status', 'viewCount', 'authorName'];
     const orderByField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
     const orderBy: any = {};
     orderBy[orderByField] = sortOrder === 'asc' ? 'asc' : 'desc';
@@ -130,7 +137,8 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
       actorId: req.user?.id,
       actorEmail: req.user?.email,
       count: articles.length,
-      filters: { categoryId, status, search }
+      filters: { categoryId, status, search },
+      isAdmin
     }, 'Listed knowledge articles');
 
     res.json({
@@ -140,7 +148,8 @@ knowledgeArticleRouter.get('/', requireAuth, async (req: Request, res: Response,
         limit: limitNum,
         total,
         totalPages: Math.ceil(total / limitNum)
-      }
+      },
+      isAdmin
     });
   } catch (error) {
     next(error);
@@ -168,18 +177,33 @@ knowledgeArticleRouter.get('/stats', requireAuth, async (req: Request, res: Resp
       where.categoryId = categoryId;
     }
 
-    const [total, published, draft, archived] = await Promise.all([
-      prisma.knowledgeBaseArticle.count({ where }),
-      prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'PUBLISHED' } }),
-      prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'DRAFT' } }),
-      prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'ARCHIVED' } })
-    ]);
+    // Admins see all stats, regular users only see published
+    const user = req.user;
+    const isAdmin = isUserAdmin(user);
+
+    let total, published, draft, archived;
+
+    if (isAdmin) {
+      [total, published, draft, archived] = await Promise.all([
+        prisma.knowledgeBaseArticle.count({ where }),
+        prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'PUBLISHED' } }),
+        prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'DRAFT' } }),
+        prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'ARCHIVED' } })
+      ]);
+    } else {
+      // Regular users only see published
+      published = await prisma.knowledgeBaseArticle.count({ where: { ...where, status: 'PUBLISHED' } });
+      total = published;
+      draft = 0;
+      archived = 0;
+    }
 
     res.json({
       total,
       published,
       draft,
-      archived
+      archived,
+      isAdmin
     });
   } catch (error) {
     next(error);

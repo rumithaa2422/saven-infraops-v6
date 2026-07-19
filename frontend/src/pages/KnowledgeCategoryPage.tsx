@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
@@ -53,6 +53,7 @@ interface ArticleStats {
   published: number;
   draft: number;
   archived: number;
+  isAdmin: boolean;
 }
 
 // Constants
@@ -89,20 +90,26 @@ const quillFormats = [
   'link', 'code-block'
 ];
 
+type SortField = 'title' | 'status' | 'createdAt' | 'updatedAt' | 'authorName';
+type SortOrder = 'asc' | 'desc';
+type StatusFilter = 'ALL' | 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
 export function KnowledgeCategoryPage() {
   const { hasPermission, isSuperAdmin } = useAuth();
   
-  // View mode: 'categories' | 'articles'
+  // View mode
   const [viewMode, setViewMode] = useState<'categories' | 'articles'>('categories');
   const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | null>(null);
 
-  // Permissions for category management
+  // User permissions
+  const isAdmin = isSuperAdmin || hasPermission('kb:manage');
+  
+  // Category permissions
   const canManageCategories = hasPermission('knowledge.category:create') || hasPermission('kb:manage');
   const canUpdateCategories = hasPermission('knowledge.category:update') || hasPermission('kb:manage');
   const canDeleteCategories = hasPermission('knowledge.category:delete') || hasPermission('kb:manage');
 
-  // Permissions for article management
-  const isAdmin = isSuperAdmin || hasPermission('kb:manage');
+  // Article permissions
   const canCreateArticles = hasPermission('knowledge.article:create') || hasPermission('kb:manage');
   const canUpdateArticles = hasPermission('knowledge.article:update') || hasPermission('kb:manage');
   const canDeleteArticles = hasPermission('knowledge.article:delete') || hasPermission('kb:manage');
@@ -118,7 +125,13 @@ export function KnowledgeCategoryPage() {
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
   const [articleLoading, setArticleLoading] = useState(false);
   const [articleError, setArticleError] = useState('');
-  const [articleStats, setArticleStats] = useState<ArticleStats>({ total: 0, published: 0, draft: 0, archived: 0 });
+  const [articleStats, setArticleStats] = useState<ArticleStats>({ total: 0, published: 0, draft: 0, archived: 0, isAdmin: false });
+
+  // Filters and sorting
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(isAdmin ? 'ALL' : 'PUBLISHED');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortField>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Category form state
   const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -150,24 +163,17 @@ export function KnowledgeCategoryPage() {
   // Article view state
   const [viewingArticle, setViewingArticle] = useState<KnowledgeArticle | null>(null);
 
-  // Search and filter state
-  const [search, setSearch] = useState('');
-  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [sortBy, setSortBy] = useState<'title' | 'createdAt' | 'updatedAt' | 'status'>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
   // Toast state
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Show toast notification
-  const showToast = (type: 'success' | 'error', message: string) => {
+  const showToast = useCallback((type: 'success' | 'error', message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
-  };
+  }, []);
 
   // Load categories
-  async function loadCategories() {
+  const loadCategories = useCallback(async () => {
     try {
       setError('');
       const response = await api.get('/knowledge/categories');
@@ -179,16 +185,18 @@ export function KnowledgeCategoryPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
 
   // Load articles for a category
-  async function loadArticles(categoryId: string) {
+  const loadArticles = useCallback(async () => {
+    if (!selectedCategory) return;
+    
     try {
       setArticleError('');
       setArticleLoading(true);
 
-      // Load articles
-      const params: Record<string, string> = { categoryId };
+      const params: Record<string, string> = { categoryId: selectedCategory.id };
+      
       if (statusFilter !== 'ALL') {
         params.status = statusFilter;
       }
@@ -202,33 +210,36 @@ export function KnowledgeCategoryPage() {
       setArticles(response.data.articles || []);
 
       // Load stats
-      const statsRes = await api.get('/knowledge/articles/stats', { params: { categoryId } });
-      setArticleStats(statsRes.data);
+      const statsRes = await api.get('/knowledge/articles/stats', { params: { categoryId: selectedCategory.id } });
+      setArticleStats({
+        ...statsRes.data,
+        isAdmin
+      });
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       setArticleError(axiosError.response?.data?.message || 'Failed to load articles');
     } finally {
       setArticleLoading(false);
     }
-  }
+  }, [selectedCategory, statusFilter, search, sortBy, sortOrder, isAdmin]);
 
   useEffect(() => {
     loadCategories();
-  }, []);
+  }, [loadCategories]);
 
   useEffect(() => {
     if (selectedCategory) {
-      loadArticles(selectedCategory.id);
+      loadArticles();
     }
-  }, [selectedCategory, statusFilter, search, sortBy, sortOrder]);
+  }, [selectedCategory, loadArticles]);
 
   // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
     if (viewMode === 'categories') {
       loadCategories();
-    } else if (selectedCategory) {
-      loadArticles(selectedCategory.id);
+    } else {
+      loadArticles();
     }
   };
 
@@ -237,7 +248,7 @@ export function KnowledgeCategoryPage() {
     setSelectedCategory(category);
     setViewMode('articles');
     setSearch('');
-    setStatusFilter('ALL');
+    setStatusFilter(isAdmin ? 'ALL' : 'PUBLISHED');
     setSortBy('createdAt');
     setSortOrder('desc');
   };
@@ -247,7 +258,7 @@ export function KnowledgeCategoryPage() {
     setSelectedCategory(null);
     setViewMode('categories');
     setArticles([]);
-    setArticleStats({ total: 0, published: 0, draft: 0, archived: 0 });
+    setArticleStats({ total: 0, published: 0, draft: 0, archived: 0, isAdmin: false });
   };
 
   // Category CRUD handlers
@@ -420,9 +431,7 @@ export function KnowledgeCategoryPage() {
       }
 
       closeArticleForm();
-      if (selectedCategory) {
-        loadArticles(selectedCategory.id);
-      }
+      loadArticles();
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       setArticleFormError(axiosError.response?.data?.message || 'Failed to save article');
@@ -452,9 +461,7 @@ export function KnowledgeCategoryPage() {
       await api.delete(`/knowledge/articles/${deletingArticle.id}`);
       showToast('success', 'Article deleted successfully');
       closeDeleteArticleConfirm();
-      if (selectedCategory) {
-        loadArticles(selectedCategory.id);
-      }
+      loadArticles();
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       showToast('error', axiosError.response?.data?.message || 'Failed to delete article');
@@ -467,9 +474,7 @@ export function KnowledgeCategoryPage() {
     try {
       await api.put(`/knowledge/articles/${article.id}`, { status: 'PUBLISHED' });
       showToast('success', 'Article published successfully');
-      if (selectedCategory) {
-        loadArticles(selectedCategory.id);
-      }
+      loadArticles();
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       showToast('error', axiosError.response?.data?.message || 'Failed to publish article');
@@ -480,12 +485,21 @@ export function KnowledgeCategoryPage() {
     try {
       await api.put(`/knowledge/articles/${article.id}`, { status: 'ARCHIVED' });
       showToast('success', 'Article archived successfully');
-      if (selectedCategory) {
-        loadArticles(selectedCategory.id);
-      }
+      loadArticles();
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       showToast('error', axiosError.response?.data?.message || 'Failed to archive article');
+    }
+  };
+
+  const handleRestoreArticle = async (article: KnowledgeArticle) => {
+    try {
+      await api.put(`/knowledge/articles/${article.id}`, { status: 'DRAFT' });
+      showToast('success', 'Article restored to draft');
+      loadArticles();
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      showToast('error', axiosError.response?.data?.message || 'Failed to restore article');
     }
   };
 
@@ -515,20 +529,8 @@ export function KnowledgeCategoryPage() {
     });
   };
 
-  // Search handlers
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-    const timeout = setTimeout(() => {
-      // Search is applied via useEffect
-    }, 300);
-    setSearchTimeout(timeout);
-  };
-
   // Sort handlers
-  const handleSort = (field: 'title' | 'createdAt' | 'updatedAt' | 'status') => {
+  const handleSort = (field: SortField) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -536,23 +538,6 @@ export function KnowledgeCategoryPage() {
       setSortOrder('asc');
     }
   };
-
-  // Filtered and sorted articles
-  const filteredArticles = useMemo(() => {
-    let result = [...articles];
-
-    if (search && viewMode === 'articles') {
-      const searchLower = search.toLowerCase();
-      result = result.filter(
-        article =>
-          article.title.toLowerCase().includes(searchLower) ||
-          article.summary?.toLowerCase().includes(searchLower) ||
-          article.tags.some(t => t.toLowerCase().includes(searchLower))
-      );
-    }
-
-    return result;
-  }, [articles, search, viewMode]);
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -564,7 +549,7 @@ export function KnowledgeCategoryPage() {
   };
 
   // Get sort indicator
-  const getSortIndicator = (field: string) => {
+  const getSortIndicator = (field: SortField) => {
     if (sortBy !== field) return null;
     return sortOrder === 'asc' ? ' ↑' : ' ↓';
   };
@@ -572,7 +557,18 @@ export function KnowledgeCategoryPage() {
   // Render status badge
   const renderStatusBadge = (status: string) => {
     const statusClass = status.toLowerCase();
-    return <span className={`status-badge ${statusClass}`}>{status}</span>;
+    const statusLabel = status.charAt(0) + status.slice(1).toLowerCase();
+    return <span className={`status-badge ${statusClass}`}>{statusLabel}</span>;
+  };
+
+  // Get empty message based on filter
+  const getEmptyMessage = () => {
+    switch (statusFilter) {
+      case 'DRAFT': return 'No draft articles found';
+      case 'PUBLISHED': return 'No published articles found';
+      case 'ARCHIVED': return 'No archived articles found';
+      default: return search ? 'No articles match your search' : 'No articles in this category yet';
+    }
   };
 
   return (
@@ -639,23 +635,11 @@ export function KnowledgeCategoryPage() {
               <small>Total Articles</small>
             </div>
             <div className="stat-card">
-              <span>Published</span>
-              <strong>-</strong>
-              <small>Published Articles</small>
+              <span>Active</span>
+              <strong>{categories.filter(c => c.isActive).length}</strong>
+              <small>Active Categories</small>
             </div>
           </section>
-
-          {/* Search and Filters */}
-          <div className="filters-bar">
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Search categories..."
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-            </div>
-          </div>
 
           {/* Category List */}
           {loading ? (
@@ -700,44 +684,42 @@ export function KnowledgeCategoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {categories
-                    .filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.description?.toLowerCase().includes(search.toLowerCase()))
-                    .map((category) => (
-                      <tr key={category.id} onClick={() => viewCategory(category)} className="clickable-row">
-                        <td><strong>{category.name}</strong></td>
-                        <td className="description-cell">{category.description || '-'}</td>
-                        <td className="count-cell">
-                          <span className="count-badge">{category.articleCount || 0}</span>
+                  {categories.map((category) => (
+                    <tr key={category.id} onClick={() => viewCategory(category)} className="clickable-row">
+                      <td><strong>{category.name}</strong></td>
+                      <td className="description-cell">{category.description || '-'}</td>
+                      <td className="count-cell">
+                        <span className="count-badge">{category.articleCount || 0}</span>
+                      </td>
+                      <td>{renderStatusBadge(category.isActive ? 'Active' : 'Inactive')}</td>
+                      <td>{formatDate(category.createdAt)}</td>
+                      <td>{formatDate(category.updatedAt)}</td>
+                      {canManageCategories && (
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <div className="action-buttons">
+                            {canUpdateCategories && (
+                              <button 
+                                className="action-btn edit"
+                                onClick={() => openEditCategoryModal(category)}
+                                title="Edit"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                            {canDeleteCategories && (
+                              <button 
+                                className="action-btn delete"
+                                onClick={() => openDeleteCategoryConfirm(category)}
+                                title="Delete"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
                         </td>
-                        <td>{renderStatusBadge(category.isActive ? 'Active' : 'Inactive')}</td>
-                        <td>{formatDate(category.createdAt)}</td>
-                        <td>{formatDate(category.updatedAt)}</td>
-                        {canManageCategories && (
-                          <td onClick={(e) => e.stopPropagation()}>
-                            <div className="action-buttons">
-                              {canUpdateCategories && (
-                                <button 
-                                  className="action-btn edit"
-                                  onClick={() => openEditCategoryModal(category)}
-                                  title="Edit"
-                                >
-                                  ✏️
-                                </button>
-                              )}
-                              {canDeleteCategories && (
-                                <button 
-                                  className="action-btn delete"
-                                  onClick={() => openDeleteCategoryConfirm(category)}
-                                  title="Delete"
-                                >
-                                  🗑️
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
+                      )}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -748,54 +730,68 @@ export function KnowledgeCategoryPage() {
       {/* Articles View */}
       {viewMode === 'articles' && selectedCategory && (
         <>
-          {/* Article Stats */}
-          <section className="grid cards-4">
-            <div className="stat-card">
-              <span>Total</span>
-              <strong>{articleStats.total}</strong>
-              <small>Total Articles</small>
+          {/* Article Stats - Enterprise Style */}
+          <div className="stats-grid">
+            <div className="stat-card stat-card-primary">
+              <div className="stat-icon">📚</div>
+              <div className="stat-content">
+                <span className="stat-label">Total Articles</span>
+                <strong className="stat-value">{articleStats.total}</strong>
+                <small className="stat-hint">In this category</small>
+              </div>
             </div>
-            <div className="stat-card">
-              <span>Published</span>
-              <strong>{articleStats.published}</strong>
-              <small>Available</small>
+            <div className="stat-card stat-card-success">
+              <div className="stat-icon">✓</div>
+              <div className="stat-content">
+                <span className="stat-label">Published</span>
+                <strong className="stat-value">{articleStats.published}</strong>
+                <small className="stat-hint">Visible to users</small>
+              </div>
             </div>
-            <div className="stat-card">
-              <span>Draft</span>
-              <strong>{articleStats.draft}</strong>
-              <small>Not Published</small>
+            <div className="stat-card stat-card-warning">
+              <div className="stat-icon">📝</div>
+              <div className="stat-content">
+                <span className="stat-label">Draft</span>
+                <strong className="stat-value">{articleStats.draft}</strong>
+                <small className="stat-hint">Awaiting publication</small>
+              </div>
             </div>
-            <div className="stat-card">
-              <span>Archived</span>
-              <strong>{articleStats.archived}</strong>
-              <small>Archived</small>
+            <div className="stat-card stat-card-muted">
+              <div className="stat-icon">📦</div>
+              <div className="stat-content">
+                <span className="stat-label">Archived</span>
+                <strong className="stat-value">{articleStats.archived}</strong>
+                <small className="stat-hint">Hidden from users</small>
+              </div>
             </div>
-          </section>
+          </div>
 
-          {/* Search and Filters */}
+          {/* Filters Bar */}
           <div className="filters-bar">
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Search articles..."
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="filter-select"
-              >
-                <option value="ALL">All Status</option>
-                <option value="PUBLISHED">Published</option>
-                <option value="DRAFT">Draft</option>
-                <option value="ARCHIVED">Archived</option>
-              </select>
+            <div className="filters-left">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="Search articles..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              {isAdmin && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  className="filter-select"
+                >
+                  <option value="ALL">All Status</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              )}
             </div>
             <div className="sort-info">
-              {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''} found
+              {articles.length} article{articles.length !== 1 ? 's' : ''} found
             </div>
           </div>
 
@@ -814,13 +810,12 @@ export function KnowledgeCategoryPage() {
                 <button className="primary" onClick={handleRefresh}>Retry</button>
               </div>
             </div>
-          ) : filteredArticles.length === 0 ? (
+          ) : articles.length === 0 ? (
             <div className="empty-state">
               <div className="empty-card">
                 <span className="empty-icon">📄</span>
-                <h3>No Articles Found</h3>
-                <p>{search || statusFilter !== 'ALL' ? 'No articles match your search.' : 'No articles in this category yet.'}</p>
-                {canManageArticles && !search && statusFilter === 'ALL' && (
+                <h3>{getEmptyMessage()}</h3>
+                {canManageArticles && statusFilter === 'ALL' && !search && (
                   <button className="primary" onClick={openCreateArticleModal}>
                     Create First Article
                   </button>
@@ -838,14 +833,18 @@ export function KnowledgeCategoryPage() {
                     >
                       Title{getSortIndicator('title')}
                     </th>
-                    <th>Category</th>
                     <th 
                       className="sortable"
                       onClick={() => handleSort('status')}
                     >
                       Status{getSortIndicator('status')}
                     </th>
-                    <th>Author</th>
+                    <th 
+                      className="sortable"
+                      onClick={() => handleSort('authorName')}
+                    >
+                      Created By{getSortIndicator('authorName')}
+                    </th>
                     <th>Views</th>
                     <th 
                       className="sortable"
@@ -859,11 +858,11 @@ export function KnowledgeCategoryPage() {
                     >
                       Updated{getSortIndicator('updatedAt')}
                     </th>
-                    {(canManageArticles || isAdmin) && <th>Actions</th>}
+                    {(canManageArticles || isAdmin) && <th className="actions-col">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredArticles.map((article) => (
+                  {articles.map((article) => (
                     <tr key={article.id}>
                       <td>
                         <button 
@@ -872,51 +871,69 @@ export function KnowledgeCategoryPage() {
                         >
                           {article.title}
                         </button>
+                        {article.summary && (
+                          <div className="article-summary-preview">{article.summary}</div>
+                        )}
                       </td>
-                      <td>{article.categoryName}</td>
                       <td>{renderStatusBadge(article.status)}</td>
                       <td>{article.authorName || '-'}</td>
                       <td className="count-cell">{article.viewCount}</td>
                       <td>{formatDate(article.createdAt)}</td>
                       <td>{formatDate(article.updatedAt)}</td>
                       {(canManageArticles || isAdmin) && (
-                        <td>
+                        <td className="actions-col">
                           <div className="action-buttons">
+                            <button 
+                              className="action-btn view"
+                              onClick={() => viewArticle(article)}
+                              title="View"
+                            >
+                              👁️
+                            </button>
                             {canUpdateArticles && (
-                              <button 
-                                className="action-btn edit"
-                                onClick={() => openEditArticleModal(article)}
-                                title="Edit"
-                              >
-                                ✏️
-                              </button>
-                            )}
-                            {article.status === 'DRAFT' && canUpdateArticles && (
-                              <button 
-                                className="action-btn publish"
-                                onClick={() => handlePublishArticle(article)}
-                                title="Publish"
-                              >
-                                ✓
-                              </button>
-                            )}
-                            {article.status === 'PUBLISHED' && canUpdateArticles && (
-                              <button 
-                                className="action-btn archive"
-                                onClick={() => handleArchiveArticle(article)}
-                                title="Archive"
-                              >
-                                📦
-                              </button>
-                            )}
-                            {canDeleteArticles && (
-                              <button 
-                                className="action-btn delete"
-                                onClick={() => openDeleteArticleConfirm(article)}
-                                title="Delete"
-                              >
-                                🗑️
-                              </button>
+                              <>
+                                <button 
+                                  className="action-btn edit"
+                                  onClick={() => openEditArticleModal(article)}
+                                  title="Edit"
+                                >
+                                  ✏️
+                                </button>
+                                {article.status === 'DRAFT' && (
+                                  <button 
+                                    className="action-btn publish"
+                                    onClick={() => handlePublishArticle(article)}
+                                    title="Publish"
+                                  >
+                                    ✓
+                                  </button>
+                                )}
+                                {article.status === 'PUBLISHED' && (
+                                  <button 
+                                    className="action-btn archive"
+                                    onClick={() => handleArchiveArticle(article)}
+                                    title="Archive"
+                                  >
+                                    📦
+                                  </button>
+                                )}
+                                {article.status === 'ARCHIVED' && (
+                                  <button 
+                                    className="action-btn restore"
+                                    onClick={() => handleRestoreArticle(article)}
+                                    title="Restore"
+                                  >
+                                    ↩️
+                                  </button>
+                                )}
+                                <button 
+                                  className="action-btn delete"
+                                  onClick={() => openDeleteArticleConfirm(article)}
+                                  title="Delete"
+                                >
+                                  🗑️
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -1042,7 +1059,7 @@ export function KnowledgeCategoryPage() {
 
       {/* Article Form Modal */}
       {showArticleForm && (
-        <div className="modal-backdrop article-modal">
+        <div className="modal-backdrop">
           <div className="modal modal-large">
             <div className="page-title-row">
               <h3>{editingArticle ? 'Edit Article' : 'Create Article'}</h3>
@@ -1127,18 +1144,6 @@ export function KnowledgeCategoryPage() {
                   <button type="button" className="secondary" onClick={addTag}>Add</button>
                 </div>
               </div>
-            </div>
-
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                value={articleFormData.status}
-                onChange={(e) => setArticleFormData({ ...articleFormData, status: e.target.value as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' })}
-              >
-                <option value="DRAFT">Draft</option>
-                <option value="PUBLISHED">Published</option>
-                <option value="ARCHIVED">Archived</option>
-              </select>
             </div>
 
             <div className="form-actions">
@@ -1315,6 +1320,86 @@ export function KnowledgeCategoryPage() {
           text-decoration: underline;
         }
 
+        /* Enterprise Stats Grid */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .stat-card {
+          background: white;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          padding: 20px;
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          transition: box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          flex-shrink: 0;
+        }
+
+        .stat-card-primary .stat-icon {
+          background: rgba(84, 104, 255, 0.1);
+        }
+
+        .stat-card-success .stat-icon {
+          background: rgba(34, 197, 94, 0.1);
+        }
+
+        .stat-card-warning .stat-icon {
+          background: rgba(249, 115, 22, 0.1);
+        }
+
+        .stat-card-muted .stat-icon {
+          background: rgba(107, 114, 128, 0.1);
+        }
+
+        .stat-content {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .stat-label {
+          font-size: 13px;
+          color: var(--muted);
+          margin-bottom: 4px;
+        }
+
+        .stat-value {
+          font-size: 28px;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        .stat-card-primary .stat-value { color: var(--brand); }
+        .stat-card-success .stat-value { color: #22c55e; }
+        .stat-card-warning .stat-value { color: #f97316; }
+        .stat-card-muted .stat-value { color: #6b7280; }
+
+        .stat-hint {
+          font-size: 11px;
+          color: var(--muted);
+          margin-top: 4px;
+        }
+
+        /* Filters Bar */
         .filters-bar {
           display: flex;
           justify-content: space-between;
@@ -1323,20 +1408,27 @@ export function KnowledgeCategoryPage() {
           gap: 16px;
         }
 
+        .filters-left {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+
         .search-box input {
-          width: 300px;
+          width: 280px;
           border: 1px solid var(--line);
-          border-radius: 10px;
+          border-radius: 8px;
           padding: 10px 14px;
           font-size: 14px;
         }
 
         .filter-select {
           border: 1px solid var(--line);
-          border-radius: 10px;
+          border-radius: 8px;
           padding: 10px 14px;
           font-size: 14px;
           background: white;
+          cursor: pointer;
         }
 
         .sort-info {
@@ -1344,6 +1436,7 @@ export function KnowledgeCategoryPage() {
           font-size: 13px;
         }
 
+        /* Table Styles */
         .loading-state,
         .error-state,
         .empty-state {
@@ -1401,9 +1494,9 @@ export function KnowledgeCategoryPage() {
         }
 
         .table-card {
-          background: var(--panel);
+          background: white;
           border: 1px solid var(--line);
-          border-radius: 16px;
+          border-radius: 12px;
           overflow: hidden;
         }
 
@@ -1413,13 +1506,13 @@ export function KnowledgeCategoryPage() {
         }
 
         .table-card th {
-          background: var(--panel-soft);
-          font-size: 12px;
+          background: #f9fafb;
+          font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: var(--muted);
+          color: #6b7280;
           font-weight: 600;
-          padding: 12px 16px;
+          padding: 14px 16px;
           text-align: left;
           border-bottom: 1px solid var(--line);
         }
@@ -1430,7 +1523,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .table-card th.sortable:hover {
-          background: var(--line);
+          background: #f3f4f6;
         }
 
         .table-card td {
@@ -1439,8 +1532,12 @@ export function KnowledgeCategoryPage() {
           vertical-align: middle;
         }
 
+        .table-card tbody tr:last-child td {
+          border-bottom: none;
+        }
+
         .table-card tbody tr:hover {
-          background: var(--panel-soft);
+          background: #f9fafb;
         }
 
         .clickable-row {
@@ -1461,54 +1558,26 @@ export function KnowledgeCategoryPage() {
 
         .count-badge {
           display: inline-block;
-          min-width: 28px;
-          padding: 4px 8px;
-          background: var(--panel-soft);
-          border-radius: 12px;
+          min-width: 32px;
+          padding: 4px 10px;
+          background: #f3f4f6;
+          border-radius: 16px;
           font-size: 13px;
           font-weight: 600;
+          color: #374151;
         }
 
-        .action-buttons {
-          display: flex;
-          gap: 8px;
-        }
-
-        .action-btn {
-          border: none;
-          background: transparent;
-          padding: 6px 8px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: background 0.2s;
-        }
-
-        .action-btn:hover {
-          background: var(--panel-soft);
-        }
-
-        .action-btn.delete:hover {
-          background: var(--danger-soft);
-        }
-
-        .action-btn.publish:hover {
-          background: var(--success-soft);
-        }
-
-        .action-btn.archive:hover {
-          background: var(--warning-soft);
-        }
-
+        /* Article Title Cell */
         .article-title-link {
           background: none;
           border: none;
-          color: var(--text);
+          color: #111827;
           cursor: pointer;
           font-size: 14px;
           font-weight: 600;
           text-align: left;
           padding: 0;
+          display: block;
         }
 
         .article-title-link:hover {
@@ -1516,6 +1585,94 @@ export function KnowledgeCategoryPage() {
           text-decoration: underline;
         }
 
+        .article-summary-preview {
+          font-size: 12px;
+          color: var(--muted);
+          margin-top: 4px;
+          max-width: 300px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        /* Status Badges */
+        .status-badge {
+          display: inline-block;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: capitalize;
+        }
+
+        .status-badge.published {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .status-badge.draft {
+          background: #ffedd5;
+          color: #9a3412;
+        }
+
+        .status-badge.archived {
+          background: #f3f4f6;
+          color: #6b7280;
+        }
+
+        .status-badge.active {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .status-badge.inactive {
+          background: #f3f4f6;
+          color: #6b7280;
+        }
+
+        /* Actions Column */
+        .actions-col {
+          width: 160px;
+          text-align: right;
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 6px;
+          justify-content: flex-end;
+        }
+
+        .action-btn {
+          border: none;
+          background: #f3f4f6;
+          padding: 6px 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+          background: #e5e7eb;
+        }
+
+        .action-btn.delete:hover {
+          background: #fee2e2;
+        }
+
+        .action-btn.publish:hover {
+          background: #dcfce7;
+        }
+
+        .action-btn.archive:hover {
+          background: #ffedd5;
+        }
+
+        .action-btn.restore:hover {
+          background: #e0e7ff;
+        }
+
+        /* Modals */
         .modal-backdrop {
           position: fixed;
           top: 0;
@@ -1570,8 +1727,8 @@ export function KnowledgeCategoryPage() {
         }
 
         .form-error-banner {
-          background: var(--danger-soft);
-          color: var(--danger);
+          background: #fee2e2;
+          color: #991b1b;
           padding: 12px 16px;
           border-radius: 10px;
           font-size: 14px;
@@ -1580,14 +1737,13 @@ export function KnowledgeCategoryPage() {
 
         .form-group {
           margin-bottom: 16px;
-          position: relative;
         }
 
         .form-group label {
           display: block;
           font-size: 13px;
           font-weight: 600;
-          color: var(--muted);
+          color: #374151;
           margin-bottom: 6px;
         }
 
@@ -1596,7 +1752,7 @@ export function KnowledgeCategoryPage() {
         .form-group select {
           width: 100%;
           border: 1px solid var(--line);
-          border-radius: 10px;
+          border-radius: 8px;
           padding: 10px 12px;
           font-size: 14px;
         }
@@ -1606,6 +1762,7 @@ export function KnowledgeCategoryPage() {
         .form-group select:focus {
           outline: none;
           border-color: var(--brand);
+          box-shadow: 0 0 0 3px rgba(84, 104, 255, 0.1);
         }
 
         .form-row-2 {
@@ -1616,7 +1773,7 @@ export function KnowledgeCategoryPage() {
 
         .tags-input-container {
           border: 1px solid var(--line);
-          border-radius: 10px;
+          border-radius: 8px;
           padding: 10px;
         }
 
@@ -1631,9 +1788,9 @@ export function KnowledgeCategoryPage() {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          background: var(--panel-soft);
+          background: #f3f4f6;
           padding: 4px 10px;
-          border-radius: 12px;
+          border-radius: 16px;
           font-size: 13px;
         }
 
@@ -1659,8 +1816,8 @@ export function KnowledgeCategoryPage() {
         }
 
         .warning-box {
-          background: var(--warning-soft);
-          border: 1px solid var(--warning);
+          background: #fef3c7;
+          border: 1px solid #f59e0b;
           border-radius: 10px;
           padding: 16px;
           margin-bottom: 16px;
@@ -1668,7 +1825,7 @@ export function KnowledgeCategoryPage() {
 
         .warning-box p {
           margin: 0 0 8px 0;
-          color: var(--warning);
+          color: #92400e;
         }
 
         .warning-box p:last-child {
@@ -1686,6 +1843,7 @@ export function KnowledgeCategoryPage() {
           margin-top: 20px;
         }
 
+        /* Article View */
         .article-view {
           margin-bottom: 20px;
         }
@@ -1711,7 +1869,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-summary {
-          background: var(--panel-soft);
+          background: #f9fafb;
           padding: 16px;
           border-radius: 10px;
           margin-bottom: 16px;
@@ -1735,7 +1893,7 @@ export function KnowledgeCategoryPage() {
           background: var(--brand);
           color: white;
           padding: 4px 12px;
-          border-radius: 12px;
+          border-radius: 16px;
           font-size: 12px;
         }
 
@@ -1761,14 +1919,14 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-body code {
-          background: var(--panel-soft);
+          background: #f3f4f6;
           padding: 2px 6px;
           border-radius: 4px;
           font-family: monospace;
         }
 
         .article-body pre {
-          background: var(--panel-soft);
+          background: #f3f4f6;
           padding: 16px;
           border-radius: 10px;
           overflow-x: auto;
@@ -1793,6 +1951,7 @@ export function KnowledgeCategoryPage() {
           color: var(--muted);
         }
 
+        /* Toast */
         .toast-notification {
           position: fixed;
           bottom: 24px;
@@ -1805,12 +1964,12 @@ export function KnowledgeCategoryPage() {
         }
 
         .toast-notification.success {
-          background: var(--success);
+          background: #22c55e;
           color: white;
         }
 
         .toast-notification.error {
-          background: var(--danger);
+          background: #ef4444;
           color: white;
         }
 
@@ -1825,7 +1984,12 @@ export function KnowledgeCategoryPage() {
           }
         }
 
+        /* Responsive */
         @media (max-width: 1024px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
           .table-card {
             overflow-x: auto;
           }
@@ -1855,8 +2019,16 @@ export function KnowledgeCategoryPage() {
             align-items: stretch;
           }
 
+          .filters-left {
+            flex-direction: column;
+          }
+
           .search-box input {
             width: 100%;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
           }
 
           .article-meta {
