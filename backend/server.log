@@ -1,0 +1,43 @@
+nohup: ignoring input
+◇ injected env (11) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+{"level":30,"time":1784457194025,"pid":15908,"hostname":"runtime-fzjiqmrjfxzvpubg-bcdd84c-7ngzf","msg":"Saven InfraOps API running on port 4000"}
+{"level":30,"time":1784457202368,"pid":15908,"hostname":"runtime-fzjiqmrjfxzvpubg-bcdd84c-7ngzf","req":{"id":1,"method":"GET","url":"/api/health","query":{},"params":{},"headers":{"host":"localhost:4000","user-agent":"curl/8.14.1","accept":"*/*"},"remoteAddress":"::ffff:127.0.0.1","remotePort":57564},"res":{"statusCode":200,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:3001","vary":"Origin","access-control-allow-credentials":"true","x-ratelimit-limit":"120","x-ratelimit-remaining":"119","date":"Sun, 19 Jul 2026 10:33:22 GMT","x-ratelimit-reset":"1784457263","content-type":"application/json; charset=utf-8","content-length":"46","etag":"W/\"2e-ZQPEVCP1ZzCARXLfcrXkQ2Vmxbs\""}},"responseTime":8,"msg":"request completed"}
+Error: HttpError: Missing bearer token
+    at requireAuth (file:///workspace/project/saven-infraops-v6/backend/dist/src/middleware/auth.js:7:15)
+    at Layer.handleRequest (/workspace/project/saven-infraops-v6/backend/node_modules/router/lib/layer.js:152:17)
+    at next (/workspace/project/saven-infraops-v6/backend/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/workspace/project/saven-infraops-v6/backend/node_modules/router/lib/route.js:117:3)
+    at handle (/workspace/project/saven-infraops-v6/backend/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/workspace/project/saven-infraops-v6/backend/node_modules/router/lib/layer.js:152:17)
+    at /workspace/project/saven-infraops-v6/backend/node_modules/router/index.js:295:15
+    at processParams (/workspace/project/saven-infraops-v6/backend/node_modules/router/index.js:582:12)
+    at next (/workspace/project/saven-infraops-v6/backend/node_modules/router/index.js:291:5)
+    at Function.handle (/workspace/project/saven-infraops-v6/backend/node_modules/router/index.js:186:3) {
+  statusCode: 401,
+  details: undefined
+}
+{"level":30,"time":1784457205693,"pid":15908,"hostname":"runtime-fzjiqmrjfxzvpubg-bcdd84c-7ngzf","req":{"id":2,"method":"GET","url":"/api/reports","query":{},"params":{},"headers":{"host":"localhost:4000","user-agent":"curl/8.14.1","accept":"*/*"},"remoteAddress":"::ffff:127.0.0.1","remotePort":46226},"res":{"statusCode":401,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:3001","vary":"Origin","access-control-allow-credentials":"true","x-ratelimit-limit":"120","x-ratelimit-remaining":"118","date":"Sun, 19 Jul 2026 10:33:25 GMT","x-ratelimit-reset":"1784457263","content-type":"application/json; charset=utf-8","content-length":"34","etag":"W/\"22-Q7O4lnqlQaUb0as731b1UbIKFhE\""}},"responseTime":2,"msg":"request completed"}
+prisma:error 
+Invalid `prisma.user.findUnique()` invocation:
+
+
+Can't reach database server at `localhost:3306`
+
+Please make sure your database server is running at `localhost:3306`.
+Error: PrismaClientInitializationError: 
+Invalid `prisma.user.findUnique()` invocation:
+
+
+Can't reach database server at `localhost:3306`
+
+Please make sure your database server is running at `localhost:3306`.
+    at $n.handleRequestError (/workspace/project/saven-infraops-v6/backend/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/workspace/project/saven-infraops-v6/backend/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/workspace/project/saven-infraops-v6/backend/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at async l (/workspace/project/saven-infraops-v6/backend/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async loginWithPassword (file:///workspace/project/saven-infraops-v6/backend/dist/src/modules/auth/auth.service.js:7:18)
+    at async file:///workspace/project/saven-infraops-v6/backend/dist/src/modules/auth/auth.routes.js:14:24 {
+  clientVersion: '5.22.0',
+  errorCode: undefined
+}
+{"level":30,"time":1784457210803,"pid":15908,"hostname":"runtime-fzjiqmrjfxzvpubg-bcdd84c-7ngzf","req":{"id":3,"method":"POST","url":"/api/auth/login","query":{},"params":{},"headers":{"host":"localhost:4000","user-agent":"curl/8.14.1","accept":"*/*","content-type":"application/json","content-length":"48"},"remoteAddress":"::ffff:127.0.0.1","remotePort":46236},"res":{"statusCode":500,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:3001","vary":"Origin","access-control-allow-credentials":"true","x-ratelimit-limit":"120","x-ratelimit-remaining":"117","date":"Sun, 19 Jul 2026 10:33:30 GMT","x-ratelimit-reset":"1784457263","content-type":"application/json; charset=utf-8","content-length":"188","etag":"W/\"bc-muxQOooAdGFbjaU7Dg69NcS9PZQ\""}},"err":{"type":"Error","message":"failed with status code 500","stack":"Error: failed with status code 500\n    at onResFinished (/workspace/project/saven-infraops-v6/backend/node_modules/pino-http/logger.js:115:39)\n    at ServerResponse.onResponseComplete (/workspace/project/saven-infraops-v6/backend/node_modules/pino-http/logger.js:178:14)\n    at ServerResponse.emit (node:events:531:35)\n    at onFinish (node:_http_outgoing:1084:10)\n    at callback (node:internal/streams/writable:766:21)\n    at afterWrite (node:internal/streams/writable:710:5)\n    at afterWriteTick (node:internal/streams/writable:696:10)\n    at process.processTicksAndRejections (node:internal/process/task_queues:88:21)"},"responseTime":7,"msg":"request errored"}

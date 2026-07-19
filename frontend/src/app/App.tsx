@@ -311,7 +311,7 @@ export function App() {
           path="reports-analytics" 
           element={
             <PermissionRoute permission={modulePermissions['reports-analytics']}>
-              <ModulePage moduleKey="reports-analytics" title="Reports & Analytics" />
+              <ReportsPage />
             </PermissionRoute>
           } 
         />
