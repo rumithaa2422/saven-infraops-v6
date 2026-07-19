@@ -497,21 +497,46 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
 
   // ============================================
-  // REPORTS MODULE
+  // REPORTS MODULE - Phase 6: Granular Permissions
   // ============================================
   ['reports:create', new Set([
     'reports:view',
     'reports:view_stats',
+    'reports:view_analytics',
     'reports:preview',
     'reports:count',
     'reports:generate',
     'reports:download',
-    'reports:create',
+    'reports:export',
+    'reports:filter',
+  ])],
+  ['reports:manage', new Set([
+    'reports:view',
+    'reports:view_stats',
+    'reports:view_analytics',
+    'reports:preview',
+    'reports:count',
+    'reports:generate',
+    'reports:download',
+    'reports:export',
+    'reports:filter',
+  ])],
+  ['reports:read', new Set([
+    'reports:view',
+    'reports:view_stats',
+    'reports:view_analytics',
+    'reports:preview',
+    'reports:count',
+    'reports:filter',
+  ])],
+  ['reports:write', new Set([
+    'reports:generate',
+    'reports:download',
     'reports:export',
   ])],
 
   // ============================================
-  // USERS MODULE
+  // USERS MODULE - Phase 6: Granular Permissions
   // ============================================
   ['users:manage', new Set([
     'users:view',
@@ -519,9 +544,13 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'users:view_details',
     'users:view_own_profile',
     'users:create',
-    'users:update',
+    'users:edit',
+    'users:delete',
     'users:activate',
     'users:deactivate',
+    'users:lock',
+    'users:unlock',
+    'users:assign_team',
     'users:assign_role',
     'users:remove_role',
     'users:reset_password',
@@ -532,14 +561,16 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
   ['users:write', new Set([
     'users:create',
-    'users:update',
+    'users:edit',
     'users:activate',
     'users:deactivate',
+    'users:lock',
+    'users:unlock',
+    'users:assign_team',
     'users:assign_role',
     'users:remove_role',
     'users:reset_password',
-    'users:update_own_profile',
-    'users:update_preferences',
+    'users:import',
   ])],
   ['users:read', new Set([
     'users:view',
@@ -554,7 +585,7 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
   ])],
 
   // ============================================
-  // ROLES MODULE
+  // ROLES MODULE - Phase 6: Granular Permissions
   // ============================================
   ['roles:manage', new Set([
     'roles:view',
@@ -562,30 +593,82 @@ export const PERMISSION_ALIAS_MAP: PermissionAliasMap = new Map([
     'roles:view_details',
     'roles:view_permissions',
     'roles:create',
-    'roles:update',
+    'roles:edit',
     'roles:delete',
-    'roles:update_permissions',
+    'roles:clone',
+    'roles:assign_permissions',
+    'roles:remove_permissions',
+    'roles:import',
+    'roles:export',
+  ])],
+  ['roles:write', new Set([
+    'roles:create',
+    'roles:edit',
+    'roles:clone',
+    'roles:assign_permissions',
+    'roles:remove_permissions',
+    'roles:import',
+  ])],
+  ['roles:read', new Set([
+    'roles:view',
+    'roles:view_list',
+    'roles:view_details',
+    'roles:view_permissions',
+    'roles:export',
+  ])],
+  // Permission matrix
+  ['permissions:view', new Set([
+    'permissions:view',
+    'permissions:edit',
+  ])],
+  ['permissions:edit', new Set([
+    'permissions:edit',
   ])],
 
   // ============================================
-  // SETTINGS MODULE
+  // SETTINGS MODULE - Phase 6: Granular Permissions
   // ============================================
   ['settings:manage', new Set([
     'settings:view',
-    'settings:update',
+    'settings:update_profile',
+    'settings:change_password',
+    'settings:update_theme',
+    'settings:update_notifications',
+    'settings:update_system',
+    'settings:update_company',
+    'settings:update_security',
   ])],
   ['settings:write', new Set([
-    'settings:update',
+    'settings:update_profile',
+    'settings:change_password',
+    'settings:update_theme',
+    'settings:update_notifications',
   ])],
   ['settings:read', new Set([
     'settings:view',
   ])],
+  ['settings:system', new Set([
+    'settings:update_system',
+    'settings:update_company',
+    'settings:update_security',
+  ])],
 
   // ============================================
-  // AI MODULE
+  // AI MODULE - Phase 6: Granular Permissions
   // ============================================
   ['ai:ask', new Set([
-    'ai:ask',
+    'ai:view',
+    'ai:chat',
+    'ai:execute',
+    'ai:view_history',
+    'ai:delete_history',
+  ])],
+  ['ai:manage', new Set([
+    'ai:view',
+    'ai:chat',
+    'ai:execute',
+    'ai:view_history',
+    'ai:delete_history',
   ])],
 ]);
 

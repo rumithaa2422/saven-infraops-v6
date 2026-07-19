@@ -113,7 +113,7 @@ const allQuickActions: QuickAction[] = [
     label: 'Manage Roles',
     icon: Shield,
     path: '/roles-permissions',
-    permission: 'roles:manage',
+    permission: 'roles:view',
     description: 'Manage roles & permissions'
   },
 

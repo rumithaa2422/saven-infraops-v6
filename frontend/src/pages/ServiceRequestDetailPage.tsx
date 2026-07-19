@@ -79,7 +79,11 @@ export function ServiceRequestDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const canManage = hasPermission('tickets:manage');
+  // PART 4/6: Permission-based access using granular permissions
+  const canManage = hasPermission('tickets:update') || hasPermission('tickets:manage');
+  const canDelete = hasPermission('tickets:delete');
+  const canAssign = hasPermission('tickets:assign');
+  
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
   const isEmployee = !isSuperAdmin && !isAdmin;

@@ -88,7 +88,14 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'status', label: 'Status' },
       { key: 'description', label: 'Description' }
     ],
-    permissions: { create: 'incidents:create', write: 'incidents:manage', delete: 'incidents:manage', export: 'incidents:export', import: 'settings:write' },
+    // PART 4: Incidents Module - Granular Permissions
+    permissions: { 
+      view: 'incidents:view',
+      create: 'incidents:create', 
+      write: 'incidents:update', 
+      delete: 'incidents:delete', 
+      export: 'incidents:export' 
+    },
     moduleType: 'incidents'
   },
   // PART 4: Problems Module - Granular Permissions
@@ -312,6 +319,7 @@ const configs: Record<string, ModuleConfig> = {
     },
     moduleType: 'knowledge-base'
   },
+  // PART 6: Users Module - Granular Permissions
   'users-teams': {
     referenceKey: 'email',
     titleKey: 'name',
@@ -335,14 +343,15 @@ const configs: Record<string, ModuleConfig> = {
     ],
     permissions: {
       view: 'users:view',      // View user details in drawer
-      create: 'users:create',  // Create user button/modal
-      write: 'users:manage',   // Edit/Enable/Disable/Reset Password
-      delete: 'users:delete',  // Delete user
-      export: 'users:export',  // Export users button
-      import: 'settings:write' // Import users
+      create: 'users:create',   // Create user button/modal
+      write: 'users:edit',      // Edit/Enable/Disable/Reset Password
+      delete: 'users:delete',   // Delete user
+      export: 'users:export',   // Export users button
+      import: 'users:import'    // Import users
     },
     moduleType: 'users-teams'
   },
+  // PART 6: Reports Module - Granular Permissions
   'reports-analytics': {
     referenceKey: 'title',
     titleKey: 'description',
@@ -357,7 +366,11 @@ const configs: Record<string, ModuleConfig> = {
       { key: 'description', label: 'Description' },
       { key: 'owner', label: 'Owner' }
     ],
-    permissions: { create: undefined, write: 'reports:view', export: 'reports:export' }
+    permissions: { 
+      view: 'reports:view', 
+      write: 'reports:generate', 
+      export: 'reports:export' 
+    }
   }
 };
 

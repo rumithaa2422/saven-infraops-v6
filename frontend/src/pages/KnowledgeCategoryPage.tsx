@@ -100,17 +100,18 @@ export function KnowledgeCategoryPage() {
   const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | null>(null);
 
   // User permissions
+  // PART 5/6: Granular permissions - kb:manage alias still works for backward compatibility
   const canManageKB = isSuperAdmin || hasPermission('kb:manage');
   
-  // Category permissions
-  const canManageCategories = hasPermission('knowledge.category:create') || hasPermission('kb:manage');
-  const canUpdateCategories = hasPermission('knowledge.category:update') || hasPermission('kb:manage');
-  const canDeleteCategories = hasPermission('knowledge.category:delete') || hasPermission('kb:manage');
+  // Category permissions - PART 5/6: Granular permissions
+  const canManageCategories = hasPermission('kb.category:create') || hasPermission('kb:manage');
+  const canUpdateCategories = hasPermission('kb.category:edit') || hasPermission('kb:manage');
+  const canDeleteCategories = hasPermission('kb.category:delete') || hasPermission('kb:manage');
 
-  // Article permissions
-  const canCreateArticles = hasPermission('knowledge.article:create') || hasPermission('kb:manage');
-  const canUpdateArticles = hasPermission('knowledge.article:update') || hasPermission('kb:manage');
-  const canDeleteArticles = hasPermission('knowledge.article:delete') || hasPermission('kb:manage');
+  // Article permissions - PART 5/6: Granular permissions
+  const canCreateArticles = hasPermission('kb:create') || hasPermission('kb:manage');
+  const canUpdateArticles = hasPermission('kb:edit') || hasPermission('kb:manage');
+  const canDeleteArticles = hasPermission('kb:delete') || hasPermission('kb:manage');
   const canManageArticles = canCreateArticles || canUpdateArticles || canDeleteArticles;
 
   // Categories state
@@ -1311,7 +1312,8 @@ export function KnowledgeCategoryPage() {
                         </svg>
                         <span>Download</span>
                       </button>
-                      {(hasPermission('kb:manage') || isSuperAdmin) && (
+                      {/* PART 5/6: Delete attachment requires kb:delete or kb:manage */}
+                      {(hasPermission('kb:delete') || hasPermission('kb:manage') || isSuperAdmin) && (
                         <button 
                           className="action-btn delete-btn"
                           onClick={() => setDeleteConfirmAttachment({ id: attachment.id, name: attachment.originalFileName })}

@@ -195,9 +195,10 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createKnowledgeBaseArticle({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateKnowledgeBaseArticle(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 6: Users Module - Granular Permissions
   'users-teams': {
     permission: 'users:view',
-    writePermission: 'users:update',
+    writePermission: 'users:edit',
     deletePermission: 'users:delete',
     viewPermission: 'users:view',
     createPermission: 'users:create',
@@ -229,12 +230,14 @@ const moduleMap: Record<string, ModuleConfig> = {
     create: async (payload, actor, ip) => createUser({ ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip }),
     update: async (id, payload, actor, ip) => updateUser(id, { ...payload, actorId: actor?.id, actorEmail: actor?.email, ipAddress: ip })
   },
+  // PART 6: Reports Module - Granular Permissions
   'reports-analytics': {
-    permission: 'dashboard:read',
-    writePermission: 'dashboard:read',
+    permission: 'reports:view',
+    writePermission: 'reports:generate',
+    deletePermission: 'reports:manage',
     viewPermission: 'reports:view',
-    createPermission: 'reports:create',
-    managePermission: 'reports:create',
+    createPermission: 'reports:generate',
+    managePermission: 'reports:manage',
     exportPermission: 'reports:export',
     entityType: 'Report',
     list: async () => [
