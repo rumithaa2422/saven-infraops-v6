@@ -84,8 +84,8 @@ type SortOrder = 'asc' | 'desc';
 export function KnowledgeCategoryPage() {
   const { hasPermission, isSuperAdmin } = useAuth();
   
-  // View mode: 'browse' = browse categories, 'articles' = view articles
-  const [viewMode, setViewMode] = useState<'browse' | 'articles'>('browse');
+  // View mode: 'browse' = browse categories, 'articles' = view articles, 'article-detail' = read article
+  const [viewMode, setViewMode] = useState<'browse' | 'articles' | 'article-detail'>('browse');
   const [selectedCategory, setSelectedCategory] = useState<KnowledgeCategory | null>(null);
 
   // User permissions
@@ -269,6 +269,7 @@ export function KnowledgeCategoryPage() {
 
   // Navigate back to browse view
   const backToBrowse = () => {
+    setViewingArticle(null);
     setSelectedCategory(null);
     setViewMode('browse');
     setArticles([]);
@@ -503,12 +504,20 @@ export function KnowledgeCategoryPage() {
 
   const viewArticle = async (article: KnowledgeArticle) => {
     try {
+      setViewingArticle(null);
       const response = await api.get(`/knowledge/articles/${article.id}`);
       setViewingArticle(response.data);
+      setViewMode('article-detail');
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
       showToast('error', axiosError.response?.data?.message || 'Failed to load article');
     }
+  };
+
+  // Go back to articles list from article detail
+  const backToArticles = () => {
+    setViewingArticle(null);
+    setViewMode('articles');
   };
 
   // Tag handlers
@@ -596,11 +605,19 @@ export function KnowledgeCategoryPage() {
       </div>
 
       {/* Breadcrumb */}
-      {viewMode === 'articles' && (
+      {(viewMode === 'articles' || viewMode === 'article-detail') && (
         <div className="breadcrumb">
           <button className="breadcrumb-link" onClick={backToBrowse}>
-            ← Back to Browse Categories
+            ← Knowledge Base
           </button>
+          {viewMode === 'article-detail' && (
+            <>
+              <span className="breadcrumb-separator">/</span>
+              <button className="breadcrumb-link" onClick={backToArticles}>
+                {selectedCategory?.name || 'All Articles'}
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -892,6 +909,76 @@ export function KnowledgeCategoryPage() {
         </>
       )}
 
+      {/* Article Detail View */}
+      {viewMode === 'article-detail' && viewingArticle && (
+        <div className="article-detail-view">
+          {/* Article Header */}
+          <div className="article-detail-header">
+            <div className="article-detail-category">
+              <span className="category-badge">{viewingArticle.categoryName}</span>
+            </div>
+            <h1 className="article-detail-title">{viewingArticle.title}</h1>
+            {viewingArticle.summary && (
+              <p className="article-detail-summary">{viewingArticle.summary}</p>
+            )}
+          </div>
+
+          {/* Article Meta */}
+          <div className="article-detail-meta">
+            <div className="meta-left">
+              <span className="meta-author">
+                <span className="meta-icon">👤</span>
+                {viewingArticle.authorName || 'Unknown'}
+              </span>
+              <span className="meta-date">
+                <span className="meta-icon">📅</span>
+                Created {formatDate(viewingArticle.createdAt)}
+              </span>
+              {viewingArticle.updatedAt !== viewingArticle.createdAt && (
+                <span className="meta-date">
+                  <span className="meta-icon">🔄</span>
+                  Updated {formatDate(viewingArticle.updatedAt)}
+                </span>
+              )}
+              <span className="meta-views">
+                <span className="meta-icon">👁️</span>
+                {viewingArticle.viewCount} views
+              </span>
+            </div>
+            {canUpdateArticles && (
+              <div className="meta-actions">
+                <button 
+                  className="secondary"
+                  onClick={() => {
+                    setViewMode('articles');
+                    openEditArticleModal(viewingArticle);
+                  }}
+                >
+                  ✏️ Edit Article
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Article Tags */}
+          {viewingArticle.tags && viewingArticle.tags.length > 0 && (
+            <div className="article-detail-tags">
+              {viewingArticle.tags.map((tag, index) => (
+                <span key={index} className="article-tag">{tag}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Article Content */}
+          <div className="article-detail-content">
+            <div 
+              className="article-content-body"
+              dangerouslySetInnerHTML={{ __html: viewingArticle.body }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Category Form Modal */}
       {showCategoryForm && (
         <div className="modal-backdrop">
@@ -1146,67 +1233,6 @@ export function KnowledgeCategoryPage() {
                 {deletingArticleInProgress ? 'Deleting...' : 'Delete'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Article View Panel */}
-      {viewingArticle && (
-        <div className="modal-backdrop">
-          <div className="modal modal-large">
-            <div className="page-title-row">
-              <h3>{viewingArticle.title}</h3>
-              <button type="button" className="close" onClick={() => setViewingArticle(null)}>×</button>
-            </div>
-
-            <div className="article-view">
-              <div className="article-meta">
-                <span className="article-category">{viewingArticle.categoryName}</span>
-                <span className="article-views">{viewingArticle.viewCount} views</span>
-              </div>
-
-              {viewingArticle.summary && (
-                <div className="article-summary">
-                  <p>{viewingArticle.summary}</p>
-                </div>
-              )}
-
-              {viewingArticle.tags && viewingArticle.tags.length > 0 && (
-                <div className="article-tags">
-                  {viewingArticle.tags.map((tag, index) => (
-                    <span key={index} className="tag-static">{tag}</span>
-                  ))}
-                </div>
-              )}
-
-              <div 
-                className="article-body"
-                dangerouslySetInnerHTML={{ __html: viewingArticle.body }}
-              />
-
-              <div className="article-footer">
-                <div className="article-author">
-                  <span>By {viewingArticle.authorName || 'Unknown'}</span>
-                  <span>Created {formatDate(viewingArticle.createdAt)}</span>
-                  <span>Updated {formatDate(viewingArticle.updatedAt)}</span>
-                </div>
-              </div>
-            </div>
-
-            {canUpdateArticles && (
-              <div className="form-actions">
-                <button 
-                  type="button" 
-                  className="secondary" 
-                  onClick={() => {
-                    setViewingArticle(null);
-                    openEditArticleModal(viewingArticle);
-                  }}
-                >
-                  Edit Article
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -2057,6 +2083,274 @@ export function KnowledgeCategoryPage() {
           .article-author {
             flex-direction: column;
             gap: 4px;
+          }
+        }
+      `}</style>
+
+      {/* Article Detail Styles */}
+      <style>{`
+        /* Breadcrumb Separator */
+        .breadcrumb-separator {
+          color: var(--muted);
+          margin: 0 8px;
+        }
+
+        /* Article Detail View */
+        .article-detail-view {
+          background: white;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        /* Article Detail Header */
+        .article-detail-header {
+          padding: 32px 32px 24px;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .article-detail-category {
+          margin-bottom: 12px;
+        }
+
+        .category-badge {
+          display: inline-block;
+          background: var(--brand);
+          color: white;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 6px 14px;
+          border-radius: 16px;
+        }
+
+        .article-detail-title {
+          font-size: 28px;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 12px 0;
+          line-height: 1.3;
+        }
+
+        .article-detail-summary {
+          font-size: 16px;
+          color: var(--muted);
+          line-height: 1.6;
+          margin: 0;
+        }
+
+        /* Article Meta */
+        .article-detail-meta {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 32px;
+          background: var(--panel-soft);
+          border-bottom: 1px solid var(--line);
+        }
+
+        .meta-left {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          flex-wrap: wrap;
+        }
+
+        .meta-author,
+        .meta-date,
+        .meta-views {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          color: var(--muted);
+        }
+
+        .meta-icon {
+          font-size: 14px;
+        }
+
+        .meta-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .meta-actions button {
+          font-size: 13px;
+          padding: 8px 16px;
+        }
+
+        /* Article Tags */
+        .article-detail-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 16px 32px;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .article-tag {
+          display: inline-block;
+          background: var(--panel-soft);
+          color: var(--text);
+          font-size: 12px;
+          font-weight: 500;
+          padding: 6px 12px;
+          border-radius: 12px;
+          border: 1px solid var(--line);
+        }
+
+        /* Article Content */
+        .article-detail-content {
+          padding: 32px;
+        }
+
+        .article-content-body {
+          font-size: 15px;
+          line-height: 1.8;
+          color: var(--text);
+          max-width: 800px;
+        }
+
+        .article-content-body h1 {
+          font-size: 24px;
+          font-weight: 700;
+          margin: 32px 0 16px;
+          color: var(--text);
+        }
+
+        .article-content-body h2 {
+          font-size: 20px;
+          font-weight: 600;
+          margin: 28px 0 12px;
+          color: var(--text);
+        }
+
+        .article-content-body h3 {
+          font-size: 18px;
+          font-weight: 600;
+          margin: 24px 0 10px;
+          color: var(--text);
+        }
+
+        .article-content-body p {
+          margin: 0 0 16px;
+        }
+
+        .article-content-body ul,
+        .article-content-body ol {
+          margin: 0 0 16px;
+          padding-left: 24px;
+        }
+
+        .article-content-body li {
+          margin-bottom: 8px;
+        }
+
+        .article-content-body code {
+          background: var(--panel-soft);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 14px;
+        }
+
+        .article-content-body pre {
+          background: var(--panel-soft);
+          padding: 16px 20px;
+          border-radius: 8px;
+          overflow-x: auto;
+          margin: 0 0 16px;
+          border: 1px solid var(--line);
+        }
+
+        .article-content-body pre code {
+          background: none;
+          padding: 0;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .article-content-body blockquote {
+          border-left: 4px solid var(--brand);
+          padding: 12px 20px;
+          margin: 0 0 16px;
+          background: var(--panel-soft);
+          border-radius: 0 8px 8px 0;
+        }
+
+        .article-content-body blockquote p {
+          margin: 0;
+        }
+
+        .article-content-body a {
+          color: var(--brand);
+          text-decoration: none;
+        }
+
+        .article-content-body a:hover {
+          text-decoration: underline;
+        }
+
+        .article-content-body img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+          margin: 16px 0;
+        }
+
+        .article-content-body table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 0 0 16px;
+        }
+
+        .article-content-body th,
+        .article-content-body td {
+          padding: 10px 14px;
+          border: 1px solid var(--line);
+          text-align: left;
+        }
+
+        .article-content-body th {
+          background: var(--panel-soft);
+          font-weight: 600;
+        }
+
+        /* Article Detail Responsive */
+        @media (max-width: 768px) {
+          .article-detail-header {
+            padding: 24px 20px;
+          }
+
+          .article-detail-title {
+            font-size: 22px;
+          }
+
+          .article-detail-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 20px;
+          }
+
+          .meta-left {
+            gap: 16px;
+          }
+
+          .meta-actions {
+            width: 100%;
+          }
+
+          .meta-actions button {
+            flex: 1;
+          }
+
+          .article-detail-tags {
+            padding: 12px 20px;
+          }
+
+          .article-detail-content {
+            padding: 20px;
           }
         }
       `}</style>
