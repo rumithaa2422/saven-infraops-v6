@@ -8,6 +8,7 @@ export * from './change.service.js';
 export * from './compliance.service.js';
 export * from './incident.service.js';
 export * from './knowledgeBase.service.js';
+export * from './knowledgeCategory.service.js';
 export * from './problem.service.js';
 export * from './projectEnvironment.service.js';
 export * from './role.service.js';

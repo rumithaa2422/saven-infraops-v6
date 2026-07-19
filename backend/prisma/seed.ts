@@ -96,6 +96,12 @@ async function main() {
     'kb:archive',            // NEW - archive articles
     'kb:export',             // NEW - export KB
     
+    // Knowledge Categories (NEW namespace)
+    'knowledge.category:view',    // NEW - view knowledge categories
+    'knowledge.category:create',  // NEW - create knowledge categories
+    'knowledge.category:update',  // NEW - update knowledge categories
+    'knowledge.category:delete',  // NEW - delete knowledge categories
+    
     // Reports & Analytics (NEW namespace)
     'reports:view',          // NEW - view reports
     'reports:create',        // NEW - create reports
@@ -327,6 +333,47 @@ async function main() {
 
   // NOTE: Compliance module is now a document repository.
   // No seed data needed - documents are uploaded by users.
+
+  // ============================================
+  // KNOWLEDGE BASE CATEGORIES
+  // ============================================
+  // Default knowledge categories for organizing KB articles
+  // Using upsert for idempotency
+
+  const knowledgeCategories = [
+    { id: 'kbcat_getting_started', name: 'Getting Started', description: 'Guides and tutorials for new users', color: '#10b981', displayOrder: 1 },
+    { id: 'kbcat_infrastructure', name: 'Infrastructure', description: 'Infrastructure setup and management', color: '#3b82f6', displayOrder: 2 },
+    { id: 'kbcat_development', name: 'Development', description: 'Development best practices and guides', color: '#8b5cf6', displayOrder: 3 },
+    { id: 'kbcat_cloud', name: 'Cloud', description: 'Cloud platforms and services', color: '#06b6d4', displayOrder: 4 },
+    { id: 'kbcat_security', name: 'Security', description: 'Security policies and procedures', color: '#ef4444', displayOrder: 5 },
+    { id: 'kbcat_ai', name: 'AI', description: 'AI and machine learning resources', color: '#f59e0b', displayOrder: 6 },
+    { id: 'kbcat_hr', name: 'HR', description: 'Human resources policies and guides', color: '#ec4899', displayOrder: 7 },
+    { id: 'kbcat_policies', name: 'Policies', description: 'Company policies and procedures', color: '#64748b', displayOrder: 8 },
+    { id: 'kbcat_internal_tools', name: 'Internal Tools', description: 'Internal tool documentation', color: '#84cc16', displayOrder: 9 }
+  ];
+
+  console.log('[KB] Seeding knowledge categories...');
+  for (const category of knowledgeCategories) {
+    await prisma.knowledgeCategory.upsert({
+      where: { id: category.id },
+      update: {
+        name: category.name,
+        description: category.description,
+        color: category.color,
+        displayOrder: category.displayOrder,
+        isActive: true
+      },
+      create: {
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        color: category.color,
+        displayOrder: category.displayOrder,
+        isActive: true
+      }
+    });
+  }
+  console.log(`[KB] Seeded ${knowledgeCategories.length} knowledge categories.`);
 }
 
 main()
