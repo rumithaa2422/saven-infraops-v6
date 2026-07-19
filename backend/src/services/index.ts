@@ -15,5 +15,7 @@ export * from './role.service.js';
 export * from './serviceRequest.service.js';
 export * from './vendorLicense.service.js';
 
-// Export permission service
+// Export permission services
 export * from './permission.service.js';
+export * from './permissionMetadata.service.js';
+export * from './rolePermission.service.js';

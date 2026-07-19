@@ -1,532 +1,804 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
-// Enhanced Role type with status
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
+
 type Role = {
   id: string;
   name: string;
   description: string | null;
   permissionCount: number;
   userCount: number;
-  status?: 'active' | 'inactive';
 };
 
-type Permission = {
-  id: string;
+type PermissionMetadata = {
   code: string;
-  description: string | null;
+  module: string;
+  action: string;
+  displayName: string;
+  description: string;
+  category: 'view' | 'action' | 'manage' | 'admin';
+  sortOrder: number;
 };
 
-// Phase 5B.2: Module configuration for permissions
-const moduleGroups = [
-  {
-    label: 'Core Operations',
-    modules: [
-      { label: 'Dashboard', permissions: ['dashboard:view'] },
-      { label: 'Service Requests', permissions: ['tickets:view', 'tickets:create', 'tickets:manage', 'tickets:assign'] },
-      { label: 'Incidents', permissions: ['incidents:view', 'incidents:create', 'incidents:manage'] },
-      { label: 'Problems', permissions: ['problems:view', 'problems:create', 'problems:manage'] },
-      { label: 'Changes', permissions: ['changes:view', 'changes:create', 'changes:approve', 'changes:manage'] }
-    ]
-  },
-  {
-    label: 'Asset Management',
-    modules: [
-      { label: 'Inventory', permissions: ['inventory:view', 'inventory:create', 'inventory:manage', 'inventory:delete'] },
-      { label: 'Projects', permissions: ['projects:view', 'projects:create', 'projects:manage'] },
-      { label: 'Vendors', permissions: ['vendors:view', 'vendors:create', 'vendors:manage'] },
-      { label: 'Access', permissions: ['access:view', 'access:request', 'access:approve', 'access:revoke'] }
-    ]
-  },
-  {
-    label: 'Governance',
-    modules: [
-      { label: 'Compliance', permissions: ['compliance:view', 'compliance:create', 'compliance:manage', 'compliance:audit'] },
-      { label: 'Knowledge Base', permissions: ['kb:view'] },
-      { label: 'Reports', permissions: ['reports:view', 'reports:export'] }
-    ]
-  },
-  {
-    label: 'Administration',
-    modules: [
-      { label: 'Users', permissions: ['users:view', 'users:create', 'users:manage', 'users:delete', 'users:export'] },
-      { label: 'Roles', permissions: ['roles:view', 'roles:create', 'roles:manage', 'roles:delete'] },
-      { label: 'Settings', permissions: ['settings:view', 'settings:manage'] }
-    ]
-  }
-];
+type PermissionModule = {
+  name: string;
+  key: string;
+  description: string;
+  icon: string;
+  permissions: PermissionMetadata[];
+  categories: string[];
+  totalPermissions: number;
+  enabledPermissions: number;
+};
 
-// Flat list of all permission codes
-const allPermissions = moduleGroups.flatMap(group => 
-  group.modules.flatMap(m => m.permissions)
-);
+type GroupedPermissions = {
+  modules: PermissionModule[];
+  totalModules: number;
+  totalPermissions: number;
+};
 
-// Get module label from permission code
-function getModuleLabel(permCode: string): string {
-  for (const group of moduleGroups) {
-    for (const mod of group.modules) {
-      if (mod.permissions.includes(permCode)) {
-        return mod.label;
-      }
-    }
-  }
-  return permCode.split(':')[0];
+type RolePermissionsResponse = {
+  role: {
+    id: string;
+    name: string;
+    description: string | null;
+  };
+  permissions: GroupedPermissions;
+  assignedPermissions: string[];
+};
+
+type PermissionStats = {
+  totalPermissions: number;
+  totalRoles: number;
+  totalModules: number;
+  totalCategories: number;
+};
+
+type Toast = {
+  id: string;
+  type: 'success' | 'error' | 'info';
+  message: string;
+};
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 11);
 }
 
-// Role permission display component
-function RolePermissionChips({ rolePermissions, permissionCount, maxVisible = 4 }: { 
-  rolePermissions: string[]; 
-  permissionCount: number;
-  maxVisible?: number 
-}) {
-  // Use actual permissions if available, otherwise use placeholder
-  const permissions = rolePermissions.length > 0 ? rolePermissions : [];
-  
-  if (permissions.length === 0 && permissionCount === 0) {
-    return <span className="no-permissions">No permissions</span>;
+function setsEqual(a: Set<string>, b: Set<string>): boolean {
+  if (a.size !== b.size) return false;
+  for (const item of a) {
+    if (!b.has(item)) return false;
   }
+  return true;
+}
 
-  // Get unique module labels from permissions
-  const uniqueModules = [...new Set(permissions.map(p => getModuleLabel(p)))];
-  const visible = uniqueModules.slice(0, maxVisible);
-  const remaining = uniqueModules.length - maxVisible;
+// ============================================
+// COMPONENTS
+// ============================================
 
+// Toast Container
+function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast: (id: string) => void }) {
+  if (toasts.length === 0) return null;
+  
   return (
-    <div className="permission-chips">
-      {visible.map(label => (
-        <span key={label} className="permission-chip">{label}</span>
+    <div className="toast-container">
+      {toasts.map(toast => (
+        <div key={toast.id} className={`toast toast-${toast.type}`}>
+          <span className="toast-icon">
+            {toast.type === 'success' && '✓'}
+            {toast.type === 'error' && '✕'}
+            {toast.type === 'info' && 'ℹ'}
+          </span>
+          <span className="toast-message">{toast.message}</span>
+          <button className="toast-close" onClick={() => removeToast(toast.id)}>×</button>
+        </div>
       ))}
-      {remaining > 0 && (
-        <span className="permission-chip more">+{remaining} More</span>
+    </div>
+  );
+}
+
+// Loading Skeleton
+function LoadingSkeleton() {
+  return (
+    <div className="loading-skeleton">
+      <div className="skeleton-row-grid">
+        <div className="skeleton-box"></div>
+        <div className="skeleton-box"></div>
+        <div className="skeleton-box"></div>
+        <div className="skeleton-box"></div>
+      </div>
+      <div className="skeleton-accordion">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="skeleton-accordion-item">
+            <div className="skeleton-header"></div>
+            <div className="skeleton-content">
+              {[1, 2, 3].map(j => (
+                <div key={j} className="skeleton-row"></div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Error State
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="error-state">
+      <div className="error-icon">⚠</div>
+      <h3>Unable to Load Permissions</h3>
+      <p>{message}</p>
+      <button className="btn btn-primary" onClick={onRetry}>Retry</button>
+    </div>
+  );
+}
+
+// Module Status Badge
+function ModuleStatusBadge({ enabled, total }: { enabled: number; total: number }) {
+  if (enabled === total && total > 0) {
+    return <span className="module-badge badge-success">{enabled}/{total}</span>;
+  } else if (enabled > 0) {
+    return <span className="module-badge badge-warning">{enabled}/{total}</span>;
+  }
+  return <span className="module-badge badge-disabled">{enabled}/{total}</span>;
+}
+
+// Permission Toggle Switch
+function PermissionToggle({ 
+  permission, 
+  enabled, 
+  onChange,
+  disabled 
+}: { 
+  permission: PermissionMetadata; 
+  enabled: boolean; 
+  onChange: (code: string, enabled: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className={`permission-row ${enabled ? 'enabled' : ''}`}>
+      <div className="permission-info">
+        <span className="permission-name">{permission.displayName}</span>
+        <span className="permission-description">{permission.description}</span>
+        <span className="permission-code">{permission.code}</span>
+      </div>
+      <label className="toggle-switch">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => onChange(permission.code, e.target.checked)}
+          disabled={disabled}
+        />
+        <span className="toggle-slider"></span>
+      </label>
+    </div>
+  );
+}
+
+// Module Accordion
+function ModuleAccordion({ 
+  module, 
+  assignedPermissions,
+  expandedModules,
+  toggleModule,
+  togglePermission,
+  isAllExpanded,
+  onBulkAction,
+  disabled
+}: {
+  module: PermissionModule;
+  assignedPermissions: Set<string>;
+  expandedModules: Set<string>;
+  toggleModule: (key: string) => void;
+  togglePermission: (code: string, enabled: boolean) => void;
+  isAllExpanded: boolean;
+  onBulkAction: (moduleKey: string, enable: boolean) => void;
+  disabled?: boolean;
+}) {
+  const isExpanded = expandedModules.has(module.key);
+  const allEnabled = module.permissions.every(p => assignedPermissions.has(p.code));
+  
+  // Group permissions by category
+  const viewPerms = module.permissions.filter(p => p.category === 'view');
+  const actionPerms = module.permissions.filter(p => p.category === 'action');
+  const managePerms = module.permissions.filter(p => p.category === 'manage');
+  
+  return (
+    <div className={`module-accordion ${isExpanded || isAllExpanded ? 'expanded' : ''}`}>
+      <div className="module-accordion-header" onClick={() => toggleModule(module.key)}>
+        <div className="module-header-left">
+          <span className="module-icon">{module.icon}</span>
+          <span className="module-name">{module.name}</span>
+          <ModuleStatusBadge enabled={module.enabledPermissions} total={module.totalPermissions} />
+        </div>
+        <div className="module-header-right">
+          <button 
+            className="btn btn-outline btn-sm module-bulk-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onBulkAction(module.key, !allEnabled);
+            }}
+            disabled={disabled}
+          >
+            {allEnabled ? 'Disable All' : 'Enable All'}
+          </button>
+          <span className="expand-icon">{isExpanded || isAllExpanded ? '▼' : '▶'}</span>
+        </div>
+      </div>
+      
+      {(isExpanded || isAllExpanded) && (
+        <div className="module-accordion-content">
+          {viewPerms.length > 0 && (
+            <div className="permission-category">
+              <div className="category-label">View</div>
+              {viewPerms.map(perm => (
+                <PermissionToggle
+                  key={perm.code}
+                  permission={perm}
+                  enabled={assignedPermissions.has(perm.code)}
+                  onChange={togglePermission}
+                  disabled={disabled}
+                />
+              ))}
+            </div>
+          )}
+          
+          {actionPerms.length > 0 && (
+            <div className="permission-category">
+              <div className="category-label">Actions</div>
+              {actionPerms.map(perm => (
+                <PermissionToggle
+                  key={perm.code}
+                  permission={perm}
+                  enabled={assignedPermissions.has(perm.code)}
+                  onChange={togglePermission}
+                  disabled={disabled}
+                />
+              ))}
+            </div>
+          )}
+          
+          {managePerms.length > 0 && (
+            <div className="permission-category">
+              <div className="category-label">Management</div>
+              {managePerms.map(perm => (
+                <PermissionToggle
+                  key={perm.code}
+                  permission={perm}
+                  enabled={assignedPermissions.has(perm.code)}
+                  onChange={togglePermission}
+                  disabled={disabled}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-export function RolesPermissionsPage() {
-  const { hasPermission } = useAuth();
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
+// Confirmation Dialog
+function ConfirmationDialog({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  message,
+  confirmText = 'Apply Changes',
+  cancelText = 'Cancel'
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+}) {
+  if (!isOpen) return null;
   
-  // Form state
-  const [formName, setFormName] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formStatus, setFormStatus] = useState<'active' | 'inactive'>('active');
-  const [formPermissions, setFormPermissions] = useState<string[]>([]);
-  const [permissionSearch, setPermissionSearch] = useState('');
+  return (
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className="dialog" onClick={e => e.stopPropagation()}>
+        <div className="dialog-header">
+          <h3>{title}</h3>
+        </div>
+        <div className="dialog-body">
+          <p>{message}</p>
+        </div>
+        <div className="dialog-footer">
+          <button className="btn btn-secondary" onClick={onClose}>{cancelText}</button>
+          <button className="btn btn-primary" onClick={onConfirm}>{confirmText}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// MAIN PAGE COMPONENT
+// ============================================
+
+export function RolesPermissionsPage() {
+  const { hasPermission, isSuperAdmin } = useAuth();
+  
+  // State
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<PermissionStats | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [groupedPermissions, setGroupedPermissions] = useState<GroupedPermissions | null>(null);
+  const [assignedPermissions, setAssignedPermissions] = useState<Set<string>>(new Set());
+  const [originalPermissions, setOriginalPermissions] = useState<Set<string>>(new Set());
+  
+  // UI State
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [isAllExpanded, setIsAllExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
-
-  // Helper functions
-  function isModuleChecked(modulePermissions: string[], selectedPermissions: string[]): boolean {
-    return modulePermissions.every(perm => selectedPermissions.includes(perm));
-  }
-
-  function isModuleIndeterminate(modulePermissions: string[], selectedPermissions: string[]): boolean {
-    const checked = modulePermissions.filter(perm => selectedPermissions.includes(perm)).length;
-    return checked > 0 && checked < modulePermissions.length;
-  }
-
-  function toggleModule(modulePermissions: string[]) {
-    const allSelected = modulePermissions.every(perm => formPermissions.includes(perm));
-    if (allSelected) {
-      setFormPermissions(prev => prev.filter(p => !modulePermissions.includes(p)));
-    } else {
-      setFormPermissions(prev => [...new Set([...prev, ...modulePermissions])]);
-    }
-  }
-
-  function togglePermission(perm: string) {
-    setFormPermissions(prev =>
-      prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
-    );
-  }
-
-  async function loadData() {
-    setLoading(true);
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  // Dialogs
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  
+  // Can user edit?
+  const canEdit = isSuperAdmin;
+  
+  // ============================================
+  // TOAST MANAGEMENT
+  // ============================================
+  
+  const addToast = useCallback((type: Toast['type'], message: string) => {
+    const id = generateId();
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  }, []);
+  
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+  
+  // ============================================
+  // DATA LOADING
+  // ============================================
+  
+  const loadStats = async () => {
     try {
-      const rolesRes = await api.get('/roles');
-      const rolesData = rolesRes.data.items || [];
+      const response = await api.get('/roles/permissions/stats');
+      setStats(response.data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  };
+  
+  const loadRoles = async () => {
+    try {
+      const response = await api.get('/roles');
+      const rolesData = response.data.items || [];
       setRoles(rolesData);
       
-      // Load permissions for each role to get module labels
-      const permMap: Record<string, string[]> = {};
-      for (const role of rolesData) {
-        try {
-          const detailRes = await api.get(`/roles/${role.id}`);
-          permMap[role.id] = detailRes.data.permissions || [];
-        } catch {
-          permMap[role.id] = [];
-        }
+      // Auto-select first role if none selected
+      if (!selectedRoleId && rolesData.length > 0) {
+        setSelectedRoleId(rolesData[0].id);
       }
-      setRolePermissions(permMap);
-      setMessage('');
-    } catch {
-      setRoles([]);
-      setMessage('Unable to load data. Check backend connection.');
+    } catch (err) {
+      console.error('Failed to load roles:', err);
+    }
+  };
+  
+  const loadRolePermissions = async (roleId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.get<RolePermissionsResponse>(`/roles/${roleId}/permissions/detailed`);
+      const data = response.data;
+      
+      setSelectedRole(data.role as Role);
+      setGroupedPermissions(data.permissions);
+      setAssignedPermissions(new Set(data.assignedPermissions));
+      setOriginalPermissions(new Set(data.assignedPermissions));
+      setHasChanges(false);
+      
+      // Expand first module by default
+      if (data.permissions.modules.length > 0) {
+        setExpandedModules(new Set([data.permissions.modules[0].key]));
+      }
+      
+    } catch (err: any) {
+      console.error('Failed to load role permissions:', err);
+      setError(err.response?.data?.message || 'Failed to load permissions');
     } finally {
       setLoading(false);
     }
-  }
-
+  };
+  
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await Promise.all([loadStats(), loadRoles()]);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Initial load
   useEffect(() => {
     loadData();
   }, []);
-
-  function openCreate() {
-    setModalMode('create');
-    setEditingRole(null);
-    setFormName('');
-    setFormDescription('');
-    setFormStatus('active');
-    setFormPermissions([]);
-    setPermissionSearch('');
-    setModalOpen(true);
-  }
-
-  async function openEdit(role: Role) {
-    try {
-      const res = await api.get(`/roles/${role.id}`);
-      const roleData = res.data;
-      setModalMode('edit');
-      setEditingRole(role);
-      setFormName(roleData.name);
-      setFormDescription(roleData.description || '');
-      setFormStatus((role as any).status || 'active');
-      setFormPermissions(roleData.permissions || []);
-      setPermissionSearch('');
-      setModalOpen(true);
-    } catch {
-      setMessage('Failed to load role details.');
+  
+  // Load permissions when role changes
+  useEffect(() => {
+    if (selectedRoleId) {
+      loadRolePermissions(selectedRoleId);
     }
-  }
-
-  async function saveRole(event: FormEvent) {
-    event.preventDefault();
-    if (!formName.trim()) return;
+  }, [selectedRoleId]);
+  
+  // ============================================
+  // EVENT HANDLERS
+  // ============================================
+  
+  const handleRoleChange = (roleId: string) => {
+    if (hasChanges) {
+      if (!confirm('You have unsaved changes. Do you want to discard them?')) {
+        return;
+      }
+    }
+    setSelectedRoleId(roleId);
+  };
+  
+  const toggleModule = (moduleKey: string) => {
+    setExpandedModules(prev => {
+      const next = new Set(prev);
+      if (next.has(moduleKey)) {
+        next.delete(moduleKey);
+      } else {
+        next.add(moduleKey);
+      }
+      return next;
+    });
+  };
+  
+  const handlePermissionToggle = (code: string, enabled: boolean) => {
+    setAssignedPermissions(prev => {
+      const next = new Set(prev);
+      if (enabled) {
+        next.add(code);
+      } else {
+        next.delete(code);
+      }
+      return next;
+    });
+    
+    // Check if changes were made
+    const newSet = new Set(assignedPermissions);
+    if (enabled) {
+      newSet.add(code);
+    } else {
+      newSet.delete(code);
+    }
+    setHasChanges(!setsEqual(newSet, originalPermissions));
+  };
+  
+  const handleBulkModuleAction = (moduleKey: string, enable: boolean) => {
+    const module = groupedPermissions?.modules.find(m => m.key === moduleKey);
+    if (!module) return;
+    
+    const newAssigned = new Set(assignedPermissions);
+    for (const perm of module.permissions) {
+      if (enable) {
+        newAssigned.add(perm.code);
+      } else {
+        newAssigned.delete(perm.code);
+      }
+    }
+    setAssignedPermissions(newAssigned);
+    setHasChanges(!setsEqual(newAssigned, originalPermissions));
+  };
+  
+  const handleEnableAll = () => {
+    if (!groupedPermissions) return;
+    
+    const allPerms = new Set<string>();
+    for (const module of groupedPermissions.modules) {
+      for (const perm of module.permissions) {
+        allPerms.add(perm.code);
+      }
+    }
+    setAssignedPermissions(allPerms);
+    setHasChanges(!setsEqual(allPerms, originalPermissions));
+  };
+  
+  const handleDisableAll = () => {
+    setAssignedPermissions(new Set());
+    setHasChanges(!setsEqual(new Set(), originalPermissions));
+  };
+  
+  const handleCancel = () => {
+    if (!confirm('Discard all changes?')) return;
+    setAssignedPermissions(new Set(originalPermissions));
+    setHasChanges(false);
+  };
+  
+  const handleSave = async () => {
+    if (!selectedRoleId) return;
     
     setSaving(true);
     try {
-      if (modalMode === 'create') {
-        await api.post('/roles', {
-          name: formName,
-          description: formDescription,
-          permissions: formPermissions
-        });
-        setMessage('Role created successfully.');
-      } else if (editingRole) {
-        await api.patch(`/roles/${editingRole.id}`, {
-          name: formName,
-          description: formDescription
-        });
-        await api.patch(`/roles/${editingRole.id}/permissions`, {
-          permissions: formPermissions
-        });
-        setMessage('Role updated successfully.');
+      // Calculate delta
+      const added: string[] = [];
+      const removed: string[] = [];
+      
+      for (const perm of assignedPermissions) {
+        if (!originalPermissions.has(perm)) {
+          added.push(perm);
+        }
       }
-      setModalOpen(false);
-      await loadData();
+      
+      for (const perm of originalPermissions) {
+        if (!assignedPermissions.has(perm)) {
+          removed.push(perm);
+        }
+      }
+      
+      // Send delta update
+      const payload: { added?: string[]; removed?: string[] } = {};
+      if (added.length > 0) payload.added = added;
+      if (removed.length > 0) payload.removed = removed;
+      
+      await api.put(`/roles/${selectedRoleId}/permissions/delta`, payload);
+      
+      addToast('success', 'Permissions updated successfully');
+      setConfirmDialogOpen(false);
+      
+      // Reload to get fresh data
+      await loadRolePermissions(selectedRoleId);
+      
+      // Also reload roles to update counts
+      await loadRoles();
+      
     } catch (err: any) {
-      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to save role.');
+      console.error('Failed to save permissions:', err);
+      addToast('error', err.response?.data?.message || 'Failed to save permissions');
     } finally {
       setSaving(false);
     }
+  };
+  
+  // Filter modules by search
+  const filteredModules = useMemo(() => {
+    if (!groupedPermissions) return [];
+    if (!searchQuery.trim()) return groupedPermissions.modules;
+    
+    const query = searchQuery.toLowerCase();
+    return groupedPermissions.modules.filter(module => 
+      module.name.toLowerCase().includes(query) ||
+      module.permissions.some(p => 
+        p.displayName.toLowerCase().includes(query) ||
+        p.code.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query)
+      )
+    );
+  }, [groupedPermissions, searchQuery]);
+  
+  // ============================================
+  // RENDER
+  // ============================================
+  
+  if (!hasPermission('roles:view') && !hasPermission('users:read')) {
+    return (
+      <div className="page-container">
+        <div className="alert alert-error">You do not have permission to view this page.</div>
+      </div>
+    );
   }
-
-  async function deleteRole(role: Role) {
-    if (role.name === 'Super Admin') {
-      setMessage('Cannot delete the Super Admin role.');
-      return;
-    }
-    if (!confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
-      return;
-    }
-    try {
-      await api.delete(`/roles/${role.id}`);
-      await loadData();
-      setMessage('Role deleted successfully.');
-    } catch (err: any) {
-      setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to delete role.');
-    }
-  }
-
-  function closeModal() {
-    setModalOpen(false);
-    setEditingRole(null);
-    setFormName('');
-    setFormDescription('');
-    setFormStatus('active');
-    setFormPermissions([]);
-    setPermissionSearch('');
-  }
-
-  // Filter modules based on search
-  const filteredGroups = moduleGroups.map(group => ({
-    ...group,
-    modules: group.modules.filter(m =>
-      permissionSearch === '' ||
-      m.label.toLowerCase().includes(permissionSearch.toLowerCase()) ||
-      m.permissions.some(p => p.toLowerCase().includes(permissionSearch.toLowerCase()))
-    )
-  })).filter(g => g.modules.length > 0 || permissionSearch === '');
-
+  
   return (
-    <div className="page-container roles-page">
-      {/* Page Header - Phase 5B.2 */}
+    <div className="page-container roles-permissions-page">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      
+      {/* Header */}
       <div className="page-header">
-        <div className="header-left">
+        <div className="header-content">
           <h1>Roles & Permissions</h1>
-          <p className="header-subtitle">Manage user roles and their access permissions</p>
+          <p className="header-subtitle">Configure role-based access across every module</p>
         </div>
-        <div className="header-right">
-          {hasPermission('users:write') && (
-            <button className="btn btn-primary" onClick={openCreate}>
-              <span className="btn-icon">+</span>
-              Add Role
+      </div>
+      
+      {/* Stats Cards */}
+      {stats && (
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span className="stat-icon">🎭</span>
+            <div className="stat-content">
+              <span className="stat-value">{stats.totalRoles}</span>
+              <span className="stat-label">Total Roles</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <span className="stat-icon">🔐</span>
+            <div className="stat-content">
+              <span className="stat-value">{stats.totalPermissions}</span>
+              <span className="stat-label">Total Permissions</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <span className="stat-icon">📋</span>
+            <div className="stat-content">
+              <span className="stat-value">{selectedRole ? [...assignedPermissions].length : 0}</span>
+              <span className="stat-label">Active Permissions</span>
+            </div>
+          </div>
+          <div className="stat-card">
+            <span className="stat-icon">📦</span>
+            <div className="stat-content">
+              <span className="stat-value">{stats.totalModules}</span>
+              <span className="stat-label">Modules</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Role Selector */}
+      <div className="role-selector-section">
+        <label className="role-selector-label">Select Role</label>
+        <div className="role-selector">
+          {roles.map(role => (
+            <button
+              key={role.id}
+              className={`role-option ${selectedRoleId === role.id ? 'selected' : ''}`}
+              onClick={() => handleRoleChange(role.id)}
+            >
+              <span className="role-name">{role.name}</span>
+              <span className="role-meta">
+                {role.permissionCount} permissions · {role.userCount} users
+              </span>
             </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Permission Editor */}
+      <div className="permission-editor">
+        {/* Toolbar */}
+        <div className="permission-toolbar">
+          <div className="search-box">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search permissions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button className="search-clear" onClick={() => setSearchQuery('')}>×</button>
+            )}
+          </div>
+          
+          <div className="toolbar-actions">
+            <button 
+              className="btn btn-outline btn-sm"
+              onClick={() => setIsAllExpanded(!isAllExpanded)}
+            >
+              {isAllExpanded ? 'Collapse All' : 'Expand All'}
+            </button>
+            {canEdit && (
+              <>
+                <button 
+                  className="btn btn-outline btn-sm"
+                  onClick={handleEnableAll}
+                  disabled={loading}
+                >
+                  Enable All
+                </button>
+                <button 
+                  className="btn btn-outline btn-sm"
+                  onClick={handleDisableAll}
+                  disabled={loading}
+                >
+                  Disable All
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="permission-content">
+          {loading ? (
+            <LoadingSkeleton />
+          ) : error ? (
+            <ErrorState message={error} onRetry={() => selectedRoleId && loadRolePermissions(selectedRoleId)} />
+          ) : filteredModules.length === 0 ? (
+            <div className="no-results">
+              <p>No permissions match your search.</p>
+            </div>
+          ) : (
+            <div className="modules-list">
+              {filteredModules.map(module => (
+                <ModuleAccordion
+                  key={module.key}
+                  module={module}
+                  assignedPermissions={assignedPermissions}
+                  expandedModules={expandedModules}
+                  toggleModule={toggleModule}
+                  togglePermission={handlePermissionToggle}
+                  isAllExpanded={isAllExpanded}
+                  onBulkAction={handleBulkModuleAction}
+                  disabled={!canEdit}
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>
-
-      {message && <div className="notice notice-info">{message}</div>}
-
-      {/* Main Content - Single Table Layout - Phase 5B.2 */}
-      <div className="page-content">
-        {loading ? (
-          <div className="loading-state">Loading...</div>
-        ) : (
-          <div className="table-container">
-            <table className="roles-table">
-              <thead>
-                <tr>
-                  <th className="col-name">Role Name</th>
-                  <th className="col-description">Description</th>
-                  <th className="col-permissions">Menu Access</th>
-                  <th className="col-status">Status</th>
-                  <th className="col-actions">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roles.map(role => (
-                  <tr key={role.id}>
-                    <td className="col-name">
-                      <div className="role-name-cell">
-                        <span className="role-name">{role.name}</span>
-                        {role.name === 'Super Admin' && (
-                          <span className="protected-badge">Protected</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="col-description">
-                      <span className="role-description">{role.description || '-'}</span>
-                    </td>
-                    <td className="col-permissions">
-                      <RolePermissionChips 
-                        rolePermissions={rolePermissions[role.id] || []}
-                        permissionCount={role.permissionCount}
-                      />
-                      <span className="perm-count">{role.permissionCount} permissions</span>
-                    </td>
-                    <td className="col-status">
-                      <span className="status-badge active">Active</span>
-                    </td>
-                    <td className="col-actions">
-                      {hasPermission('users:write') && (
-                        <div className="action-buttons">
-                          <button 
-                            className="btn btn-secondary btn-sm" 
-                            onClick={() => openEdit(role)}
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            className="btn btn-danger btn-sm" 
-                            onClick={() => deleteRole(role)}
-                            disabled={role.name === 'Super Admin'}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {roles.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="empty-row">No roles found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Add/Edit Role Modal - Phase 5C: Enterprise Permission Editor */}
-      {modalOpen && (
-        <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal modal-xl" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Create Role' : 'Edit Role'}</h2>
-              <button className="modal-close" onClick={closeModal}>×</button>
+      
+      {/* Sticky Footer */}
+      {canEdit && (
+        <div className={`sticky-footer ${hasChanges ? 'has-changes' : ''}`}>
+          <div className="footer-content">
+            <div className="footer-left">
+              {hasChanges && (
+                <span className="unsaved-indicator">● Unsaved Changes</span>
+              )}
             </div>
-            
-            <form className="modal-body" onSubmit={saveRole}>
-              {/* Section 1: Role Information */}
-              <div className="role-info-section">
-                <h3>Role Information</h3>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="role-name">Role Name *</label>
-                    <input
-                      id="role-name"
-                      type="text"
-                      value={formName}
-                      onChange={e => setFormName(e.target.value)}
-                      required
-                      disabled={editingRole?.name === 'Super Admin'}
-                      placeholder="Enter role name"
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="role-status">Status</label>
-                    <select
-                      id="role-status"
-                      value={formStatus}
-                      onChange={e => setFormStatus(e.target.value as 'active' | 'inactive')}
-                      className="form-control"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="role-description">Description</label>
-                  <textarea
-                    id="role-description"
-                    value={formDescription}
-                    onChange={e => setFormDescription(e.target.value)}
-                    rows={2}
-                    placeholder="Enter role description"
-                    className="form-control"
-                  />
-                </div>
-              </div>
-
-              {/* Section 2: Permissions */}
-              <div className="permissions-section">
-                <div className="permissions-header">
-                  <h3>Permissions</h3>
-                  <div className="permissions-toolbar">
-                    <div className="permission-search">
-                      <input
-                        type="text"
-                        placeholder="Search permissions..."
-                        value={permissionSearch}
-                        onChange={e => setPermissionSearch(e.target.value)}
-                        className="search-input"
-                      />
-                    </div>
-                    <div className="permission-actions">
-                      <button 
-                        type="button" 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setFormPermissions([...allPermissions])}
-                      >
-                        Select All
-                      </button>
-                      <button 
-                        type="button" 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setFormPermissions([])}
-                      >
-                        Deselect All
-                      </button>
-                    </div>
-                  </div>
-                  <div className="permissions-summary">
-                    <span className="perm-count">{formPermissions.length} of {allPermissions.length} permissions selected</span>
-                  </div>
-                </div>
-
-                {/* Accordion Modules */}
-                <div className="permissions-accordion">
-                  {filteredGroups.map(group => (
-                    <div key={group.label} className="accordion-group">
-                      <div className="group-header">
-                        <span className="group-name">{group.label}</span>
-                      </div>
-                      <div className="group-cards">
-                        {group.modules.map(module => {
-                          const isModuleSelected = isModuleChecked(module.permissions, formPermissions);
-                          const isIndeterminate = isModuleIndeterminate(module.permissions, formPermissions);
-                          
-                          return (
-                            <div key={module.label} className={`module-card ${isModuleSelected ? 'selected' : ''}`}>
-                              <div className="module-card-header">
-                                <label className="module-checkbox">
-                                  <input
-                                    type="checkbox"
-                                    checked={isModuleSelected}
-                                    ref={el => { if (el) el.indeterminate = isIndeterminate; }}
-                                    onChange={() => toggleModule(module.permissions)}
-                                  />
-                                  <span className="module-label">{module.label}</span>
-                                </label>
-                                <span className="module-count">
-                                  {module.permissions.filter(p => formPermissions.includes(p)).length}/{module.permissions.length}
-                                </span>
-                              </div>
-                              <div className="module-permissions">
-                                {module.permissions.map(perm => {
-                                  const isSelected = formPermissions.includes(perm);
-                                  const actionName = perm.split(':')[1];
-                                  
-                                  return (
-                                    <button
-                                      key={perm}
-                                      type="button"
-                                      className={`perm-toggle ${isSelected ? 'selected' : ''}`}
-                                      onClick={() => togglePermission(perm)}
-                                    >
-                                      {actionName}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                  {filteredGroups.length === 0 && (
-                    <div className="no-results">
-                      <p>No permissions match your search.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={closeModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Saving...' : (modalMode === 'create' ? 'Create Role' : 'Save Changes')}
-                </button>
-              </div>
-            </form>
+            <div className="footer-right">
+              <button 
+                className="btn btn-secondary"
+                onClick={handleCancel}
+                disabled={!hasChanges || saving}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setConfirmDialogOpen(true)}
+                disabled={!hasChanges || saving}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
+        </div>
+      )}
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        onConfirm={handleSave}
+        title="Apply Permission Changes?"
+        message={`This will update the permissions for the "${selectedRole?.name}" role and affect all ${selectedRole?.name} users.`}
+        confirmText="Apply Changes"
+        cancelText="Cancel"
+      />
+      
+      {/* View-only notice for non-Super Admin */}
+      {!canEdit && (
+        <div className="view-only-notice">
+          <span className="notice-icon">ℹ</span>
+          <span>You have view-only access. Only Super Admin can modify permissions.</span>
         </div>
       )}
     </div>
