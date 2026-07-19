@@ -1,4 +1,4 @@
-import { PrismaClient, TicketPriority, ServiceRequestStatus, IncidentStatus, ProblemStatus, ChangeRequestStatus, IncidentSeverity, AssetStatus, AccessStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -229,6 +229,29 @@ async function main() {
     'knowledge.category:update',  // Update category
     'knowledge.category:delete',  // Delete category
     
+    // Phase 5 KB granular
+    'kb.category:view',            // View categories
+    'kb.category:create',         // Create category
+    'kb.category:edit',           // Edit category
+    'kb.category:delete',          // Delete category
+    'kb:view_article',           // View article details
+    'kb:edit',                   // Edit article
+    'kb:delete',                 // Delete article
+    'kb:restore',                // Restore article
+    'kb:feature',                // Mark featured
+    'kb:publish',               // Publish article
+    'kb:archive',               // Archive article
+    
+    // Phase 5 Licenses
+    'licenses:view',             // View licenses
+    'licenses:create',           // Create license
+    'licenses:edit',             // Edit license
+    'licenses:delete',           // Delete license
+    'licenses:assign',          // Assign license
+    'licenses:revoke',           // Revoke license
+    'licenses:renew',            // Renew license
+    'licenses:export',           // Export licenses
+    
     // ============================================
     // REPORTS MODULE
     // ============================================
@@ -240,6 +263,10 @@ async function main() {
     'reports:download',         // Download report
     'reports:create',           // Create reports
     'reports:export',           // Export reports
+    
+    // Phase 6 granular
+    'reports:view_analytics',   // View analytics
+    'reports:filter',           // Use filters
     
     // ============================================
     // USERS MODULE
@@ -267,6 +294,12 @@ async function main() {
     'users:import',             // Import users
     'users:export',             // Export users
     
+    // Phase 6 granular
+    'users:edit',               // Edit user
+    'users:lock',              // Lock user
+    'users:unlock',            // Unlock user
+    'users:assign_team',       // Assign team
+    
     // ============================================
     // ROLES MODULE
     // ============================================
@@ -280,6 +313,18 @@ async function main() {
     'roles:update_permissions', // Update role permissions
     'roles:manage',             // Legacy manage
     
+    // Phase 6 granular
+    'roles:edit',               // Edit role
+    'roles:clone',              // Clone role
+    'roles:assign_permissions', // Assign permissions
+    'roles:remove_permissions', // Remove permissions
+    'roles:import',             // Import roles
+    'roles:export',             // Export roles
+    
+    // Permission Matrix
+    'permissions:view',         // View permission matrix
+    'permissions:edit',         // Edit permission matrix
+    
     // ============================================
     // SETTINGS MODULE
     // ============================================
@@ -292,10 +337,50 @@ async function main() {
     'settings:view',            // View settings
     'settings:update',          // Update settings
     
+    // Phase 6 granular
+    'settings:update_profile',       // Update own profile
+    'settings:change_password',      // Change password
+    'settings:update_theme',         // Update theme
+    'settings:update_notifications',  // Update notifications
+    'settings:update_system',        // Update system settings
+    'settings:update_company',       // Update company settings
+    'settings:update_security',      // Update security settings
+    
     // ============================================
     // AI MODULE
     // ============================================
     'ai:ask',                   // Use AI assistant
+    
+    // Phase 6 granular
+    'ai:view',                 // View AI assistant
+    'ai:chat',                // Chat with AI
+    'ai:execute',             // Execute commands
+    'ai:view_history',        // View history
+    'ai:delete_history',      // Delete history
+    
+    // Phase 5 Compliance granular
+    'compliance:upload',       // Upload documents
+    'compliance:edit',         // Edit metadata
+    'compliance:delete',       // Delete documents
+    'compliance:replace',      // Replace file
+    'compliance:archive',      // Archive document
+    'compliance:restore',      // Restore document
+    
+    // Phase 5 Projects granular
+    'projects:edit',           // Edit project
+    'projects:archive',       // Archive project
+    'projects:restore',       // Restore project
+    'projects:assign_owner',   // Assign owner
+    'projects:manage_environment', // Manage environment
+    'projects:add_activity',   // Add activity
+    
+    // Phase 5 Vendors granular
+    'vendors:edit',           // Edit vendor
+    'vendors:renew',          // Renew contract
+    'vendors:update_contract', // Update contract
+    'vendors:assign_owner',   // Assign owner
+    'vendors:upload_document', // Upload documents
+    'vendors:download_document', // Download documents
   ];
 
   console.log(`[RBAC] Seeding ${permissions.length} permissions...`);
@@ -390,35 +475,38 @@ async function main() {
   console.log('[RBAC] Role-permission assignments complete.');
 
   // ============================================
-  // DEFAULT ADMIN USER
+  // BOOTSTRAP SUPER ADMIN
   // ============================================
-  // Creates a single default administrator account
+  // Creates a single bootstrap administrator account for application initialization
   // Using upsert ensures idempotency - running seed multiple times won't create duplicates
 
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@saven.in' },
+  const bootstrapAdmin = await prisma.user.upsert({
+    where: { email: 'admin@infraops.local' },
     update: { 
-      name: 'Saven Admin',
+      name: 'System Administrator',
       department: 'InfraOps',
       status: 'ACTIVE'
     },
     create: {
-      name: 'Saven Admin',
-      email: 'admin@saven.in',
+      name: 'System Administrator',
+      email: 'admin@infraops.local',
       department: 'InfraOps',
       status: 'ACTIVE',
-      passwordHash: await bcrypt.hash('Admin@12345', 12)
+      passwordHash: await bcrypt.hash('Admin@123', 12)
     }
   });
 
   await prisma.userRole.upsert({
-    where: { userId_roleId: { userId: admin.id, roleId: adminRole.id } },
+    where: { userId_roleId: { userId: bootstrapAdmin.id, roleId: superAdminRole.id } },
     update: {},
-    create: { userId: admin.id, roleId: adminRole.id }
+    create: { userId: bootstrapAdmin.id, roleId: superAdminRole.id }
   });
 
-  console.log('[RBAC] Default admin user created/updated: admin@saven.in');
+  console.log('[RBAC] Bootstrap Super Admin created/updated: admin@infraops.local');
 
+  // ============================================
+  // SYSTEM SETTINGS
+  // ============================================
   const settings = [
     ['AI', 'AI_PROVIDER', 'mock'],
     ['AI', 'OPENAI_MODEL', 'gpt-4.1-mini'],
@@ -437,75 +525,9 @@ async function main() {
     await prisma.systemSetting.upsert({ where: { key }, update: { value }, create: { group, key, value } });
   }
 
-  await prisma.serviceRequest.upsert({
-    where: { ticketNo: 'SR-1001' },
-    update: {},
-    create: {
-      ticketNo: 'SR-1001',
-      title: 'VPN not working for Federal project access',
-      description: 'User cannot connect to VPN since morning.',
-      category: 'Network',
-      subCategory: 'VPN',
-      priority: TicketPriority.HIGH,
-      status: ServiceRequestStatus.OPEN,
-      requesterName: 'Vaishnavi Kavali',
-      assigneeName: 'Infra Team',
-      projectName: 'Federal'
-    }
-  });
-
-  await prisma.serviceRequest.upsert({
-    where: { ticketNo: 'SR-1002' },
-    update: {},
-    create: {
-      ticketNo: 'SR-1002',
-      title: 'Laptop allocation for new QA resource',
-      category: 'Asset',
-      subCategory: 'Laptop',
-      priority: TicketPriority.MEDIUM,
-      status: ServiceRequestStatus.ASSIGNED,
-      requesterName: 'HR Team',
-      assigneeName: 'Admin Team'
-    }
-  });
-
-  await prisma.incident.upsert({
-    where: { incidentNo: 'INC-1001' },
-    update: {},
-    create: {
-      incidentNo: 'INC-1001',
-      title: 'UAT API timeout for payment service',
-      severity: IncidentSeverity.SEV2,
-      status: ServiceRequestStatus.IN_PROGRESS,
-      impactedService: 'Payment API',
-      impactedProject: 'Federal',
-      ownerName: 'DevOps Team'
-    }
-  });
-
-  await prisma.asset.upsert({
-    where: { assetNo: 'AST-1001' },
-    update: {},
-    create: {
-      assetNo: 'AST-1001',
-      assetType: 'Laptop',
-      make: 'Dell',
-      model: 'Latitude',
-      serialNo: 'DL-SAV-1001',
-      status: AssetStatus.AVAILABLE,
-      location: 'Hyderabad Office'
-    }
-  });
-
-  // NOTE: Compliance module is now a document repository.
-  // No seed data needed - documents are uploaded by users.
-
   // ============================================
-  // KNOWLEDGE BASE CATEGORIES
+  // REQUIRED MASTER DATA - Knowledge Base Categories
   // ============================================
-  // Default knowledge categories for organizing KB articles
-  // Using upsert for idempotency
-
   const knowledgeCategories = [
     { id: 'kbcat_getting_started', name: 'Getting Started', description: 'Guides and tutorials for new users', color: '#10b981', displayOrder: 1 },
     { id: 'kbcat_infrastructure', name: 'Infrastructure', description: 'Infrastructure setup and management', color: '#3b82f6', displayOrder: 2 },
@@ -518,7 +540,7 @@ async function main() {
     { id: 'kbcat_internal_tools', name: 'Internal Tools', description: 'Internal tool documentation', color: '#84cc16', displayOrder: 9 }
   ];
 
-  console.log('[KB] Seeding knowledge categories...');
+  console.log('[Seed] Seeding knowledge categories...');
   for (const category of knowledgeCategories) {
     await prisma.knowledgeCategory.upsert({
       where: { id: category.id },
@@ -539,13 +561,14 @@ async function main() {
       }
     });
   }
-  console.log(`[KB] Seeded ${knowledgeCategories.length} knowledge categories.`);
+  console.log(`[Seed] ${knowledgeCategories.length} knowledge categories seeded.`);
+  console.log('[Seed] Seed completed successfully.');
 }
 
 main()
   .then(async () => prisma.$disconnect())
   .catch(async (error) => {
-    console.error(error);
+    console.error('[Seed] Error:', error);
     await prisma.$disconnect();
     process.exit(1);
   });
