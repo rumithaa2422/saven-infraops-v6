@@ -3,9 +3,9 @@ import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
 import { requireAuth } from '../../middleware/auth.js';
-import { requirePermissionOr } from '../../middleware/rbac.js';
+import { requirePermission, requirePermissionOr } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
-import { HttpError } from '../../common/httpError.js';
+import { HttpError, permissionDenied } from '../../common/httpError.js';
 import { ServiceRequestStatus } from '@prisma/client';
 import {
   createServiceRequest,
@@ -14,6 +14,31 @@ import {
 } from '../../services/serviceRequest.service.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
+import { hasPermissionViaAlias } from '../../common/permissionAliases.js';
+
+/**
+ * PART 2: Service Requests Permission Enforcement
+ * 
+ * All routes now use granular permissions:
+ * - tickets:view - View tickets
+ * - tickets:create - Create tickets
+ * - tickets:edit - Edit tickets
+ * - tickets:delete - Delete tickets
+ * - tickets:assign - Assign tickets
+ * - tickets:update_status - Update ticket status
+ * - tickets:comment - Post comments
+ * - tickets:upload_attachment - Upload attachments
+ * - tickets:download_attachment - Download attachments
+ * - tickets:delete_attachment - Delete attachments
+ * - tickets:view_comments - View comments
+ * - tickets:view_timeline - View timeline
+ * - tickets:export - Export tickets
+ * 
+ * Legacy permissions are still supported via alias mapping:
+ * - tickets:read -> tickets:view
+ * - tickets:write -> tickets:create, tickets:edit, etc.
+ * - tickets:manage -> all permissions
+ */
 
 export const serviceRequestRouter = Router();
 
@@ -100,9 +125,17 @@ const upload = multer({
   fileFilter
 });
 
+/**
+ * PART 2: Permission-based access control helpers
+ * These functions check both permission AND role for backward compatibility
+ */
+
 // Helper to check if user can download attachment
 function canDownloadAttachment(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
   if (!user) return false;
+  
+  // Check permission first (new RBAC)
+  if (hasPermissionViaAlias(user.permissions, 'tickets:download_attachment')) return true;
   
   // Super Admin can download any
   if (user.roles.includes('Super Admin')) return true;
@@ -120,6 +153,9 @@ function canDownloadAttachment(user: Express.Request['user'], request: { assigne
 function canUploadAttachment(user: Express.Request['user'], request: { requesterId?: string | null }): boolean {
   if (!user) return false;
   
+  // Check permission first (new RBAC)
+  if (hasPermissionViaAlias(user.permissions, 'tickets:upload_attachment')) return true;
+  
   // Super Admin can upload to any
   if (user.roles.includes('Super Admin')) return true;
   
@@ -133,12 +169,19 @@ function canUploadAttachment(user: Express.Request['user'], request: { requester
 // Helper to check if user can delete attachment
 function canDeleteAttachment(user: Express.Request['user']): boolean {
   if (!user) return false;
+  
+  // Check permission first (new RBAC)
+  if (hasPermissionViaAlias(user.permissions, 'tickets:delete_attachment')) return true;
+  
   return user.roles.includes('Super Admin');
 }
 
 // Helper to check if user can view attachments
 function canViewAttachments(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
   if (!user) return false;
+  
+  // Check permission first (new RBAC)
+  if (hasPermissionViaAlias(user.permissions, 'tickets:view')) return true;
   
   // Super Admin can view all
   if (user.roles.includes('Super Admin')) return true;
@@ -156,6 +199,9 @@ function canViewAttachments(user: Express.Request['user'], request: { assigneeId
 function canViewTimeline(user: Express.Request['user'], request: { assigneeId?: string | null; requesterId?: string | null }): boolean {
   if (!user) return false;
   
+  // Check permission first (new RBAC)
+  if (hasPermissionViaAlias(user.permissions, 'tickets:view_timeline')) return true;
+  
   // Super Admin can view all
   if (user.roles.includes('Super Admin')) return true;
   
@@ -168,7 +214,8 @@ function canViewTimeline(user: Express.Request['user'], request: { assigneeId?: 
   return false;
 }
 
-serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+// GET /api/service-requests - List all tickets (PART 2: tickets:view)
+serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:view']), async (req, res, next) => {
   try {
     const status = req.query.status as string | undefined;
     const userRoles = req.user?.roles || [];
@@ -194,7 +241,8 @@ serviceRequestRouter.get('/', requireAuth, requirePermissionOr(['tickets:read', 
   }
 });
 
-serviceRequestRouter.get('/:id', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+// GET /api/service-requests/:id - Get single ticket (PART 2: tickets:view)
+serviceRequestRouter.get('/:id', requireAuth, requirePermissionOr(['tickets:view']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     const item = await prisma.serviceRequest.findUnique({ where: { id } });
@@ -215,7 +263,8 @@ const createSchema = z.object({
   projectName: z.string().optional()
 });
 
-serviceRequestRouter.post('/', requireAuth, requirePermissionOr(['tickets:write', 'tickets:create']), async (req, res, next) => {
+// POST /api/service-requests - Create ticket (PART 2: tickets:create)
+serviceRequestRouter.post('/', requireAuth, requirePermissionOr(['tickets:create']), async (req, res, next) => {
   try {
     const payload = createSchema.parse(req.body);
     const item = await createServiceRequest({
@@ -267,6 +316,9 @@ const ADMIN_STATUS_TRANSITIONS: Record<string, string[]> = {
 
 function canPerformAction(user: Express.Request['user'], ticket: { assigneeId?: string | null }): boolean {
   if (!user) return false;
+  
+  // Check permission first (new RBAC)
+  if (hasPermissionViaAlias(user.permissions, 'tickets:edit')) return true;
 
   if (user.roles.includes('Super Admin')) return true;
 
@@ -318,7 +370,8 @@ function validateStatusTransition(
   return { valid: true };
 }
 
-serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
+// PATCH /api/service-requests/:id - Update ticket (PART 2: tickets:edit, tickets:update_status)
+serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:edit']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     const payload = updateSchema.parse(req.body);
@@ -374,7 +427,7 @@ const assignSchema = z.object({
   assigneeId: z.string().min(1)
 });
 
-serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) => {
+serviceRequestRouter.patch('/:id/assign', requireAuth, requirePermissionOr(['tickets:assign']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     const userRoles = req.user?.roles || [];
@@ -417,7 +470,7 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, async (req, res, next) =>
 });
 
 // PUT /service-requests/:id - Update service request (full replacement)
-serviceRequestRouter.put('/:id', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
+serviceRequestRouter.put('/:id', requireAuth, requirePermissionOr(['tickets:edit']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     const payload = updateSchema.parse(req.body);
@@ -432,7 +485,7 @@ serviceRequestRouter.put('/:id', requireAuth, requirePermissionOr(['tickets:writ
 });
 
 // DELETE /service-requests/:id - Delete service request
-serviceRequestRouter.delete('/:id', requireAuth, requirePermissionOr(['tickets:manage']), async (req, res, next) => {
+serviceRequestRouter.delete('/:id', requireAuth, requirePermissionOr(['tickets:delete']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     const existing = await prisma.serviceRequest.findUnique({ where: { id } });
@@ -464,7 +517,7 @@ serviceRequestRouter.delete('/:id', requireAuth, requirePermissionOr(['tickets:m
 // ============================================
 
 // GET /service-requests/:id/attachments - List attachments for a request
-serviceRequestRouter.get('/:id/attachments', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+serviceRequestRouter.get('/:id/attachments', requireAuth, requirePermissionOr(['tickets:view']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     
@@ -664,7 +717,7 @@ function canPostComment(user: Express.Request['user'], request: { assigneeId?: s
 }
 
 // GET /service-requests/:id/comments - List comments for a request
-serviceRequestRouter.get('/:id/comments', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+serviceRequestRouter.get('/:id/comments', requireAuth, requirePermissionOr(['tickets:view_comments']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     
@@ -732,7 +785,7 @@ serviceRequestRouter.post('/:id/comments', requireAuth, requirePermissionOr(['ti
 // ============================================
 
 // GET /service-requests/:id/timeline - Get timeline for a service request
-serviceRequestRouter.get('/:id/timeline', requireAuth, requirePermissionOr(['tickets:read', 'tickets:view']), async (req, res, next) => {
+serviceRequestRouter.get('/:id/timeline', requireAuth, requirePermissionOr(['tickets:view_timeline']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
     

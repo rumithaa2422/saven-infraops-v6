@@ -2,6 +2,21 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { PermissionGate } from '../components/permissions';
+
+/**
+ * PART 3: Incidents Permission Enforcement
+ * 
+ * This module now enforces granular permissions:
+ * - incidents:view - View incidents (list and details)
+ * - incidents:create - Create new incidents
+ * - incidents:update - Update incident details
+ * - incidents:delete - Delete incidents
+ * - incidents:update_status - Change incident status
+ * - incidents:update_severity - Change incident severity
+ * - incidents:upload_resolution - Upload resolution documents
+ * - incidents:export - Export incidents
+ */
 
 type Incident = {
   id: string;
@@ -45,7 +60,7 @@ const ALLOWED_FILE_TYPES = '.pdf,.doc,.docx,.txt';
 export function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [incident, setIncident] = useState<Incident | null>(null);
   const [resolutionDoc, setResolutionDoc] = useState<ResolutionDocument | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,12 +71,20 @@ export function IncidentDetailPage() {
   const [changingStatus, setChangingStatus] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // PART 3: Permission checks using granular permissions
+  const canView = hasPermission('incidents:view');
+  const canUpdate = hasPermission('incidents:update');
+  const canUpdateStatus = hasPermission('incidents:update_status');
+  const canUpdateSeverity = hasPermission('incidents:update_severity');
+  const canUploadResolution = hasPermission('incidents:upload_resolution');
+  const canDeleteResolution = hasPermission('incidents:delete_resolution');
+  
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
   const isEmployee = !isSuperAdmin && !isAdmin;
   
-  // Can view timeline: Admin, Super Admin
-  const canViewTimeline = isSuperAdmin || isAdmin;
+  // Can view timeline: Admin, Super Admin, or has permission
+  const canViewTimeline = isSuperAdmin || isAdmin || hasPermission('incidents:view');
   
   // Can take ownership: Admin, Super Admin (only if not already owned)
   const canTakeOwnership = (isSuperAdmin || isAdmin) && !incident?.ownerName;
@@ -72,11 +95,11 @@ export function IncidentDetailPage() {
   // Is the owner of the incident (for resolution document upload)
   const isOwner = isOwned && incident?.ownerName === user?.name;
   
-  // Can upload resolution document: owner only (Admin or Super Admin)
-  const canUploadResolutionDoc = isOwner;
+  // Can upload resolution document: owner only OR has permission
+  const canUploadResolutionDoc = (isOwner && canUploadResolution) || (isSuperAdmin && canUploadResolution);
   
-  // Can change status: owner only (Admin or Super Admin who is the assigned owner)
-  const canChangeStatus = isOwner;
+  // Can change status: owner only OR has permission
+  const canChangeStatus = (isOwner && canUpdateStatus) || (isSuperAdmin && canUpdateStatus);
   
   // Get next status based on current status
   function getNextStatus(): string | null {

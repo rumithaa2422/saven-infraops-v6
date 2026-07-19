@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useAuth } from '../../auth/AuthContext';
 import {
   Ticket,
   AlertTriangle,
@@ -52,8 +53,19 @@ const typeColors: Record<string, string> = {
   problem: 'bg-orange-100 text-orange-600'
 };
 
+// Permission requirements for each activity type
+const activityTypePermissions: Record<string, string> = {
+  incident: 'incidents:view',
+  ticket: 'tickets:view',
+  change: 'changes:view',
+  access: 'access:view',
+  compliance: 'compliance:view',
+  problem: 'problems:view'
+};
+
 export function RecentActivity() {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [activityData, setActivityData] = useState<ActivityData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,17 +174,38 @@ export function RecentActivity() {
     );
   }
 
+  // PART 1: Filter activities based on user permissions
+  // Only show activities that user has permission to view
+  const filteredActivities = useMemo(() => {
+    const activities: ActivityItem[] = [];
+    
+    // Add activities only if user has permission
+    if (hasPermission('incidents:view')) {
+      activities.push(...(activityData?.incidents || []));
+    }
+    if (hasPermission('problems:view')) {
+      activities.push(...(activityData?.problems || []));
+    }
+    if (hasPermission('changes:view')) {
+      activities.push(...(activityData?.changes || []));
+    }
+    if (hasPermission('compliance:view')) {
+      activities.push(...(activityData?.complianceDocuments || []));
+    }
+    if (hasPermission('access:view')) {
+      activities.push(...(activityData?.accessRequests || []));
+    }
+    if (hasPermission('tickets:view')) {
+      activities.push(...(activityData?.serviceRequests || []));
+    }
+    
+    return activities
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+  }, [activityData, hasPermission]);
+
   // Combine all activities and sort by date
-  const allActivities: ActivityItem[] = [
-    ...(activityData?.incidents || []),
-    ...(activityData?.problems || []),
-    ...(activityData?.changes || []),
-    ...(activityData?.complianceDocuments || []),
-    ...(activityData?.accessRequests || []),
-    ...(activityData?.serviceRequests || [])
-  ]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 10);
+  const allActivities: ActivityItem[] = filteredActivities;
 
   if (allActivities.length === 0) {
     return (

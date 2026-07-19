@@ -57,9 +57,9 @@ type ModuleConfig = {
 
 const moduleMap: Record<string, ModuleConfig> = {
   incidents: {
-    permission: 'incidents:read',
-    writePermission: 'incidents:write',
-    deletePermission: 'incidents:manage',
+    permission: 'incidents:view',
+    writePermission: 'incidents:update',
+    deletePermission: 'incidents:delete',
     viewPermission: 'incidents:view',
     createPermission: 'incidents:create',
     managePermission: 'incidents:manage',

@@ -2,6 +2,23 @@ import { FormEvent, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { PermissionGate } from '../components/permissions';
+
+/**
+ * PART 2: Service Requests Permission Enforcement
+ * 
+ * This module now enforces granular permissions:
+ * - tickets:view - View tickets (list and details)
+ * - tickets:create - Create new tickets
+ * - tickets:edit - Edit ticket details
+ * - tickets:delete - Delete tickets
+ * - tickets:assign - Assign tickets to users
+ * - tickets:update_status - Change ticket status
+ * - tickets:comment - Post comments
+ * - tickets:upload_attachment - Upload attachments
+ * - tickets:download_attachment - Download attachments
+ * - tickets:export - Export tickets to CSV
+ */
 
 type ServiceRequest = {
   id: string;
@@ -62,9 +79,17 @@ export function ServiceRequestsPage() {
     closed: items.filter(item => item.status === 'CLOSED' || item.status === 'RESOLVED').length
   };
 
-  // Permission checks
+  // PART 2: Permission checks using granular permissions
+  const canView = hasPermission('tickets:view');
   const canCreate = hasPermission('tickets:create');
-  const canDelete = hasPermission('tickets:manage');
+  const canEdit = hasPermission('tickets:edit');
+  const canDelete = hasPermission('tickets:delete');
+  const canAssign = hasPermission('tickets:assign');
+  const canUpdateStatus = hasPermission('tickets:update_status');
+  const canComment = hasPermission('tickets:comment');
+  const canUploadAttachment = hasPermission('tickets:upload_attachment');
+  const canExport = hasPermission('tickets:export');
+  
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
 
@@ -312,7 +337,7 @@ export function ServiceRequestsPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Refresh
           </button>
-          {canCreate && (
+          {canExport && (
             <button className="toolbar-btn" onClick={exportCsv}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2"/></svg>
               Export
@@ -320,12 +345,12 @@ export function ServiceRequestsPage() {
           )}
         </div>
         <div className="toolbar-right">
-          {canCreate && (
+          <PermissionGate permission="tickets:create">
             <button className="toolbar-btn primary" onClick={() => setCreateOpen(true)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               Create Request
             </button>
-          )}
+          </PermissionGate>
         </div>
       </div>
 
@@ -341,11 +366,11 @@ export function ServiceRequestsPage() {
             </svg>
             <p className="empty-state-title">No service requests</p>
             <p className="empty-state-description">Create a new service request to get started.</p>
-            {canCreate && (
+            <PermissionGate permission="tickets:create">
               <div className="empty-state-action">
                 <button className="primary" onClick={() => setCreateOpen(true)}>Create Request</button>
               </div>
-            )}
+            </PermissionGate>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -381,7 +406,9 @@ export function ServiceRequestsPage() {
                           ) : (
                             <>
                               <button className="link-button" onClick={() => handleOpenTicket(item)} title="Open">Open</button>
-                              {canDelete && <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>}
+                              <PermissionGate permission="tickets:delete">
+                                <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>
+                              </PermissionGate>
                             </>
                           )}
                         </div>

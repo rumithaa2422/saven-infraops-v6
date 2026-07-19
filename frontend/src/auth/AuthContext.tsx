@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import { api, setAuthToken } from '../services/api';
 
 type User = {
@@ -13,6 +13,7 @@ type AuthContextValue = {
   token: string | null;
   user: User | null;
   permissions: string[];
+  permissionSet: Set<string>;  // O(1) lookup set
   isSuperAdmin: boolean;
   hasPermission: (permission: string) => boolean;
   hasAnyPermission: (permissionList: string[]) => boolean;
@@ -21,6 +22,7 @@ type AuthContextValue = {
   isBootstrapping: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshPermissions: () => Promise<void>;  // PART 7: Refresh permissions without logout
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -37,28 +39,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const permissions = user?.permissions || [];
 
+  // PART 8: Cache permissions in a Set for O(1) lookup
+  const permissionSet = useMemo(() => {
+    return new Set(permissions);
+  }, [permissions]);
+
   // All roles follow the same permission evaluation logic
   // isSuperAdmin is now just a flag indicating the role - it does NOT bypass permissions
   const isSuperAdmin = useMemo(() => {
     return user?.roles?.includes('Super Admin') ?? false;
   }, [user?.roles]);
 
-  // Check if user has a specific permission
+  // Check if user has a specific permission - O(1) lookup using Set
   const hasPermission = useCallback((permission: string): boolean => {
-    return permissions.includes(permission);
-  }, [permissions]);
+    return permissionSet.has(permission);
+  }, [permissionSet]);
 
   // Check if user has ANY of the specified permissions
   const hasAnyPermission = useCallback((permissionList: string[]): boolean => {
     if (!permissionList || permissionList.length === 0) return false;
-    return permissionList.some(p => permissions.includes(p));
-  }, [permissions]);
+    return permissionList.some(p => permissionSet.has(p));
+  }, [permissionSet]);
 
   // Check if user has ALL of the specified permissions
   const hasAllPermissions = useCallback((permissionList: string[]): boolean => {
     if (!permissionList || permissionList.length === 0) return true;
-    return permissionList.every(p => permissions.includes(p));
-  }, [permissions]);
+    return permissionList.every(p => permissionSet.has(p));
+  }, [permissionSet]);
 
   // Shorthand permission check: can("action") or can("action", "module")
   // Examples: can("manage", "inventory"), can("create"), can("delete")
@@ -66,17 +73,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Build permission string: "module:action" or just "action"
     const permission = module ? `${module}:${action}` : action;
     
-    // Check exact match first
-    if (permissions.includes(permission)) return true;
+    // Check exact match first using Set - O(1)
+    if (permissionSet.has(permission)) return true;
     
     // Check for wildcard "module:*" permission
-    if (module && permissions.includes(`${module}:*`)) return true;
+    if (module && permissionSet.has(`${module}:*`)) return true;
     
     // Check for global wildcard "*:*" 
-    if (permissions.includes('*:*')) return true;
+    if (permissionSet.has('*:*')) return true;
     
     return false;
-  }, [permissions]);
+  }, [permissionSet]);
+
+  // PART 7: Refresh permissions from server without logout
+  const refreshPermissions = useCallback(async () => {
+    if (!token) return;
+    
+    try {
+      const response = await api.get('/auth/me');
+      const updatedUser = response.data.user;
+      
+      // Update local storage and state
+      localStorage.setItem('infraops.user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    } catch (error) {
+      console.error('Failed to refresh permissions:', error);
+      // If refresh fails, logout user (token might be invalid)
+      logout();
+    }
+  }, [token]);
+
+  // Auto-refresh permissions when token changes
+  useEffect(() => {
+    if (token) {
+      // Debounce refresh to avoid multiple calls
+      const timeoutId = setTimeout(() => {
+        refreshPermissions();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [token, refreshPermissions]);
 
   async function login(email: string, password: string) {
     const response = await api.post('/auth/login', { email, password });
@@ -101,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     token, 
     user, 
     permissions,
+    permissionSet,
     isSuperAdmin,
     hasPermission,
     hasAnyPermission,
@@ -108,8 +145,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     can,
     isBootstrapping, 
     login, 
-    logout 
-  }), [token, user, permissions, isSuperAdmin, hasPermission, hasAnyPermission, hasAllPermissions, can, isBootstrapping]);
+    logout,
+    refreshPermissions
+  }), [token, user, permissions, permissionSet, isSuperAdmin, hasPermission, hasAnyPermission, hasAllPermissions, can, isBootstrapping, refreshPermissions]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
