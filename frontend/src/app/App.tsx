@@ -32,6 +32,7 @@ import { DocumentRepositoryPage } from '../pages/DocumentRepositoryPage';
 import { VendorDirectoryPage } from '../pages/VendorDirectoryPage';
 import { VendorDetailsPage } from '../pages/VendorDetailsPage';
 import { KnowledgeCategoryPage } from '../pages/KnowledgeCategoryPage';
+import { KnowledgeAnalyticsPage } from '../pages/KnowledgeAnalyticsPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -319,6 +320,14 @@ export function App() {
           element={
             <PermissionRoute permission={modulePermissions['knowledge-base']}>
               <KnowledgeCategoryPage />
+            </PermissionRoute>
+          } 
+        />
+        <Route 
+          path="knowledge-analytics" 
+          element={
+            <PermissionRoute permission={modulePermissions['knowledge-base']}>
+              <KnowledgeAnalyticsPage />
             </PermissionRoute>
           } 
         />

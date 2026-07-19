@@ -16,6 +16,77 @@ export function setAuthToken(token: string | null) {
 }
 
 // ============================================================
+// Knowledge Base Analytics API
+// ============================================================
+
+export interface KbSummary {
+  totalCategories: number;
+  totalArticles: number;
+  totalAttachments: number;
+  totalViews: number;
+  publishedArticles: number;
+  draftArticles: number;
+  archivedArticles: number;
+}
+
+export interface CategoryArticleCount {
+  categoryId: string;
+  categoryName: string;
+  articleCount: number;
+}
+
+export interface MonthlyArticleGrowth {
+  month: string;
+  created: number;
+  published: number;
+}
+
+export interface TopArticle {
+  id: string;
+  title: string;
+  viewCount: number;
+  categoryName: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  entityName: string;
+  performedBy: string | null;
+  performedAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KbAnalytics {
+  summary: KbSummary;
+  articlesByCategory: CategoryArticleCount[];
+  articleGrowth: MonthlyArticleGrowth[];
+  topViewedArticles: TopArticle[];
+  recentArticles: TopArticle[];
+  recentActivity: ActivityItem[];
+}
+
+export const knowledgeAnalyticsApi = {
+  /**
+   * Get all KB analytics
+   */
+  getAnalytics: async (): Promise<KbAnalytics> => {
+    const response = await api.get<KbAnalytics>('/knowledge/analytics');
+    return response.data;
+  },
+
+  /**
+   * Get attachment statistics
+   */
+  getAttachmentStats: async (): Promise<{ total: number; byType: Record<string, number> }> => {
+    const response = await api.get('/knowledge/analytics/attachments');
+    return response.data;
+  }
+};
+
+// ============================================================
 // Knowledge Base Attachment API
 // ============================================================
 

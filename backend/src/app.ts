@@ -25,6 +25,7 @@ import { inventoryAssignmentRouter } from './modules/inventory/inventoryAssignme
 import { vendorRouter } from './modules/vendor/vendor.routes.js';
 import { knowledgeCategoryRouter } from './modules/knowledgeCategory/knowledgeCategory.routes.js';
 import { knowledgeArticleRouter } from './modules/knowledgeArticle/knowledgeArticle.routes.js';
+import knowledgeAnalyticsRouter from './modules/knowledgeAnalytics/knowledgeAnalytics.routes.js';
 
 export function createApp() {
   const app = express();
@@ -57,6 +58,7 @@ export function createApp() {
   app.use('/api/vendors', vendorRouter);
   app.use('/api/knowledge/categories', knowledgeCategoryRouter);
   app.use('/api/knowledge/articles', knowledgeArticleRouter);
+  app.use('/api/knowledge/analytics', knowledgeAnalyticsRouter);
   app.use('/api', genericModuleRouter);
 
   app.use(errorHandler);
