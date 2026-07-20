@@ -112,6 +112,20 @@ export interface ImportRecordResult {
   id?: string;
   error?: string;
   warning?: string;
+  details?: {
+    row?: number;
+    field?: string;
+    value?: string;
+    reason?: string;
+    employeeId?: string;
+    email?: string;
+    name?: string;
+    department?: string;
+    role?: string;
+    dateJoined?: string;
+    errorCode?: string;
+    [key: string]: unknown;
+  };
 }
 
 /**

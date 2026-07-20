@@ -313,7 +313,24 @@ export class ImportFramework {
       // Execute import
       const importResult = await executor.importAll(validRows, validationResult);
 
-      res.json(importResult);
+      // Return detailed import result with all failure information
+      res.json({
+        success: importResult.success,
+        totalRows: importResult.totalRows,
+        imported: importResult.imported,
+        failed: importResult.failed,
+        skipped: importResult.skipped,
+        summary: importResult.summary,
+        results: importResult.results.map(r => ({
+          row: r.row,
+          success: r.success,
+          identifier: r.identifier,
+          id: r.id,
+          error: r.error,
+          warning: r.warning,
+          details: r.details
+        }))
+      });
     } catch (err) {
       const error = err as Error;
       console.error('Import execute error:', error);
