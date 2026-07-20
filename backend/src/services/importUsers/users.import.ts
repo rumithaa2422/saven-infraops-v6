@@ -22,6 +22,7 @@ import {
 } from '../importFramework/importFramework.types.js';
 import { normalizeValue } from '../importFramework/importFramework.parser.js';
 import { createUser } from '../user.service.js';
+import { parseDate, isValidDate } from '../../common/dateParser.js';
 
 // ============================================================================
 // Constants
@@ -56,7 +57,8 @@ class UsersImportValidator extends BaseImportValidator {
       email: ['email', 'email address', 'e-mail', 'mail'],
       phone: ['phone', 'phone number', 'phonenumber', 'mobile', 'contact', 'telephone'],
       department: ['department', 'dept', 'division', 'team'],
-      role: ['role', 'user role', 'userrole', 'access level']
+      role: ['role', 'user role', 'userrole', 'access level'],
+      dateJoined: ['date joined', 'datejoined', 'joining date', 'join date', 'start date', 'startdate', 'doj']
     };
   }
 
@@ -65,6 +67,13 @@ class UsersImportValidator extends BaseImportValidator {
    */
   getRequiredFields(): string[] {
     return ['name', 'email', 'department', 'role'];
+  }
+
+  /**
+   * Optional date fields that should be validated
+   */
+  protected getDateFields(): string[] {
+    return ['dateJoined'];
   }
 
   /**
@@ -103,6 +112,39 @@ class UsersImportValidator extends BaseImportValidator {
         role: existingRoleNames
       }
     };
+  }
+
+  /**
+   * Validate date fields for a row
+   */
+  protected validateDateFields(
+    row: Record<string, unknown>,
+    rowNumber: number,
+    columnMap: Record<string, string | undefined>
+  ): FieldError[] {
+    const errors: FieldError[] = [];
+    const dateFields = this.getDateFields();
+
+    for (const field of dateFields) {
+      const colName = columnMap[field];
+      if (colName) {
+        const value = row[colName];
+        // Check if value exists and is not empty
+        if (value !== undefined && value !== null && value !== '') {
+          // Try to parse the date - if it fails, report error
+          if (!isValidDate(value)) {
+            const displayValue = typeof value === 'string' ? value : String(value);
+            errors.push({
+              row: rowNumber,
+              field: this.formatFieldName(field),
+              message: `Invalid date. Please provide a valid calendar date. (Value: "${displayValue}")`
+            });
+          }
+        }
+      }
+    }
+
+    return errors;
   }
 
   /**
@@ -164,6 +206,9 @@ class UsersImportValidator extends BaseImportValidator {
       });
     }
 
+    // Validate date fields
+    errors.push(...this.validateDateFields(row, rowNumber, columnMap));
+
     return errors;
   }
 
@@ -180,6 +225,16 @@ class UsersImportValidator extends BaseImportValidator {
     const phone = normalizeValue(columnMap['phone'] ? row[columnMap['phone']] : row['Phone']);
     const department = normalizeValue(columnMap['department'] ? row[columnMap['department']] : row['Department']);
     const role = normalizeValue(columnMap['role'] ? row[columnMap['role']] : row['Role']);
+    
+    // Get dateJoined and parse it
+    const dateJoinedCol = columnMap['dateJoined'];
+    let dateJoined: string | undefined;
+    if (dateJoinedCol && row[dateJoinedCol] !== undefined && row[dateJoinedCol] !== null && row[dateJoinedCol] !== '') {
+      const parsed = parseDate(row[dateJoinedCol]);
+      if (parsed) {
+        dateJoined = parsed.toISOString();
+      }
+    }
 
     return {
       name,
@@ -187,6 +242,7 @@ class UsersImportValidator extends BaseImportValidator {
       phoneNumber: phone || undefined,
       department,
       role,
+      dateJoined,
       importedRow: rowNumber
     };
   }
@@ -213,12 +269,13 @@ class UsersImportExecutor extends BaseImportExecutor {
    * - Activation email
    */
   async importRecord(input: ImportInput): Promise<ImportRecordResult> {
-    const { name, email, phoneNumber, department, role } = input as {
+    const { name, email, phoneNumber, department, role, dateJoined } = input as {
       name: string;
       email: string;
       phoneNumber?: string;
       department: string;
       role: string;
+      dateJoined?: string;
     };
 
     try {
@@ -230,6 +287,7 @@ class UsersImportExecutor extends BaseImportExecutor {
         phoneNumber: phoneNumber || null,
         department: department || null,
         roleId: role || null,
+        dateJoined: dateJoined || null,
         actorId: 'system',
         actorEmail: 'system'
       });
