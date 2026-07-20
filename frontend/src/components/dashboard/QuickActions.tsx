@@ -13,8 +13,8 @@ import {
   AlertCircle,
   Settings,
   Shield,
-  FileText,
-  Plus
+  Plus,
+  ArrowRight
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
@@ -25,6 +25,9 @@ interface QuickAction {
   path: string;
   permission: string;
   description: string;
+  color: string;
+  bgColor: string;
+  hoverBgColor: string;
 }
 
 const allQuickActions: QuickAction[] = [
@@ -34,7 +37,10 @@ const allQuickActions: QuickAction[] = [
     icon: Ticket,
     path: '/service-requests',
     permission: 'tickets:create',
-    description: 'Submit a new service request'
+    description: 'Submit a new service request',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    hoverBgColor: 'hover:bg-blue-100'
   },
   {
     id: 'report-incident',
@@ -42,7 +48,10 @@ const allQuickActions: QuickAction[] = [
     icon: AlertTriangle,
     path: '/incidents',
     permission: 'incidents:create',
-    description: 'Log a new incident'
+    description: 'Log a new incident',
+    color: 'text-red-600',
+    bgColor: 'bg-red-50',
+    hoverBgColor: 'hover:bg-red-100'
   },
   {
     id: 'request-access',
@@ -50,7 +59,10 @@ const allQuickActions: QuickAction[] = [
     icon: Key,
     path: '/access-management',
     permission: 'access:request',
-    description: 'Request system access'
+    description: 'Request system access',
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50',
+    hoverBgColor: 'hover:bg-purple-100'
   },
   {
     id: 'browse-kb',
@@ -58,7 +70,10 @@ const allQuickActions: QuickAction[] = [
     icon: BookOpen,
     path: '/knowledge-base',
     permission: 'kb:view',
-    description: 'Browse articles'
+    description: 'Browse articles',
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50',
+    hoverBgColor: 'hover:bg-emerald-100'
   },
   {
     id: 'upload-compliance',
@@ -66,7 +81,10 @@ const allQuickActions: QuickAction[] = [
     icon: Upload,
     path: '/compliance',
     permission: 'compliance:create',
-    description: 'Upload compliance document'
+    description: 'Upload compliance document',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50',
+    hoverBgColor: 'hover:bg-amber-100'
   },
   {
     id: 'add-user',
@@ -74,7 +92,10 @@ const allQuickActions: QuickAction[] = [
     icon: UserPlus,
     path: '/users-teams',
     permission: 'users:create',
-    description: 'Add a new team member'
+    description: 'Add a new team member',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50',
+    hoverBgColor: 'hover:bg-indigo-100'
   },
   {
     id: 'add-vendor',
@@ -82,7 +103,10 @@ const allQuickActions: QuickAction[] = [
     icon: Building2,
     path: '/vendors-licenses',
     permission: 'vendors:create',
-    description: 'Add a new vendor'
+    description: 'Add a new vendor',
+    color: 'text-cyan-600',
+    bgColor: 'bg-cyan-50',
+    hoverBgColor: 'hover:bg-cyan-100'
   },
   {
     id: 'create-change',
@@ -90,7 +114,10 @@ const allQuickActions: QuickAction[] = [
     icon: GitBranch,
     path: '/changes',
     permission: 'changes:create',
-    description: 'Submit a change request'
+    description: 'Submit a change request',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50',
+    hoverBgColor: 'hover:bg-orange-100'
   },
   {
     id: 'open-problem',
@@ -98,7 +125,10 @@ const allQuickActions: QuickAction[] = [
     icon: AlertCircle,
     path: '/problems',
     permission: 'problems:create',
-    description: 'Log a new problem'
+    description: 'Log a new problem',
+    color: 'text-pink-600',
+    bgColor: 'bg-pink-50',
+    hoverBgColor: 'hover:bg-pink-100'
   },
   {
     id: 'settings',
@@ -106,7 +136,10 @@ const allQuickActions: QuickAction[] = [
     icon: Settings,
     path: '/settings',
     permission: 'settings:view',
-    description: 'System settings'
+    description: 'System settings',
+    color: 'text-slate-600',
+    bgColor: 'bg-slate-100',
+    hoverBgColor: 'hover:bg-slate-200'
   },
   {
     id: 'roles',
@@ -114,16 +147,21 @@ const allQuickActions: QuickAction[] = [
     icon: Shield,
     path: '/roles-permissions',
     permission: 'roles:view',
-    description: 'Manage roles & permissions'
+    description: 'Manage roles & permissions',
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-50',
+    hoverBgColor: 'hover:bg-violet-100'
   },
-
   {
     id: 'create-inventory',
     label: 'Add Asset',
     icon: Plus,
     path: '/inventory',
     permission: 'inventory:create',
-    description: 'Add new inventory item'
+    description: 'Add new inventory item',
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50',
+    hoverBgColor: 'hover:bg-teal-100'
   },
   {
     id: 'create-project',
@@ -131,7 +169,10 @@ const allQuickActions: QuickAction[] = [
     icon: Plus,
     path: '/projects-environments',
     permission: 'projects:create',
-    description: 'Create new project'
+    description: 'Create new project',
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-50',
+    hoverBgColor: 'hover:bg-rose-100'
   }
 ];
 
@@ -152,22 +193,35 @@ export function QuickActions({ className = '' }: QuickActionsProps) {
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 p-4 ${className}`}>
-      <h2 className="text-sm font-semibold text-slate-900 mb-3">Quick Actions</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {visibleActions.slice(0, 12).map((action) => {
+    <div className={`bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm ${className}`}>
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Quick Actions</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Common tasks and shortcuts</p>
+        </div>
+        <button 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
+        >
+          View all
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        {visibleActions.slice(0, 8).map((action, index) => {
           const Icon = action.icon;
           return (
             <button
               key={action.id}
               onClick={() => handleAction(action.path)}
-              className="flex flex-col items-center gap-2 p-3 rounded-lg border border-slate-100 hover:border-brand-200 hover:bg-brand-50/50 transition-all duration-200 group"
-              title={action.description}
+              className={`flex flex-col items-center gap-3 p-4 rounded-xl border border-slate-100 ${action.bgColor} ${action.hoverBgColor} transition-all duration-300 group hover:shadow-md hover:shadow-slate-200/50 hover:-translate-y-1`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="p-2 rounded-lg bg-slate-100 group-hover:bg-brand-100 transition-colors">
-                <Icon className="w-4 h-4 text-slate-600 group-hover:text-brand-600 transition-colors" />
+              <div className={`p-2.5 rounded-xl bg-white shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <Icon className={`w-5 h-5 ${action.color}`} />
               </div>
-              <span className="text-xs font-medium text-slate-600 group-hover:text-brand-600 text-center leading-tight">
+              <span className="text-xs font-semibold text-slate-700 text-center leading-tight group-hover:text-slate-900 transition-colors">
                 {action.label}
               </span>
             </button>

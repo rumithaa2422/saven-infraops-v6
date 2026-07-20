@@ -7,7 +7,8 @@ import {
   ModuleOverview,
   RecentActivity,
   KnowledgeHub,
-  ReportsWidget
+  ReportsWidget,
+  SummaryCards
 } from '../components/dashboard';
 import { PermissionGate } from '../components/permissions';
 import { useAuth } from '../auth/AuthContext';
@@ -20,62 +21,68 @@ export function DashboardPage() {
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     setRefreshKey(prev => prev + 1);
-    // Simulate refresh delay
     setTimeout(() => {
       setIsRefreshing(false);
     }, 1000);
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Section 1: Header - requires dashboard:view */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
+      {/* Header */}
       <PermissionGate permission="dashboard:view">
         <DashboardHeader onRefresh={handleRefresh} isRefreshing={isRefreshing} />
       </PermissionGate>
 
       {/* Main Content */}
-      <main className="p-6 max-w-7xl mx-auto">
-        {/* Section 2: Quick Actions - requires any relevant permission */}
-        <div className="mb-6">
+      <main className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-8">
+        
+        {/* Summary Cards Section */}
+        <section key={`summary-${refreshKey}`}>
+          <SummaryCards />
+        </section>
+
+        {/* Quick Actions Section */}
+        <section key={`quick-${refreshKey}`}>
           <QuickActions />
-        </div>
+        </section>
 
-        {/* Section 4: My Work - requires dashboard:view_my_tasks */}
-        <PermissionGate permission="dashboard:view_my_tasks">
-          <div className="mb-6" key={`my-work-${refreshKey}`}>
-            <MyWorkWidget />
+        {/* Two Column Layout: My Work + Alerts */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* My Work Widget - Takes 2 columns */}
+          <PermissionGate permission="dashboard:view_my_tasks">
+            <div className="xl:col-span-2" key={`my-work-${refreshKey}`}>
+              <MyWorkWidget />
+            </div>
+          </PermissionGate>
+
+          {/* Alerts Widget */}
+          <div key={`alerts-${refreshKey}`}>
+            <AlertWidget />
           </div>
-        </PermissionGate>
-
-        {/* Section 5: Important Alerts */}
-        <div className="mb-6" key={`alerts-${refreshKey}`}>
-          <AlertWidget />
         </div>
 
-        {/* Section 6: Module Overview - Main Section - requires dashboard:view */}
-        <div className="mb-6" key={`modules-${refreshKey}`}>
+        {/* Module Overview Section */}
+        <section key={`modules-${refreshKey}`}>
           <ModuleOverview />
-        </div>
+        </section>
 
-        {/* Two Column Layout for Bottom Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Section 7: Recent Activity - requires dashboard:view_activity */}
+        {/* Bottom Section: Activity + Knowledge Hub + Reports */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Recent Activity */}
           <PermissionGate permission="dashboard:view_activity">
             <div key={`activity-${refreshKey}`}>
               <RecentActivity />
             </div>
           </PermissionGate>
 
-          {/* Two Mini Sections */}
+          {/* Right Column: Knowledge Hub + Reports */}
           <div className="space-y-6">
-            {/* Section 8: Knowledge Hub - requires kb:view */}
             <PermissionGate permission="kb:view">
               <div key={`knowledge-${refreshKey}`}>
                 <KnowledgeHub />
               </div>
             </PermissionGate>
 
-            {/* Section 9: Reports Shortcut - requires reports:view */}
             <PermissionGate permission="reports:view">
               <div key={`reports-${refreshKey}`}>
                 <ReportsWidget />

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
-import { AlertTriangle, Clock, Key, Package, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Clock, Key, Package, ShieldAlert, CheckCircle2, Bell } from 'lucide-react';
 
 interface AlertData {
   criticalIncidents: number;
@@ -109,11 +109,19 @@ export function AlertWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-900 mb-3">Important Alerts</h2>
-        <div className="flex gap-2">
+      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-xl bg-brand-50">
+            <Bell className="w-5 h-5 text-brand-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Important Alerts</h2>
+            <p className="text-sm text-slate-500">Items requiring attention</p>
+          </div>
+        </div>
+        <div className="flex gap-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-10 flex-1 bg-slate-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-12 flex-1 bg-slate-100 rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -122,38 +130,84 @@ export function AlertWidget() {
 
   if (error || activeAlerts.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-emerald-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-900 mb-3">Important Alerts</h2>
-        <div className="flex items-center gap-2 text-emerald-600">
-          <CheckCircle2 className="w-5 h-5" />
-          <span className="text-sm">All clear! No urgent items require attention.</span>
+      <div className="bg-white rounded-2xl border border-emerald-200/60 p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-sm shadow-emerald-500/20">
+            <CheckCircle2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">All Clear!</h2>
+            <p className="text-sm text-slate-500">No urgent items require attention</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-xl">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <span className="text-sm font-medium text-emerald-700">Everything is running smoothly</span>
         </div>
       </div>
     );
   }
 
+  const severityConfig = {
+    critical: {
+      bg: 'bg-gradient-to-br from-red-50 to-red-100',
+      border: 'border-red-200',
+      iconBg: 'bg-gradient-to-br from-red-500 to-red-600',
+      text: 'text-red-600',
+      hover: 'hover:bg-red-100'
+    },
+    warning: {
+      bg: 'bg-gradient-to-br from-amber-50 to-amber-100',
+      border: 'border-amber-200',
+      iconBg: 'bg-gradient-to-br from-amber-500 to-amber-600',
+      text: 'text-amber-600',
+      hover: 'hover:bg-amber-100'
+    },
+    info: {
+      bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
+      border: 'border-blue-200',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-blue-600',
+      text: 'text-blue-600',
+      hover: 'hover:bg-blue-100'
+    }
+  };
+
   return (
-    <div className="bg-white rounded-xl border border-amber-200 p-4">
-      <h2 className="text-sm font-semibold text-slate-900 mb-3">Important Alerts</h2>
-      <div className="flex flex-wrap gap-2">
+    <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm shadow-amber-500/20">
+          <Bell className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Important Alerts</h2>
+          <p className="text-sm text-slate-500">{activeAlerts.length} item{activeAlerts.length > 1 ? 's' : ''} requiring attention</p>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
         {activeAlerts.map((alert) => {
           const Icon = alert.icon;
-          const severityStyles = {
-            critical: 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100',
-            warning: 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100',
-            info: 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
-          };
+          const config = severityConfig[alert.severity];
           return (
             <button
               key={alert.id}
               onClick={() => navigate(alert.path)}
               className={`
-                flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium
-                transition-colors ${severityStyles[alert.severity]}
+                w-full flex items-center gap-4 p-4 rounded-xl border ${config.border}
+                ${config.bg} ${config.hover} transition-all duration-300
+                hover:shadow-md hover:-translate-y-0.5 group
               `}
             >
-              <Icon className="w-4 h-4" />
-              <span>{alert.value} {alert.label}</span>
+              <div className={`p-2.5 rounded-xl ${config.iconBg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <Icon className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`text-lg font-bold ${config.text}`}>{alert.value}</span>
+                <span className="text-sm font-medium text-slate-700 ml-2">{alert.label}</span>
+              </div>
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${config.bg} ${config.text}`}>
+                {alert.severity.toUpperCase()}
+              </span>
             </button>
           );
         })}

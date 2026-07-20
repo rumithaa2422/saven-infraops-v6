@@ -8,6 +8,7 @@ export { ModuleOverview } from './ModuleOverview';
 export { RecentActivity } from './RecentActivity';
 export { KnowledgeHub } from './KnowledgeHub';
 export { ReportsWidget } from './ReportsWidget';
+export { SummaryCards, SummaryCardsSkeleton } from './SummaryCards';
 export { StatCard, StatCardSkeleton } from './StatCard';
 
 // Legacy components (kept for compatibility)

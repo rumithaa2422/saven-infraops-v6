@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
-import { Ticket, AlertTriangle, GitBranch, Key, AlertCircle } from 'lucide-react';
+import { Ticket, AlertTriangle, GitBranch, Key, AlertCircle, Briefcase, ArrowRight } from 'lucide-react';
 
 interface MyTasksData {
   openIncidents: number;
@@ -20,7 +20,8 @@ interface TaskItem {
   icon: typeof Ticket;
   path: string;
   color: string;
-  hoverColor: string;
+  bgColor: string;
+  iconBg: string;
 }
 
 export function MyWorkWidget() {
@@ -54,8 +55,9 @@ export function MyWorkWidget() {
       value: tasksData?.assignedTickets || 0,
       icon: Ticket,
       path: '/service-requests?filter=assigned',
-      color: 'bg-blue-50 border-blue-200',
-      hoverColor: 'hover:border-blue-400 hover:bg-blue-50'
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      iconBg: 'bg-blue-100'
     },
     {
       id: 'open-incidents',
@@ -63,8 +65,9 @@ export function MyWorkWidget() {
       value: tasksData?.openIncidents || 0,
       icon: AlertTriangle,
       path: '/incidents?filter=open',
-      color: 'bg-red-50 border-red-200',
-      hoverColor: 'hover:border-red-400 hover:bg-red-50'
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      iconBg: 'bg-red-100'
     },
     {
       id: 'pending-changes',
@@ -72,8 +75,9 @@ export function MyWorkWidget() {
       value: tasksData?.pendingChanges || 0,
       icon: GitBranch,
       path: '/changes?filter=pending',
-      color: 'bg-amber-50 border-amber-200',
-      hoverColor: 'hover:border-amber-400 hover:bg-amber-50'
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+      iconBg: 'bg-amber-100'
     },
     {
       id: 'access-requests',
@@ -81,8 +85,9 @@ export function MyWorkWidget() {
       value: tasksData?.pendingAccessRequests || 0,
       icon: Key,
       path: '/access-management?filter=pending',
-      color: 'bg-purple-50 border-purple-200',
-      hoverColor: 'hover:border-purple-400 hover:bg-purple-50'
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      iconBg: 'bg-purple-100'
     },
     {
       id: 'open-problems',
@@ -90,18 +95,29 @@ export function MyWorkWidget() {
       value: tasksData?.openProblems || 0,
       icon: AlertCircle,
       path: '/problems?filter=open',
-      color: 'bg-orange-50 border-orange-200',
-      hoverColor: 'hover:border-orange-400 hover:bg-orange-50'
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      iconBg: 'bg-orange-100'
     }
   ];
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-900 mb-3">My Work</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-brand-50">
+              <Briefcase className="w-5 h-5 text-brand-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">My Work</h2>
+              <p className="text-sm text-slate-500">Your assigned tasks and items</p>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-24 bg-slate-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-28 bg-slate-50 rounded-2xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -110,15 +126,14 @@ export function MyWorkWidget() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl border border-red-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-900 mb-3">My Work</h2>
-        <div className="text-center py-4">
+      <div className="bg-white rounded-2xl border border-red-200/60 p-6 shadow-sm">
+        <div className="text-center py-6">
           <p className="text-sm text-slate-500">{error}</p>
           <button
             onClick={fetchMyTasks}
-            className="mt-2 text-sm text-brand-600 hover:text-brand-700"
+            className="mt-3 text-sm text-brand-600 hover:text-brand-700 font-medium"
           >
-            Retry
+            Try again
           </button>
         </div>
       </div>
@@ -126,14 +141,25 @@ export function MyWorkWidget() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-slate-900">My Work</h2>
+    <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-sm shadow-brand-500/20">
+            <Briefcase className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">My Work</h2>
+            <p className="text-sm text-slate-500">Your assigned tasks and items</p>
+          </div>
+        </div>
         {tasksData?.userName && (
-          <span className="text-xs text-slate-500">{tasksData.userName}</span>
+          <span className="text-xs font-medium text-slate-500 px-3 py-1.5 bg-slate-100 rounded-full">
+            {tasksData.userName}
+          </span>
         )}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {taskItems.map((task) => {
           const Icon = task.icon;
           return (
@@ -141,14 +167,22 @@ export function MyWorkWidget() {
               key={task.id}
               onClick={() => navigate(task.path)}
               className={`
-                flex flex-col items-center justify-center p-3 rounded-lg border
-                ${task.color} ${task.hoverColor} transition-all duration-200
+                flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-200/60
+                ${task.bgColor} hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1
+                transition-all duration-300 group
                 ${task.value === 0 ? 'opacity-60' : ''}
               `}
             >
-              <Icon className="w-5 h-5 text-slate-600 mb-2" />
-              <span className="text-2xl font-semibold text-slate-900">{task.value}</span>
-              <span className="text-xs text-slate-500 mt-1 text-center">{task.label}</span>
+              <div className={`p-2.5 rounded-xl ${task.iconBg} mb-3 group-hover:scale-110 transition-transform duration-300`}>
+                <Icon className={`w-5 h-5 ${task.color}`} />
+              </div>
+              <span className="text-3xl font-bold text-slate-900">{task.value}</span>
+              <span className="text-xs font-medium text-slate-500 mt-1 text-center leading-tight">
+                {task.label}
+              </span>
+              <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowRight className={`w-4 h-4 ${task.color}`} />
+              </div>
             </button>
           );
         })}
