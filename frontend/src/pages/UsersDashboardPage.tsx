@@ -201,18 +201,23 @@ export function UsersDashboardPage() {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
         setImportData(jsonData);
-        validateImportData(jsonData);
+        // Call validation and wait for it to complete
+        validateImportData(jsonData).then(() => {
+          setImportProcessing(false);
+        }).catch(() => {
+          setImportProcessing(false);
+        });
       } catch (err) {
         alert('Failed to parse Excel file');
         setShowImportModal(false);
+        setImportProcessing(false);
       }
-      setImportProcessing(false);
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
   }
 
-  async function validateImportData(data: any[]) {
+  async function validateImportData(data: any[]): Promise<void> {
     const errors: Record<number, string[]> = {};
     const validRows: UserRow[] = [];
     const seenEmails = new Set<string>();
@@ -366,6 +371,7 @@ export function UsersDashboardPage() {
 
     setImportErrors(errors);
     setImportValidRows(validRows);
+    return Promise.resolve();
   }
 
   async function handleImportConfirm() {
