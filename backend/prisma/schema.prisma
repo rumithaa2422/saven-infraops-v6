@@ -127,10 +127,16 @@ model UserActivationToken {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+// Dynamic Role Management - Phase 6: Role System Fields
 model Role {
   id          String           @id @default(cuid())
   name        String           @unique
   description String?
+  isSystem    Boolean          @default(false)  // System roles cannot be deleted
+  isActive    Boolean          @default(true)   // Active/Inactive roles
+  createdBy   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   users       UserRole[]
   permissions RolePermission[]
 }

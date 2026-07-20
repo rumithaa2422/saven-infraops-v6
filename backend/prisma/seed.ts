@@ -400,27 +400,27 @@ async function main() {
   console.log(`[RBAC] Total permissions in database: ${allPermissions.length}`);
 
   // ============================================
-  // ROLE DEFINITIONS - Phase 3A
+  // ROLE DEFINITIONS - Phase 6: Dynamic Role Management
   // ============================================
-  // Keep existing roles for backward compatibility
-  // New roles to be added in Phase E
+  // System roles (isSystem=true) cannot be deleted
+  // Super Admin, Admin, Employee are bootstrap/system roles
 
   const superAdminRole = await prisma.role.upsert({
     where: { name: 'Super Admin' },
-    update: { description: 'Full system access - can manage all resources and users' },
-    create: { name: 'Super Admin', description: 'Full system access - can manage all resources and users' }
+    update: { description: 'Full system access - can manage all resources and users', isSystem: true, isActive: true },
+    create: { name: 'Super Admin', description: 'Full system access - can manage all resources and users', isSystem: true, isActive: true }
   });
 
   const adminRole = await prisma.role.upsert({
     where: { name: 'Admin' },
-    update: { description: 'Administrative access - can manage all resources' },
-    create: { name: 'Admin', description: 'Administrative access - can manage all resources' }
+    update: { description: 'Administrative access - can manage all resources', isSystem: true, isActive: true },
+    create: { name: 'Admin', description: 'Administrative access - can manage all resources', isSystem: true, isActive: true }
   });
 
   const employeeRole = await prisma.role.upsert({
     where: { name: 'Employee' },
-    update: { description: 'Basic access - can view dashboard and submit requests' },
-    create: { name: 'Employee', description: 'Basic access - can view dashboard and submit requests' }
+    update: { description: 'Basic access - can view dashboard and submit requests', isSystem: true, isActive: true },
+    create: { name: 'Employee', description: 'Basic access - can view dashboard and submit requests', isSystem: true, isActive: true }
   });
 
   console.log('[RBAC] Roles seeded successfully.');

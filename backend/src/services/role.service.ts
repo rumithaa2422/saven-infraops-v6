@@ -11,27 +11,26 @@ export interface CreateRoleInput {
 }
 
 export async function createRole(data: CreateRoleInput) {
-  // Check for duplicate name
-  const existing = await prisma.role.findUnique({ where: { name: data.name } });
+  const existing = await prisma.role.findUnique({ where: { name: data.name.trim() } });
   if (existing) {
     throw new HttpError(400, 'A role with this name already exists');
   }
 
-  // Get permission IDs
   const permissions = await prisma.permission.findMany({
     where: { code: { in: data.permissions } }
   });
 
-  // Create role with permissions in transaction
-  const role = await prisma.$transaction(async (tx: { role: { create: (arg0: { data: { name: string; description: string | null; }; }) => any; }; rolePermission: { create: (arg0: { data: { roleId: any; permissionId: any; }; }) => any; }; }) => {
+  const role = await prisma.$transaction(async (tx) => {
     const newRole = await tx.role.create({
       data: {
-        name: data.name,
-        description: data.description || null
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        isSystem: false,
+        isActive: true,
+        createdBy: data.actorEmail || null
       }
     });
 
-    // Create role-permission mappings
     for (const permission of permissions) {
       await tx.rolePermission.create({
         data: {
@@ -44,7 +43,6 @@ export async function createRole(data: CreateRoleInput) {
     return newRole;
   });
 
-  // Audit log
   await prisma.auditLog.create({
     data: {
       actorId: data.actorId || null,
@@ -60,6 +58,8 @@ export async function createRole(data: CreateRoleInput) {
     id: role.id,
     name: role.name,
     description: role.description,
+    isSystem: role.isSystem,
+    isActive: role.isActive,
     permissions: data.permissions
   };
 }
@@ -73,16 +73,18 @@ export interface UpdateRoleInput {
 }
 
 export async function updateRole(id: string, data: UpdateRoleInput) {
-  // Check if role exists
   const existing = await prisma.role.findUnique({ where: { id } });
   if (!existing) {
     throw new HttpError(404, 'Role not found');
   }
 
-  // Check for duplicate name (excluding current role)
+  if (existing.isSystem) {
+    throw new HttpError(400, 'System roles cannot be renamed');
+  }
+
   if (data.name) {
     const duplicate = await prisma.role.findFirst({
-      where: { name: data.name, id: { not: id } }
+      where: { name: data.name.trim(), id: { not: id } }
     });
     if (duplicate) {
       throw new HttpError(400, 'A role with this name already exists');
@@ -92,12 +94,11 @@ export async function updateRole(id: string, data: UpdateRoleInput) {
   const role = await prisma.role.update({
     where: { id },
     data: {
-      name: data.name,
-      description: data.description !== undefined ? (data.description || null) : undefined
+      name: data.name?.trim(),
+      description: data.description !== undefined ? (data.description?.trim() || null) : undefined
     }
   });
 
-  // Audit log
   await prisma.auditLog.create({
     data: {
       actorId: data.actorId || null,
@@ -113,7 +114,128 @@ export async function updateRole(id: string, data: UpdateRoleInput) {
   return {
     id: role.id,
     name: role.name,
-    description: role.description
+    description: role.description,
+    isSystem: role.isSystem,
+    isActive: role.isActive
+  };
+}
+
+export interface UpdateRoleStatusInput {
+  isActive: boolean;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  ipAddress?: string | null;
+}
+
+export async function updateRoleStatus(id: string, data: UpdateRoleStatusInput) {
+  const existing = await prisma.role.findUnique({ where: { id } });
+  if (!existing) {
+    throw new HttpError(404, 'Role not found');
+  }
+
+  if (existing.isSystem) {
+    throw new HttpError(400, 'System roles cannot be disabled');
+  }
+
+  const role = await prisma.role.update({
+    where: { id },
+    data: { isActive: data.isActive }
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: data.actorId || null,
+      actorEmail: data.actorEmail || null,
+      action: data.isActive ? 'ROLE_ENABLED' : 'ROLE_DISABLED',
+      entityType: 'Role',
+      entityId: role.id,
+      oldValue: { isActive: existing.isActive },
+      newValue: { isActive: role.isActive }
+    }
+  });
+
+  return {
+    id: role.id,
+    name: role.name,
+    description: role.description,
+    isSystem: role.isSystem,
+    isActive: role.isActive
+  };
+}
+
+export interface CloneRoleInput {
+  actorId?: string | null;
+  actorEmail?: string | null;
+  ipAddress?: string | null;
+}
+
+export async function cloneRole(id: string, data: CloneRoleInput) {
+  const existing = await prisma.role.findUnique({
+    where: { id },
+    include: { permissions: { include: { permission: true } } }
+  });
+
+  if (!existing) {
+    throw new HttpError(404, 'Role not found');
+  }
+
+  let newName = `${existing.name} Copy`;
+  let counter = 1;
+  while (await prisma.role.findUnique({ where: { name: newName } })) {
+    counter++;
+    newName = `${existing.name} Copy ${counter}`;
+  }
+
+  const permissionCodes = existing.permissions.map((rp) => rp.permission.code);
+  const permissions = await prisma.permission.findMany({
+    where: { code: { in: permissionCodes } }
+  });
+
+  const clonedRole = await prisma.$transaction(async (tx) => {
+    const role = await tx.role.create({
+      data: {
+        name: newName,
+        description: existing.description,
+        isSystem: false,
+        isActive: true,
+        createdBy: data.actorEmail || null
+      }
+    });
+
+    for (const permission of permissions) {
+      await tx.rolePermission.create({
+        data: {
+          roleId: role.id,
+          permissionId: permission.id
+        }
+      });
+    }
+
+    return role;
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: data.actorId || null,
+      actorEmail: data.actorEmail || null,
+      action: 'ROLE_CLONED',
+      entityType: 'Role',
+      entityId: clonedRole.id,
+      newValue: { 
+        name: clonedRole.name, 
+        clonedFrom: existing.name,
+        permissions: permissionCodes 
+      }
+    }
+  });
+
+  return {
+    id: clonedRole.id,
+    name: clonedRole.name,
+    description: clonedRole.description,
+    isSystem: clonedRole.isSystem,
+    isActive: clonedRole.isActive,
+    permissionCount: permissions.length
   };
 }
 
@@ -125,7 +247,6 @@ export interface UpdateRolePermissionsInput {
 }
 
 export async function updateRolePermissions(id: string, data: UpdateRolePermissionsInput) {
-  // Check if role exists
   const existingRole = await prisma.role.findUnique({
     where: { id },
     include: { permissions: { include: { permission: true } } }
@@ -135,19 +256,15 @@ export async function updateRolePermissions(id: string, data: UpdateRolePermissi
     throw new HttpError(404, 'Role not found');
   }
 
-  // Get new permission IDs
   const permissions = await prisma.permission.findMany({
     where: { code: { in: data.permissions } }
   });
-
-  // Replace permissions in transaction
-  const role = await prisma.$transaction(async (tx: { rolePermission: { deleteMany: (arg0: { where: { roleId: string; }; }) => any; create: (arg0: { data: { roleId: string; permissionId: any; }; }) => any; }; role: { findUnique: (arg0: { where: { id: string; }; include: { permissions: { include: { permission: boolean; }; }; }; }) => any; }; }) => {
-    // Delete existing permissions
+  
+  const role = await prisma.$transaction(async (tx) => {
     await tx.rolePermission.deleteMany({
       where: { roleId: id }
     });
 
-    // Create new permissions
     for (const permission of permissions) {
       await tx.rolePermission.create({
         data: {
@@ -163,9 +280,8 @@ export async function updateRolePermissions(id: string, data: UpdateRolePermissi
     });
   });
 
-  const oldPermissions = existingRole.permissions.map((rp: { permission: { code: any; }; }) => rp.permission.code);
+  const oldPermissions = existingRole.permissions.map((rp) => rp.permission.code);
 
-  // Audit log
   await prisma.auditLog.create({
     data: {
       actorId: data.actorId || null,
@@ -182,7 +298,9 @@ export async function updateRolePermissions(id: string, data: UpdateRolePermissi
     id: role!.id,
     name: role!.name,
     description: role!.description,
-    permissions: role!.permissions.map((rp: { permission: { code: any; }; }) => rp.permission.code)
+    isSystem: role!.isSystem,
+    isActive: role!.isActive,
+    permissions: role!.permissions.map((rp) => rp.permission.code)
   };
 }
 
@@ -193,7 +311,6 @@ export interface DeleteRoleInput {
 }
 
 export async function deleteRole(id: string, data: DeleteRoleInput) {
-  // Check if role exists and count assigned users
   const role = await prisma.role.findUnique({
     where: { id },
     include: { _count: { select: { users: true } } }
@@ -203,30 +320,24 @@ export async function deleteRole(id: string, data: DeleteRoleInput) {
     throw new HttpError(404, 'Role not found');
   }
 
-  // Prevent deletion of Super Admin
-  if (role.name === 'Super Admin') {
-    throw new HttpError(400, 'Cannot delete the Super Admin role');
+  if (role.isSystem) {
+    throw new HttpError(400, 'System roles cannot be deleted');
   }
 
-  // Prevent deletion if users are assigned
   if (role._count.users > 0) {
-    throw new HttpError(400, 'Cannot delete role because users are assigned to it.');
+    throw new HttpError(400, `Cannot delete role because ${role._count.users} user(s) are assigned to it.`);
   }
 
-  // Delete RolePermission records and role in a transaction
-  await prisma.$transaction(async (tx: { rolePermission: { deleteMany: (arg0: { where: { roleId: string; }; }) => any; }; role: { delete: (arg0: { where: { id: string; }; }) => any; }; }) => {
-    // Delete all RolePermission records for this role
+  await prisma.$transaction(async (tx) => {
     await tx.rolePermission.deleteMany({
       where: { roleId: id }
     });
 
-    // Delete the role
     await tx.role.delete({
       where: { id }
     });
   });
 
-  // Audit log
   await prisma.auditLog.create({
     data: {
       actorId: data.actorId || null,
@@ -239,4 +350,47 @@ export async function deleteRole(id: string, data: DeleteRoleInput) {
   });
 
   return { success: true };
+}
+
+export async function getRoleUsers(roleId: string) {
+  const role = await prisma.role.findUnique({
+    where: { id: roleId }
+  });
+
+  if (!role) {
+    throw new HttpError(404, 'Role not found');
+  }
+
+  const users = await prisma.userRole.findMany({
+    where: { roleId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          department: true,
+          status: true,
+          createdAt: true
+        }
+      }
+    }
+  });
+
+  return {
+    role: {
+      id: role.id,
+      name: role.name,
+      description: role.description
+    },
+    users: users.map((ur) => ({
+      id: ur.user.id,
+      name: ur.user.name,
+      email: ur.user.email,
+      department: ur.user.department,
+      status: ur.user.status,
+      assignedAt: ur.createdAt
+    })),
+    totalCount: users.length
+  };
 }

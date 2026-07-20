@@ -10,8 +10,11 @@ type Role = {
   id: string;
   name: string;
   description: string | null;
+  isSystem: boolean;
+  isActive: boolean;
   permissionCount: number;
   userCount: number;
+  createdAt?: string;
 };
 
 type PermissionMetadata = {
@@ -56,6 +59,11 @@ type PermissionStats = {
   totalRoles: number;
   totalModules: number;
   totalCategories: number;
+  // Phase 6: Dynamic Role Management stats
+  systemRoles?: number;
+  customRoles?: number;
+  activeRoles?: number;
+  inactiveRoles?: number;
 };
 
 type Toast = {
@@ -380,8 +388,14 @@ export function RolesPermissionsPage() {
   
   const loadStats = async () => {
     try {
-      const response = await api.get('/roles/permissions/stats');
-      setStats(response.data);
+      const response = await api.get('/roles/stats');
+      const currentStats = stats || { totalPermissions: 0, totalModules: 0, totalCategories: 0 };
+      setStats({
+        ...response.data,
+        totalPermissions: currentStats.totalPermissions,
+        totalModules: currentStats.totalModules,
+        totalCategories: currentStats.totalCategories
+      });
     } catch (err) {
       console.error('Failed to load stats:', err);
     }
@@ -636,24 +650,24 @@ export function RolesPermissionsPage() {
             </div>
           </div>
           <div className="stat-card">
-            <span className="stat-icon">🔐</span>
+            <span className="stat-icon">🖥️</span>
             <div className="stat-content">
-              <span className="stat-value">{stats.totalPermissions}</span>
-              <span className="stat-label">Total Permissions</span>
+              <span className="stat-value">{stats.systemRoles ?? 0}</span>
+              <span className="stat-label">System Roles</span>
             </div>
           </div>
           <div className="stat-card">
-            <span className="stat-icon">📋</span>
+            <span className="stat-icon">✨</span>
             <div className="stat-content">
-              <span className="stat-value">{selectedRole ? [...assignedPermissions].length : 0}</span>
-              <span className="stat-label">Active Permissions</span>
+              <span className="stat-value">{stats.customRoles ?? 0}</span>
+              <span className="stat-label">Custom Roles</span>
             </div>
           </div>
           <div className="stat-card">
-            <span className="stat-icon">📦</span>
+            <span className="stat-icon">🔓</span>
             <div className="stat-content">
-              <span className="stat-value">{stats.totalModules}</span>
-              <span className="stat-label">Modules</span>
+              <span className="stat-value">{stats.activeRoles ?? stats.totalRoles}</span>
+              <span className="stat-label">Active Roles</span>
             </div>
           </div>
         </div>
@@ -666,10 +680,14 @@ export function RolesPermissionsPage() {
           {roles.map(role => (
             <button
               key={role.id}
-              className={`role-option ${selectedRoleId === role.id ? 'selected' : ''}`}
+              className={`role-option ${selectedRoleId === role.id ? 'selected' : ''} ${!role.isActive ? 'inactive' : ''}`}
               onClick={() => handleRoleChange(role.id)}
             >
-              <span className="role-name">{role.name}</span>
+              <div className="role-option-header">
+                <span className="role-name">{role.name}</span>
+                {role.isSystem && <span className="role-badge badge-system">System</span>}
+                {!role.isActive && <span className="role-badge badge-inactive">Inactive</span>}
+              </div>
               <span className="role-meta">
                 {role.permissionCount} permissions · {role.userCount} users
               </span>

@@ -8,7 +8,10 @@ import {
   createRole,
   updateRole,
   updateRolePermissions,
-  deleteRole
+  updateRoleStatus,
+  cloneRole,
+  deleteRole,
+  getRoleUsers
 } from '../../services/role.service.js';
 import {
   getGroupedPermissions,
@@ -44,6 +47,9 @@ rolesRouter.get('/', requireAuth, requirePermissionOr(['users:read', 'roles:view
         id: true,
         name: true,
         description: true,
+        isSystem: true,
+        isActive: true,
+        createdAt: true,
         _count: {
           select: { permissions: true, users: true }
         }
@@ -54,8 +60,11 @@ rolesRouter.get('/', requireAuth, requirePermissionOr(['users:read', 'roles:view
       id: role.id,
       name: role.name,
       description: role.description,
+      isSystem: role.isSystem,
+      isActive: role.isActive,
       permissionCount: role._count.permissions,
-      userCount: role._count.users
+      userCount: role._count.users,
+      createdAt: role.createdAt
     }));
     res.json({ items });
   } catch (error) {
@@ -294,6 +303,203 @@ rolesRouter.put('/:id/permissions/module/:moduleKey', requireAuth, requirePermis
     });
     
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// NEW DYNAMIC ROLE MANAGEMENT ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/roles/stats
+ * Get role statistics for dashboard
+ */
+rolesRouter.get('/stats', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (_req, res, next) => {
+  try {
+    const [totalRoles, systemRoles, customRoles, activeRoles, inactiveRoles] = await Promise.all([
+      prisma.role.count(),
+      prisma.role.count({ where: { isSystem: true } }),
+      prisma.role.count({ where: { isSystem: false } }),
+      prisma.role.count({ where: { isActive: true } }),
+      prisma.role.count({ where: { isActive: false } })
+    ]);
+    
+    res.json({
+      totalRoles,
+      systemRoles,
+      customRoles,
+      activeRoles,
+      inactiveRoles
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/roles/:id/detailed
+ * Get role with full details including isSystem and isActive
+ */
+rolesRouter.get('/:id/detailed', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const role = await prisma.role.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isSystem: true,
+        isActive: true,
+        createdBy: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: { permissions: true, users: true }
+        },
+        permissions: {
+          include: { permission: true }
+        }
+      }
+    });
+
+    if (!role) {
+      throw new HttpError(404, 'Role not found');
+    }
+
+    res.json({
+      id: role.id,
+      name: role.name,
+      description: role.description,
+      isSystem: role.isSystem,
+      isActive: role.isActive,
+      createdBy: role.createdBy,
+      createdAt: role.createdAt,
+      updatedAt: role.updatedAt,
+      permissionCount: role._count.permissions,
+      userCount: role._count.users,
+      permissions: role.permissions.map(rp => rp.permission.code)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/roles/:id/clone
+ * Clone an existing role
+ */
+rolesRouter.post('/:id/clone', requireAuth, requirePermissionOr(['users:write', 'roles:clone', 'roles:manage']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const result = await cloneRole(id, {
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      ipAddress: req.ip
+    });
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/roles/:id/status
+ * Enable or disable a role
+ */
+const updateStatusSchema = z.object({
+  isActive: z.boolean()
+});
+
+rolesRouter.patch('/:id/status', requireAuth, requirePermissionOr(['users:write', 'roles:edit', 'roles:manage']), async (req, res, next) => {
+  try {
+    const payload = updateStatusSchema.parse(req.body);
+    const id = req.params.id as string;
+    const result = await updateRoleStatus(id, {
+      ...payload,
+      actorId: req.user?.id,
+      actorEmail: req.user?.email,
+      ipAddress: req.ip
+    });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/roles/:id/users
+ * Get users assigned to a specific role
+ */
+rolesRouter.get('/:id/users', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const result = await getRoleUsers(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/roles/search/query
+ * Search roles by name or description
+ */
+rolesRouter.get('/search/query', requireAuth, requirePermissionOr(['users:read', 'roles:view']), async (req, res, next) => {
+  try {
+    const { q, status, type } = req.query as { q?: string; status?: string; type?: string };
+    
+    const where: any = {};
+    
+    if (q) {
+      where.OR = [
+        { name: { contains: q } },
+        { description: { contains: q } }
+      ];
+    }
+    
+    if (status === 'active') {
+      where.isActive = true;
+    } else if (status === 'inactive') {
+      where.isActive = false;
+    }
+    
+    if (type === 'system') {
+      where.isSystem = true;
+    } else if (type === 'custom') {
+      where.isSystem = false;
+    }
+    
+    const roles = await prisma.role.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isSystem: true,
+        isActive: true,
+        createdAt: true,
+        _count: {
+          select: { permissions: true, users: true }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+    
+    const items = roles.map(role => ({
+      id: role.id,
+      name: role.name,
+      description: role.description,
+      isSystem: role.isSystem,
+      isActive: role.isActive,
+      permissionCount: role._count.permissions,
+      userCount: role._count.users,
+      createdAt: role.createdAt
+    }));
+    
+    res.json({ items });
   } catch (error) {
     next(error);
   }
