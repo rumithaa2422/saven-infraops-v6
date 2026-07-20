@@ -11,7 +11,15 @@ export interface CreateRoleInput {
 }
 
 export async function createRole(data: CreateRoleInput) {
-  const existing = await prisma.role.findUnique({ where: { name: data.name.trim() } });
+  const trimmedName = data.name.trim();
+  
+  // Prevent creating roles with system role names
+  const systemRoleNames = ['Super Admin', 'Admin', 'Employee'];
+  if (systemRoleNames.some(n => n.toLowerCase() === trimmedName.toLowerCase())) {
+    throw new HttpError(400, 'Cannot create role with a reserved system role name');
+  }
+  
+  const existing = await prisma.role.findUnique({ where: { name: trimmedName } });
   if (existing) {
     throw new HttpError(400, 'A role with this name already exists');
   }
@@ -23,7 +31,7 @@ export async function createRole(data: CreateRoleInput) {
   const role = await prisma.$transaction(async (tx) => {
     const newRole = await tx.role.create({
       data: {
-        name: data.name.trim(),
+        name: trimmedName,
         description: data.description?.trim() || null,
         isSystem: false,
         isActive: true,

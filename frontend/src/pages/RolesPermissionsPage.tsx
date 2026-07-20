@@ -335,6 +335,179 @@ function ConfirmationDialog({
 }
 
 // ============================================
+// CREATE ROLE MODAL
+// ============================================
+
+function CreateRoleModal({ 
+  isOpen, 
+  onClose, 
+  onSuccess 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSuccess: (role: Role) => void;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setError(null);
+    setSubmitting(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    // Validate
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Role name is required');
+      return;
+    }
+    if (trimmedName.length < 3) {
+      setError('Role name must be at least 3 characters');
+      return;
+    }
+    if (trimmedName.length > 50) {
+      setError('Role name must be 50 characters or less');
+      return;
+    }
+
+    // Check for system role names
+    const systemNames = ['Super Admin', 'Admin', 'Employee'];
+    if (systemNames.some(n => n.toLowerCase() === trimmedName.toLowerCase())) {
+      setError('This role name is reserved for system roles');
+      return;
+    }
+
+    if (description.length > 500) {
+      setError('Description must be 500 characters or less');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await api.post('/roles', {
+        name: trimmedName,
+        description: description.trim() || undefined,
+        permissions: [] // Start with no permissions
+      });
+      
+      const newRole: Role = {
+        id: response.data.id,
+        name: response.data.name,
+        description: response.data.description,
+        isSystem: false,
+        isActive: true,
+        permissionCount: 0,
+        userCount: 0
+      };
+      
+      resetForm();
+      onSuccess(newRole);
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Failed to create role';
+      if (err.response?.status === 400) {
+        setError(message);
+      } else {
+        setError(message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="dialog-backdrop" onClick={handleClose}>
+      <div className="dialog create-role-modal" onClick={e => e.stopPropagation()}>
+        <div className="dialog-header">
+          <h3>Create New Role</h3>
+          <button className="dialog-close" onClick={handleClose}>×</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="dialog-body">
+            {error && (
+              <div className="form-error">
+                <span className="error-icon">⚠</span>
+                {error}
+              </div>
+            )}
+            
+            <div className="form-group">
+              <label htmlFor="roleName" className="form-label">
+                Role Name <span className="required">*</span>
+              </label>
+              <input
+                id="roleName"
+                type="text"
+                className="form-input"
+                placeholder="e.g., Support Agent, Department Manager"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                maxLength={50}
+                disabled={submitting}
+                autoFocus
+              />
+              <div className="form-hint">
+                3-50 characters. Cannot use reserved names (Super Admin, Admin, Employee).
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="roleDescription" className="form-label">
+                Description
+              </label>
+              <textarea
+                id="roleDescription"
+                className="form-textarea"
+                placeholder="Brief description of this role's purpose..."
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                maxLength={500}
+                rows={3}
+                disabled={submitting}
+              />
+              <div className="form-hint">
+                Optional. Max 500 characters. ({description.length}/500)
+              </div>
+            </div>
+          </div>
+          <div className="dialog-footer">
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              onClick={handleClose}
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={submitting || !name.trim()}
+            >
+              {submitting ? 'Creating...' : 'Create Role'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // MAIN PAGE COMPONENT
 // ============================================
 
@@ -361,7 +534,11 @@ export function RolesPermissionsPage() {
   
   // Dialogs
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  
+  // Can user create roles?
+  const canCreateRole = hasPermission('roles:create');
   
   // Can user edit?
   const canEdit = isSuperAdmin;
@@ -479,6 +656,18 @@ export function RolesPermissionsPage() {
       }
     }
     setSelectedRoleId(roleId);
+  };
+
+  const handleRoleCreated = async (newRole: Role) => {
+    setCreateModalOpen(false);
+    addToast('success', `Role "${newRole.name}" created successfully`);
+    
+    // Refresh the roles list and stats
+    await loadRoles();
+    await loadStats();
+    
+    // Select the newly created role
+    setSelectedRoleId(newRole.id);
   };
   
   const toggleModule = (moduleKey: string) => {
@@ -630,12 +819,28 @@ export function RolesPermissionsPage() {
   return (
     <div className="page-container roles-permissions-page">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <CreateRoleModal 
+        isOpen={createModalOpen} 
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={handleRoleCreated}
+      />
       
       {/* Header */}
       <div className="page-header">
         <div className="header-content">
           <h1>Roles & Permissions</h1>
           <p className="header-subtitle">Configure role-based access across every module</p>
+        </div>
+        <div className="header-actions">
+          {canCreateRole && (
+            <button 
+              className="btn btn-primary"
+              onClick={() => setCreateModalOpen(true)}
+            >
+              <span className="btn-icon">+</span>
+              Add Role
+            </button>
+          )}
         </div>
       </div>
       
