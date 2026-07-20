@@ -1151,6 +1151,11 @@ export function UsersDashboardPage() {
               </div>
 
               <div className="modal-footer">
+                {/* Debug: show state */}
+                <span style={{ fontSize: '11px', color: '#999', marginRight: '8px' }}>
+                  {importValidRows.length} valid / {importData.length} total
+                </span>
+                {/* Before import result */}
                 {!importResult && (
                   <>
                     {Object.keys(importErrors).length > 0 && (
@@ -1162,23 +1167,20 @@ export function UsersDashboardPage() {
                     <button className="secondary" onClick={closeImportModal}>
                       Cancel
                     </button>
-                    {importValidRows.length > 0 && (
-                      <button 
-                        className="primary" 
-                        onClick={handleImportConfirm}
-                        disabled={importProcessing}
-                      >
-                        {importProcessing ? 'Importing...' : `Import ${importValidRows.length} Users`}
-                      </button>
-                    )}
-                  </>
-                )}
-                {importResult && (
-                  <>
-                    <button className="primary" onClick={closeImportModal}>
-                      Done
+                    <button 
+                      className="primary" 
+                      onClick={handleImportConfirm}
+                      disabled={importProcessing || importValidRows.length === 0}
+                    >
+                      {importProcessing ? 'Importing...' : `Import ${importValidRows.length} Users`}
                     </button>
                   </>
+                )}
+                {/* After import result */}
+                {importResult && (
+                  <button className="primary" onClick={closeImportModal}>
+                    Done
+                  </button>
                 )}
               </div>
             </div>
