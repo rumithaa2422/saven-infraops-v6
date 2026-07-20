@@ -69,6 +69,8 @@ export interface ToolResult {
   metadata?: {
     executionTimeMs: number;
     toolName: string;
+    entity?: string;
+    operation?: string;
   };
 }
 
@@ -129,6 +131,7 @@ export type IntentType =
   | 'DATABASE_QUERY'    // Querying database entities
   | 'NAVIGATION'        // Navigating to pages
   | 'KNOWLEDGE'         // General knowledge questions
+  | 'ACTION'           // Performing actions
   | 'MIXED'            // Multiple intents combined
   | 'UNKNOWN';         // Unclassified intent
 
@@ -179,5 +182,7 @@ export interface AgentOutput {
     intent?: IntentType;
     toolsUsed?: string[];
     executionTimeMs?: number;
+    entity?: string | null;
+    filters?: Record<string, unknown>;
   };
 }

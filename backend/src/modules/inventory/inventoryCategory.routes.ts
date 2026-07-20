@@ -164,7 +164,8 @@ inventoryCategoryRouter.patch('/categories/:id', requireAuth, async (req, res, n
     );
 
     const { name, description, status } = req.body;
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
 
     const existing = await prisma.inventoryCategory.findUnique({
       where: { id }
@@ -211,7 +212,8 @@ inventoryCategoryRouter.delete('/categories/:id', requireAuth, async (req, res, 
       throw new HttpError(403, 'Only Super Admin can delete categories');
     }
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
 
     const existing = await prisma.inventoryCategory.findUnique({
       where: { id }
@@ -266,10 +268,11 @@ inventoryCategoryRouter.delete('/categories/:id', requireAuth, async (req, res, 
 inventoryCategoryRouter.get('/categories/:categoryId/subcategories', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { categoryId } = req.params;
+    const { categoryId: categoryIdParam } = req.params;
+    const categoryId = categoryIdParam as string;
     const search = req.query.search as string | undefined;
     const status = req.query.status as string | undefined;
 
@@ -313,7 +316,8 @@ inventoryCategoryRouter.post('/categories/:categoryId/subcategories', requireAut
       throw new HttpError(403, 'Only Super Admin can create subcategories');
     }
 
-    const { categoryId } = req.params;
+    const { categoryId: categoryIdParam } = req.params;
+    const categoryId = categoryIdParam as string;
     const { name, description, status } = req.body;
 
     if (!name || name.trim() === '') {
@@ -365,7 +369,8 @@ inventoryCategoryRouter.patch('/subcategories/:id', requireAuth, async (req, res
       throw new HttpError(403, 'Only Super Admin can update subcategories');
     }
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const { name, description, status } = req.body;
 
     const existing = await prisma.inventorySubCategory.findUnique({
@@ -413,7 +418,8 @@ inventoryCategoryRouter.delete('/subcategories/:id', requireAuth, async (req, re
       throw new HttpError(403, 'Only Super Admin can delete subcategories');
     }
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
 
     const existing = await prisma.inventorySubCategory.findUnique({
       where: { id }
@@ -446,7 +452,7 @@ inventoryCategoryRouter.delete('/subcategories/:id', requireAuth, async (req, re
 inventoryCategoryRouter.get('/categories/list', requireAuth, async (req, res, next) => {
   try {
     await new Promise<void>((resolve, reject) =>
-      requirePermission(ADMIN_VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
+      requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
     const categories = await prisma.inventoryCategory.findMany({

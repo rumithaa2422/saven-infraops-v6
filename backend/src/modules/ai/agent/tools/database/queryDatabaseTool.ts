@@ -119,7 +119,7 @@ export const queryDatabaseTool: Tool = {
     const startTime = Date.now();
     
     try {
-      const queryParams = params as QueryParams;
+      const queryParams = params as unknown as QueryParams;
       const { entity, operation, filters = {}, limit = 10, offset = 0, orderBy = 'createdAt', orderDirection = 'desc' } = queryParams;
       
       // Validate entity

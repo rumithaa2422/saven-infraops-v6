@@ -745,7 +745,7 @@ genericModuleRouter.patch('/:module/:id/status', requireAuth, async (req, res, n
 // GET /incidents/:id - Get single incident
 genericModuleRouter.get('/incidents/:id', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const item = await prisma.incident.findUnique({ where: { id } });
     if (!item) throw new HttpError(404, 'Incident not found');
     res.json({ item });
@@ -757,7 +757,7 @@ genericModuleRouter.get('/incidents/:id', requireAuth, async (req, res, next) =>
 // PATCH /incidents/:id/ownership - Take ownership
 genericModuleRouter.patch('/incidents/:id/ownership', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const userRoles = req.user?.roles || [];
     
     // Only Admin and Super Admin can take ownership
@@ -797,7 +797,7 @@ genericModuleRouter.patch('/incidents/:id/ownership', requireAuth, async (req, r
 // Timeline entries are generated on the frontend based on incident state
 genericModuleRouter.get('/incidents/:id/timeline', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     
     const incident = await prisma.incident.findUnique({ where: { id } });
     if (!incident) throw new HttpError(404, 'Incident not found');
@@ -812,7 +812,7 @@ genericModuleRouter.get('/incidents/:id/timeline', requireAuth, async (req, res,
 // PATCH /incidents/:id/status - Update incident status (owner only, forward transitions only)
 genericModuleRouter.patch('/incidents/:id/status', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const { status } = req.body;
     
     if (!status) {
@@ -952,7 +952,7 @@ function canUploadResolutionDoc(user: Express.Request['user'], incident: { owner
 // GET /incidents/:id/resolution-document - Get resolution document
 genericModuleRouter.get('/incidents/:id/resolution-document', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     
     const incident = await prisma.incident.findUnique({ where: { id } });
     if (!incident) throw new HttpError(404, 'Incident not found');
@@ -974,7 +974,7 @@ genericModuleRouter.get('/incidents/:id/resolution-document', requireAuth, async
 // POST /incidents/:id/resolution-document - Upload resolution document
 genericModuleRouter.post('/incidents/:id/resolution-document', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     
     const incident = await prisma.incident.findUnique({ where: { id } });
     if (!incident) throw new HttpError(404, 'Incident not found');
@@ -1054,7 +1054,7 @@ genericModuleRouter.post('/incidents/:id/resolution-document', requireAuth, asyn
 // GET /incidents/:id/resolution-document/download - Download resolution document
 genericModuleRouter.get('/incidents/:id/resolution-document/download', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     
     const incident = await prisma.incident.findUnique({ where: { id } });
     if (!incident) throw new HttpError(404, 'Incident not found');
@@ -1089,7 +1089,7 @@ genericModuleRouter.get('/incidents/:id/resolution-document/download', requireAu
 // DELETE /incidents/:id/resolution-document - Delete resolution document
 genericModuleRouter.delete('/incidents/:id/resolution-document', requireAuth, async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     
     const incident = await prisma.incident.findUnique({ where: { id } });
     if (!incident) throw new HttpError(404, 'Incident not found');
@@ -1127,7 +1127,7 @@ genericModuleRouter.delete('/incidents/:id/resolution-document', requireAuth, as
 // Configure multer for project documents
 const projectDocStorage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const projectId = req.params.id;
+    const projectId = req.params.id as string;
     const uploadDir = path.join(process.cwd(), 'uploads', 'project-docs', projectId);
     try {
       await fs.mkdir(uploadDir, { recursive: true });
@@ -1152,7 +1152,7 @@ const projectDocUpload = multer({
 // PART 5: Requires projects:view or projects:view_documents
 genericModuleRouter.get('/projects-environments/:id/documents', requireAuth, requirePermissionOr(['projects:view', 'projects:view_documents']), async (req, res, next) => {
   try {
-    const projectId = req.params.id;
+    const projectId = req.params.id as string;
     const { search, sortBy, sortOrder } = req.query;
 
     const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
@@ -1174,7 +1174,7 @@ genericModuleRouter.get('/projects-environments/:id/documents', requireAuth, req
 // PART 5: Requires projects:upload_document
 genericModuleRouter.post('/projects-environments/:id/documents', requireAuth, requirePermission('projects:upload_document'), projectDocUpload.single('file'), async (req, res, next) => {
   try {
-    const projectId = req.params.id;
+    const projectId = req.params.id as string;
 
     const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
     if (!project) throw new HttpError(404, 'Project not found');
@@ -1223,7 +1223,8 @@ genericModuleRouter.post('/projects-environments/:id/documents', requireAuth, re
 // PART 5: Requires projects:view or projects:download_document
 genericModuleRouter.get('/projects-environments/:id/documents/:docId', requireAuth, requirePermissionOr(['projects:view', 'projects:download_document']), async (req, res, next) => {
   try {
-    const { id: projectId, docId } = req.params;
+    const projectId = req.params.id as string;
+    const docId = req.params.docId as string;
 
     const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
     if (!project) throw new HttpError(404, 'Project not found');
@@ -1249,7 +1250,8 @@ genericModuleRouter.get('/projects-environments/:id/documents/:docId', requireAu
 // PART 5: Requires projects:delete_document
 genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requireAuth, requirePermission('projects:delete_document'), async (req, res, next) => {
   try {
-    const { id: projectId, docId } = req.params;
+    const projectId = req.params.id as string;
+    const docId = req.params.docId as string;
 
     const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });
     if (!project) throw new HttpError(404, 'Project not found');
@@ -1292,7 +1294,7 @@ genericModuleRouter.delete('/projects-environments/:id/documents/:docId', requir
 // PART 5: Requires projects:view or projects:view_activities
 genericModuleRouter.get('/projects-environments/:id/activities', requireAuth, requirePermissionOr(['projects:view', 'projects:view_activities']), async (req, res, next) => {
   try {
-    const projectId = req.params.id;
+    const projectId = req.params.id as string;
     const { search, filter, sortBy, sortOrder } = req.query;
 
     const project = await prisma.projectEnvironment.findUnique({ where: { id: projectId } });

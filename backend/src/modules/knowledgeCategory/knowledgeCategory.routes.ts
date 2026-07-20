@@ -79,7 +79,8 @@ knowledgeCategoryRouter.get('/:id', requireAuth, async (req: Request, res: Respo
       ])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const category = await getCategoryById(id);
 
     if (!category) {
@@ -169,7 +170,8 @@ knowledgeCategoryRouter.put('/:id', requireAuth, async (req: Request, res: Respo
       requirePermissionOr(['knowledge.category:update', 'kb:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const { name, description, color, icon, displayOrder, isActive } = req.body;
 
     // Check if category exists
@@ -240,7 +242,8 @@ knowledgeCategoryRouter.delete('/:id', requireAuth, async (req: Request, res: Re
       requirePermissionOr(['knowledge.category:delete', 'kb:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const clientIp = getClientIp(req);
 
     const result = await deleteCategory(

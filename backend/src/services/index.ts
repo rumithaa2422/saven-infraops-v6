@@ -15,7 +15,12 @@ export * from './role.service.js';
 export * from './serviceRequest.service.js';
 export * from './vendorLicense.service.js';
 
-// Export permission services
+// Export permission services (avoid re-export conflict for PermissionModule)
 export * from './permission.service.js';
-export * from './permissionMetadata.service.js';
+export { 
+  PermissionModule,
+  getGroupedPermissions, 
+  getRolePermissionsWithMetadata, 
+  getPermissionStats 
+} from './permissionMetadata.service.js';
 export * from './rolePermission.service.js';

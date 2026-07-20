@@ -31,7 +31,7 @@ inventoryHistoryRouter.get('/inventory-master/:itemId/history', requireAuth, asy
       requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { itemId } = req.params;
+    const { itemId } = req.params as { itemId: string };
 
     // Verify item exists
     const item = await prisma.inventoryMaster.findUnique({
@@ -60,7 +60,7 @@ inventoryHistoryRouter.post('/inventory-master/:itemId/history', requireAuth, as
       throw new HttpError(403, 'Only Super Admin or Admin can add history entries');
     }
 
-    const { itemId } = req.params;
+    const { itemId } = req.params as { itemId: string };
     const { action, description, performedBy } = req.body;
 
     if (!action) {
@@ -113,7 +113,7 @@ inventoryHistoryRouter.get('/inventory-master/:itemId/documents', requireAuth, a
       requirePermission(VIEW_PERMISSION)(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { itemId } = req.params;
+    const { itemId } = req.params as { itemId: string };
 
     // Verify item exists
     const item = await prisma.inventoryMaster.findUnique({
@@ -142,7 +142,7 @@ inventoryHistoryRouter.post('/inventory-master/:itemId/documents', requireAuth, 
       throw new HttpError(403, 'Only Super Admin can upload documents');
     }
 
-    const { itemId } = req.params;
+    const { itemId } = req.params as { itemId: string };
     const { fileName, fileType, fileSize, url, documentType } = req.body;
 
     if (!fileName || !fileType || !fileSize || !url) {
@@ -205,7 +205,7 @@ inventoryHistoryRouter.delete('/inventory-master/:itemId/documents/:documentId',
       throw new HttpError(403, 'Only Super Admin can delete documents');
     }
 
-    const { itemId, documentId } = req.params;
+    const { itemId, documentId } = req.params as { itemId: string; documentId: string };
 
     const document = await prisma.inventoryDocument.findUnique({
       where: { id: documentId }

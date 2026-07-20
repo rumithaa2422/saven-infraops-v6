@@ -27,13 +27,18 @@ import { knowledgeCategoryRouter } from './modules/knowledgeCategory/knowledgeCa
 import { knowledgeArticleRouter } from './modules/knowledgeArticle/knowledgeArticle.routes.js';
 import knowledgeAnalyticsRouter from './modules/knowledgeAnalytics/knowledgeAnalytics.routes.js';
 
+const pinoHttpMiddleware = pinoHttp as unknown as typeof pinoHttp.default;
+
 export function createApp() {
   const app = express();
 
   app.use(helmet());
   app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));
   app.use(express.json({ limit: '2mb' }));
-  app.use(pinoHttp({ logger }));
+  app.use(pinoHttpMiddleware({
+    logger,
+    autoLogging: false
+  }));
   app.use(rateLimit({ windowMs: 60_000, limit: 120 }));
 
   app.get('/api/health', (_req, res) => {

@@ -142,7 +142,7 @@ inventoryAnalyticsRouter.get('/analytics', requireAuth, async (req, res, next) =
     const uniqueCategories = [...new Set(items.map(i => i.category.name))].sort();
     const uniqueSubcategories = [...new Set(items.map(i => i.subcategory.name))].sort();
     const uniqueLocations = [...new Set(items.map(i => i.location).filter(Boolean))].sort() as string[];
-    const uniqueVendors = [...new Set(items.map(i => i.vendor).filter(Boolean))].sort() as string[];
+    const uniqueVendors = [...new Set(items.map(i => i.vendorName).filter(Boolean))].sort() as string[];
     const uniqueStatuses = [...new Set(items.map(i => i.status))].sort();
 
     res.json({

@@ -330,8 +330,9 @@ inventoryMasterRouter.post('/bulk-import', requireAuth, async (req, res, next) =
       include: { subcategories: true }
     });
 
-    const categoryMap = new Map(allCategories.map(c => [c.name.toLowerCase(), c]));
-    const subcategoryMap = new Map();
+    type CategoryWithSubcategories = typeof allCategories[number];
+    const categoryMap = new Map<string, CategoryWithSubcategories | { id: string; name: string; status: string; createdAt: Date; updatedAt: Date; description: string | null }>();
+    const subcategoryMap = new Map<string, { id: string; name: string; categoryId: string; status: string; createdAt: Date; updatedAt: Date; description: string | null }>();
     allCategories.forEach(c => {
       c.subcategories.forEach(s => {
         const key = `${c.id}|${s.name.toLowerCase()}`;

@@ -181,7 +181,7 @@ export async function updateProjectEnvironment(
   }
 
   // Prepare team member IDs as JSON
-  let teamMemberIdsJson: string | null = undefined;
+  let teamMemberIdsJson: string | null | undefined = undefined;
   if (data.teamMemberIds !== undefined) {
     teamMemberIdsJson = data.teamMemberIds.length > 0 ? JSON.stringify(data.teamMemberIds) : null;
   }

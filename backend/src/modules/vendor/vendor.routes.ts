@@ -374,7 +374,8 @@ vendorRouter.get('/:id', requireAuth, async (req: Request, res: Response, next) 
       requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const vendor = await prisma.vendor.findUnique({ where: { id } });
 
     if (!vendor) {
@@ -492,7 +493,8 @@ vendorRouter.put('/:id', requireAuth, async (req: Request, res: Response, next) 
       requirePermissionOr(['vendors:write', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const existing = await prisma.vendor.findUnique({ where: { id } });
     if (!existing) {
       throw new HttpError(404, 'Vendor not found');
@@ -597,7 +599,8 @@ vendorRouter.delete('/:id', requireAuth, async (req: Request, res: Response, nex
       requirePermissionOr(['vendors:delete', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const vendor = await prisma.vendor.findUnique({ where: { id } });
     
     if (!vendor) {
@@ -645,7 +648,8 @@ vendorRouter.get('/:id/details', requireAuth, async (req: Request, res: Response
       requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     
     const vendor = await prisma.vendor.findUnique({
       where: { id },
@@ -713,7 +717,8 @@ vendorRouter.get('/:id/inventory', requireAuth, async (req: Request, res: Respon
       requirePermissionOr(['vendors:view', 'vendors:read', 'vendors:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const { id: idParam } = req.params;
+    const id = idParam as string;
     const vendor = await prisma.vendor.findUnique({ where: { id } });
 
     if (!vendor) {

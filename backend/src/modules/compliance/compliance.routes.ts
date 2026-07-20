@@ -19,7 +19,6 @@ import {
   getUniqueUploaders,
   deleteComplianceDocument,
   getComplianceDocument,
-  ensureUploadDir,
   getDocumentFilePath,
   importComplianceDocuments
 } from '../../services/compliance.service.js';
@@ -424,7 +423,7 @@ async function getBreadcrumbs(folderId: string | null): Promise<BreadcrumbItem[]
   // Collect all ancestor IDs
   while (currentId) {
     ids.unshift(currentId);
-    const folder = await prisma.documentFolder.findUnique({
+    const folder: { parentFolderId: string | null } | null = await prisma.documentFolder.findUnique({
       where: { id: currentId },
       select: { parentFolderId: true }
     });
@@ -697,7 +696,7 @@ complianceRouter.patch('/folders/:id', requireAuth, async (req: Request, res: Re
       requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { name, description } = req.body;
 
     if (!id) {
@@ -741,7 +740,7 @@ complianceRouter.delete('/folders/:id', requireAuth, async (req: Request, res: R
       requirePermissionOr(['compliance:write', 'compliance:manage', 'compliance:delete'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!id) {
       throw new HttpError(400, 'Folder ID is required');
@@ -778,7 +777,7 @@ complianceRouter.get('/folders/:id', requireAuth, async (req: Request, res: Resp
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!id) {
       throw new HttpError(400, 'Folder ID is required');
@@ -818,7 +817,7 @@ complianceRouter.get('/folders/:id/breadcrumbs', requireAuth, async (req: Reques
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!id) {
       throw new HttpError(400, 'Folder ID is required');
@@ -1097,7 +1096,7 @@ complianceRouter.post('/files', requireAuth, async (req: Request, res: Response,
  */
 complianceRouter.get('/files/:id', requireAuth, async (req: Request, res: Response, next) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const action = req.query.action as string | undefined;
 
     if (!id) {
@@ -1250,7 +1249,7 @@ complianceRouter.patch('/files/:id', requireAuth, async (req: Request, res: Resp
       requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { originalFileName, folderId, description } = req.body;
 
     if (!id) {
@@ -1333,7 +1332,7 @@ complianceRouter.delete('/files/:id', requireAuth, async (req: Request, res: Res
       requirePermissionOr(['compliance:write', 'compliance:manage', 'compliance:delete'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (!id) {
       throw new HttpError(400, 'File ID is required');
@@ -1875,7 +1874,7 @@ complianceRouter.post('/files/:id/download', requireAuth, async (req: Request, r
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const file = await prisma.documentFile.findUnique({ where: { id } });
     if (!file) {
@@ -1915,7 +1914,7 @@ complianceRouter.post('/files/:id/replace', requireAuth, async (req: Request, re
       requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userName = req.body.userName || 'Unknown';
     const userEmail = req.body.userEmail || '';
 
@@ -2008,7 +2007,7 @@ complianceRouter.post('/files/:id/restore', requireAuth, async (req: Request, re
       requirePermissionOr(['compliance:write', 'compliance:manage'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { targetVersionId } = req.body as { targetVersionId: string };
     const userName = req.body.userName || 'Unknown';
     const userEmail = req.body.userEmail || '';

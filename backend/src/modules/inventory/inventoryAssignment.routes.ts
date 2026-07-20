@@ -197,7 +197,7 @@ inventoryAssignmentRouter.get('/', requireAuth, async (req, res, next) => {
 // GET /inventory-assignments/inventory/:inventoryId - Get active assignment for inventory
 inventoryAssignmentRouter.get('/inventory/:inventoryId', requireAuth, async (req, res, next) => {
   try {
-    const inventoryId = req.params.inventoryId;
+    const inventoryId = req.params.inventoryId as string;
 
     const assignment = await prisma.inventoryAssignment.findFirst({
       where: {
