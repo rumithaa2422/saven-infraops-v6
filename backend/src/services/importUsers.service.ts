@@ -12,6 +12,12 @@ export interface ImportUserInput {
   department?: string | null;
   role?: string | null;
   importedRow?: number;
+  employeeId?: string | null;
+  designation?: string | null;
+  employmentType?: string | null;
+  dateJoined?: string | null;
+  address?: string | null;
+  remarks?: string | null;
 }
 
 /**
@@ -48,6 +54,19 @@ export interface ImportResult {
  * This function is used internally by the import service
  */
 async function createUserFromImport(data: ImportUserInput): Promise<{ userId: string }> {
+  // Parse dateJoined safely
+  let parsedDateJoined: Date | null = null;
+  if (data.dateJoined) {
+    try {
+      parsedDateJoined = new Date(data.dateJoined);
+      if (isNaN(parsedDateJoined.getTime())) {
+        parsedDateJoined = null;
+      }
+    } catch {
+      parsedDateJoined = null;
+    }
+  }
+
   // Create user with PENDING_ACTIVATION status
   const user = await prisma.user.create({
     data: {
@@ -55,6 +74,12 @@ async function createUserFromImport(data: ImportUserInput): Promise<{ userId: st
       email: data.email,
       phoneNumber: data.phoneNumber || null,
       department: data.department || null,
+      employeeId: data.employeeId || null,
+      designation: data.designation || null,
+      employmentType: data.employmentType || null,
+      dateJoined: parsedDateJoined,
+      address: data.address || null,
+      remarks: data.remarks || null,
       status: 'PENDING_ACTIVATION'
     }
   });

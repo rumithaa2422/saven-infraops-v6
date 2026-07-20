@@ -27,6 +27,19 @@ export async function createUser(data: CreateUserInput) {
     throw new HttpError(400, 'A user with this email already exists');
   }
 
+  // Parse dateJoined safely
+  let parsedDateJoined: Date | null = null;
+  if (data.dateJoined) {
+    try {
+      parsedDateJoined = new Date(data.dateJoined);
+      if (isNaN(parsedDateJoined.getTime())) {
+        parsedDateJoined = null;
+      }
+    } catch {
+      parsedDateJoined = null;
+    }
+  }
+
   // Create user with PENDING_ACTIVATION status (no password)
   const user = await prisma.user.create({
     data: {
@@ -37,7 +50,7 @@ export async function createUser(data: CreateUserInput) {
       employeeId: data.employeeId || null,
       designation: data.designation || null,
       employmentType: data.employmentType || null,
-      dateJoined: data.dateJoined ? new Date(data.dateJoined) : null,
+      dateJoined: parsedDateJoined,
       address: data.address || null,
       remarks: data.remarks || null,
       team: data.team || null,
@@ -63,8 +76,13 @@ export async function createUser(data: CreateUserInput) {
     }
   }
 
-  // Send activation email
-  await sendUserActivationEmail(user.id);
+  // Send activation email (don't fail user creation if email fails)
+  try {
+    await sendUserActivationEmail(user.id);
+  } catch (emailError) {
+    console.error('Failed to send activation email:', emailError);
+    // Continue anyway - user is created, email can be resent later
+  }
 
   // Audit log
   await prisma.auditLog.create({
