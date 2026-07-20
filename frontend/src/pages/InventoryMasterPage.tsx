@@ -554,13 +554,18 @@ export function InventoryMasterPage() {
         rowErrors.push(`Invalid status "${status}". Allowed: ${STATUS_OPTIONS.join(', ')}`);
       }
 
-      // Validate Date formats if provided
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (purchaseDate && !dateRegex.test(purchaseDate)) {
-        rowErrors.push(`Invalid Purchase Date format: "${purchaseDate}". Use YYYY-MM-DD`);
+      // Validate Date formats if provided (accept any format)
+      if (purchaseDate) {
+        const parsed = new Date(purchaseDate);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Purchase Date: "${purchaseDate}"`);
+        }
       }
-      if (warrantyExpiry && !dateRegex.test(warrantyExpiry)) {
-        rowErrors.push(`Invalid Warranty Expiry format: "${warrantyExpiry}". Use YYYY-MM-DD`);
+      if (warrantyExpiry) {
+        const parsed = new Date(warrantyExpiry);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Warranty Expiry: "${warrantyExpiry}"`);
+        }
       }
 
       // Validate Numeric fields if provided

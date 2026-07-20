@@ -328,16 +328,11 @@ export function UsersDashboardPage() {
       // Validate Designation (optional)
       // No validation needed for optional fields
 
-      // Validate Joining Date (optional but must be valid format if provided)
+      // Validate Joining Date (optional, accept any date format)
       if (joiningDate) {
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(joiningDate)) {
-          rowErrors.push(`Invalid date format for Joining Date: "${joiningDate}". Use YYYY-MM-DD`);
-        } else {
-          const parsedDate = new Date(joiningDate);
-          if (isNaN(parsedDate.getTime())) {
-            rowErrors.push(`Invalid date: "${joiningDate}"`);
-          }
+        const parsedDate = new Date(joiningDate);
+        if (isNaN(parsedDate.getTime())) {
+          rowErrors.push(`Invalid Joining Date: "${joiningDate}"`);
         }
       }
 

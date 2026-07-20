@@ -498,16 +498,24 @@ export function VendorDirectoryPage() {
         rowErrors.push('Phone is required');
       }
 
-      // Validate Date formats if provided
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (contractStartDate && !dateRegex.test(contractStartDate)) {
-        rowErrors.push(`Invalid Contract Start Date format: "${contractStartDate}". Use YYYY-MM-DD`);
+      // Validate Date formats if provided (accept any format)
+      if (contractStartDate) {
+        const parsed = new Date(contractStartDate);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Contract Start Date: "${contractStartDate}"`);
+        }
       }
-      if (contractExpiryDate && !dateRegex.test(contractExpiryDate)) {
-        rowErrors.push(`Invalid Contract Expiry Date format: "${contractExpiryDate}". Use YYYY-MM-DD`);
+      if (contractExpiryDate) {
+        const parsed = new Date(contractExpiryDate);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Contract Expiry Date: "${contractExpiryDate}"`);
+        }
       }
-      if (renewalDate && !dateRegex.test(renewalDate)) {
-        rowErrors.push(`Invalid Renewal Date format: "${renewalDate}". Use YYYY-MM-DD`);
+      if (renewalDate) {
+        const parsed = new Date(renewalDate);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Renewal Date: "${renewalDate}"`);
+        }
       }
 
       if (rowErrors.length > 0) {

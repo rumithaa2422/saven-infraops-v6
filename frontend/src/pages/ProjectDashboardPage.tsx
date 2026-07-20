@@ -423,16 +423,24 @@ export function ProjectDashboardPage() {
         rowErrors.push(`Invalid project type "${projectType}". Allowed: ${PROJECT_TYPES.join(', ')}`);
       }
 
-      // Validate Date formats if provided
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (startDate && !dateRegex.test(startDate)) {
-        rowErrors.push(`Invalid Start Date format: "${startDate}". Use YYYY-MM-DD`);
+      // Validate Date formats if provided (accept any format)
+      if (startDate) {
+        const parsed = new Date(startDate);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Start Date: "${startDate}"`);
+        }
       }
-      if (expectedEndDate && !dateRegex.test(expectedEndDate)) {
-        rowErrors.push(`Invalid Expected End Date format: "${expectedEndDate}". Use YYYY-MM-DD`);
+      if (expectedEndDate) {
+        const parsed = new Date(expectedEndDate);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Expected End Date: "${expectedEndDate}"`);
+        }
       }
-      if (actualEndDate && !dateRegex.test(actualEndDate)) {
-        rowErrors.push(`Invalid Actual End Date format: "${actualEndDate}". Use YYYY-MM-DD`);
+      if (actualEndDate) {
+        const parsed = new Date(actualEndDate);
+        if (isNaN(parsed.getTime())) {
+          rowErrors.push(`Invalid Actual End Date: "${actualEndDate}"`);
+        }
       }
 
       // Validate Budget if provided
