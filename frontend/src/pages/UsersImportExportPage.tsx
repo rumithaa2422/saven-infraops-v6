@@ -79,8 +79,8 @@ export function UsersImportExportPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      // Fetch all users
-      const response = await api.get('/users-teams', { params: { limit: 1000 } });
+      // Fetch all users with high limit to get all records
+      const response = await api.get('/users-teams', { params: { limit: 50000 } });
       const users = response.data.items || response.data || [];
 
       // Prepare export data
@@ -134,7 +134,7 @@ export function UsersImportExportPage() {
       XLSX.writeFile(workbook, `users-export-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (err) {
       console.error('Export error:', err);
-      alert('Failed to export users');
+      alert('Failed to export users. Please try again.');
     } finally {
       setExporting(false);
     }

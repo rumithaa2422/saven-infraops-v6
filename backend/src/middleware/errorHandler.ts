@@ -48,6 +48,27 @@ async function logPermissionDenied(
   }
 }
 
+/**
+ * Get user-friendly error message based on error type
+ */
+function getUserFriendlyMessage(error: Error): string {
+  // Check for common network/connection errors
+  if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
+    return 'Unable to connect to the server. Please verify your network connection.';
+  }
+  
+  if (error.message.includes('ETIMEDOUT') || error.message.includes('ECONNRESET')) {
+    return 'The request timed out. Please try again.';
+  }
+  
+  if (error.message.includes('timeout')) {
+    return 'The request took too long to complete. Please try again.';
+  }
+  
+  // Generic fallback
+  return 'An unexpected error occurred. Please try again later.';
+}
+
 export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   // Log errors to console for debugging
   console.error('Error:', error);
@@ -90,30 +111,54 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
         res.status(409).json({ 
           success: false,
           code: 'DUPLICATE_ENTRY',
-          message: 'A record with this value already exists' 
+          message: 'A record with this value already exists. Please check if this item already exists.' 
         });
         return;
       case 'P2025':
         res.status(404).json({ 
           success: false,
           code: 'NOT_FOUND',
-          message: 'Record not found' 
+          message: 'The requested record could not be found. It may have been deleted or never existed.' 
+        });
+        return;
+      case 'P2003':
+        res.status(400).json({ 
+          success: false,
+          code: 'FOREIGN_KEY_ERROR',
+          message: 'Cannot complete this operation because the related record does not exist.' 
+        });
+        return;
+      case 'P2014':
+        res.status(400).json({ 
+          success: false,
+          code: 'CONSTRAINT_ERROR',
+          message: 'The operation violates a data constraint. Please check your input values.' 
         });
         return;
       default:
         res.status(500).json({ 
           success: false,
           code: 'DATABASE_ERROR',
-          message: error.message || 'Database error' 
+          message: 'The server encountered a database error. Please try again later.' 
         });
         return;
     }
   }
 
-  // Handle other errors - PART 10: Include code for consistency
+  // Handle validation errors from express-validator or similar
+  if (error.name === 'ValidationError') {
+    res.status(400).json({ 
+      success: false,
+      code: 'VALIDATION_ERROR',
+      message: error.message || 'Please check your input and try again.'
+    });
+    return;
+  }
+
+  // Handle other errors - PART 10: Include user-friendly message
   res.status(500).json({ 
     success: false,
     code: 'INTERNAL_ERROR',
-    message: error.message || 'Internal server error' 
+    message: getUserFriendlyMessage(error)
   });
 };

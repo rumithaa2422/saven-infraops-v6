@@ -1502,22 +1502,38 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
     }
   }
 
-  function exportCsv() {
-    const header = config.columns.map((c) => c.label).join(',');
-    const rows = items.map((item) => config.columns.map((c) => {
-      // Special handling for role column in users-teams
-      if (moduleKey === 'users-teams' && c.key === 'role') {
-        return `"${formatUserRoles((item as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles).replace(/"/g, '""')}"`;
-      }
-      return `"${formatValue(item[c.key]).replace(/"/g, '""')}"`;
-    }).join(','));
-    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${moduleKey}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  async function exportCsv() {
+    // Fetch all records (requesting high limit to get all records)
+    try {
+      setLoading(true);
+      const params: Record<string, string> = {
+        limit: '10000' // Request all matching records
+      };
+
+      const response = await api.get(`/${moduleKey}`, { params });
+      const allItems = response.data.items || [];
+      
+      const header = config.columns.map((c) => c.label).join(',');
+      const rows = allItems.map((item: RecordItem) => config.columns.map((c) => {
+        // Special handling for role column in users-teams
+        if (moduleKey === 'users-teams' && c.key === 'role') {
+          return `"${formatUserRoles((item as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles).replace(/"/g, '""')}"`;
+        }
+        return `"${formatValue(item[c.key]).replace(/"/g, '""')}"`;
+      }).join(','));
+      const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${moduleKey}-export-${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage(`${allItems.length} records exported successfully.`);
+    } catch {
+      setMessage('Failed to export records. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Open delete confirmation dialog

@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
-import { requirePermissionOr } from '../../middleware/rbac.js';
+import { requirePermissionOr, hasPermissionViaAlias } from '../../middleware/rbac.js';
 import { prisma } from '../../common/prisma.js';
 import { HttpError } from '../../common/httpError.js';
 import { 
@@ -8,21 +8,51 @@ import {
   generateReport, 
   getReportStats,
   ReportType,
-  ReportFilter 
+  ReportFilter,
+  ReportDefinition
 } from './reports.service.js';
 
 export const reportsRouter = Router();
 
-// GET /api/reports - List available report types with counts
+// Mapping of report module to required permission
+const REPORT_MODULE_PERMISSIONS: Record<string, string> = {
+  'incidents': 'incidents:view',
+  'tickets': 'tickets:view',
+  'changes': 'changes:view',
+  'problems': 'problems:view',
+  'inventory': 'inventory:view',
+  'access': 'access:view',
+  'compliance': 'compliance:view',
+  'projects': 'projects:view',
+  'vendors': 'vendors:view',
+  'knowledge-base': 'kb:view',
+  'documents': 'projects:view',
+  'users': 'users:view',
+  'roles': 'roles:view',
+  'permissions': 'roles:view',
+  'audit-logs': 'audit:view'
+};
+
+// GET /api/reports - List available report types with counts (filtered by user permissions)
 reportsRouter.get('/', requireAuth, requirePermissionOr(['reports:view', 'reports:export']), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const reports = getAvailableReports();
+    const allReports = getAvailableReports();
+    const userPermissions: string[] = req.user?.permissions || [];
     
-    // Get counts for each report type
+    // Filter reports based on user permissions
+    const filteredReports = allReports.filter(report => {
+      const requiredPermission = REPORT_MODULE_PERMISSIONS[report.module];
+      // If no permission mapping, show the report
+      if (!requiredPermission) return true;
+      // Check if user has the required permission
+      return hasPermissionViaAlias(userPermissions, requiredPermission);
+    });
+    
+    // Get counts for each report type (only for accessible reports)
     const counts = await getAllReportCounts();
     
-    // Attach counts to reports
-    const reportsWithCounts = reports.map(report => ({
+    // Attach counts to filtered reports
+    const reportsWithCounts = filteredReports.map(report => ({
       ...report,
       recordCount: counts[report.id] || 0
     }));
@@ -87,6 +117,7 @@ reportsRouter.get('/:type/download', requireAuth, requirePermissionOr(['reports:
   try {
     const { type } = req.params as { type: ReportType };
     const { status, owner, dateFrom, dateTo, severity, priority, category, department, country, project } = req.query as Record<string, string>;
+    const userPermissions: string[] = req.user?.permissions || [];
 
     // Validate report type
     const validTypes: ReportType[] = [
@@ -109,6 +140,15 @@ reportsRouter.get('/:type/download', requireAuth, requirePermissionOr(['reports:
 
     if (!validTypes.includes(type)) {
       throw new HttpError(400, `Invalid report type. Valid types: ${validTypes.join(', ')}`);
+    }
+
+    // Get report module for permission check
+    const reportModule = getReportModuleForType(type);
+    const requiredPermission = reportModule ? REPORT_MODULE_PERMISSIONS[reportModule] : null;
+    
+    // Check if user has access to this report's module
+    if (requiredPermission && !hasPermissionViaAlias(userPermissions, requiredPermission)) {
+      throw new HttpError(403, 'You do not have permission to access this report module');
     }
 
     const filters: ReportFilter = {};
@@ -153,6 +193,7 @@ reportsRouter.get('/:type/preview', requireAuth, requirePermissionOr(['reports:v
   try {
     const { type } = req.params as { type: ReportType };
     const { status, owner, dateFrom, dateTo, severity, priority, category, department, country, project } = req.query as Record<string, string>;
+    const userPermissions: string[] = req.user?.permissions || [];
 
     // Validate report type
     const validTypes: ReportType[] = [
@@ -175,6 +216,15 @@ reportsRouter.get('/:type/preview', requireAuth, requirePermissionOr(['reports:v
 
     if (!validTypes.includes(type)) {
       throw new HttpError(400, `Invalid report type. Valid types: ${validTypes.join(', ')}`);
+    }
+
+    // Get report module for permission check
+    const reportModule = getReportModuleForType(type);
+    const requiredPermission = reportModule ? REPORT_MODULE_PERMISSIONS[reportModule] : null;
+    
+    // Check if user has access to this report's module
+    if (requiredPermission && !hasPermissionViaAlias(userPermissions, requiredPermission)) {
+      throw new HttpError(403, 'You do not have permission to access this report module');
     }
 
     const filters: ReportFilter = {};
@@ -207,6 +257,39 @@ reportsRouter.get('/:type/count', requireAuth, requirePermissionOr(['reports:vie
   try {
     const { type } = req.params as { type: ReportType };
     const { status, owner, dateFrom, dateTo, severity, priority, category, department, country, project } = req.query as Record<string, string>;
+    const userPermissions: string[] = req.user?.permissions || [];
+
+    // Validate report type
+    const validTypes: ReportType[] = [
+      'incidents', 
+      'service-requests', 
+      'changes',
+      'problems',
+      'inventory', 
+      'access-requests', 
+      'compliance', 
+      'projects', 
+      'vendors',
+      'users',
+      'knowledge-base',
+      'documents',
+      'roles',
+      'permissions',
+      'audit-logs'
+    ];
+
+    if (!validTypes.includes(type)) {
+      throw new HttpError(400, `Invalid report type. Valid types: ${validTypes.join(', ')}`);
+    }
+
+    // Get report module for permission check
+    const reportModule = getReportModuleForType(type);
+    const requiredPermission = reportModule ? REPORT_MODULE_PERMISSIONS[reportModule] : null;
+    
+    // Check if user has access to this report's module
+    if (requiredPermission && !hasPermissionViaAlias(userPermissions, requiredPermission)) {
+      throw new HttpError(403, 'You do not have permission to access this report module');
+    }
 
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
@@ -277,3 +360,25 @@ reportsRouter.get('/:type/count', requireAuth, requirePermissionOr(['reports:vie
     next(error);
   }
 });
+
+// Helper function to map report type to module
+function getReportModuleForType(type: ReportType): string | null {
+  const typeToModule: Record<ReportType, string | null> = {
+    'incidents': 'incidents',
+    'service-requests': 'tickets',
+    'changes': 'changes',
+    'problems': 'problems',
+    'inventory': 'inventory',
+    'access-requests': 'access',
+    'compliance': 'compliance',
+    'projects': 'projects',
+    'vendors': 'vendors',
+    'knowledge-base': 'knowledge-base',
+    'documents': 'documents',
+    'users': 'users',
+    'roles': 'roles',
+    'permissions': 'permissions',
+    'audit-logs': 'audit-logs'
+  };
+  return typeToModule[type];
+}

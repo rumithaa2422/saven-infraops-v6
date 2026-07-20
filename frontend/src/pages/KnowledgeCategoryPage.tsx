@@ -923,8 +923,8 @@ export function KnowledgeCategoryPage() {
             <div className="error-state">
               <div className="error-card">
                 <span className="error-icon">⚠</span>
-                <h3>Error Loading Categories</h3>
-                <p>{error}</p>
+                <h3>Unable to Load Knowledge Categories</h3>
+                <p>{error || 'Please refresh the page or contact your administrator if the issue continues.'}</p>
                 <button className="primary" onClick={handleRefresh}>Retry</button>
               </div>
             </div>
@@ -1063,8 +1063,8 @@ export function KnowledgeCategoryPage() {
             <div className="error-state">
               <div className="error-card">
                 <span className="error-icon">⚠</span>
-                <h3>Error Loading Articles</h3>
-                <p>{articleError}</p>
+                <h3>Unable to Load Knowledge Base Articles</h3>
+                <p>{articleError || 'Please refresh the page or contact your administrator if the issue continues.'}</p>
                 <button className="primary" onClick={handleRefresh}>Retry</button>
               </div>
             </div>
