@@ -21,82 +21,98 @@ export interface CreateUserInput {
 }
 
 export async function createUser(data: CreateUserInput) {
-  // Check for duplicate email
-  const existing = await prisma.user.findUnique({ where: { email: data.email } });
-  if (existing) {
-    throw new HttpError(400, 'A user with this email already exists');
-  }
+  try {
+    // Check for duplicate email
+    const existing = await prisma.user.findUnique({ where: { email: data.email } });
+    if (existing) {
+      throw new HttpError(400, 'A user with this email already exists');
+    }
 
-  // Parse dateJoined safely
-  let parsedDateJoined: Date | null = null;
-  if (data.dateJoined) {
-    try {
-      parsedDateJoined = new Date(data.dateJoined);
-      if (isNaN(parsedDateJoined.getTime())) {
+    // Parse dateJoined safely
+    let parsedDateJoined: Date | null = null;
+    if (data.dateJoined) {
+      try {
+        parsedDateJoined = new Date(data.dateJoined);
+        if (isNaN(parsedDateJoined.getTime())) {
+          parsedDateJoined = null;
+        }
+      } catch {
         parsedDateJoined = null;
       }
-    } catch {
-      parsedDateJoined = null;
     }
-  }
 
-  // Create user with PENDING_ACTIVATION status (no password)
-  const user = await prisma.user.create({
-    data: {
-      name: data.name,
-      email: data.email,
-      phoneNumber: data.phoneNumber || null,
-      department: data.department || null,
-      employeeId: data.employeeId || null,
-      designation: data.designation || null,
-      employmentType: data.employmentType || null,
-      dateJoined: parsedDateJoined,
-      address: data.address || null,
-      remarks: data.remarks || null,
-      team: data.team || null,
-      status: 'PENDING_ACTIVATION'
-    }
-  });
-
-  // Assign role if provided
-  if (data.roleId) {
-    // roleId might be the role name, so look it up
-    const role = await prisma.role.findFirst({
-      where: {
-        OR: [
-          { id: data.roleId },
-          { name: data.roleId }
-        ]
+    // Create user with PENDING_ACTIVATION status (no password)
+    const user = await prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        phoneNumber: data.phoneNumber || null,
+        department: data.department || null,
+        employeeId: data.employeeId || null,
+        designation: data.designation || null,
+        employmentType: data.employmentType || null,
+        dateJoined: parsedDateJoined,
+        address: data.address || null,
+        remarks: data.remarks || null,
+        team: data.team || null,
+        status: 'PENDING_ACTIVATION'
       }
     });
-    if (role) {
-      await prisma.userRole.create({
-        data: { userId: user.id, roleId: role.id }
+
+    // Assign role if provided
+    if (data.roleId) {
+      // roleId might be the role name, so look it up
+      const role = await prisma.role.findFirst({
+        where: {
+          OR: [
+            { id: data.roleId },
+            { name: data.roleId }
+          ]
+        }
       });
+      if (role) {
+        await prisma.userRole.create({
+          data: { userId: user.id, roleId: role.id }
+        });
+      }
     }
-  }
 
-  // Send activation email (don't fail user creation if email fails)
-  try {
-    await sendUserActivationEmail(user.id);
-  } catch (emailError) {
-    console.error('Failed to send activation email:', emailError);
-    // Continue anyway - user is created, email can be resent later
-  }
-
-  // Audit log
-  await prisma.auditLog.create({
-    data: {
-      actorId: data.actorId || 'system',
-      actorEmail: data.actorEmail || 'system',
-      action: 'USER_CREATED',
-      entityType: 'User',
-      entityId: user.id,
-      newValue: { email: user.email, status: 'PENDING_ACTIVATION' }
+    // Send activation email (don't fail user creation if email fails)
+    try {
+      await sendUserActivationEmail(user.id);
+    } catch (emailError) {
+      console.error('Failed to send activation email:', emailError);
+      // Continue anyway - user is created, email can be resent later
     }
-  });
 
-  return user;
+    // Audit log
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorId: data.actorId || 'system',
+          actorEmail: data.actorEmail || 'system',
+          action: 'USER_CREATED',
+          entityType: 'User',
+          entityId: user.id,
+          newValue: { email: user.email, status: 'PENDING_ACTIVATION' }
+        }
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+      // Don't fail user creation for audit log errors
+    }
+
+    return user;
+  } catch (error) {
+    // Re-throw HttpError as-is
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    // Wrap other errors in HttpError to prevent 500
+    const message = error instanceof Error ? error.message : 'Failed to create user';
+    console.error('User creation error:', error);
+    throw new HttpError(500, message);
+  }
 }
 
 export interface UpdateUserInput {
