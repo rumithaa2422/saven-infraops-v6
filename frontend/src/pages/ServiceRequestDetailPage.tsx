@@ -2,6 +2,48 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import {
+  Ticket,
+  ArrowLeft,
+  User,
+  Clock,
+  Calendar,
+  FileText,
+  MessageSquare,
+  History,
+  Paperclip,
+  Download,
+  Trash2,
+  Send,
+  Edit2,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronDown,
+  Users,
+  Info,
+  X,
+  AlertCircle,
+  Upload
+} from 'lucide-react';
+import {
+  PageHeader,
+  BackButton,
+  StatusBadge,
+  PriorityBadge,
+  CategoryBadge,
+  SectionCard,
+  InfoCard,
+  InfoGrid,
+  EmptyStateCard,
+  LoadingCard,
+  ModalLayout,
+  ConfirmationDialog,
+  Button
+} from '../components/serviceRequests';
 
 type ServiceRequest = {
   id: string;
@@ -79,7 +121,23 @@ export function ServiceRequestDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // PART 4/6: Permission-based access using granular permissions
+  // Edit modal state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    category: '',
+    subCategory: '',
+    priority: '',
+    projectName: ''
+  });
+
+  // Delete modal state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  // Permission checks
   const canManage = hasPermission('tickets:update') || hasPermission('tickets:manage');
   const canDelete = hasPermission('tickets:delete');
   const canAssign = hasPermission('tickets:assign');
@@ -88,31 +146,14 @@ export function ServiceRequestDetailPage() {
   const isAdmin = user?.roles.includes('Admin') ?? false;
   const isEmployee = !isSuperAdmin && !isAdmin;
   
-  // Check if user can access full details
-  // Super Admin: can access all
-  // Admin: can access only if assigned to them
-  // Employee: can access only their own requests
   const canAccessFullDetails = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
-  
-  // Check if Admin has restricted access (can see but not full details)
   const isAdminWithRestrictedAccess = isAdmin && request?.assigneeId !== user?.id && !isSuperAdmin;
-  
   const canPerformActions = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id);
-  
-  // Check if user can upload attachments (own request or admin with full access)
   const canUpload = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
-  // Only Super Admin can delete attachments
   const canDeleteAttachment = isSuperAdmin;
-  
-  // Check if user can view chat (Super Admin or assigned Admin or own request)
   const canViewChat = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
-  // Check if user can post chat messages (Super Admin, assigned Admin, or own request)
   const canPostChat = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
-  
-  // Check if user can view timeline (Super Admin or assigned Admin)
   const canViewTimeline = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id);
-  
-  // Check if user can view attachments
   const canViewAttachments = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
 
   async function load() {
@@ -122,19 +163,16 @@ export function ServiceRequestDetailPage() {
       const res = await api.get(`/service-requests/${id}`);
       const loadedRequest = res.data.item;
       
-      // Check access permissions
       const requestIsSuperAdmin = user?.roles.includes('Super Admin') ?? false;
       const requestIsAdmin = user?.roles.includes('Admin') ?? false;
       const requestIsEmployee = !requestIsSuperAdmin && !requestIsAdmin;
       
-      // Employee can only access their own requests
       if (requestIsEmployee && loadedRequest.requesterId !== user?.id) {
         setError('Access Restricted. You can only view your own service requests.');
         setLoading(false);
         return;
       }
       
-      // Admin can only access assigned requests (Super Admin can access all)
       if (requestIsAdmin && !requestIsSuperAdmin && loadedRequest.assigneeId !== user?.id) {
         setError('Access Restricted. You can only view service requests assigned to you.');
         setLoading(false);
@@ -190,7 +228,6 @@ export function ServiceRequestDetailPage() {
   }
 
   useEffect(() => {
-    // Scroll to top of page when component mounts
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
@@ -207,13 +244,12 @@ export function ServiceRequestDetailPage() {
     }
   }, [request?.id]);
 
-  // Note: Removed auto-scroll to bottom when new comments arrive to prevent page jumping
-
   async function updateStatus(payload: Partial<ServiceRequest>) {
     if (!request) return;
     try {
       const response = await api.patch(`/service-requests/${request.id}`, payload);
       setRequest(response.data.item);
+      await loadTimeline();
       setMessage('Status updated successfully.');
     } catch {
       setMessage('Failed to update status. Check backend logs.');
@@ -229,6 +265,7 @@ export function ServiceRequestDetailPage() {
       });
       setChatMessage('');
       await loadComments();
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } catch {
       setMessage('Failed to send message.');
     } finally {
@@ -261,7 +298,6 @@ export function ServiceRequestDetailPage() {
 
   async function deleteAttachment(attachmentId: string) {
     if (!request) return;
-    if (!confirm('Are you sure you want to delete this attachment?')) return;
     try {
       await api.delete(`/service-requests/${request.id}/attachments/${attachmentId}`);
       await loadAttachments();
@@ -348,25 +384,58 @@ export function ServiceRequestDetailPage() {
     navigate('/service-requests');
   }
 
-  function getPriorityClass(priority: string): string {
-    switch (priority.toUpperCase()) {
-      case 'CRITICAL': return 'pill-critical';
-      case 'HIGH': return 'pill-high';
-      case 'MEDIUM': return 'pill-medium';
-      case 'LOW': return 'pill-low';
-      default: return 'pill-medium';
+  // Edit handlers
+  function openEditDialog() {
+    if (!request) return;
+    setEditForm({
+      title: request.title,
+      description: request.description || '',
+      category: request.category,
+      subCategory: request.subCategory || '',
+      priority: request.priority,
+      projectName: request.projectName || ''
+    });
+    setEditOpen(true);
+  }
+
+  async function submitEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!request) return;
+    try {
+      await api.put(`/service-requests/${request.id}`, editForm);
+      setEditOpen(false);
+      await load();
+      setMessage('Request updated successfully.');
+    } catch {
+      setMessage('Failed to update request.');
     }
   }
 
-  function getStatusClass(status: string): string {
-    switch (status.toUpperCase()) {
-      case 'OPEN': return 'status-open';
-      case 'IN_PROGRESS': return 'status-progress';
-      case 'WAITING_FOR_USER': return 'status-waiting';
-      case 'CLOSED': return 'status-closed';
-      case 'CANCELLED': return 'status-cancelled';
-      default: return 'status-open';
+  function closeEditDialog() {
+    setEditOpen(false);
+  }
+
+  // Delete handlers
+  function openDeleteDialog() {
+    setDeleteConfirmText('');
+    setDeleteOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!request || deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      await api.delete(`/service-requests/${request.id}`);
+      navigate('/service-requests');
+    } catch {
+      setMessage('Failed to delete request.');
+      setDeleting(false);
+      setDeleteOpen(false);
     }
+  }
+
+  function closeDeleteDialog() {
+    setDeleteOpen(false);
   }
 
   function formatDate(dateStr?: string): string {
@@ -410,275 +479,343 @@ export function ServiceRequestDetailPage() {
     });
   }
 
+  function formatTimeAgo(dateStr?: string): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
   if (loading) {
     return (
-      <div className="page-stack">
-        <div className="detail-header">
-          <div className="skeleton skeleton-title"></div>
-          <div className="detail-header-info">
-            <div className="detail-title-row">
-              <div className="skeleton skeleton-badge"></div>
-              <div className="skeleton skeleton-badge"></div>
-            </div>
-            <div className="detail-meta-row" style={{ marginTop: '12px' }}>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
+        <div className="bg-white border-b border-slate-200/60 px-6 py-4">
+          <div className="max-w-[1600px] mx-auto flex items-center gap-4">
+            <BackButton onClick={handleBack} />
+            <div className="flex-1 animate-pulse">
+              <div className="h-8 w-48 bg-slate-100 rounded-lg mb-2" />
+              <div className="h-4 w-32 bg-slate-50 rounded" />
             </div>
           </div>
         </div>
-        <div className="detail-content-grid">
-          <div className="detail-main">
-            <div className="detail-card">
-              <div className="detail-card-body">
-                <div className="skeleton skeleton-title"></div>
-                <div className="skeleton skeleton-text" style={{ marginTop: '16px' }}></div>
-                <div className="skeleton skeleton-text"></div>
-                <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
-              </div>
-            </div>
-          </div>
-          <div className="detail-sidebar">
-            <div className="detail-card">
-              <div className="detail-card-body">
-                <div className="skeleton" style={{ width: '100%', height: '36px' }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+          <LoadingCard lines={5} />
+        </main>
       </div>
     );
   }
 
   if (error || !request) {
     return (
-      <div className="page-stack">
-        <div className="detail-error">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <p>{error || 'Service request not found.'}</p>
-          <button className="btn-back" onClick={handleBack}>
-            Back to Service Requests
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
+        <div className="bg-white border-b border-slate-200/60 px-6 py-4">
+          <div className="max-w-[1600px] mx-auto">
+            <BackButton onClick={handleBack} />
+          </div>
         </div>
+        <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+          <EmptyStateCard
+            icon={AlertTriangle}
+            title={error || 'Service request not found'}
+            description="Please check the URL or go back to the service requests list."
+            action={
+              <Button onClick={handleBack}>
+                Back to Service Requests
+              </Button>
+            }
+          />
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="page-stack">
-      {message && (
-        <div className="notice notice-info">{message}</div>
-      )}
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
       {/* Header */}
-      <div className="detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <button className="btn-back" onClick={handleBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
-          </button>
-        </div>
-        <div className="detail-header-info">
-          <div className="detail-title-row">
-            <span className="detail-ticket-no">{request.ticketNo}</span>
-            <span className={`status-badge status-${request.status.toLowerCase()}`}>
-              {request.status.replace(/_/g, ' ')}
-            </span>
-            <span className={`priority-badge priority-${request.priority.toLowerCase()}`}>
-              {request.priority}
-            </span>
+      <PageHeader
+        title="Service Request Details"
+        showBackButton
+        onBackClick={handleBack}
+        actions={
+          <div className="flex items-center gap-3">
+            {canPerformActions && (
+              <Button variant="secondary" icon={Edit2} onClick={openEditDialog}>
+                Edit
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="danger" icon={Trash2} onClick={openDeleteDialog}>
+                Delete
+              </Button>
+            )}
           </div>
-          <div className="detail-meta-row">
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Requester</span>
-              <span className="detail-meta-value">{request.requesterName}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Assigned</span>
-              <span className="detail-meta-value">{request.assigneeName || 'Unassigned'}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Created</span>
-              <span className="detail-meta-value">{formatDate(request.createdAt)}</span>
-            </span>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Main Content Grid */}
-      <div className="detail-content-grid">
-        {/* Left Column - Request Information */}
-        <div className="detail-main">
-          {/* Request Information Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Request Information</h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-field">
-                <label>Title</label>
-                <span className="detail-field-value">{request.title}</span>
-              </div>
-              {canAccessFullDetails ? (
-                <div className="detail-field">
-                  <label>Description</label>
-                  <span className="detail-field-value detail-field-text">
-                    {request.description || 'No description provided.'}
+      {/* Main Content */}
+      <main className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+        
+        {/* Request Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1.5 bg-brand-50 text-brand-700 font-mono font-semibold rounded-lg">
+                    {request.ticketNo}
                   </span>
+                  <StatusBadge status={request.status} size="lg" />
+                  <PriorityBadge priority={request.priority} size="lg" />
                 </div>
-              ) : (
-                <div className="detail-field">
-                  <label>Description</label>
-                  <span className="detail-field-value detail-field-text restricted-text">
-                    Access Restricted
-                  </span>
-                </div>
-              )}
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Category</label>
-                  <span className="detail-field-value">{request.category}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Sub Category</label>
-                  <span className="detail-field-value">{request.subCategory || '-'}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Project</label>
-                  <span className="detail-field-value">{request.projectName || '-'}</span>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">{request.title}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-4 h-4" />
+                    <span>{request.requesterName}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4" />
+                    <span>Created {formatDate(request.createdAt)}</span>
+                  </div>
+                  {request.projectName && (
+                    <div className="flex items-center gap-1.5">
+                      <FileText className="w-4 h-4" />
+                      <span>{request.projectName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Attachments Card */}
-          {canViewAttachments ? (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Attachments</h3>
-              </div>
-              <div className="detail-card-body">
-                {attachments.length > 0 ? (
-                  <div className="attachment-list">
-                    {attachments.map((attachment) => (
-                      <div key={attachment.id} className="attachment-item">
-                        <div className="attachment-icon">
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 4V16C4 17.1046 4.89543 18 6 18H14C15.1046 18 16 17.1046 16 16V8L12 4H6C4.89543 4 4 4.89543 4 6V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M12 4V8H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        <div className="attachment-info">
-                          <span className="attachment-name" title={attachment.fileName}>{attachment.fileName}</span>
-                          <span className="attachment-meta">
-                            {formatFileSize(attachment.fileSize)} - Uploaded {formatDate(attachment.uploadedAt)}
-                            {attachment.uploadedByName && ` by ${attachment.uploadedByName}`}
-                          </span>
-                        </div>
-                        <div className="attachment-actions">
-                          <button 
-                            className="btn-attachment-download"
-                            onClick={() => downloadAttachment(attachment.id, attachment.fileName)}
-                            title="Download"
-                          >
-                            Download
-                          </button>
-                          {canDeleteAttachment && (
-                            <button 
-                              className="btn-attachment-delete"
-                              onClick={() => deleteAttachment(attachment.id)}
-                              title="Delete"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty-state">
-                    <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <p className="empty-state-title">No attachments</p>
-                    <p className="empty-state-description">Files uploaded to this request will appear here.</p>
-                  </div>
+          {/* Status Actions */}
+          {(isSuperAdmin || canPerformActions) && (
+            <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-slate-600 mr-2">Actions:</span>
+                {isSuperAdmin && request.status === 'OPEN' && (
+                  <>
+                    <Button size="sm" variant="secondary" icon={Users} onClick={() => updateStatus({ status: 'ASSIGNED' })}>
+                      Assign
+                    </Button>
+                    <Button size="sm" variant="secondary" icon={Play} onClick={() => updateStatus({ status: 'IN_PROGRESS' })}>
+                      Start Progress
+                    </Button>
+                  </>
                 )}
-                {canUpload && (
-                  <div className="attachment-upload">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept={ALLOWED_FILE_TYPES}
-                      multiple
-                      onChange={(e) => e.target.files && uploadAttachments(e.target.files)}
-                      className="file-input"
-                      id="attachment-upload"
-                    />
-                    <label htmlFor="attachment-upload" className="btn-upload">
-                      {uploading ? 'Uploading...' : 'Upload Files'}
-                    </label>
-                    <span className="upload-hint">png, jpg, pdf, docx, xlsx, txt</span>
-                  </div>
+                {isSuperAdmin && request.status === 'ASSIGNED' && (
+                  <>
+                    <Button size="sm" variant="secondary" icon={Play} onClick={() => updateStatus({ status: 'IN_PROGRESS' })}>
+                      Start Progress
+                    </Button>
+                    <Button size="sm" variant="secondary" icon={XCircle} onClick={() => updateStatus({ status: 'CLOSED' })}>
+                      Close
+                    </Button>
+                  </>
                 )}
-              </div>
-            </div>
-          ) : (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Attachments</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="detail-placeholder">
-                  <p>Attachments not available</p>
-                </div>
+                {(isSuperAdmin || canPerformActions) && request.status === 'IN_PROGRESS' && (
+                  <>
+                    <Button size="sm" variant="secondary" icon={Pause} onClick={() => updateStatus({ status: 'WAITING_FOR_USER' })}>
+                      Wait for User
+                    </Button>
+                    <Button size="sm" variant="secondary" icon={CheckCircle} onClick={() => updateStatus({ status: 'COMPLETED' })}>
+                      Mark Complete
+                    </Button>
+                  </>
+                )}
+                {(isSuperAdmin || canPerformActions) && request.status === 'WAITING_FOR_USER' && (
+                  <>
+                    <Button size="sm" variant="secondary" icon={Play} onClick={() => updateStatus({ status: 'IN_PROGRESS' })}>
+                      Resume Progress
+                    </Button>
+                    <Button size="sm" variant="secondary" icon={CheckCircle} onClick={() => updateStatus({ status: 'COMPLETED' })}>
+                      Mark Complete
+                    </Button>
+                  </>
+                )}
+                {(isSuperAdmin || canPerformActions) && request.status === 'COMPLETED' && (
+                  <Button size="sm" variant="secondary" icon={XCircle} onClick={() => updateStatus({ status: 'CLOSED' })}>
+                    Close Ticket
+                  </Button>
+                )}
+                {(isSuperAdmin || canPerformActions) && request.status === 'CLOSED' && (
+                  <Button size="sm" variant="secondary" icon={RotateCcw} onClick={() => updateStatus({ status: 'OPEN' })}>
+                    Reopen
+                  </Button>
+                )}
               </div>
             </div>
           )}
 
-          {/* Conversation Card */}
-          {canViewChat ? (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Conversation</h3>
+          {/* Access Notice */}
+          {isAdminWithRestrictedAccess && (
+            <div className="px-6 py-4 bg-amber-50 border-b border-amber-100">
+              <div className="flex items-center gap-3 text-amber-800">
+                <AlertCircle className="w-5 h-5" />
+                <span className="text-sm font-medium">
+                  This ticket is assigned to another admin. You can only view but not modify it.
+                </span>
               </div>
-              <div className="detail-card-body conversation-body">
-                <>
-                  <div className="conversation-messages">
-                    {comments.length === 0 ? (
-                      <div className="empty-state">
-                        <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        <p className="empty-state-title">No messages yet</p>
-                        <p className="empty-state-description">Start the conversation to discuss this request.</p>
-                      </div>
-                    ) : (
-                      comments.map((comment) => (
-                        <div 
-                          key={comment.id} 
-                          className={`conversation-message ${comment.userId === user?.id ? 'own-message' : ''}`}
-                        >
-                          <div className="message-header">
-                            <span className="message-sender">{comment.userName}</span>
-                            <span className="message-time">{formatChatTime(comment.createdAt)}</span>
+            </div>
+          )}
+
+          {isEmployee && (
+            <div className="px-6 py-4 bg-blue-50 border-b border-blue-100">
+              <div className="flex items-center gap-3 text-blue-800">
+                <Info className="w-5 h-5" />
+                <span className="text-sm font-medium">
+                  Status changes are managed by the assigned administrator.
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Left Column - Main Info */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Request Information */}
+            <SectionCard title="Request Information" icon={FileText}>
+              <div className="space-y-6">
+                {canAccessFullDetails ? (
+                  <>
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-500 mb-2">Description</h4>
+                      <p className="text-slate-700 whitespace-pre-wrap">
+                        {request.description || 'No description provided.'}
+                      </p>
+                    </div>
+                    <InfoGrid columns={3}>
+                      <InfoCard label="Category" value={request.category} />
+                      <InfoCard label="Sub Category" value={request.subCategory || '—'} />
+                      <InfoCard label="Project" value={request.projectName || '—'} />
+                    </InfoGrid>
+                  </>
+                ) : (
+                  <div className="p-4 bg-slate-50 rounded-xl text-center">
+                    <p className="text-sm text-slate-500">Description is restricted</p>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+
+            {/* Attachments */}
+            <SectionCard title="Attachments" icon={Paperclip}>
+              {canViewAttachments ? (
+                <div className="space-y-4">
+                  {attachments.length > 0 ? (
+                    <div className="space-y-2">
+                      {attachments.map(attachment => (
+                        <div key={attachment.id} className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                          <div className="w-10 h-10 rounded-lg bg-brand-100 flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-brand-600" />
                           </div>
-                          <div className="message-content">
-                            {comment.message}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">{attachment.fileName}</p>
+                            <p className="text-xs text-slate-500">
+                              {formatFileSize(attachment.fileSize)} • {formatTimeAgo(attachment.uploadedAt)}
+                              {attachment.uploadedByName && ` by ${attachment.uploadedByName}`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => downloadAttachment(attachment.id, attachment.fileName)}
+                              className="p-2 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            {canDeleteAttachment && (
+                              <button
+                                onClick={() => deleteAttachment(attachment.id)}
+                                className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyStateCard
+                      icon={Paperclip}
+                      title="No attachments"
+                      description="Files uploaded to this request will appear here."
+                    />
+                  )}
+                  {canUpload && (
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-brand-300 transition-colors">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={ALLOWED_FILE_TYPES}
+                        multiple
+                        onChange={(e) => e.target.files && uploadAttachments(e.target.files)}
+                        className="hidden"
+                        id="attachment-upload-detail"
+                      />
+                      <label htmlFor="attachment-upload-detail" className="cursor-pointer">
+                        <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-sm font-medium text-slate-600">
+                          {uploading ? 'Uploading...' : 'Click to upload files'}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          PNG, JPG, PDF, DOCX, XLSX, TXT
+                        </p>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-xl text-center">
+                  <p className="text-sm text-slate-500">Attachments not available</p>
+                </div>
+              )}
+            </SectionCard>
+
+            {/* Conversation */}
+            <SectionCard title="Conversation" icon={MessageSquare}>
+              {canViewChat ? (
+                <div className="space-y-4">
+                  <div className="max-h-96 overflow-y-auto space-y-3">
+                    {comments.length > 0 ? (
+                      comments.map(comment => (
+                        <div
+                          key={comment.id}
+                          className={`p-4 rounded-xl ${comment.userId === user?.id ? 'bg-brand-50 ml-8' : 'bg-slate-50 mr-8'}`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-slate-900">{comment.userName}</span>
+                            <span className="text-xs text-slate-500">{formatChatTime(comment.createdAt)}</span>
+                          </div>
+                          <p className="text-sm text-slate-700 whitespace-pre-wrap">{comment.message}</p>
+                        </div>
                       ))
+                    ) : (
+                      <EmptyStateCard
+                        icon={MessageSquare}
+                        title="No messages yet"
+                        description="Start the conversation to discuss this request."
+                      />
                     )}
                     <div ref={chatEndRef} />
                   </div>
                   {canPostChat ? (
-                    <div className="conversation-input">
+                    <div className="flex gap-3 pt-3 border-t border-slate-100">
                       <input
                         type="text"
                         value={chatMessage}
@@ -686,375 +823,207 @@ export function ServiceRequestDetailPage() {
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
                         placeholder="Type a message..."
                         disabled={sendingMessage}
+                        className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 transition-all"
                       />
-                      <button 
+                      <Button
+                        icon={Send}
                         onClick={sendChatMessage}
                         disabled={sendingMessage || !chatMessage.trim()}
+                        loading={sendingMessage}
                       >
-                        {sendingMessage ? 'Sending...' : 'Send'}
-                      </button>
+                        Send
+                      </Button>
                     </div>
                   ) : (
-                    <div className="conversation-input-disabled">
-                      <span>You cannot reply to this conversation.</span>
+                    <div className="p-3 bg-slate-50 rounded-xl text-center">
+                      <p className="text-sm text-slate-500">You cannot reply to this conversation.</p>
                     </div>
                   )}
-                </>
-              </div>
-            </div>
-          ) : (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Conversation</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="empty-state">
-                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="empty-state-title">Conversation restricted</p>
-                  <p className="empty-state-description">You do not have permission to view this conversation.</p>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Timeline Card */}
-          {canViewTimeline ? (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Timeline</h3>
-              </div>
-              <div className="detail-card-body timeline-body">
-                {timeline.length === 0 ? (
-                  <div className="empty-state">
-                    <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                    <p className="empty-state-title">No activity yet</p>
-                    <p className="empty-state-description">Timeline events will appear as actions are taken on this request.</p>
-                  </div>
-                ) : (
-                  <div className="timeline-list">
-                    {timeline.map((entry) => (
-                      <div key={entry.id} className="timeline-item">
-                        <div className="timeline-marker">
-                          <div className="timeline-dot"></div>
-                          <div className="timeline-line"></div>
-                        </div>
-                        <div className="timeline-content">
-                          <div className="timeline-header">
-                            <span className="timeline-action">{entry.action}</span>
-                            <span className="timeline-time">
-                              {formatDate(entry.createdAt)}
-                            </span>
-                          </div>
-                          <p className="timeline-description">{entry.description}</p>
-                          {entry.performedByName && (
-                            <span className="timeline-user">
-                              by {entry.performedByName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Timeline</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="empty-state">
-                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="empty-state-title">Timeline restricted</p>
-                  <p className="empty-state-description">You do not have permission to view the timeline.</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Actions */}
-        <div className="detail-sidebar">
-          {/* Assignment Section */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Assigned To</h3>
-            </div>
-            <div className="detail-card-body">
-              {/* When not changing assignment */}
-              {!isChangingAssignment ? (
-                <>
-                  {/* Read-only display for assigned tickets or when user cannot assign */}
-                  {request?.assigneeName ? (
-                    <>
-                      <div className="assignment-display">
-                        <span className="assignment-value">{request.assigneeName}</span>
-                      </div>
-                      {/* Change Assignment button - only for Super Admin when ticket is assigned */}
-                      {isSuperAdmin && (
-                        <button
-                          className="btn-change-assignment"
-                          onClick={startChangeAssignment}
-                        >
-                          Change Assignment
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {/* Unassigned - show dropdown only for Super Admin */}
-                      {isSuperAdmin ? (
-                        <>
-                          <select
-                            className="detail-select"
-                            value={selectedAssignee}
-                            onChange={(e) => setSelectedAssignee(e.target.value)}
-                          >
-                            <option value="">Select Admin...</option>
-                            {admins.map((admin) => (
-                              <option key={admin.id} value={admin.id}>
-                                {admin.name}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            className="btn-assign"
-                            onClick={assignTicket}
-                            disabled={!selectedAssignee}
-                          >
-                            Assign
-                          </button>
-                        </>
-                      ) : (
-                        <div className="assignment-display">
-                          <span className="assignment-value assignment-unassigned">Unassigned</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </>
               ) : (
-                <>
-                  {/* Change assignment mode */}
-                  <select
-                    className="detail-select"
-                    value={pendingAssignee}
-                    onChange={(e) => setPendingAssignee(e.target.value)}
-                  >
-                    <option value="">Select Admin...</option>
-                    {admins.map((admin) => (
-                      <option key={admin.id} value={admin.id}>
-                        {admin.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="assignment-actions">
-                    <button
-                      className="btn-save-assignment"
-                      onClick={saveAssignmentChange}
-                      disabled={!pendingAssignee || pendingAssignee === request?.assigneeId}
-                    >
-                      Save Assignment
-                    </button>
-                    <button
-                      className="btn-cancel-assignment"
-                      onClick={cancelChangeAssignment}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </>
+                <div className="p-4 bg-slate-50 rounded-xl text-center">
+                  <p className="text-sm text-slate-500">Conversation not available</p>
+                </div>
               )}
-            </div>
+            </SectionCard>
           </div>
 
-          {/* Action Buttons */}
-          {(isSuperAdmin || canPerformActions) && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Actions</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="detail-actions">
-                  {/* Super Admin: Show all status options */}
-                  {isSuperAdmin ? (
-                    <>
-                      {request.status === 'OPEN' && (
-                        <>
-                          <button
-                            className="btn-action btn-assign"
-                            onClick={() => updateStatus({ status: 'ASSIGNED' })}
-                          >
-                            Assign
-                          </button>
-                          <button
-                            className="btn-action btn-progress"
-                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
-                          >
-                            Start Progress
-                          </button>
-                        </>
-                      )}
-                      {request.status === 'ASSIGNED' && (
-                        <>
-                          <button
-                            className="btn-action btn-progress"
-                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
-                          >
-                            Start Progress
-                          </button>
-                          <button
-                            className="btn-action btn-close"
-                            onClick={() => updateStatus({ status: 'CLOSED' })}
-                          >
-                            Close
-                          </button>
-                        </>
-                      )}
-                      {request.status === 'IN_PROGRESS' && (
-                        <>
-                          <button
-                            className="btn-action btn-waiting"
-                            onClick={() => updateStatus({ status: 'WAITING_FOR_USER' })}
-                          >
-                            Wait for User
-                          </button>
-                          <button
-                            className="btn-action btn-complete"
-                            onClick={() => updateStatus({ status: 'COMPLETED' })}
-                          >
-                            Mark Complete
-                          </button>
-                        </>
-                      )}
-                      {request.status === 'WAITING_FOR_USER' && (
-                        <>
-                          <button
-                            className="btn-action btn-progress"
-                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
-                          >
-                            Resume Progress
-                          </button>
-                          <button
-                            className="btn-action btn-complete"
-                            onClick={() => updateStatus({ status: 'COMPLETED' })}
-                          >
-                            Mark Complete
-                          </button>
-                        </>
-                      )}
-                      {request.status === 'COMPLETED' && (
-                        <button
-                          className="btn-action btn-close"
-                          onClick={() => updateStatus({ status: 'CLOSED' })}
-                        >
-                          Close
-                        </button>
-                      )}
-                      {request.status === 'CLOSED' && (
-                        <button
-                          className="btn-action btn-reopen"
-                          onClick={() => updateStatus({ status: 'OPEN' })}
-                        >
-                          Reopen
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    /* Admin: Show workflow-based actions */
-                    <>
-                      {request.status === 'ASSIGNED' && (
-                        <button
-                          className="btn-action btn-progress"
-                          onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
-                        >
-                          Start Progress
-                        </button>
-                      )}
-                      {request.status === 'IN_PROGRESS' && (
-                        <>
-                          <button
-                            className="btn-action btn-waiting"
-                            onClick={() => updateStatus({ status: 'WAITING_FOR_USER' })}
-                          >
-                            Wait for User
-                          </button>
-                          <button
-                            className="btn-action btn-complete"
-                            onClick={() => updateStatus({ status: 'COMPLETED' })}
-                          >
-                            Mark Complete
-                          </button>
-                        </>
-                      )}
-                      {request.status === 'WAITING_FOR_USER' && (
-                        <>
-                          <button
-                            className="btn-action btn-progress"
-                            onClick={() => updateStatus({ status: 'IN_PROGRESS' })}
-                          >
-                            Resume Progress
-                          </button>
-                          <button
-                            className="btn-action btn-complete"
-                            onClick={() => updateStatus({ status: 'COMPLETED' })}
-                          >
-                            Mark Complete
-                          </button>
-                        </>
-                      )}
-                      {request.status === 'COMPLETED' && (
-                        <button
-                          className="btn-action btn-close"
-                          onClick={() => updateStatus({ status: 'CLOSED' })}
-                        >
-                          Close Ticket
-                        </button>
-                      )}
-                    </>
-                  )}
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            
+            {/* Assignment */}
+            <SectionCard title="Assignment" icon={Users}>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
+                    <User className="w-5 h-5 text-brand-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {request.assigneeName || 'Unassigned'}
+                    </p>
+                    <p className="text-xs text-slate-500">Assigned Engineer</p>
+                  </div>
                 </div>
+                {canAssign && (
+                  <>
+                    {isChangingAssignment ? (
+                      <div className="space-y-3">
+                        <select
+                          value={pendingAssignee}
+                          onChange={(e) => setPendingAssignee(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                        >
+                          <option value="">Select an engineer</option>
+                          {admins.map(admin => (
+                            <option key={admin.id} value={admin.id}>{admin.name}</option>
+                          ))}
+                        </select>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" onClick={cancelChangeAssignment} className="flex-1">
+                            Cancel
+                          </Button>
+                          <Button size="sm" onClick={saveAssignmentChange} className="flex-1">
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button size="sm" variant="secondary" icon={Edit2} onClick={startChangeAssignment} fullWidth>
+                        Change Assignment
+                      </Button>
+                    )}
+                  </>
+                )}
               </div>
-            </div>
-          )}
+            </SectionCard>
 
-          {/* Access Notice for Admins without permission */}
-          {isAdmin && !isSuperAdmin && !canPerformActions && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Access Notice</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="notice notice-warning">
-                  This ticket is assigned to another admin. You can only perform actions on tickets assigned to you.
+            {/* Timeline */}
+            {canViewTimeline && timeline.length > 0 && (
+              <SectionCard title="Activity Timeline" icon={History}>
+                <div className="space-y-4">
+                  {timeline.slice(0, 10).map((entry, index) => (
+                    <div key={entry.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                          <History className="w-4 h-4 text-slate-500" />
+                        </div>
+                        {index < timeline.length - 1 && (
+                          <div className="w-0.5 flex-1 bg-slate-100 mt-2" />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-4">
+                        <p className="text-sm font-medium text-slate-900">{entry.action}</p>
+                        {entry.description && (
+                          <p className="text-xs text-slate-500 mt-0.5">{entry.description}</p>
+                        )}
+                        <p className="text-xs text-slate-400 mt-1">
+                          {entry.performedByName || 'System'} • {formatTimeAgo(entry.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Employee Notice */}
-          {isEmployee && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Status</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="notice notice-info">
-                  Status changes are managed by the assigned administrator.
-                </div>
-              </div>
-            </div>
-          )}
+              </SectionCard>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Edit Modal */}
+      <ModalLayout
+        isOpen={editOpen}
+        onClose={closeEditDialog}
+        title="Edit Service Request"
+        subtitle={`Editing ${request.ticketNo}`}
+        size="xl"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={closeEditDialog}>
+              Cancel
+            </Button>
+            <Button icon={Edit2} onClick={submitEdit as any}>
+              Update Request
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={submitEdit} className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Title</label>
+              <input
+                type="text"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+              <textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                rows={4}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
+                <input
+                  type="text"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
+                <select
+                  value={editForm.priority}
+                  onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CRITICAL">Critical</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </form>
+      </ModalLayout>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={deleteOpen}
+        onClose={closeDeleteDialog}
+        onConfirm={confirmDelete}
+        title="Delete Service Request"
+        message={`Are you sure you want to delete ${request?.ticketNo}? This action cannot be undone.`}
+        confirmText="Delete Request"
+        variant="danger"
+        isLoading={deleting}
+        confirmInput
+        confirmInputValue={deleteConfirmText}
+        onConfirmInputChange={setDeleteConfirmText}
+        confirmInputPlaceholder="Type DELETE to confirm"
+      />
+
+      {/* Message Toast */}
+      {message && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div className="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <span className="text-sm">{message}</span>
+            <button onClick={() => setMessage('')} className="text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
