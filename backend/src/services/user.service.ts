@@ -1,6 +1,7 @@
 import { prisma } from '../common/prisma.js';
 import { HttpError } from '../common/httpError.js';
 import { sendUserActivationEmail } from '../modules/auth/activation.service.js';
+import { parseDate, parseDateOrThrow } from '../common/dateParser.js';
 
 export interface CreateUserInput {
   name: string;
@@ -28,16 +29,13 @@ export async function createUser(data: CreateUserInput) {
       throw new HttpError(400, 'A user with this email already exists');
     }
 
-    // Parse dateJoined safely
+    // Validate and parse dateJoined with user-friendly error message
     let parsedDateJoined: Date | null = null;
     if (data.dateJoined) {
       try {
-        parsedDateJoined = new Date(data.dateJoined);
-        if (isNaN(parsedDateJoined.getTime())) {
-          parsedDateJoined = null;
-        }
-      } catch {
-        parsedDateJoined = null;
+        parsedDateJoined = parseDateOrThrow(data.dateJoined, 'dateJoined');
+      } catch (err) {
+        throw new HttpError(400, err instanceof Error ? err.message : 'Invalid dateJoined value');
       }
     }
 
@@ -138,6 +136,20 @@ export async function updateUser(id: string, data: UpdateUserInput) {
     throw new HttpError(404, 'User not found');
   }
 
+  // Validate and parse dateJoined with user-friendly error message
+  let parsedDateJoined: Date | null | undefined = undefined;
+  if (data.dateJoined !== undefined) {
+    if (data.dateJoined) {
+      try {
+        parsedDateJoined = parseDateOrThrow(data.dateJoined, 'dateJoined');
+      } catch (err) {
+        throw new HttpError(400, err instanceof Error ? err.message : 'Invalid dateJoined value');
+      }
+    } else {
+      parsedDateJoined = null;
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id },
     data: {
@@ -148,7 +160,7 @@ export async function updateUser(id: string, data: UpdateUserInput) {
       employeeId: data.employeeId !== undefined ? (data.employeeId || null) : undefined,
       designation: data.designation !== undefined ? (data.designation || null) : undefined,
       employmentType: data.employmentType !== undefined ? (data.employmentType || null) : undefined,
-      dateJoined: data.dateJoined !== undefined ? (data.dateJoined ? new Date(data.dateJoined) : null) : undefined,
+      dateJoined: parsedDateJoined,
       address: data.address !== undefined ? (data.address || null) : undefined,
       remarks: data.remarks !== undefined ? (data.remarks || null) : undefined
     }

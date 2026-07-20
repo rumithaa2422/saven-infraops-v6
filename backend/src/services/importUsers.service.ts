@@ -1,6 +1,7 @@
 import { prisma } from '../common/prisma.js';
 import { HttpError } from '../common/httpError.js';
 import { sendUserActivationEmail } from '../modules/auth/activation.service.js';
+import { parseDate, parseDateOrThrow } from '../common/dateParser.js';
 
 /**
  * Input for importing a single user
@@ -54,16 +55,13 @@ export interface ImportResult {
  * This function is used internally by the import service
  */
 async function createUserFromImport(data: ImportUserInput): Promise<{ userId: string }> {
-  // Parse dateJoined safely
+  // Validate and parse dateJoined with user-friendly error message
   let parsedDateJoined: Date | null = null;
   if (data.dateJoined) {
     try {
-      parsedDateJoined = new Date(data.dateJoined);
-      if (isNaN(parsedDateJoined.getTime())) {
-        parsedDateJoined = null;
-      }
-    } catch {
-      parsedDateJoined = null;
+      parsedDateJoined = parseDateOrThrow(data.dateJoined, 'dateJoined');
+    } catch (err) {
+      throw new HttpError(400, err instanceof Error ? err.message : 'Invalid dateJoined value');
     }
   }
 
