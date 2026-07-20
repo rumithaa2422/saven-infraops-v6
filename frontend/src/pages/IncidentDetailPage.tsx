@@ -2,7 +2,43 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { PermissionGate } from '../components/permissions';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  User,
+  Clock,
+  Calendar,
+  FileText,
+  Download,
+  Upload,
+  Edit2,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  FileCheck,
+  History,
+  Shield,
+  Building2,
+  Server,
+  Users,
+  X
+} from 'lucide-react';
+import {
+  IncidentDetailHeader,
+  IncidentStatusBadge,
+  SeverityBadge,
+  SectionCard,
+  InfoCard,
+  InfoGrid,
+  EmptyStateCard,
+  LoadingCard,
+  TimelineItem,
+  Button,
+  ModalLayout,
+  ResolveIncidentDialog,
+  DeleteIncidentDialog
+} from '../components/incidents';
 
 /**
  * PART 3: Incidents Permission Enforcement
@@ -53,6 +89,7 @@ type TimelineEntry = {
   description: string;
   performedByName: string | null;
   createdAt: string;
+  icon: 'create' | 'ownership' | 'upload' | 'status' | 'system';
 };
 
 const ALLOWED_FILE_TYPES = '.pdf,.doc,.docx,.txt';
@@ -69,6 +106,11 @@ export function IncidentDetailPage() {
   const [takingOwnership, setTakingOwnership] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [resolveNotes, setResolveNotes] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // PART 3: Permission checks using granular permissions
@@ -78,10 +120,10 @@ export function IncidentDetailPage() {
   const canUpdateSeverity = hasPermission('incidents:update_severity');
   const canUploadResolution = hasPermission('incidents:upload_resolution');
   const canDeleteResolution = hasPermission('incidents:delete_resolution');
+  const canDelete = hasPermission('incidents:delete');
   
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
-  const isEmployee = !isSuperAdmin && !isAdmin;
   
   // Can view timeline: Admin, Super Admin, or has permission
   const canViewTimeline = isSuperAdmin || isAdmin || hasPermission('incidents:view');
@@ -133,7 +175,8 @@ export function IncidentDetailPage() {
       action: 'Incident Created',
       description: `Incident ${incident.incidentNo} was created`,
       performedByName: null,
-      createdAt: incident.createdAt || ''
+      createdAt: incident.createdAt || '',
+      icon: 'create'
     });
     
     // Ownership Taken entry
@@ -142,7 +185,8 @@ export function IncidentDetailPage() {
         action: 'Ownership Taken',
         description: `${incident.ownerName} took ownership of this incident`,
         performedByName: incident.ownerName,
-        createdAt: incident.updatedAt || incident.createdAt || ''
+        createdAt: incident.updatedAt || incident.createdAt || '',
+        icon: 'ownership'
       });
     }
     
@@ -152,17 +196,8 @@ export function IncidentDetailPage() {
         action: 'Resolution Document Uploaded',
         description: `Resolution document was uploaded`,
         performedByName: resolutionDoc?.uploadedByName || null,
-        createdAt: incident.resolutionDocUploadedAt
-      });
-    }
-    
-    // Resolution Document Replaced entry
-    if (incident.resolutionDocReplacedAt) {
-      entries.push({
-        action: 'Resolution Document Replaced',
-        description: `Resolution document was replaced`,
-        performedByName: resolutionDoc?.uploadedByName || null,
-        createdAt: incident.resolutionDocReplacedAt
+        createdAt: incident.resolutionDocUploadedAt,
+        icon: 'upload'
       });
     }
     
@@ -172,11 +207,12 @@ export function IncidentDetailPage() {
         action: 'Status Changed',
         description: `Status changed to ${incident.status.replace(/_/g, ' ')}`,
         performedByName: incident.statusChangedBy || null,
-        createdAt: incident.statusChangedAt
+        createdAt: incident.statusChangedAt,
+        icon: 'status'
       });
     }
     
-    return entries;
+    return entries.reverse();
   }
 
   async function load() {
@@ -223,13 +259,15 @@ export function IncidentDetailPage() {
     if (!incident) return;
     const newStatus = getNextStatus();
     if (!newStatus) return;
-    
+
     setChangingStatus(true);
     try {
       const response = await api.patch(`/incidents/${incident.id}/status`, {
         status: newStatus
       });
       setIncident(response.data.item);
+      setResolveDialogOpen(false);
+      setResolveNotes('');
       setMessage(`Status changed to ${newStatus.replace(/_/g, ' ')} successfully.`);
     } catch (err: any) {
       setMessage(err.response?.data?.message || err.response?.data?.error || 'Failed to change status.');
@@ -244,15 +282,15 @@ export function IncidentDetailPage() {
     try {
       const formData = new FormData();
       formData.append('file', files[0]);
-      
+
       await api.post(`/incidents/${incident.id}/resolution-document`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
+
       setMessage('Resolution document uploaded successfully.');
       await loadResolutionDocument();
-      await load(); // Reload incident to update timeline entries
-      
+      await load();
+
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -267,7 +305,7 @@ export function IncidentDetailPage() {
     if (!incident) return;
     const token = localStorage.getItem('token');
     const downloadUrl = `/api/incidents/${incident.id}/resolution-document/download`;
-    
+
     fetch(downloadUrl, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -292,6 +330,23 @@ export function IncidentDetailPage() {
       });
   }
 
+  async function deleteIncident() {
+    if (!incident || deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      await api.delete(`/incidents/${incident.id}`);
+      setMessage('Incident deleted successfully.');
+      setDeleteDialogOpen(false);
+      setTimeout(() => {
+        navigate('/incidents');
+      }, 1000);
+    } catch (err: any) {
+      setMessage(err.response?.data?.error || 'Failed to delete incident.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -300,8 +355,65 @@ export function IncidentDetailPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
+  function formatDate(dateStr?: string): string {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function formatTimeAgo(dateStr?: string): string {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return formatDate(dateStr);
+  }
+
+  function getTimelineIcon(iconType: string) {
+    switch (iconType) {
+      case 'create': return AlertTriangle;
+      case 'ownership': return Users;
+      case 'upload': return FileCheck;
+      case 'status': return History;
+      default: return Clock;
+    }
+  }
+
+  function getTimelineIconBg(iconType: string) {
+    switch (iconType) {
+      case 'create': return 'bg-blue-100';
+      case 'ownership': return 'bg-purple-100';
+      case 'upload': return 'bg-emerald-100';
+      case 'status': return 'bg-amber-100';
+      default: return 'bg-slate-100';
+    }
+  }
+
+  function getTimelineIconColor(iconType: string) {
+    switch (iconType) {
+      case 'create': return 'text-blue-600';
+      case 'ownership': return 'text-purple-600';
+      case 'upload': return 'text-emerald-600';
+      case 'status': return 'text-amber-600';
+      default: return 'text-slate-600';
+    }
+  }
+
   useEffect(() => {
-    // Scroll to top of page when component mounts
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
@@ -319,373 +431,400 @@ export function IncidentDetailPage() {
     navigate('/incidents');
   }
 
-  function getSeverityClass(severity: string): string {
-    switch (severity.toUpperCase()) {
-      case 'SEV1': return 'severity-sev1';
-      case 'SEV2': return 'severity-sev2';
-      case 'SEV3': return 'severity-sev3';
-      case 'SEV4': return 'severity-sev4';
-      default: return 'severity-sev3';
-    }
-  }
-
-  function getStatusClass(status: string): string {
-    switch (status.toUpperCase()) {
-      case 'OPEN': return 'status-open';
-      case 'ASSIGNED': return 'status-assigned';
-      case 'IN_PROGRESS': return 'status-progress';
-      case 'RESOLVED': return 'status-resolved';
-      case 'CLOSED': return 'status-closed';
-      default: return 'status-open';
-    }
-  }
-
-  function formatDate(dateStr?: string): string {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
   if (loading) {
     return (
-      <div className="page-stack">
-        <div className="detail-header">
-          <div className="skeleton skeleton-title"></div>
-          <div className="detail-header-info">
-            <div className="detail-title-row">
-              <div className="skeleton skeleton-badge"></div>
-              <div className="skeleton skeleton-badge"></div>
-            </div>
-            <div className="detail-meta-row" style={{ marginTop: '12px' }}>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
+      <div className="min-h-screen bg-slate-50/50">
+        <div className="bg-white border-b border-slate-200/60 px-6 py-5">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 w-24 bg-slate-100 rounded"></div>
+            <div className="h-8 w-48 bg-slate-100 rounded"></div>
+            <div className="flex gap-3">
+              <div className="h-6 w-20 bg-slate-100 rounded-full"></div>
+              <div className="h-6 w-20 bg-slate-100 rounded-full"></div>
             </div>
           </div>
         </div>
-        <div className="detail-content-grid">
-          <div className="detail-main">
-            <div className="detail-card">
-              <div className="detail-card-body">
-                <div className="skeleton skeleton-title"></div>
-                <div className="skeleton skeleton-text" style={{ marginTop: '16px' }}></div>
-                <div className="skeleton skeleton-text"></div>
-                <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
-              </div>
+        <main className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <LoadingCard />
+              <LoadingCard />
+            </div>
+            <div className="space-y-6">
+              <LoadingCard />
+              <LoadingCard />
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   if (error || !incident) {
     return (
-      <div className="page-stack">
-        <div className="detail-error">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <p>{error || 'Incident not found.'}</p>
-          <button className="btn-back" onClick={handleBack}>
+      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-slate-200/60 p-8 text-center max-w-md shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Incident Not Found</h2>
+          <p className="text-slate-500 mb-6">{error || 'The incident you are looking for does not exist.'}</p>
+          <Button onClick={handleBack} icon={ArrowLeft}>
             Back to Incidents
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   const timeline = buildTimeline();
+  const nextStatus = getNextStatus();
 
   return (
-    <div className="page-stack">
-      {message && (
-        <div className="notice notice-info">{message}</div>
-      )}
-
+    <div className="min-h-screen bg-slate-50/50">
       {/* Header */}
-      <div className="detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <button className="btn-back" onClick={handleBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
-          </button>
-        </div>
-        <div className="detail-header-info">
-          <div className="detail-title-row">
-            <span className="detail-ticket-no">{incident.incidentNo}</span>
-            <span className={`status-badge ${getStatusClass(incident.status)}`}>
-              {incident.status.replace(/_/g, ' ')}
-            </span>
-            <span className={`priority-badge ${getSeverityClass(incident.severity)}`}>
-              {incident.severity}
-            </span>
+      <IncidentDetailHeader
+        incidentNo={incident.incidentNo}
+        title={incident.title}
+        statusBadge={<IncidentStatusBadge status={incident.status} size="lg" />}
+        severityBadge={<SeverityBadge severity={incident.severity} size="lg" />}
+        ownerName={incident.ownerName}
+        createdAt={incident.createdAt || ''}
+        onBackClick={handleBack}
+        actions={
+          <div className="flex items-center gap-2">
+            {canUpdate && (
+              <Button variant="secondary" size="sm" icon={Edit2}>
+                Edit
+              </Button>
+            )}
+            {canChangeStatus && nextStatus && (
+              <Button 
+                variant={nextStatus === 'RESOLVED' ? 'success' : 'primary'} 
+                size="sm" 
+                icon={nextStatus === 'RESOLVED' ? CheckCircle : AlertTriangle}
+                onClick={() => setResolveDialogOpen(true)}
+              >
+                {getStatusButtonLabel()}
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="danger" size="sm" icon={Trash2} onClick={() => setDeleteDialogOpen(true)}>
+                Delete
+              </Button>
+            )}
           </div>
-          <div className="detail-meta-row">
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Owner</span>
-              <span className="detail-meta-value">{incident.ownerName || 'Unassigned'}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Created</span>
-              <span className="detail-meta-value">{formatDate(incident.createdAt)}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Last Updated</span>
-              <span className="detail-meta-value">{formatDate(incident.updatedAt)}</span>
-            </span>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Main Content Grid */}
-      <div className="detail-content-grid">
-        {/* Left Column - Incident Information */}
-        <div className="detail-main">
-          {/* Incident Information Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Incident Information</h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-field">
-                <label>Title</label>
-                <span className="detail-field-value">{incident.title}</span>
+      <main className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Incident Description */}
+            <SectionCard title="Description" icon={FileText}>
+              <div className="prose prose-sm max-w-none">
+                <p className="text-slate-700 whitespace-pre-wrap">
+                  {incident.description || 'No description provided for this incident.'}
+                </p>
               </div>
-              <div className="detail-field">
-                <label>Description</label>
-                <span className="detail-field-value detail-field-text">
-                  {incident.description || 'No description provided.'}
-                </span>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Impacted Service</label>
-                  <span className="detail-field-value">{incident.impactedService || '-'}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Impacted Project</label>
-                  <span className="detail-field-value">{incident.impactedProject || '-'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+            </SectionCard>
 
-          {/* Resolution Document Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Resolution Document</h3>
-            </div>
-            <div className="detail-card-body">
+            {/* Affected Services */}
+            {(incident.impactedService || incident.impactedProject) && (
+              <SectionCard title="Affected Services" icon={Server}>
+                <InfoGrid columns={2}>
+                  {incident.impactedService && (
+                    <InfoCard 
+                      label="Impacted Service" 
+                      value={incident.impactedService}
+                      icon={Building2}
+                    />
+                  )}
+                  {incident.impactedProject && (
+                    <InfoCard 
+                      label="Impacted Project" 
+                      value={incident.impactedProject}
+                      icon={Server}
+                    />
+                  )}
+                </InfoGrid>
+              </SectionCard>
+            )}
+
+            {/* Resolution Document */}
+            <SectionCard title="Resolution Document" icon={FileCheck}>
               {resolutionDoc ? (
-                <div className="resolution-doc-info">
-                  <div className="detail-field">
-                    <label>Filename</label>
-                    <span className="detail-field-value">{resolutionDoc.fileName}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Uploaded By</label>
-                    <span className="detail-field-value">{resolutionDoc.uploadedByName || 'Unknown'}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>Uploaded Date</label>
-                    <span className="detail-field-value">{formatDate(resolutionDoc.uploadedAt)}</span>
-                  </div>
-                  <div className="detail-field">
-                    <label>File Size</label>
-                    <span className="detail-field-value">{formatFileSize(resolutionDoc.fileSize)}</span>
-                  </div>
-                  <div className="resolution-doc-actions">
-                    <button 
-                      className="btn-attachment-download"
-                      onClick={downloadResolutionDocument}
-                    >
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <FileCheck className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-900 truncate">{resolutionDoc.fileName}</p>
+                      <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
+                        <span>{formatFileSize(resolutionDoc.fileSize)}</span>
+                        <span>•</span>
+                        <span>Uploaded {formatTimeAgo(resolutionDoc.uploadedAt)}</span>
+                        {resolutionDoc.uploadedByName && (
+                          <>
+                            <span>•</span>
+                            <span>by {resolutionDoc.uploadedByName}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant="secondary" size="sm" icon={Download} onClick={downloadResolutionDocument}>
                       Download
-                    </button>
+                    </Button>
                   </div>
+                  
+                  {!canUploadResolutionDoc && isOwned && incident.ownerName !== user?.name && (
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
+                      <p className="text-sm text-amber-700">
+                        This incident is handled by <span className="font-semibold">{incident.ownerName}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {canUploadResolutionDoc && (
+                    <div className="flex items-center gap-3">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={ALLOWED_FILE_TYPES}
+                        onChange={(e) => e.target.files && uploadResolutionDocument(e.target.files)}
+                        className="hidden"
+                        id="resolution-doc-upload"
+                      />
+                      <label 
+                        htmlFor="resolution-doc-upload" 
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {uploading ? 'Uploading...' : 'Replace Document'}
+                      </label>
+                      <span className="text-xs text-slate-400">pdf, doc, docx, txt (max 25MB)</span>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="empty-state">
-                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="empty-state-title">No resolution document uploaded.</p>
-                </div>
-              )}
-              
-              {/* Show upload info if another owner exists but not current user */}
-              {!canUploadResolutionDoc && isOwned && incident.ownerName !== user?.name && (
-                <div className="resolution-doc-owner-info">
-                  <p className="owner-note">
-                    This incident is handled by <strong>{incident.ownerName}</strong>
-                  </p>
-                </div>
-              )}
-              
-              {/* Upload section for owner */}
-              {canUploadResolutionDoc && (
-                <div className="resolution-doc-upload">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={ALLOWED_FILE_TYPES}
-                    onChange={(e) => e.target.files && uploadResolutionDocument(e.target.files)}
-                    className="file-input"
-                    id="resolution-doc-upload"
-                  />
-                  <label htmlFor="resolution-doc-upload" className="btn-upload">
-                    {uploading ? 'Uploading...' : (resolutionDoc ? 'Replace' : 'Upload')}
-                  </label>
-                  <span className="upload-hint">pdf, doc, docx, txt (max 25MB)</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Timeline Card */}
-          {canViewTimeline ? (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Timeline</h3>
-              </div>
-              <div className="detail-card-body timeline-body">
-                {timeline.length === 0 ? (
-                  <div className="empty-state">
-                    <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                    <p className="empty-state-title">No activity yet</p>
-                    <p className="empty-state-description">Timeline events will appear as actions are taken on this incident.</p>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-8 h-8 text-slate-400" />
                   </div>
+                  <p className="text-slate-500 mb-4">No resolution document uploaded</p>
+                  
+                  {!canUploadResolutionDoc && isOwned && incident.ownerName !== user?.name && (
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-100 inline-block">
+                      <p className="text-sm text-amber-700">
+                        This incident is handled by <span className="font-semibold">{incident.ownerName}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {canUploadResolutionDoc && (
+                    <div className="mt-4">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={ALLOWED_FILE_TYPES}
+                        onChange={(e) => e.target.files && uploadResolutionDocument(e.target.files)}
+                        className="hidden"
+                        id="resolution-doc-upload-new"
+                      />
+                      <label 
+                        htmlFor="resolution-doc-upload-new" 
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-slate-300 text-sm font-medium text-slate-600 hover:border-brand-300 hover:bg-brand-50/50 cursor-pointer transition-all"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {uploading ? 'Uploading...' : 'Upload Resolution Document'}
+                      </label>
+                      <p className="text-xs text-slate-400 mt-2">pdf, doc, docx, txt (max 25MB)</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </SectionCard>
+
+            {/* Timeline */}
+            {canViewTimeline ? (
+              <SectionCard title="Activity Timeline" icon={History}>
+                {timeline.length === 0 ? (
+                  <EmptyStateCard
+                    icon={Clock}
+                    title="No activity yet"
+                    description="Timeline events will appear as actions are taken on this incident."
+                  />
                 ) : (
-                  <div className="timeline-list">
-                    {timeline.map((entry, index) => (
-                      <div key={index} className="timeline-item">
-                        <div className="timeline-marker">
-                          <div className="timeline-dot"></div>
-                          {index < timeline.length - 1 && <div className="timeline-line"></div>}
-                        </div>
-                        <div className="timeline-content">
-                          <div className="timeline-header">
-                            <span className="timeline-action">{entry.action}</span>
-                            <span className="timeline-time">
-                              {formatDate(entry.createdAt)}
-                            </span>
-                          </div>
-                          <p className="timeline-description">{entry.description}</p>
-                          {entry.performedByName && (
-                            <span className="timeline-user">
-                              by {entry.performedByName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="space-y-0">
+                    {timeline.map((entry, index) => {
+                      const Icon = getTimelineIcon(entry.icon);
+                      return (
+                        <TimelineItem
+                          key={index}
+                          icon={Icon}
+                          iconBg={getTimelineIconBg(entry.icon)}
+                          iconColor={getTimelineIconColor(entry.icon)}
+                          title={entry.action}
+                          description={entry.description}
+                          timestamp={formatTimeAgo(entry.createdAt)}
+                          user={entry.performedByName || undefined}
+                          isLast={index === timeline.length - 1}
+                        />
+                      );
+                    })}
                   </div>
                 )}
-              </div>
-            </div>
-          ) : (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Timeline</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="empty-state">
-                  <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p className="empty-state-title">Timeline restricted</p>
-                  <p className="empty-state-description">You do not have permission to view the timeline.</p>
+              </SectionCard>
+            ) : (
+              <SectionCard title="Activity Timeline" icon={History}>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <Shield className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <p className="text-slate-500">You do not have permission to view the timeline.</p>
+                </div>
+              </SectionCard>
+            )}
+          </div>
+
+          {/* Sidebar Column */}
+          <div className="space-y-6">
+            {/* Quick Info */}
+            <SectionCard title="Quick Info" icon={AlertTriangle}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">Status</span>
+                  <IncidentStatusBadge status={incident.status} size="sm" />
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">Severity</span>
+                  <SeverityBadge severity={incident.severity} size="sm" />
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500">Created</span>
+                  <span className="text-sm font-medium text-slate-700">{formatDate(incident.createdAt)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-slate-500">Last Updated</span>
+                  <span className="text-sm font-medium text-slate-700">{formatTimeAgo(incident.updatedAt)}</span>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            </SectionCard>
 
-        {/* Right Column - Actions */}
-        <div className="detail-sidebar">
-          {/* Ownership Section */}
-          {(isSuperAdmin || isAdmin) && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Ownership</h3>
-              </div>
-              <div className="detail-card-body">
+            {/* Ownership */}
+            {(isSuperAdmin || isAdmin) && (
+              <SectionCard title="Ownership" icon={Users}>
                 {isOwned ? (
-                  <div className="ownership-info">
-                    <p className="ownership-text">
-                      Owned by <strong>{incident.ownerName}</strong>
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
+                      <User className="w-5 h-5 text-brand-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{incident.ownerName}</p>
+                      <p className="text-xs text-slate-500">Assigned Engineer</p>
+                    </div>
                   </div>
                 ) : (
-                  <div className="ownership-action">
-                    <p className="ownership-text ownership-unassigned">
-                      Unassigned
-                    </p>
-                    <button 
-                      className="btn-primary"
-                      onClick={takeOwnership}
-                      disabled={takingOwnership}
+                  <div className="text-center py-4">
+                    <p className="text-slate-500 mb-4">This incident is not assigned</p>
+                    <Button 
+                      onClick={takeOwnership} 
+                      loading={takingOwnership}
+                      icon={Users}
+                      fullWidth
                     >
                       {takingOwnership ? 'Taking Ownership...' : 'Take Ownership'}
-                    </button>
+                    </Button>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
+              </SectionCard>
+            )}
 
-          {/* Status Section */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Status</h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="status-workflow">
-                <div className="status-current">
-                  <span className="status-label">Current Status</span>
-                  <span className={`status-badge ${getStatusClass(incident.status)}`}>
-                    {incident.status.replace(/_/g, ' ')}
-                  </span>
+            {/* Status Actions */}
+            <SectionCard title="Status Workflow" icon={AlertCircle}>
+              <div className="space-y-4">
+                {/* Current Status */}
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">Current Status</p>
+                  <IncidentStatusBadge status={incident.status} size="md" />
                 </div>
-                
-                {getNextStatus() ? (
-                  <div className="status-action">
-                    {canChangeStatus ? (
-                      <button
-                        className="btn-status-action"
-                        onClick={changeStatus}
-                        disabled={changingStatus}
+
+                {/* Next Status */}
+                {nextStatus ? (
+                  canChangeStatus ? (
+                    <div className="p-4 rounded-xl bg-brand-50 border border-brand-100">
+                      <p className="text-xs font-medium text-brand-600 uppercase tracking-wide mb-2">Next Action</p>
+                      <Button 
+                        variant={nextStatus === 'RESOLVED' ? 'success' : 'primary'}
+                        onClick={() => setResolveDialogOpen(true)}
+                        icon={nextStatus === 'RESOLVED' ? CheckCircle : AlertTriangle}
+                        fullWidth
                       >
-                        {changingStatus ? 'Updating...' : getStatusButtonLabel()}
-                      </button>
-                    ) : (
-                      <p className="status-action-hint">
-                        {isOwned ? 'Only the assigned owner can change the status' : 'Take ownership to change the status'}
+                        {getStatusButtonLabel()}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                      <p className="text-sm text-amber-700">
+                        {isOwned 
+                          ? 'Only the assigned owner can change the status' 
+                          : 'Take ownership to change the status'}
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )
                 ) : (
-                  <div className="status-closed-message">
-                    <span>Incident Closed</span>
+                  <div className="p-4 rounded-xl bg-slate-100 border border-slate-200">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-medium">Incident Closed</span>
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
+            </SectionCard>
           </div>
         </div>
-      </div>
+      </main>
+
+      {/* Resolve/Close Dialog */}
+      <ResolveIncidentDialog
+        isOpen={resolveDialogOpen}
+        onClose={() => setResolveDialogOpen(false)}
+        onConfirm={changeStatus}
+        incidentNo={incident.incidentNo}
+        currentStatus={incident.status}
+        action={getNextStatus() === 'CLOSED' ? 'close' : 'resolve'}
+        notes={resolveNotes}
+        onNotesChange={setResolveNotes}
+        isLoading={changingStatus}
+      />
+
+      {/* Delete Dialog */}
+      <DeleteIncidentDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={deleteIncident}
+        incidentNo={incident.incidentNo}
+        incidentTitle={incident.title}
+        isLoading={deleting}
+        confirmInput
+        confirmInputValue={deleteConfirmText}
+        onConfirmInputChange={setDeleteConfirmText}
+      />
+
+      {/* Message Toast */}
+      {message && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div className="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <span className="text-sm">{message}</span>
+            <button onClick={() => setMessage('')} className="text-slate-400 hover:text-white transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

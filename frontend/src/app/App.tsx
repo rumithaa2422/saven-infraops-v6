@@ -6,6 +6,7 @@ import { ModulePage } from '../pages/ModulePage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ServiceRequestsPage } from '../pages/ServiceRequestsPage';
 import { ServiceRequestDetailPage } from '../pages/ServiceRequestDetailPage';
+import { IncidentsPage } from '../pages/IncidentsPage';
 import { IncidentDetailPage } from '../pages/IncidentDetailPage';
 import { InventoryDetailPage } from '../pages/InventoryDetailPage';
 import { InventoryMasterPage } from '../pages/InventoryMasterPage';
@@ -135,7 +136,7 @@ export function App() {
           path="incidents" 
           element={
             <PermissionRoute permission={modulePermissions['incidents']}>
-              <ModulePage moduleKey="incidents" title="Incidents" />
+              <IncidentsPage />
             </PermissionRoute>
           } 
         />
