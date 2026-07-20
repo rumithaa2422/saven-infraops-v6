@@ -93,6 +93,16 @@ export function UsersDashboardPage() {
 
   const importInputRef = useRef<HTMLInputElement>(null);
 
+  // Debug effect
+  useEffect(() => {
+    console.log('Import state changed:', {
+      importDataLength: importData.length,
+      importValidRowsLength: importValidRows.length,
+      importErrorsKeys: Object.keys(importErrors).length,
+      importProcessing
+    });
+  }, [importData, importValidRows, importErrors, importProcessing]);
+
   // Summary state
   const [summary, setSummary] = useState<UserSummary>({
     totalUsers: 0,
@@ -223,12 +233,15 @@ export function UsersDashboardPage() {
     const seenEmails = new Set<string>();
     const seenEmployeeIds = new Set<string>();
 
+    console.log('Starting validation for', data.length, 'rows');
+
     // Get existing emails from database
     let existingEmails: Set<string> = new Set();
     try {
       const response = await api.get('/users-teams', { params: { limit: 1000 } });
       const users = response.data.items || response.data || [];
       users.forEach((u: any) => existingEmails.add(u.email.toLowerCase()));
+      console.log('Loaded', existingEmails.size, 'existing emails');
     } catch (err) {
       console.error('Failed to fetch existing users:', err);
     }
@@ -237,23 +250,30 @@ export function UsersDashboardPage() {
       const row = data[i];
       const rowErrors: string[] = [];
 
-      const getField = (name1: string, name2: string) => 
-        row[name1] || row[name2] || '';
+      // Simplified field getter that checks multiple possible column names
+      const getField = (...names: string[]) => {
+        for (const name of names) {
+          if (row[name] !== undefined && row[name] !== '') {
+            return String(row[name]).trim();
+          }
+        }
+        return '';
+      };
 
-      const employeeId = getField('Employee ID', 'EmployeeID') || getField('employeeId', 'employee_id') || '';
-      const firstName = getField('First Name', 'FirstName') || getField('firstName', 'first_name') || '';
-      const lastName = getField('Last Name', 'LastName') || getField('lastName', 'last_name') || '';
-      const email = getField('Email', 'email') || '';
-      const phoneNumber = getField('Phone Number', 'PhoneNumber') || getField('phoneNumber', 'phone_number') || '';
-      const department = getField('Department', 'department') || '';
-      const designation = getField('Designation', 'designation') || '';
-      const role = getField('Role', 'role') || '';
-      const reportingManager = getField('Reporting Manager', 'ReportingManager') || getField('reportingManager', 'reporting_manager') || '';
-      const employmentType = getField('Employment Type', 'EmploymentType') || getField('employmentType', 'employment_type') || '';
-      const joiningDate = getField('Joining Date', 'JoiningDate') || getField('dateJoined', 'date_joined') || '';
+      const employeeId = getField('Employee ID', 'EmployeeID', 'employeeId', 'employee_id');
+      const firstName = getField('First Name', 'FirstName', 'firstName', 'first_name');
+      const lastName = getField('Last Name', 'LastName', 'lastName', 'last_name');
+      const email = getField('Email', 'email');
+      const phoneNumber = getField('Phone Number', 'PhoneNumber', 'phoneNumber', 'phone_number');
+      const department = getField('Department', 'department');
+      const designation = getField('Designation', 'designation');
+      const role = getField('Role', 'role');
+      const reportingManager = getField('Reporting Manager', 'ReportingManager', 'reportingManager', 'reporting_manager');
+      const employmentType = getField('Employment Type', 'EmploymentType', 'employmentType', 'employment_type');
+      const joiningDate = getField('Joining Date', 'JoiningDate', 'dateJoined', 'date_joined');
       const status = getField('Status', 'status') || 'ACTIVE';
-      const address = getField('Address', 'address') || '';
-      const remarks = getField('Remarks', 'remarks') || '';
+      const address = getField('Address', 'address');
+      const remarks = getField('Remarks', 'remarks');
 
       // Validate Employee ID
       if (!employeeId) {
@@ -290,14 +310,12 @@ export function UsersDashboardPage() {
         seenEmails.add(email.toLowerCase());
       }
 
-      // Validate Department
-      if (!department) {
-        rowErrors.push('Department is required');
-      } else if (!DEPARTMENTS.includes(department)) {
+      // Validate Department (optional but must be valid if provided)
+      if (department && !DEPARTMENTS.map(d => d.toLowerCase()).includes(department.toLowerCase())) {
         rowErrors.push(`Invalid department "${department}". Allowed: ${DEPARTMENTS.join(', ')}`);
       }
 
-      // Validate Role
+      // Validate Role (required)
       if (!role) {
         rowErrors.push('Role is required');
       } else {
@@ -307,15 +325,11 @@ export function UsersDashboardPage() {
         }
       }
 
-      // Validate Designation
-      if (!designation) {
-        rowErrors.push('Designation is required');
-      }
+      // Validate Designation (optional)
+      // No validation needed for optional fields
 
-      // Validate Joining Date
-      if (!joiningDate) {
-        rowErrors.push('Joining Date is required');
-      } else {
+      // Validate Joining Date (optional but must be valid format if provided)
+      if (joiningDate) {
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (!dateRegex.test(joiningDate)) {
           rowErrors.push(`Invalid date format for Joining Date: "${joiningDate}". Use YYYY-MM-DD`);
@@ -327,10 +341,8 @@ export function UsersDashboardPage() {
         }
       }
 
-      // Validate Employment Type
-      if (!employmentType) {
-        rowErrors.push('Employment Type is required');
-      } else if (!EMPLOYMENT_TYPES.includes(employmentType)) {
+      // Validate Employment Type (optional but must be valid if provided)
+      if (employmentType && !EMPLOYMENT_TYPES.includes(employmentType)) {
         rowErrors.push(`Invalid Employment Type "${employmentType}". Allowed: ${EMPLOYMENT_TYPES.join(', ')}`);
       }
 
@@ -369,8 +381,13 @@ export function UsersDashboardPage() {
       }
     }
 
+    console.log('Validation complete:', validRows.length, 'valid,', Object.keys(errors).length, 'invalid');
     setImportErrors(errors);
     setImportValidRows(validRows);
+    
+    // Small delay to ensure state updates are processed
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     return Promise.resolve();
   }
 
