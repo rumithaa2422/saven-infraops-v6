@@ -3,6 +3,37 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { PermissionGate } from '../components/permissions';
+import { 
+  Package, 
+  Plus, 
+  Save,
+  X,
+  ArrowLeft,
+  ChevronDown,
+  FileText,
+  ShoppingCart,
+  MapPin,
+  Clock,
+  AlertCircle,
+  PackagePlus
+} from 'lucide-react';
+import {
+  PageHeader,
+  StockStatusBadge,
+  FormSection,
+  FormRow,
+  Input,
+  Textarea,
+  Select,
+  Button,
+  QuantityInput,
+  ModalLayout,
+  ActionButtons,
+  DetailSidebarCard,
+  DetailField,
+  SectionCard,
+  LoadingCard
+} from '../components/inventory';
 
 /**
  * PART 4: Inventory Master Permission Enforcement
@@ -70,14 +101,14 @@ export function InventoryMasterPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { hasPermission, user } = useAuth();
-  
+
   // PART 4: Permission checks using granular permissions
   const canView = hasPermission('inventory:view');
   const canCreate = hasPermission('inventory:create_asset');
   const canUpdate = hasPermission('inventory:update_asset');
   const canDelete = hasPermission('inventory:delete_asset');
   const canExport = hasPermission('inventory:export');
-  
+
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
   const isEditMode = Boolean(id);
@@ -86,6 +117,7 @@ export function InventoryMasterPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
   // Categories for dropdowns
   const [categories, setCategories] = useState<Category[]>([]);
@@ -163,7 +195,7 @@ export function InventoryMasterPage() {
       setLoading(true);
       const res = await api.get(`/inventory-master/${id}`);
       const item = res.data.item;
-      
+
       setForm({
         itemName: item.itemName || '',
         brand: item.brand || '',
@@ -199,7 +231,7 @@ export function InventoryMasterPage() {
       // Set pre-selected category and subcategory from query params
       const preCategoryId = searchParams.get('categoryId');
       const preSubcategoryId = searchParams.get('subcategoryId');
-      
+
       if (preCategoryId) {
         setForm(prev => ({ ...prev, categoryId: preCategoryId }));
       }
@@ -258,9 +290,9 @@ export function InventoryMasterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
+
     if (!validate()) return;
-    
+
     if (!isSuperAdmin) {
       setError('Only Super Admin can save inventory items.');
       return;
@@ -336,25 +368,30 @@ export function InventoryMasterPage() {
   // Get available subcategories based on selected category
   const availableSubcategories = categories.find(c => c.id === form.categoryId)?.subcategories || [];
 
+  // Get category name
+  const categoryName = categories.find(c => c.id === form.categoryId)?.name || '';
+
   if (loading) {
     return (
-      <div className="page-stack">
-        <div className="detail-header">
-          <div className="skeleton skeleton-title"></div>
-          <div className="detail-header-info">
-            <div className="detail-title-row">
-              <div className="skeleton skeleton-badge"></div>
+      <div className="min-h-screen bg-slate-50">
+        <div className="bg-white border-b border-slate-200 px-6 py-5">
+          <div className="animate-pulse flex items-center gap-4">
+            <div className="h-10 w-10 bg-slate-100 rounded-xl"></div>
+            <div className="space-y-2">
+              <div className="h-8 w-64 bg-slate-100 rounded"></div>
+              <div className="h-4 w-32 bg-slate-100 rounded"></div>
             </div>
           </div>
         </div>
-        <div className="detail-content-grid">
-          <div className="detail-main">
-            <div className="detail-card">
-              <div className="detail-card-body">
-                <div className="skeleton skeleton-title"></div>
-                <div className="skeleton skeleton-text" style={{ marginTop: '16px' }}></div>
-                <div className="skeleton skeleton-text"></div>
-              </div>
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <LoadingCard />
+              <LoadingCard />
+              <LoadingCard />
+            </div>
+            <div>
+              <LoadingCard />
             </div>
           </div>
         </div>
@@ -364,14 +401,18 @@ export function InventoryMasterPage() {
 
   if (error && !form.itemName) {
     return (
-      <div className="page-stack">
-        <div className="detail-error">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <p>{error}</p>
-          <button className="btn-back" onClick={handleBack}>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8 text-center max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">Access Restricted</h3>
+          <p className="text-sm text-slate-600 mb-6">{error}</p>
+          <button
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-all duration-200"
+          >
+            <ArrowLeft className="w-4 h-4" />
             Back to Inventory
           </button>
         </div>
@@ -380,350 +421,477 @@ export function InventoryMasterPage() {
   }
 
   return (
-    <div className="page-stack">
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <PageHeader
+        title={isEditMode ? 'Edit Inventory Item' : 'Create Inventory Item'}
+        subtitle={isEditMode ? form.itemNo : 'New Item'}
+        icon={isEditMode ? Package : PackagePlus}
+        iconColor="text-brand-600"
+        breadcrumbs={[
+          { label: 'Inventory', onClick: () => navigate('/inventory') },
+          ...(isEditMode && form.itemNo ? [{ label: form.itemNo }] : [])
+        ]}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={handleCancel}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            {isSuperAdmin && (
+              <Button
+                variant="primary"
+                icon={Save}
+                onClick={handleSubmit}
+                loading={saving}
+              >
+                {isEditMode ? 'Update Item' : 'Save Item'}
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      {/* Toast Messages */}
       {message && (
-        <div className="notice notice-success">{message}</div>
-      )}
-      
-      {error && (
-        <div className="notice notice-error">{error}</div>
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div className="bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-sm font-medium">{message}</span>
+            <button onClick={() => setMessage('')} className="text-white/80 hover:text-white transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       )}
 
-      {/* Header */}
-      <div className="detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <button className="btn-back" onClick={handleBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
-          </button>
-        </div>
-        <div className="detail-header-info">
-          <div className="detail-title-row">
-            <span className="detail-ticket-no">
-              {isEditMode ? form.itemNo || 'Loading...' : 'New Inventory Item'}
-            </span>
-            <span className={`status-badge status-${form.status.toLowerCase()}`}>
-              {form.status}
-            </span>
-          </div>
-          <div className="detail-meta-row">
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Category</span>
-              <span className="detail-meta-value">
-                {form.categoryId ? categories.find(c => c.id === form.categoryId)?.name : '-'}
-              </span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Location</span>
-              <span className="detail-meta-value">{form.location || '-'}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Quantity</span>
-              <span className="detail-meta-value">{form.currentQty}</span>
-            </span>
+      {error && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div className="bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <AlertCircle className="w-5 h-5" />
+            <span className="text-sm font-medium">{error}</span>
+            <button onClick={() => setError('')} className="text-white/80 hover:text-white transition-colors">
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
-      <form onSubmit={handleSubmit}>
-        <div className="detail-content-grid">
-          {/* Left Column */}
-          <div className="detail-main">
+      <form onSubmit={handleSubmit} className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Form */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Basic Information */}
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Basic Information</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="detail-field-row">
-                  <div className="detail-field">
-                    <label className={errors.categoryId ? 'field-error' : ''}>
-                      Category <span className="required">*</span>
-                    </label>
-                    {isFromCategoryPage && form.categoryId ? (
-                      <div className="detail-field-display">
-                        {categories.find(c => c.id === form.categoryId)?.name || 'Loading...'}
-                      </div>
-                    ) : (
-                      <select
-                        value={form.categoryId}
-                        onChange={(e) => {
-                          updateField('categoryId', e.target.value);
-                          updateField('subcategoryId', ''); // Reset subcategory
-                        }}
-                        disabled={!isSuperAdmin || categoriesLoading}
-                        className={errors.categoryId ? 'input-error' : ''}
-                      >
-                        <option value="">Select Category</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                      </select>
-                    )}
-                    {errors.categoryId && <span className="error-text">{errors.categoryId}</span>}
-                  </div>
-                  <div className="detail-field">
-                    <label className={errors.subcategoryId ? 'field-error' : ''}>
-                      Subcategory {isFromCategoryPage && <span className="required">*</span>}
-                    </label>
-                    <select
-                      value={form.subcategoryId}
-                      onChange={(e) => updateField('subcategoryId', e.target.value)}
-                      disabled={!isSuperAdmin || !form.categoryId || categoriesLoading}
-                      className={errors.subcategoryId ? 'input-error' : ''}
-                    >
-                      <option value="">Select Subcategory</option>
-                      {availableSubcategories.map(sub => (
-                        <option key={sub.id} value={sub.id}>{sub.name}</option>
-                      ))}
-                    </select>
-                    {errors.subcategoryId && <span className="error-text">{errors.subcategoryId}</span>}
-                  </div>
-                </div>
-
-                <div className="detail-field">
-                  <label className={errors.itemName ? 'field-error' : ''}>
-                    Item Name <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={form.itemName}
-                    onChange={(e) => updateField('itemName', e.target.value)}
-                    disabled={!isSuperAdmin}
-                    placeholder="Enter item name"
-                    className={errors.itemName ? 'input-error' : ''}
-                  />
-                  {errors.itemName && <span className="error-text">{errors.itemName}</span>}
-                </div>
-
-                <div className="detail-field-row">
-                  <div className="detail-field">
-                    <label>Brand</label>
-                    <input
-                      type="text"
-                      value={form.brand}
-                      onChange={(e) => updateField('brand', e.target.value)}
-                      disabled={!isSuperAdmin}
-                      placeholder="Enter brand"
-                    />
-                  </div>
-                  <div className="detail-field">
-                    <label>Model</label>
-                    <input
-                      type="text"
-                      value={form.model}
-                      onChange={(e) => updateField('model', e.target.value)}
-                      disabled={!isSuperAdmin}
-                      placeholder="Enter model"
-                    />
-                  </div>
-                </div>
-
-                <div className="detail-field">
-                  <label>Vendor</label>
-                  <select
-                    value={form.vendorId || ''}
+            <SectionCard
+              title="General Information"
+              icon={Package}
+              iconColor="text-brand-600"
+              iconBg="bg-brand-50"
+            >
+              <div className="space-y-6">
+                {/* Category and Subcategory */}
+                <FormRow>
+                  <Select
+                    label="Category"
+                    required
+                    value={form.categoryId}
                     onChange={(e) => {
-                      const selectedVendor = vendors.find(v => v.id === e.target.value);
-                      updateField('vendorId', e.target.value);
-                      updateField('vendorName', selectedVendor?.vendorName || '');
+                      updateField('categoryId', e.target.value);
+                      updateField('subcategoryId', '');
                     }}
+                    options={[
+                      { value: '', label: 'Select Category' },
+                      ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                    ]}
+                    disabled={!isSuperAdmin || categoriesLoading}
+                    error={errors.categoryId}
+                  />
+                  <Select
+                    label="Subcategory"
+                    value={form.subcategoryId}
+                    onChange={(e) => updateField('subcategoryId', e.target.value)}
+                    options={[
+                      { value: '', label: 'Select Subcategory' },
+                      ...availableSubcategories.map(sub => ({ value: sub.id, label: sub.name }))
+                    ]}
+                    disabled={!isSuperAdmin || !form.categoryId || categoriesLoading}
+                    error={errors.subcategoryId}
+                  />
+                </FormRow>
+
+                {/* Item Name */}
+                <Input
+                  label="Item Name"
+                  required
+                  value={form.itemName}
+                  onChange={(e) => updateField('itemName', e.target.value)}
+                  placeholder="Enter item name"
+                  disabled={!isSuperAdmin}
+                  error={errors.itemName}
+                />
+
+                {/* Brand and Model */}
+                <FormRow>
+                  <Input
+                    label="Brand"
+                    value={form.brand || ''}
+                    onChange={(e) => updateField('brand', e.target.value)}
+                    placeholder="Enter brand name"
                     disabled={!isSuperAdmin}
-                  >
-                    <option value="">Select a vendor</option>
-                    {vendors.map(vendor => (
-                      <option key={vendor.id} value={vendor.id}>
-                        {vendor.vendorName} ({vendor.vendorCode})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  />
+                  <Input
+                    label="Model"
+                    value={form.model || ''}
+                    onChange={(e) => updateField('model', e.target.value)}
+                    placeholder="Enter model number"
+                    disabled={!isSuperAdmin}
+                  />
+                </FormRow>
               </div>
-            </div>
+            </SectionCard>
+
+            {/* Vendor Information */}
+            <SectionCard
+              title="Vendor Information"
+              icon={ShoppingCart}
+              iconColor="text-purple-600"
+              iconBg="bg-purple-50"
+            >
+              <div className="space-y-6">
+                <Select
+                  label="Vendor"
+                  value={form.vendorId || ''}
+                  onChange={(e) => {
+                    const selectedVendor = vendors.find(v => v.id === e.target.value);
+                    updateField('vendorId', e.target.value);
+                    updateField('vendorName', selectedVendor?.vendorName || '');
+                  }}
+                  options={[
+                    { value: '', label: 'Select a vendor' },
+                    ...vendors.map(vendor => ({ 
+                      value: vendor.id, 
+                      label: `${vendor.vendorName} (${vendor.vendorCode})` 
+                    }))
+                  ]}
+                  disabled={!isSuperAdmin || vendorsLoading}
+                />
+              </div>
+            </SectionCard>
 
             {/* Purchase Information */}
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Purchase Information</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="detail-field">
-                  <label>Invoice Number</label>
-                  <input
-                    type="text"
-                    value={form.invoiceNo}
-                    onChange={(e) => updateField('invoiceNo', e.target.value)}
+            <SectionCard
+              title="Purchase Information"
+              icon={FileText}
+              iconColor="text-emerald-600"
+              iconBg="bg-emerald-50"
+            >
+              <div className="space-y-6">
+                <Input
+                  label="Invoice Number"
+                  value={form.invoiceNo || ''}
+                  onChange={(e) => updateField('invoiceNo', e.target.value)}
+                  placeholder="Enter invoice number"
+                  disabled={!isSuperAdmin}
+                />
+
+                <FormRow>
+                  <Input
+                    label="Purchase Cost"
+                    type="number"
+                    value={form.purchaseCost ?? ''}
+                    onChange={(e) => updateField('purchaseCost', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
                     disabled={!isSuperAdmin}
-                    placeholder="Enter invoice number"
+                    error={errors.purchaseCost}
                   />
-                </div>
+                  <Input
+                    label="GST (%)"
+                    type="number"
+                    value={form.gst ?? ''}
+                    onChange={(e) => updateField('gst', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    disabled={!isSuperAdmin}
+                  />
+                </FormRow>
 
-                <div className="detail-field-row">
-                  <div className="detail-field">
-                    <label className={errors.purchaseCost ? 'field-error' : ''}>
-                      Purchase Cost
-                    </label>
-                    <input
-                      type="number"
-                      value={form.purchaseCost ?? ''}
-                      onChange={(e) => updateField('purchaseCost', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      disabled={!isSuperAdmin}
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                      className={errors.purchaseCost ? 'input-error' : ''}
-                    />
-                    {errors.purchaseCost && <span className="error-text">{errors.purchaseCost}</span>}
-                  </div>
-                  <div className="detail-field">
-                    <label>GST (%)</label>
-                    <input
-                      type="number"
-                      value={form.gst ?? ''}
-                      onChange={(e) => updateField('gst', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      disabled={!isSuperAdmin}
-                      placeholder="0"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-
-                <div className="detail-field-row">
-                  <div className="detail-field">
-                    <label>Purchase Date</label>
-                    <input
-                      type="date"
-                      value={form.purchaseDate}
-                      onChange={(e) => updateField('purchaseDate', e.target.value)}
-                      disabled={!isSuperAdmin}
-                    />
-                  </div>
-                  <div className="detail-field">
-                    <label>Warranty (Months)</label>
-                    <input
-                      type="number"
-                      value={form.warrantyMonths ?? ''}
-                      onChange={(e) => updateField('warrantyMonths', e.target.value ? parseInt(e.target.value) : undefined)}
-                      disabled={!isSuperAdmin}
-                      placeholder="0"
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                <div className="detail-field">
-                  <label className={errors.warrantyExpiry ? 'field-error' : ''}>
-                    Warranty Expiry
-                  </label>
-                  <input
+                <FormRow>
+                  <Input
+                    label="Purchase Date"
                     type="date"
-                    value={form.warrantyExpiry}
-                    onChange={(e) => updateField('warrantyExpiry', e.target.value)}
-                    disabled={!isSuperAdmin || !form.purchaseDate}
-                    className={errors.warrantyExpiry ? 'input-error' : ''}
-                  />
-                  {errors.warrantyExpiry && <span className="error-text">{errors.warrantyExpiry}</span>}
-                </div>
-              </div>
-            </div>
-
-            {/* Stock Information */}
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Stock Information</h3>
-              </div>
-              <div className="detail-card-body">
-                <div className="detail-field">
-                  <label>Location</label>
-                  <input
-                    type="text"
-                    value={form.location}
-                    onChange={(e) => updateField('location', e.target.value)}
+                    value={form.purchaseDate}
+                    onChange={(e) => updateField('purchaseDate', e.target.value)}
                     disabled={!isSuperAdmin}
-                    placeholder="Enter location"
                   />
-                </div>
+                  <Input
+                    label="Warranty (Months)"
+                    type="number"
+                    value={form.warrantyMonths ?? ''}
+                    onChange={(e) => updateField('warrantyMonths', e.target.value ? parseInt(e.target.value) : undefined)}
+                    placeholder="0"
+                    min="0"
+                    disabled={!isSuperAdmin}
+                  />
+                </FormRow>
 
-                <div className="detail-field-row">
-                  <div className="detail-field">
-                    <label>Minimum Stock</label>
-                    <input
-                      type="number"
-                      value={form.minStock ?? ''}
-                      onChange={(e) => updateField('minStock', e.target.value ? parseInt(e.target.value) : undefined)}
-                      disabled={!isSuperAdmin}
-                      placeholder="0"
-                      min="0"
-                    />
-                  </div>
-                  <div className="detail-field">
-                    <label className={errors.currentQty ? 'field-error' : ''}>
+                <Input
+                  label="Warranty Expiry"
+                  type="date"
+                  value={form.warrantyExpiry}
+                  onChange={(e) => updateField('warrantyExpiry', e.target.value)}
+                  disabled={!isSuperAdmin || !form.purchaseDate}
+                  error={errors.warrantyExpiry}
+                  hint={form.purchaseDate && form.warrantyMonths ? "Auto-calculated from purchase date" : undefined}
+                />
+              </div>
+            </SectionCard>
+
+            {/* Stock & Location Information */}
+            <SectionCard
+              title="Stock & Location"
+              icon={MapPin}
+              iconColor="text-amber-600"
+              iconBg="bg-amber-50"
+            >
+              <div className="space-y-6">
+                <Input
+                  label="Location"
+                  value={form.location || ''}
+                  onChange={(e) => updateField('location', e.target.value)}
+                  placeholder="e.g., Warehouse A, Shelf 3"
+                  disabled={!isSuperAdmin}
+                />
+
+                <FormRow>
+                  <Input
+                    label="Minimum Stock Level"
+                    type="number"
+                    value={form.minStock ?? ''}
+                    onChange={(e) => updateField('minStock', e.target.value ? parseInt(e.target.value) : undefined)}
+                    placeholder="0"
+                    min="0"
+                    disabled={!isSuperAdmin}
+                  />
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-medium text-slate-700">
                       Current Quantity
+                      {errors.currentQty && <span className="text-red-500 ml-1">*</span>}
                     </label>
-                    <input
-                      type="number"
+                    <QuantityInput
                       value={form.currentQty}
-                      onChange={(e) => updateField('currentQty', parseInt(e.target.value) || 0)}
+                      onChange={(value) => updateField('currentQty', value)}
+                      min={0}
                       disabled={!isSuperAdmin}
-                      min="0"
-                      className={errors.currentQty ? 'input-error' : ''}
                     />
-                    {errors.currentQty && <span className="error-text">{errors.currentQty}</span>}
+                    {errors.currentQty && (
+                      <p className="text-xs text-red-600 flex items-center gap-1">
+                        {errors.currentQty}
+                      </p>
+                    )}
+                  </div>
+                </FormRow>
+
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-slate-700">Status</label>
+                  <div className="flex items-center gap-4">
+                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="status"
+                        value="ACTIVE"
+                        checked={form.status === 'ACTIVE'}
+                        onChange={(e) => updateField('status', e.target.value)}
+                        disabled={!isSuperAdmin}
+                        className="w-4 h-4 text-brand-600 border-slate-300 focus:ring-brand-500"
+                      />
+                      <span className="text-sm text-slate-700">Active</span>
+                    </label>
+                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="status"
+                        value="INACTIVE"
+                        checked={form.status === 'INACTIVE'}
+                        onChange={(e) => updateField('status', e.target.value)}
+                        disabled={!isSuperAdmin}
+                        className="w-4 h-4 text-brand-600 border-slate-300 focus:ring-brand-500"
+                      />
+                      <span className="text-sm text-slate-700">Inactive</span>
+                    </label>
                   </div>
                 </div>
-
-                <div className="detail-field">
-                  <label>Status</label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => updateField('status', e.target.value)}
-                    disabled={!isSuperAdmin}
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                  </select>
-                </div>
               </div>
-            </div>
+            </SectionCard>
           </div>
 
-          {/* Right Column - Actions */}
-          <div className="detail-sidebar">
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Actions</h3>
+          {/* Right Column - Summary Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Summary */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  Item Summary
+                </h3>
               </div>
-              <div className="detail-card-body">
-                {isSuperAdmin ? (
-                  <>
+              <div className="p-6 space-y-4">
+                <DetailField 
+                  label="Item Name" 
+                  value={form.itemName || <span className="text-slate-400">Not set</span>} 
+                />
+                <DetailField 
+                  label="Category" 
+                  value={categoryName || <span className="text-slate-400">Not selected</span>} 
+                />
+                <DetailField 
+                  label="Location" 
+                  value={form.location || <span className="text-slate-400">Not set</span>} 
+                />
+                <DetailField 
+                  label="Quantity" 
+                  value={
+                    <span className={`font-semibold ${
+                      form.minStock && form.currentQty <= form.minStock 
+                        ? 'text-amber-600' 
+                        : form.currentQty === 0 
+                          ? 'text-red-600' 
+                          : 'text-emerald-600'
+                    }`}>
+                      {form.currentQty}
+                      {form.minStock !== undefined && form.minStock > 0 && (
+                        <span className="text-slate-400 font-normal text-xs ml-1">
+                          / min: {form.minStock}
+                        </span>
+                      )}
+                    </span>
+                  } 
+                />
+                <DetailField 
+                  label="Status" 
+                  value={<StockStatusBadge status={form.status} size="sm" />} 
+                />
+              </div>
+            </div>
+
+            {/* Stock Status Indicator */}
+            {form.minStock !== undefined && form.minStock > 0 && (
+              <div className={`rounded-xl p-4 border ${
+                form.currentQty === 0 
+                  ? 'bg-red-50 border-red-200' 
+                  : form.currentQty <= form.minStock 
+                    ? 'bg-amber-50 border-amber-200' 
+                    : 'bg-emerald-50 border-emerald-200'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    form.currentQty === 0 
+                      ? 'bg-red-100' 
+                      : form.currentQty <= form.minStock 
+                        ? 'bg-amber-100' 
+                        : 'bg-emerald-100'
+                  }`}>
+                    <Package className={`w-5 h-5 ${
+                      form.currentQty === 0 
+                        ? 'text-red-600' 
+                        : form.currentQty <= form.minStock 
+                          ? 'text-amber-600' 
+                          : 'text-emerald-600'
+                    }`} />
+                  </div>
+                  <div>
+                    <h4 className={`font-semibold text-sm ${
+                      form.currentQty === 0 
+                        ? 'text-red-800' 
+                        : form.currentQty <= form.minStock 
+                          ? 'text-amber-800' 
+                          : 'text-emerald-800'
+                    }`}>
+                      {form.currentQty === 0 
+                        ? 'Out of Stock' 
+                        : form.currentQty <= form.minStock 
+                          ? 'Low Stock Alert' 
+                          : 'Stock Adequate'}
+                    </h4>
+                    <p className={`text-xs mt-1 ${
+                      form.currentQty === 0 
+                        ? 'text-red-600' 
+                        : form.currentQty <= form.minStock 
+                          ? 'text-amber-600' 
+                          : 'text-emerald-600'
+                    }`}>
+                      {form.currentQty === 0 
+                        ? 'This item is completely out of stock.' 
+                        : form.currentQty <= form.minStock 
+                          ? `Stock is below minimum level (${form.minStock}).` 
+                          : `Stock level is healthy (${form.currentQty}/${form.minStock}).`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            {isSuperAdmin ? (
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="p-6">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Actions</h3>
+                  <div className="space-y-3">
                     <button
                       type="submit"
-                      className="btn-primary-full"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={saving}
                     >
-                      {saving ? 'Saving...' : (isEditMode ? 'Update' : 'Save')}
+                      {saving ? (
+                        <>
+                          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          {isEditMode ? 'Update Item' : 'Save Item'}
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
-                      className="btn-secondary-full"
                       onClick={handleCancel}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all duration-200"
                       disabled={saving}
                     >
                       Cancel
                     </button>
-                  </>
-                ) : (
-                  <p className="read-only-notice">
-                    You have read-only access to this page.
-                  </p>
-                )}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-amber-800">View Only Access</h4>
+                    <p className="text-xs text-amber-600 mt-1">
+                      You have read-only access to this page. Contact an administrator to make changes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </form>
