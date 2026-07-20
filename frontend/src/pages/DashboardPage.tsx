@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
   DashboardHeader,
-  DashboardSearch,
   QuickActions,
   MyWorkWidget,
   AlertWidget,
@@ -36,12 +35,7 @@ export function DashboardPage() {
 
       {/* Main Content */}
       <main className="p-6 max-w-7xl mx-auto">
-        {/* Section 2: Global Search */}
-        <div className="mb-6">
-          <DashboardSearch />
-        </div>
-
-        {/* Section 3: Quick Actions - requires any relevant permission */}
+        {/* Section 2: Quick Actions - requires any relevant permission */}
         <div className="mb-6">
           <QuickActions />
         </div>

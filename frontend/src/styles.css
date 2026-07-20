@@ -82,8 +82,10 @@ button { cursor: pointer; }
 .brand-mark { width: 40px; height: 40px; border-radius: 14px; background: var(--brand); display: grid; place-items: center; color: white; font-weight: 800; }
 .brand span { display: block; color: #a7b0c7; font-size: 12px; }
 nav { display: flex; flex-direction: column; gap: 6px; }
-.nav-item { color: #cfd6ea; text-decoration: none; padding: 11px 12px; border-radius: 12px; }
+.nav-item { color: #cfd6ea; text-decoration: none; padding: 11px 12px; border-radius: 12px; display: flex; align-items: center; gap: 12px; transition: background 0.15s, color 0.15s; }
 .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.12); color: white; }
+.nav-item .nav-icon { opacity: 0.8; transition: opacity 0.15s; }
+.nav-item:hover .nav-icon, .nav-item.active .nav-icon { opacity: 1; }
 .main { display: flex; flex-direction: column; min-width: 0; }
 .topbar { height: 84px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,0.75); backdrop-filter: blur(10px); }
 h1, h2, h3 { margin: 0; }
