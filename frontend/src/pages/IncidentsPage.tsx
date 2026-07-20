@@ -46,6 +46,7 @@ import {
   DeleteIncidentDialog,
   IncidentSummaryCard
 } from '../components/incidents';
+import * as XLSX from 'xlsx';
 
 type Incident = {
   id: string;
@@ -60,6 +61,16 @@ type Incident = {
   ownerName?: string;
   createdAt?: string;
   updatedAt?: string;
+};
+
+type IncidentRow = {
+  title: string;
+  description: string;
+  severity: string;
+  priority: string;
+  impactedService: string;
+  impactedProject: string;
+  ownerName: string;
 };
 
 type SummaryStats = {
@@ -176,6 +187,22 @@ export function IncidentsPage() {
   
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
+
+  // Import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<Record<number, string[]>>({});
+  const [importValidRows, setImportValidRows] = useState<IncidentRow[]>([]);
+  const [importProcessing, setImportProcessing] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    success: number;
+    failed: number;
+    skipped: number;
+    error?: string;
+  } | null>(null);
+
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Filter items
   const filteredItems = useMemo(() => {
@@ -362,6 +389,211 @@ export function IncidentsPage() {
     }
   }
 
+  // Export incidents to Excel
+  const handleExport = async () => {
+    try {
+      const res = await api.get('/incidents?limit=10000');
+      const allIncidents = res.data.items || res.data || [];
+      
+      const exportData = allIncidents.map((i: Incident) => ({
+        'Incident No': i.incidentNo,
+        'Title': i.title,
+        'Description': i.description || '',
+        'Severity': i.severity,
+        'Priority': i.priority || '',
+        'Status': i.status,
+        'Impacted Service': i.impactedService || '',
+        'Impacted Project': i.impactedProject || '',
+        'Owner': i.ownerName || '',
+        'Created At': i.createdAt ? new Date(i.createdAt).toISOString().split('T')[0] : '',
+        'Updated At': i.updatedAt ? new Date(i.updatedAt).toISOString().split('T')[0] : ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Incidents');
+      
+      worksheet['!cols'] = [
+        { wch: 15 }, { wch: 30 }, { wch: 40 }, { wch: 12 },
+        { wch: 12 }, { wch: 15 }, { wch: 20 }, { wch: 20 },
+        { wch: 20 }, { wch: 15 }, { wch: 15 }
+      ];
+
+      XLSX.writeFile(workbook, `incidents-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export incidents');
+    }
+  };
+
+  // Import handlers
+  function handleImportClick() {
+    importInputRef.current?.click();
+  }
+
+  function handleImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportProcessing(true);
+    setImportResult(null);
+    setImportErrors({});
+    setImportValidRows([]);
+    setShowImportModal(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        setImportData(jsonData);
+        validateImportData(jsonData).then(() => {
+          setImportProcessing(false);
+        }).catch(() => {
+          setImportProcessing(false);
+        });
+      } catch (err) {
+        alert('Failed to parse Excel file');
+        setShowImportModal(false);
+        setImportProcessing(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  async function validateImportData(data: any[]): Promise<void> {
+    const errors: Record<number, string[]> = {};
+    const validRows: IncidentRow[] = [];
+
+    const SEVERITY_OPTIONS = ['SEV1', 'SEV2', 'SEV3', 'SEV4'];
+    const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    const STATUS_OPTIONS = ['OPEN', 'NEW', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'RESOLVED', 'CLOSED'];
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowErrors: string[] = [];
+
+      const getField = (name: string) => String(row[name] || '').trim();
+
+      const title = getField('Title');
+      const description = getField('Description');
+      const severity = getField('Severity') || 'SEV3';
+      const priority = getField('Priority') || 'MEDIUM';
+      const impactedService = getField('Impacted Service');
+      const impactedProject = getField('Impacted Project');
+      const ownerName = getField('Owner');
+
+      // Validate Title
+      if (!title) {
+        rowErrors.push('Title is required');
+      }
+
+      // Validate Severity
+      if (severity && !SEVERITY_OPTIONS.includes(severity)) {
+        rowErrors.push(`Invalid severity "${severity}". Allowed: ${SEVERITY_OPTIONS.join(', ')}`);
+      }
+
+      // Validate Priority
+      if (priority && !PRIORITY_OPTIONS.includes(priority)) {
+        rowErrors.push(`Invalid priority "${priority}". Allowed: ${PRIORITY_OPTIONS.join(', ')}`);
+      }
+
+      if (rowErrors.length > 0) {
+        errors[i] = rowErrors;
+      } else {
+        validRows.push({
+          title,
+          description,
+          severity,
+          priority,
+          impactedService,
+          impactedProject,
+          ownerName
+        });
+      }
+    }
+
+    setImportErrors(errors);
+    setImportValidRows(validRows);
+    return Promise.resolve();
+  }
+
+  async function handleImportConfirm() {
+    if (importValidRows.length === 0) return;
+
+    setImportProcessing(true);
+    let success = 0;
+    let failed = 0;
+
+    try {
+      for (const row of importValidRows) {
+        try {
+          const payload = {
+            title: row.title,
+            description: row.description || undefined,
+            severity: row.severity,
+            priority: row.priority,
+            impactedService: row.impactedService || undefined,
+            impactedProject: row.impactedProject || undefined,
+            ownerName: row.ownerName || undefined
+          };
+
+          await api.post('/incidents', payload);
+          success++;
+        } catch (err: any) {
+          console.error('Failed to import incident:', row.title, err);
+          failed++;
+        }
+      }
+
+      setImportResult({ success, failed, skipped: 0 });
+      
+      if (success > 0) {
+        load();
+      }
+    } catch (err: any) {
+      console.error('Import error:', err);
+      setImportResult({
+        success,
+        failed,
+        skipped: 0,
+        error: err.response?.data?.message || 'Import failed'
+      });
+    } finally {
+      setImportProcessing(false);
+    }
+  }
+
+  function closeImportModal() {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportErrors({});
+    setImportValidRows([]);
+    setImportResult(null);
+  }
+
+  function downloadValidationReport() {
+    const errorData: any[][] = [['Row', 'Field', 'Error']];
+    Object.entries(importErrors).forEach(([rowIdx, errors]) => {
+      const row = importData[parseInt(rowIdx)];
+      const title = row?.['Title'] || 'N/A';
+      errors.forEach(error => {
+        errorData.push([`${parseInt(rowIdx) + 2} (${title})`, '', error]);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(errorData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Validation Errors');
+    XLSX.writeFile(wb, 'import-validation-report.xlsx');
+  }
+
   function clearCreateForm() {
     setForm(initialForm);
     setSelectedFiles(null);
@@ -477,8 +709,13 @@ export function IncidentsPage() {
                   )}
                 </Button>
                 {canExport && (
-                  <Button variant="secondary" icon={Download}>
+                  <Button variant="secondary" icon={Download} onClick={handleExport}>
                     Export
+                  </Button>
+                )}
+                {canCreate && (
+                  <Button variant="secondary" icon={Upload} onClick={handleImportClick}>
+                    Import
                   </Button>
                 )}
               </div>
@@ -841,6 +1078,190 @@ export function IncidentsPage() {
         confirmInputValue={deleteConfirmText}
         onConfirmInputChange={setDeleteConfirmText}
       />
+
+      {/* Hidden file input for import */}
+      <input
+        type="file"
+        ref={importInputRef}
+        style={{ display: 'none' }}
+        accept=".xlsx,.xls,.csv"
+        onChange={handleImportFileChange}
+      />
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={closeImportModal}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h3 className="text-lg font-semibold text-slate-900">Import Incidents</h3>
+              <button onClick={closeImportModal} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto px-6 py-4">
+              {!importResult && (
+                <div>
+                  {importFile && (
+                    <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 rounded-lg">
+                      <FileText className="w-5 h-5 text-slate-500" />
+                      <span className="text-sm text-slate-700">{importFile.name}</span>
+                    </div>
+                  )}
+
+                  {importFile && !importProcessing && (
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="bg-slate-50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-slate-900">{importData.length}</div>
+                        <div className="text-sm text-slate-500">Total Rows</div>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-green-600">{importValidRows.length}</div>
+                        <div className="text-sm text-green-600">Valid</div>
+                      </div>
+                      <div className="bg-red-50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-red-600">{Object.keys(importErrors).length}</div>
+                        <div className="text-sm text-red-600">Invalid</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {importFile && !importProcessing && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-slate-700 mb-2">Preview</h4>
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th className="px-3 py-2 text-left text-slate-600">Row</th>
+                              <th className="px-3 py-2 text-left text-slate-600">Title</th>
+                              <th className="px-3 py-2 text-left text-slate-600">Severity</th>
+                              <th className="px-3 py-2 text-left text-slate-600">Priority</th>
+                              <th className="px-3 py-2 text-left text-slate-600">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importData.slice(0, 10).map((row, idx) => {
+                              const hasError = importErrors[idx];
+                              return (
+                                <tr key={idx} className={hasError ? 'bg-red-50' : 'bg-white'}>
+                                  <td className="px-3 py-2">{idx + 2}</td>
+                                  <td className="px-3 py-2">{row['Title'] || '-'}</td>
+                                  <td className="px-3 py-2">{row['Severity'] || '-'}</td>
+                                  <td className="px-3 py-2">{row['Priority'] || '-'}</td>
+                                  <td className="px-3 py-2">
+                                    {hasError ? (
+                                      <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs">Invalid</span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">Valid</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {importData.length > 10 && (
+                        <p className="text-xs text-slate-500 mt-2">Showing first 10 of {importData.length} rows</p>
+                      )}
+                    </div>
+                  )}
+
+                  {Object.keys(importErrors).length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-slate-700 mb-2">Validation Errors</h4>
+                      <div className="bg-red-50 rounded-lg p-3 max-h-40 overflow-auto">
+                        {Object.entries(importErrors).slice(0, 5).map(([rowIdx, errors]) => {
+                          const row = importData[parseInt(rowIdx)];
+                          const title = row?.['Title'] || 'N/A';
+                          return (
+                            <div key={rowIdx} className="mb-2 text-sm">
+                              <strong className="text-red-700">Row {parseInt(rowIdx) + 2} ({title}):</strong>
+                              <ul className="ml-4 text-red-600 list-disc">
+                                {errors.map((error, eIdx) => (
+                                  <li key={eIdx}>{error}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })}
+                        {Object.keys(importErrors).length > 5 && (
+                          <p className="text-xs text-red-600">And {Object.keys(importErrors).length - 5} more errors.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {importProcessing && (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="w-8 h-8 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mb-3"></div>
+                      <p className="text-slate-600">Validating data...</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {importResult && !importResult.error && (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <FileText className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Import Complete</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-green-600">{importResult.success}</div>
+                      <div className="text-sm text-green-600">Imported</div>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-red-600">{importResult.failed}</div>
+                      <div className="text-sm text-red-600">Failed</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {importResult?.error && (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Import Failed</h3>
+                  <p className="text-sm text-slate-600">{importResult.error}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50">
+              {!importResult ? (
+                <>
+                  {Object.keys(importErrors).length > 0 && (
+                    <Button variant="ghost" onClick={downloadValidationReport}>
+                      Download Report
+                    </Button>
+                  )}
+                  <div className="flex-1"></div>
+                  <Button variant="secondary" onClick={closeImportModal}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleImportConfirm}
+                    disabled={importProcessing || importValidRows.length === 0}
+                    className="ml-2"
+                  >
+                    {importProcessing ? 'Importing...' : `Import ${importValidRows.length} Incidents`}
+                  </Button>
+                </>
+              ) : (
+                <Button variant="primary" onClick={closeImportModal} className="ml-auto">
+                  Done
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Message Toast */}
       {message && (

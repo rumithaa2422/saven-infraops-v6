@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import * as XLSX from 'xlsx';
 
 type Project = {
   id: string;
@@ -24,6 +25,25 @@ type Project = {
   createdAt: string;
   updatedAt: string;
   assignedAssets?: number;
+};
+
+type ProjectRow = {
+  projectName: string;
+  projectCode: string;
+  client: string;
+  ownerName: string;
+  status: string;
+  priority: string;
+  department: string;
+  technologyStack: string;
+  startDate: string;
+  expectedEndDate: string;
+  actualEndDate: string;
+  projectType: string;
+  projectLocation: string;
+  budget: string;
+  description: string;
+  remarks: string;
 };
 
 type ProjectSummary = {
@@ -96,6 +116,22 @@ export function ProjectDashboardPage() {
   const [departments, setDepartments] = useState<string[]>([]);
   const [technologies, setTechnologies] = useState<string[]>([]);
   const [managers, setManagers] = useState<string[]>([]);
+
+  // Import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<Record<number, string[]>>({});
+  const [importValidRows, setImportValidRows] = useState<ProjectRow[]>([]);
+  const [importProcessing, setImportProcessing] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    success: number;
+    failed: number;
+    skipped: number;
+    error?: string;
+  } | null>(null);
+
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProjects = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -227,46 +263,291 @@ export function ProjectDashboardPage() {
 
   const handleExport = async () => {
     try {
-      const csvHeaders = [
-        'Project Code', 'Project Name', 'Client', 'Project Manager', 'Department',
-        'Technology Stack', 'Status', 'Priority', 'Start Date', 'Expected End Date',
-        'Actual End Date', 'Budget', 'Project Type', 'Location', 'Description', 'Remarks',
-        'Created At', 'Updated At'
+      const res = await api.get('/projects-environments?limit=10000');
+      const allProjects = res.data.items || res.data || [];
+      
+      const exportData = allProjects.map((p: Project) => ({
+        'Project Code': p.projectCode,
+        'Project Name': p.projectName,
+        'Client': p.client || '',
+        'Project Manager': p.ownerName || '',
+        'Department': p.department || '',
+        'Technology Stack': p.technologyStack || '',
+        'Status': p.status,
+        'Priority': p.priority,
+        'Start Date': p.startDate ? new Date(p.startDate).toISOString().split('T')[0] : '',
+        'Expected End Date': p.expectedEndDate ? new Date(p.expectedEndDate).toISOString().split('T')[0] : '',
+        'Actual End Date': p.actualEndDate ? new Date(p.actualEndDate).toISOString().split('T')[0] : '',
+        'Budget': p.budget ? p.budget.toString() : '',
+        'Project Type': p.projectType || '',
+        'Location': p.projectLocation || '',
+        'Description': p.description || '',
+        'Remarks': p.remarks || '',
+        'Created At': p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : '',
+        'Updated At': p.updatedAt ? new Date(p.updatedAt).toISOString().split('T')[0] : ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Projects');
+      
+      worksheet['!cols'] = [
+        { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 20 },
+        { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 12 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
+        { wch: 15 }, { wch: 15 }, { wch: 40 }, { wch: 30 },
+        { wch: 15 }, { wch: 15 }
       ];
-      const csvRows = projects.map(p => [
-        p.projectCode,
-        p.projectName,
-        p.client || '',
-        p.ownerName || '',
-        p.department || '',
-        p.technologyStack || '',
-        p.status,
-        p.priority,
-        p.startDate || '',
-        p.expectedEndDate || '',
-        p.actualEndDate || '',
-        p.budget ? p.budget.toString() : '',
-        p.projectType || '',
-        p.projectLocation || '',
-        p.description || '',
-        p.remarks || '',
-        p.createdAt,
-        p.updatedAt
-      ]);
 
-      const csvContent = [csvHeaders, ...csvRows]
-        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-        .join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `projects-export-${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
+      XLSX.writeFile(workbook, `projects-export-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (err) {
       console.error('Export failed:', err);
+      alert('Failed to export projects');
     }
   };
+
+  // Import handlers
+  function handleImportClick() {
+    importInputRef.current?.click();
+  }
+
+  function handleImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportProcessing(true);
+    setImportResult(null);
+    setImportErrors({});
+    setImportValidRows([]);
+    setShowImportModal(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        setImportData(jsonData);
+        validateImportData(jsonData).then(() => {
+          setImportProcessing(false);
+        }).catch(() => {
+          setImportProcessing(false);
+        });
+      } catch (err) {
+        alert('Failed to parse Excel file');
+        setShowImportModal(false);
+        setImportProcessing(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  async function validateImportData(data: any[]): Promise<void> {
+    const errors: Record<number, string[]> = {};
+    const validRows: ProjectRow[] = [];
+    const seenCodes = new Set<string>();
+
+    // Get existing codes from database
+    let existingCodes: Set<string> = new Set();
+    try {
+      const response = await api.get('/projects-environments?limit=1000');
+      const projectsData = response.data.items || response.data || [];
+      projectsData.forEach((p: Project) => {
+        existingCodes.add(p.projectCode.toLowerCase());
+      });
+    } catch (err) {
+      console.error('Failed to fetch existing projects:', err);
+    }
+
+    const STATUS_OPTIONS = ['ACTIVE', 'INACTIVE', 'COMPLETED', 'ON_HOLD', 'DELAYED', 'ARCHIVED'];
+    const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    const PROJECT_TYPES = ['Software Development', 'Infrastructure', 'Research', 'Consulting', 'Maintenance', 'Support', 'Other'];
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowErrors: string[] = [];
+
+      const getField = (name: string) => String(row[name] || '').trim();
+
+      const projectCode = getField('Project Code');
+      const projectName = getField('Project Name');
+      const client = getField('Client');
+      const ownerName = getField('Project Manager');
+      const department = getField('Department');
+      const technologyStack = getField('Technology Stack');
+      const status = getField('Status') || 'ACTIVE';
+      const priority = getField('Priority') || 'MEDIUM';
+      const startDate = getField('Start Date');
+      const expectedEndDate = getField('Expected End Date');
+      const actualEndDate = getField('Actual End Date');
+      const budget = getField('Budget');
+      const projectType = getField('Project Type');
+      const projectLocation = getField('Location');
+      const description = getField('Description');
+      const remarks = getField('Remarks');
+
+      // Validate Project Code
+      if (!projectCode) {
+        rowErrors.push('Project Code is required');
+      } else {
+        if (seenCodes.has(projectCode.toLowerCase())) {
+          rowErrors.push(`Duplicate Project Code "${projectCode}" in file`);
+        }
+        if (existingCodes.has(projectCode.toLowerCase())) {
+          rowErrors.push(`Project Code "${projectCode}" already exists in database`);
+        }
+        seenCodes.add(projectCode.toLowerCase());
+      }
+
+      // Validate Project Name
+      if (!projectName) {
+        rowErrors.push('Project Name is required');
+      }
+
+      // Validate Status
+      if (status && !STATUS_OPTIONS.includes(status)) {
+        rowErrors.push(`Invalid status "${status}". Allowed: ${STATUS_OPTIONS.join(', ')}`);
+      }
+
+      // Validate Priority
+      if (priority && !PRIORITY_OPTIONS.includes(priority)) {
+        rowErrors.push(`Invalid priority "${priority}". Allowed: ${PRIORITY_OPTIONS.join(', ')}`);
+      }
+
+      // Validate Project Type
+      if (projectType && !PROJECT_TYPES.includes(projectType)) {
+        rowErrors.push(`Invalid project type "${projectType}". Allowed: ${PROJECT_TYPES.join(', ')}`);
+      }
+
+      // Validate Date formats if provided
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (startDate && !dateRegex.test(startDate)) {
+        rowErrors.push(`Invalid Start Date format: "${startDate}". Use YYYY-MM-DD`);
+      }
+      if (expectedEndDate && !dateRegex.test(expectedEndDate)) {
+        rowErrors.push(`Invalid Expected End Date format: "${expectedEndDate}". Use YYYY-MM-DD`);
+      }
+      if (actualEndDate && !dateRegex.test(actualEndDate)) {
+        rowErrors.push(`Invalid Actual End Date format: "${actualEndDate}". Use YYYY-MM-DD`);
+      }
+
+      // Validate Budget if provided
+      if (budget && isNaN(parseFloat(budget))) {
+        rowErrors.push(`Invalid budget value: "${budget}". Must be a number`);
+      }
+
+      if (rowErrors.length > 0) {
+        errors[i] = rowErrors;
+      } else {
+        validRows.push({
+          projectCode,
+          projectName,
+          client,
+          ownerName,
+          department,
+          technologyStack,
+          status,
+          priority,
+          startDate,
+          expectedEndDate,
+          actualEndDate,
+          budget,
+          projectType,
+          projectLocation,
+          description,
+          remarks
+        });
+      }
+    }
+
+    setImportErrors(errors);
+    setImportValidRows(validRows);
+    return Promise.resolve();
+  }
+
+  async function handleImportConfirm() {
+    if (importValidRows.length === 0) return;
+
+    setImportProcessing(true);
+    let success = 0;
+    let failed = 0;
+
+    try {
+      for (const row of importValidRows) {
+        try {
+          const payload = {
+            projectCode: row.projectCode,
+            projectName: row.projectName,
+            client: row.client || undefined,
+            ownerName: row.ownerName || undefined,
+            department: row.department || undefined,
+            technologyStack: row.technologyStack || undefined,
+            status: row.status,
+            priority: row.priority,
+            startDate: row.startDate || undefined,
+            expectedEndDate: row.expectedEndDate || undefined,
+            actualEndDate: row.actualEndDate || undefined,
+            budget: row.budget ? parseFloat(row.budget) : undefined,
+            projectType: row.projectType || undefined,
+            projectLocation: row.projectLocation || undefined,
+            description: row.description || undefined,
+            remarks: row.remarks || undefined
+          };
+
+          await api.post('/projects-environments', payload);
+          success++;
+        } catch (err: any) {
+          console.error('Failed to import project:', row.projectCode, err);
+          failed++;
+        }
+      }
+
+      setImportResult({ success, failed, skipped: 0 });
+      
+      if (success > 0) {
+        fetchProjects();
+      }
+    } catch (err: any) {
+      console.error('Import error:', err);
+      setImportResult({
+        success,
+        failed,
+        skipped: 0,
+        error: err.response?.data?.message || 'Import failed'
+      });
+    } finally {
+      setImportProcessing(false);
+    }
+  }
+
+  function closeImportModal() {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportErrors({});
+    setImportValidRows([]);
+    setImportResult(null);
+  }
+
+  function downloadValidationReport() {
+    const errorData: any[][] = [['Row', 'Field', 'Error']];
+    Object.entries(importErrors).forEach(([rowIdx, errors]) => {
+      const row = importData[parseInt(rowIdx)];
+      const projectCode = row?.['Project Code'] || 'N/A';
+      errors.forEach(error => {
+        errorData.push([`${parseInt(rowIdx) + 2} (${projectCode})`, '', error]);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(errorData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Validation Errors');
+    XLSX.writeFile(wb, 'import-validation-report.xlsx');
+  }
 
   const formatDate = (dateStr?: string): string => {
     if (!dateStr) return '-';
@@ -484,12 +765,23 @@ export function ProjectDashboardPage() {
             )}
 
             {isSuperAdmin && (
-              <button type="button" className="toolbar-btn primary" onClick={() => navigate('/projects-environments/create')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Create Project
-              </button>
+              <>
+                <button type="button" className="toolbar-btn" onClick={handleImportClick}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Import
+                </button>
+
+                <button type="button" className="toolbar-btn primary" onClick={() => navigate('/projects-environments/create')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Create Project
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -642,6 +934,190 @@ export function ProjectDashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Hidden file input for import */}
+        <input
+          type="file"
+          ref={importInputRef}
+          style={{ display: 'none' }}
+          accept=".xlsx,.xls,.csv"
+          onChange={handleImportFileChange}
+        />
+
+        {/* Import Modal */}
+        {showImportModal && (
+          <div className="modal-overlay" onClick={closeImportModal}>
+            <div className="modal-content import-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Import Projects</h3>
+                <button className="modal-close" onClick={closeImportModal}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+
+              <div className="modal-body">
+                {!importResult && (
+                  <div className="import-content">
+                    {importFile && (
+                      <div className="import-file-info">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 18V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 15L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span>{importFile.name}</span>
+                      </div>
+                    )}
+
+                    {importFile && !importProcessing && (
+                      <div className="import-stats">
+                        <div className="import-stat">
+                          <span className="value">{importData.length}</span>
+                          <span className="label">Total Rows</span>
+                        </div>
+                        <div className="import-stat">
+                          <span className="value success">{importValidRows.length}</span>
+                          <span className="label">Valid</span>
+                        </div>
+                        <div className="import-stat">
+                          <span className="value danger">{Object.keys(importErrors).length}</span>
+                          <span className="label">Invalid</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {importFile && !importProcessing && (
+                      <div className="import-preview">
+                        <h4>Preview</h4>
+                        <div className="import-preview-table-wrapper">
+                          <table className="import-preview-table">
+                            <thead>
+                              <tr>
+                                <th>Row</th>
+                                <th>Project Code</th>
+                                <th>Project Name</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Valid</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {importData.slice(0, 10).map((row, idx) => {
+                                const hasError = importErrors[idx];
+                                return (
+                                  <tr key={idx} className={hasError ? 'invalid-row' : 'valid-row'}>
+                                    <td>{idx + 2}</td>
+                                    <td>{row['Project Code'] || '-'}</td>
+                                    <td>{row['Project Name'] || '-'}</td>
+                                    <td>{row['Status'] || '-'}</td>
+                                    <td>{row['Priority'] || '-'}</td>
+                                    <td>
+                                      {hasError ? (
+                                        <span className="badge badge-danger">Invalid</span>
+                                      ) : (
+                                        <span className="badge badge-success">Valid</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                        {importData.length > 10 && (
+                          <p className="import-preview-note">Showing first 10 of {importData.length} rows</p>
+                        )}
+                      </div>
+                    )}
+
+                    {Object.keys(importErrors).length > 0 && (
+                      <div className="import-errors">
+                        <h4>Validation Errors</h4>
+                        <div className="import-errors-list">
+                          {Object.entries(importErrors).slice(0, 5).map(([rowIdx, errors]) => {
+                            const row = importData[parseInt(rowIdx)];
+                            const projectCode = row?.['Project Code'] || 'N/A';
+                            return (
+                              <div key={rowIdx} className="import-error-item">
+                                <strong>Row {parseInt(rowIdx) + 2} ({projectCode}):</strong>
+                                <ul>
+                                  {errors.map((error, eIdx) => (
+                                    <li key={eIdx}>{error}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })}
+                          {Object.keys(importErrors).length > 5 && (
+                            <p className="import-errors-note">
+                              And {Object.keys(importErrors).length - 5} more errors.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {importProcessing && (
+                      <div className="import-loading">
+                        <div className="loading-spinner"></div>
+                        <p>Validating data...</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {importResult && !importResult.error && (
+                  <div className="import-result">
+                    <div className="import-result-icon success">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/></svg>
+                    </div>
+                    <h3>Import Complete</h3>
+                    <div className="import-result-stats">
+                      <div className="import-result-stat">
+                        <span className="value success">{importResult.success}</span>
+                        <span className="label">Imported</span>
+                      </div>
+                      <div className="import-result-stat">
+                        <span className="value danger">{importResult.failed}</span>
+                        <span className="label">Failed</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {importResult?.error && (
+                  <div className="import-result">
+                    <div className="import-result-icon error">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                    </div>
+                    <h3>Import Failed</h3>
+                    <p className="import-result-note">{importResult.error}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                {!importResult && (
+                  <>
+                    {Object.keys(importErrors).length > 0 && (
+                      <button className="secondary" onClick={downloadValidationReport}>
+                        Download Report
+                      </button>
+                    )}
+                    <div style={{ flex: 1 }}></div>
+                    <button className="secondary" onClick={closeImportModal}>Cancel</button>
+                    <button 
+                      className="primary" 
+                      onClick={handleImportConfirm}
+                      disabled={importProcessing || importValidRows.length === 0}
+                    >
+                      {importProcessing ? 'Importing...' : `Import ${importValidRows.length} Projects`}
+                    </button>
+                  </>
+                )}
+                {importResult && (
+                  <button className="primary" onClick={closeImportModal}>Done</button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

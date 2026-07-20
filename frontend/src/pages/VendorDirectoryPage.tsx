@@ -4,10 +4,11 @@
  * Enterprise vendor management with full CRUD operations.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import * as XLSX from 'xlsx';
 
 type Vendor = {
   id: string;
@@ -31,6 +32,27 @@ type Vendor = {
   paymentTerms?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+type VendorRow = {
+  vendorName: string;
+  vendorCode: string;
+  category: string;
+  status: string;
+  website: string;
+  country: string;
+  gstNumber: string;
+  registrationNumber: string;
+  primaryContactName: string;
+  designation: string;
+  email: string;
+  phone: string;
+  address: string;
+  remarks: string;
+  contractStartDate: string;
+  contractExpiryDate: string;
+  renewalDate: string;
+  paymentTerms: string;
 };
 
 type VendorSummary = {
@@ -110,6 +132,22 @@ export function VendorDirectoryPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [years, setYears] = useState<number[]>([]);
+
+  // Import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<Record<number, string[]>>({});
+  const [importValidRows, setImportValidRows] = useState<VendorRow[]>([]);
+  const [importProcessing, setImportProcessing] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    success: number;
+    failed: number;
+    skipped: number;
+    error?: string;
+  } | null>(null);
+
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Load vendors
   const loadVendors = useCallback(async (isRefresh = false) => {
@@ -272,6 +310,321 @@ export function VendorDirectoryPage() {
     }
   };
 
+  // Export vendors to Excel
+  const handleExport = async () => {
+    try {
+      const res = await api.get('/vendors?limit=10000');
+      const allVendors = res.data.vendors || [];
+      
+      const exportData = allVendors.map((v: Vendor) => ({
+        'Vendor Name': v.vendorName,
+        'Vendor Code': v.vendorCode,
+        'Category': v.category,
+        'Status': v.status,
+        'Website': v.website || '',
+        'Country': v.country || '',
+        'GST Number': v.gstNumber || '',
+        'Registration Number': v.registrationNumber || '',
+        'Primary Contact Name': v.primaryContactName,
+        'Designation': v.designation || '',
+        'Email': v.email,
+        'Phone': v.phone,
+        'Address': v.address || '',
+        'Remarks': v.remarks || '',
+        'Contract Start Date': v.contractStartDate ? new Date(v.contractStartDate).toISOString().split('T')[0] : '',
+        'Contract Expiry Date': v.contractExpiryDate ? new Date(v.contractExpiryDate).toISOString().split('T')[0] : '',
+        'Renewal Date': v.renewalDate ? new Date(v.renewalDate).toISOString().split('T')[0] : '',
+        'Payment Terms': v.paymentTerms || '',
+        'Created At': v.createdAt ? new Date(v.createdAt).toISOString().split('T')[0] : '',
+        'Updated At': v.updatedAt ? new Date(v.updatedAt).toISOString().split('T')[0] : ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendors');
+      
+      worksheet['!cols'] = [
+        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
+        { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 20 },
+        { wch: 20 }, { wch: 20 }, { wch: 30 }, { wch: 15 },
+        { wch: 40 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+      ];
+
+      XLSX.writeFile(workbook, `vendors-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export vendors');
+    }
+  };
+
+  // Import handlers
+  function handleImportClick() {
+    importInputRef.current?.click();
+  }
+
+  function handleImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportProcessing(true);
+    setImportResult(null);
+    setImportErrors({});
+    setImportValidRows([]);
+    setShowImportModal(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        setImportData(jsonData);
+        validateImportData(jsonData).then(() => {
+          setImportProcessing(false);
+        }).catch(() => {
+          setImportProcessing(false);
+        });
+      } catch (err) {
+        alert('Failed to parse Excel file');
+        setShowImportModal(false);
+        setImportProcessing(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  async function validateImportData(data: any[]): Promise<void> {
+    const errors: Record<number, string[]> = {};
+    const validRows: VendorRow[] = [];
+    const seenCodes = new Set<string>();
+    const seenEmails = new Set<string>();
+
+    // Get existing codes and emails from database
+    let existingCodes: Set<string> = new Set();
+    let existingEmails: Set<string> = new Set();
+    try {
+      const response = await api.get('/vendors?limit=1000');
+      const vendors = response.data.vendors || [];
+      vendors.forEach((v: Vendor) => {
+        existingCodes.add(v.vendorCode.toLowerCase());
+        existingEmails.add(v.email.toLowerCase());
+      });
+    } catch (err) {
+      console.error('Failed to fetch existing vendors:', err);
+    }
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowErrors: string[] = [];
+
+      const getField = (name: string) => String(row[name] || '').trim();
+
+      const vendorName = getField('Vendor Name');
+      const vendorCode = getField('Vendor Code');
+      const category = getField('Category');
+      const status = getField('Status') || 'ACTIVE';
+      const website = getField('Website');
+      const country = getField('Country');
+      const gstNumber = getField('GST Number');
+      const registrationNumber = getField('Registration Number');
+      const primaryContactName = getField('Primary Contact Name');
+      const designation = getField('Designation');
+      const email = getField('Email');
+      const phone = getField('Phone');
+      const address = getField('Address');
+      const remarks = getField('Remarks');
+      const contractStartDate = getField('Contract Start Date');
+      const contractExpiryDate = getField('Contract Expiry Date');
+      const renewalDate = getField('Renewal Date');
+      const paymentTerms = getField('Payment Terms');
+
+      // Validate Vendor Name
+      if (!vendorName) {
+        rowErrors.push('Vendor Name is required');
+      }
+
+      // Validate Vendor Code
+      if (!vendorCode) {
+        rowErrors.push('Vendor Code is required');
+      } else {
+        if (seenCodes.has(vendorCode.toLowerCase())) {
+          rowErrors.push(`Duplicate Vendor Code "${vendorCode}" in file`);
+        }
+        if (existingCodes.has(vendorCode.toLowerCase())) {
+          rowErrors.push(`Vendor Code "${vendorCode}" already exists in database`);
+        }
+        seenCodes.add(vendorCode.toLowerCase());
+      }
+
+      // Validate Category
+      if (!category) {
+        rowErrors.push('Category is required');
+      } else if (!VENDOR_CATEGORIES.includes(category)) {
+        rowErrors.push(`Invalid category "${category}". Allowed: ${VENDOR_CATEGORIES.join(', ')}`);
+      }
+
+      // Validate Status
+      if (status && !STATUS_OPTIONS.includes(status)) {
+        rowErrors.push(`Invalid status "${status}". Allowed: ${STATUS_OPTIONS.join(', ')}`);
+      }
+
+      // Validate Primary Contact Name
+      if (!primaryContactName) {
+        rowErrors.push('Primary Contact Name is required');
+      }
+
+      // Validate Email
+      if (!email) {
+        rowErrors.push('Email is required');
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          rowErrors.push(`Invalid email format: "${email}"`);
+        } else if (seenEmails.has(email.toLowerCase())) {
+          rowErrors.push(`Duplicate email "${email}" in file`);
+        } else if (existingEmails.has(email.toLowerCase())) {
+          rowErrors.push(`Email "${email}" already exists in database`);
+        }
+        seenEmails.add(email.toLowerCase());
+      }
+
+      // Validate Phone
+      if (!phone) {
+        rowErrors.push('Phone is required');
+      }
+
+      // Validate Date formats if provided
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (contractStartDate && !dateRegex.test(contractStartDate)) {
+        rowErrors.push(`Invalid Contract Start Date format: "${contractStartDate}". Use YYYY-MM-DD`);
+      }
+      if (contractExpiryDate && !dateRegex.test(contractExpiryDate)) {
+        rowErrors.push(`Invalid Contract Expiry Date format: "${contractExpiryDate}". Use YYYY-MM-DD`);
+      }
+      if (renewalDate && !dateRegex.test(renewalDate)) {
+        rowErrors.push(`Invalid Renewal Date format: "${renewalDate}". Use YYYY-MM-DD`);
+      }
+
+      if (rowErrors.length > 0) {
+        errors[i] = rowErrors;
+      } else {
+        validRows.push({
+          vendorName,
+          vendorCode,
+          category,
+          status,
+          website,
+          country,
+          gstNumber,
+          registrationNumber,
+          primaryContactName,
+          designation,
+          email,
+          phone,
+          address,
+          remarks,
+          contractStartDate,
+          contractExpiryDate,
+          renewalDate,
+          paymentTerms
+        });
+      }
+    }
+
+    setImportErrors(errors);
+    setImportValidRows(validRows);
+    return Promise.resolve();
+  }
+
+  async function handleImportConfirm() {
+    if (importValidRows.length === 0) return;
+
+    setImportProcessing(true);
+    let success = 0;
+    let failed = 0;
+
+    try {
+      for (const row of importValidRows) {
+        try {
+          const payload = {
+            vendorName: row.vendorName,
+            vendorCode: row.vendorCode,
+            category: row.category,
+            status: row.status,
+            website: row.website || undefined,
+            country: row.country || undefined,
+            gstNumber: row.gstNumber || undefined,
+            registrationNumber: row.registrationNumber || undefined,
+            primaryContactName: row.primaryContactName,
+            designation: row.designation || undefined,
+            email: row.email,
+            phone: row.phone,
+            address: row.address || undefined,
+            remarks: row.remarks || undefined,
+            contractStartDate: row.contractStartDate || undefined,
+            contractExpiryDate: row.contractExpiryDate || undefined,
+            renewalDate: row.renewalDate || undefined,
+            paymentTerms: row.paymentTerms || undefined
+          };
+
+          await api.post('/vendors', payload);
+          success++;
+        } catch (err: any) {
+          console.error('Failed to import vendor:', row.vendorCode, err);
+          failed++;
+        }
+      }
+
+      setImportResult({ success, failed, skipped: 0 });
+      
+      if (success > 0) {
+        loadVendors();
+        loadSummary();
+        loadMetadata();
+      }
+    } catch (err: any) {
+      console.error('Import error:', err);
+      setImportResult({
+        success,
+        failed,
+        skipped: 0,
+        error: err.response?.data?.message || 'Import failed'
+      });
+    } finally {
+      setImportProcessing(false);
+    }
+  }
+
+  function closeImportModal() {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportErrors({});
+    setImportValidRows([]);
+    setImportResult(null);
+  }
+
+  function downloadValidationReport() {
+    const errorData: any[][] = [['Row', 'Field', 'Error']];
+    Object.entries(importErrors).forEach(([rowIdx, errors]) => {
+      const row = importData[parseInt(rowIdx)];
+      const vendorCode = row?.['Vendor Code'] || 'N/A';
+      errors.forEach(error => {
+        errorData.push([`${parseInt(rowIdx) + 2} (${vendorCode})`, '', error]);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(errorData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Validation Errors');
+    XLSX.writeFile(wb, 'import-validation-report.xlsx');
+  }
+
   const hasActiveFilters = categoryFilter || statusFilter || countryFilter || contractStatusFilter || dateFrom || dateTo || yearFilter;
 
   return (
@@ -387,10 +740,22 @@ export function VendorDirectoryPage() {
             </button>
 
             {isAdmin && (
-              <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                Add Vendor
-              </button>
+              <>
+                <button type="button" className="toolbar-btn" onClick={handleExport}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  Export
+                </button>
+
+                <button type="button" className="toolbar-btn" onClick={handleImportClick}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  Import
+                </button>
+
+                <button type="button" className="toolbar-btn primary" onClick={() => setShowCreateDialog(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  Add Vendor
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -658,6 +1023,194 @@ export function VendorDirectoryPage() {
               <button type="button" className="danger" onClick={handleDeleteVendor}>
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file input for import */}
+      <input
+        type="file"
+        ref={importInputRef}
+        style={{ display: 'none' }}
+        accept=".xlsx,.xls,.csv"
+        onChange={handleImportFileChange}
+      />
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={closeImportModal}>
+          <div className="modal-content import-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Import Vendors</h3>
+              <button className="modal-close" onClick={closeImportModal}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {!importResult && (
+                <div className="import-content">
+                  {importFile && (
+                    <div className="import-file-info">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 18V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 15L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span>{importFile.name}</span>
+                    </div>
+                  )}
+
+                  {importFile && !importProcessing && (
+                    <div className="import-stats">
+                      <div className="import-stat">
+                        <span className="value">{importData.length}</span>
+                        <span className="label">Total Rows</span>
+                      </div>
+                      <div className="import-stat">
+                        <span className="value success">{importValidRows.length}</span>
+                        <span className="label">Valid</span>
+                      </div>
+                      <div className="import-stat">
+                        <span className="value danger">{Object.keys(importErrors).length}</span>
+                        <span className="label">Invalid</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {importFile && !importProcessing && (
+                    <div className="import-preview">
+                      <h4>Preview</h4>
+                      <div className="import-preview-table-wrapper">
+                        <table className="import-preview-table">
+                          <thead>
+                            <tr>
+                              <th>Row</th>
+                              <th>Vendor Code</th>
+                              <th>Vendor Name</th>
+                              <th>Category</th>
+                              <th>Email</th>
+                              <th>Valid</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importData.slice(0, 10).map((row, idx) => {
+                              const hasError = importErrors[idx];
+                              return (
+                                <tr key={idx} className={hasError ? 'invalid-row' : 'valid-row'}>
+                                  <td>{idx + 2}</td>
+                                  <td>{row['Vendor Code'] || '-'}</td>
+                                  <td>{row['Vendor Name'] || '-'}</td>
+                                  <td>{row['Category'] || '-'}</td>
+                                  <td>{row['Email'] || '-'}</td>
+                                  <td>
+                                    {hasError ? (
+                                      <span className="badge badge-danger">Invalid</span>
+                                    ) : (
+                                      <span className="badge badge-success">Valid</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {importData.length > 10 && (
+                        <p className="import-preview-note">Showing first 10 of {importData.length} rows</p>
+                      )}
+                    </div>
+                  )}
+
+                  {Object.keys(importErrors).length > 0 && (
+                    <div className="import-errors">
+                      <h4>Validation Errors</h4>
+                      <div className="import-errors-list">
+                        {Object.entries(importErrors).slice(0, 5).map(([rowIdx, errors]) => {
+                          const row = importData[parseInt(rowIdx)];
+                          const vendorCode = row?.['Vendor Code'] || 'N/A';
+                          return (
+                            <div key={rowIdx} className="import-error-item">
+                              <strong>Row {parseInt(rowIdx) + 2} ({vendorCode}):</strong>
+                              <ul>
+                                {errors.map((error, eIdx) => (
+                                  <li key={eIdx}>{error}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })}
+                        {Object.keys(importErrors).length > 5 && (
+                          <p className="import-errors-note">
+                            And {Object.keys(importErrors).length - 5} more errors. Download the validation report for full details.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {importProcessing && (
+                    <div className="import-loading">
+                      <div className="loading-spinner"></div>
+                      <p>Validating data...</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {importResult && !importResult.error && (
+                <div className="import-result">
+                  <div className="import-result-icon success">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/></svg>
+                  </div>
+                  <h3>Import Complete</h3>
+                  <div className="import-result-stats">
+                    <div className="import-result-stat">
+                      <span className="value success">{importResult.success}</span>
+                      <span className="label">Imported</span>
+                    </div>
+                    <div className="import-result-stat">
+                      <span className="value danger">{importResult.failed}</span>
+                      <span className="label">Failed</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {importResult?.error && (
+                <div className="import-result">
+                  <div className="import-result-icon error">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                  </div>
+                  <h3>Import Failed</h3>
+                  <p className="import-result-note">{importResult.error}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              {!importResult && (
+                <>
+                  {Object.keys(importErrors).length > 0 && (
+                    <button className="secondary" onClick={downloadValidationReport}>
+                      Download Report
+                    </button>
+                  )}
+                  <div style={{ flex: 1 }}></div>
+                  <button className="secondary" onClick={closeImportModal}>
+                    Cancel
+                  </button>
+                  <button 
+                    className="primary" 
+                    onClick={handleImportConfirm}
+                    disabled={importProcessing || importValidRows.length === 0}
+                  >
+                    {importProcessing ? 'Importing...' : `Import ${importValidRows.length} Vendors`}
+                  </button>
+                </>
+              )}
+              {importResult && (
+                <button className="primary" onClick={closeImportModal}>
+                  Done
+                </button>
+              )}
             </div>
           </div>
         </div>

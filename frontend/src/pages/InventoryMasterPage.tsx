@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
@@ -15,7 +15,9 @@ import {
   MapPin,
   Clock,
   AlertCircle,
-  PackagePlus
+  PackagePlus,
+  Upload,
+  Download
 } from 'lucide-react';
 import {
   PageHeader,
@@ -34,6 +36,7 @@ import {
   SectionCard,
   LoadingCard
 } from '../components/inventory';
+import * as XLSX from 'xlsx';
 
 /**
  * PART 4: Inventory Master Permission Enforcement
@@ -96,6 +99,25 @@ type ValidationErrors = {
   warrantyExpiry?: string;
 };
 
+type InventoryRow = {
+  itemName: string;
+  brand: string;
+  model: string;
+  vendorName: string;
+  invoiceNo: string;
+  purchaseCost: string;
+  gst: string;
+  purchaseDate: string;
+  warrantyMonths: string;
+  warrantyExpiry: string;
+  location: string;
+  minStock: string;
+  currentQty: string;
+  status: string;
+  categoryName: string;
+  subcategoryName: string;
+};
+
 export function InventoryMasterPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -118,6 +140,22 @@ export function InventoryMasterPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+
+  // Import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<Record<number, string[]>>({});
+  const [importValidRows, setImportValidRows] = useState<InventoryRow[]>([]);
+  const [importProcessing, setImportProcessing] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    success: number;
+    failed: number;
+    skipped: number;
+    error?: string;
+  } | null>(null);
+
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Categories for dropdowns
   const [categories, setCategories] = useState<Category[]>([]);
@@ -343,6 +381,329 @@ export function InventoryMasterPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  // Export inventory to Excel
+  const handleExport = async () => {
+    try {
+      const res = await api.get('/inventory-master?limit=10000');
+      const allItems = res.data.items || res.data || [];
+      
+      const exportData = allItems.map((i: InventoryItem) => ({
+        'Item No': i.itemNo || '',
+        'Item Name': i.itemName,
+        'Brand': i.brand || '',
+        'Model': i.model || '',
+        'Vendor': i.vendorName || '',
+        'Invoice No': i.invoiceNo || '',
+        'Purchase Cost': i.purchaseCost || '',
+        'GST %': i.gst || '',
+        'Purchase Date': i.purchaseDate ? new Date(i.purchaseDate).toISOString().split('T')[0] : '',
+        'Warranty Months': i.warrantyMonths || '',
+        'Warranty Expiry': i.warrantyExpiry ? new Date(i.warrantyExpiry).toISOString().split('T')[0] : '',
+        'Location': i.location || '',
+        'Min Stock': i.minStock || '',
+        'Current Qty': i.currentQty,
+        'Status': i.status,
+        'Category': i.category?.name || '',
+        'Subcategory': i.subcategory?.name || '',
+        'Created At': i.createdAt ? new Date(i.createdAt).toISOString().split('T')[0] : '',
+        'Updated At': i.updatedAt ? new Date(i.updatedAt).toISOString().split('T')[0] : ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventory');
+      
+      worksheet['!cols'] = [
+        { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
+        { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 8 },
+        { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 20 },
+        { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }
+      ];
+
+      XLSX.writeFile(workbook, `inventory-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export inventory');
+    }
+  };
+
+  // Import handlers
+  function handleImportClick() {
+    importInputRef.current?.click();
+  }
+
+  function handleImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportProcessing(true);
+    setImportResult(null);
+    setImportErrors({});
+    setImportValidRows([]);
+    setShowImportModal(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        setImportData(jsonData);
+        validateImportData(jsonData).then(() => {
+          setImportProcessing(false);
+        }).catch(() => {
+          setImportProcessing(false);
+        });
+      } catch (err) {
+        alert('Failed to parse Excel file');
+        setShowImportModal(false);
+        setImportProcessing(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  }
+
+  async function validateImportData(data: any[]): Promise<void> {
+    const errors: Record<number, string[]> = {};
+    const validRows: InventoryRow[] = [];
+
+    const STATUS_OPTIONS = ['AVAILABLE', 'IN_USE', 'UNDER_REPAIR', 'RETIRED', 'DISPOSED'];
+    const CATEGORY_MAP = new Map<string, string>();
+    const SUBCATEGORY_MAP = new Map<string, { id: string; categoryId: string }>();
+
+    // Load categories mapping
+    try {
+      categories.forEach(cat => {
+        CATEGORY_MAP.set(cat.name.toLowerCase(), cat.id);
+        cat.subcategories.forEach(sub => {
+          SUBCATEGORY_MAP.set(sub.name.toLowerCase(), { id: sub.id, categoryId: cat.id });
+        });
+      });
+    } catch (err) {
+      console.error('Failed to load category mapping:', err);
+    }
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowErrors: string[] = [];
+
+      const getField = (name: string) => String(row[name] || '').trim();
+
+      const itemName = getField('Item Name');
+      const brand = getField('Brand');
+      const model = getField('Model');
+      const vendorName = getField('Vendor');
+      const invoiceNo = getField('Invoice No');
+      const purchaseCost = getField('Purchase Cost');
+      const gst = getField('GST %');
+      const purchaseDate = getField('Purchase Date');
+      const warrantyMonths = getField('Warranty Months');
+      const warrantyExpiry = getField('Warranty Expiry');
+      const location = getField('Location');
+      const minStock = getField('Min Stock');
+      const currentQty = getField('Current Qty');
+      const status = getField('Status') || 'AVAILABLE';
+      const categoryName = getField('Category');
+      const subcategoryName = getField('Subcategory');
+
+      // Validate Item Name
+      if (!itemName) {
+        rowErrors.push('Item Name is required');
+      }
+
+      // Validate Category
+      let categoryId = '';
+      if (!categoryName) {
+        rowErrors.push('Category is required');
+      } else {
+        categoryId = CATEGORY_MAP.get(categoryName.toLowerCase()) || '';
+        if (!categoryId) {
+          rowErrors.push(`Category "${categoryName}" not found. Available: ${[...CATEGORY_MAP.keys()].slice(0, 10).join(', ')}...`);
+        }
+      }
+
+      // Validate Subcategory
+      let subcategoryId = '';
+      if (!subcategoryName) {
+        rowErrors.push('Subcategory is required');
+      } else {
+        const subcat = SUBCATEGORY_MAP.get(subcategoryName.toLowerCase());
+        if (!subcat) {
+          rowErrors.push(`Subcategory "${subcategoryName}" not found`);
+        } else if (categoryId && subcat.categoryId !== categoryId) {
+          rowErrors.push(`Subcategory "${subcategoryName}" does not belong to category "${categoryName}"`);
+        } else {
+          subcategoryId = subcat.id;
+        }
+      }
+
+      // Validate Current Qty
+      if (!currentQty || isNaN(parseInt(currentQty))) {
+        rowErrors.push('Current Qty is required and must be a number');
+      }
+
+      // Validate Status
+      if (status && !STATUS_OPTIONS.includes(status)) {
+        rowErrors.push(`Invalid status "${status}". Allowed: ${STATUS_OPTIONS.join(', ')}`);
+      }
+
+      // Validate Date formats if provided
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (purchaseDate && !dateRegex.test(purchaseDate)) {
+        rowErrors.push(`Invalid Purchase Date format: "${purchaseDate}". Use YYYY-MM-DD`);
+      }
+      if (warrantyExpiry && !dateRegex.test(warrantyExpiry)) {
+        rowErrors.push(`Invalid Warranty Expiry format: "${warrantyExpiry}". Use YYYY-MM-DD`);
+      }
+
+      // Validate Numeric fields if provided
+      if (purchaseCost && isNaN(parseFloat(purchaseCost))) {
+        rowErrors.push(`Invalid Purchase Cost: "${purchaseCost}". Must be a number`);
+      }
+      if (gst && isNaN(parseFloat(gst))) {
+        rowErrors.push(`Invalid GST: "${gst}". Must be a number`);
+      }
+      if (warrantyMonths && isNaN(parseInt(warrantyMonths))) {
+        rowErrors.push(`Invalid Warranty Months: "${warrantyMonths}". Must be a number`);
+      }
+      if (minStock && isNaN(parseInt(minStock))) {
+        rowErrors.push(`Invalid Min Stock: "${minStock}". Must be a number`);
+      }
+
+      if (rowErrors.length > 0) {
+        errors[i] = rowErrors;
+      } else {
+        validRows.push({
+          itemName,
+          brand,
+          model,
+          vendorName,
+          invoiceNo,
+          purchaseCost,
+          gst,
+          purchaseDate,
+          warrantyMonths,
+          warrantyExpiry,
+          location,
+          minStock,
+          currentQty,
+          status,
+          categoryName,
+          subcategoryName
+        });
+      }
+    }
+
+    setImportErrors(errors);
+    setImportValidRows(validRows);
+    return Promise.resolve();
+  }
+
+  async function handleImportConfirm() {
+    if (importValidRows.length === 0) return;
+
+    if (!isSuperAdmin) {
+      setImportResult({
+        success: 0,
+        failed: importValidRows.length,
+        skipped: 0,
+        error: 'Only Super Admin can import inventory items.'
+      });
+      return;
+    }
+
+    setImportProcessing(true);
+    let success = 0;
+    let failed = 0;
+
+    // Build category/subcategory mapping
+    const CATEGORY_MAP = new Map<string, string>();
+    const SUBCATEGORY_MAP = new Map<string, { id: string; categoryId: string }>();
+    categories.forEach(cat => {
+      CATEGORY_MAP.set(cat.name.toLowerCase(), cat.id);
+      cat.subcategories.forEach(sub => {
+        SUBCATEGORY_MAP.set(sub.name.toLowerCase(), { id: sub.id, categoryId: cat.id });
+      });
+    });
+
+    try {
+      for (const row of importValidRows) {
+        try {
+          const categoryId = CATEGORY_MAP.get(row.categoryName.toLowerCase());
+          const subcat = SUBCATEGORY_MAP.get(row.subcategoryName.toLowerCase());
+          const subcategoryId = subcat?.id;
+
+          const payload = {
+            itemName: row.itemName,
+            brand: row.brand || undefined,
+            model: row.model || undefined,
+            vendorName: row.vendorName || undefined,
+            invoiceNo: row.invoiceNo || undefined,
+            purchaseCost: row.purchaseCost ? parseFloat(row.purchaseCost) : undefined,
+            gst: row.gst ? parseFloat(row.gst) : undefined,
+            purchaseDate: row.purchaseDate || undefined,
+            warrantyMonths: row.warrantyMonths ? parseInt(row.warrantyMonths) : undefined,
+            warrantyExpiry: row.warrantyExpiry || undefined,
+            location: row.location || undefined,
+            minStock: row.minStock ? parseInt(row.minStock) : undefined,
+            currentQty: parseInt(row.currentQty),
+            status: row.status,
+            categoryId: categoryId,
+            subcategoryId: subcategoryId
+          };
+
+          await api.post('/inventory-master', payload);
+          success++;
+        } catch (err: any) {
+          console.error('Failed to import item:', row.itemName, err);
+          failed++;
+        }
+      }
+
+      setImportResult({ success, failed, skipped: 0 });
+    } catch (err: any) {
+      console.error('Import error:', err);
+      setImportResult({
+        success,
+        failed,
+        skipped: 0,
+        error: err.response?.data?.message || 'Import failed'
+      });
+    } finally {
+      setImportProcessing(false);
+    }
+  }
+
+  function closeImportModal() {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportErrors({});
+    setImportValidRows([]);
+    setImportResult(null);
+  }
+
+  function downloadValidationReport() {
+    const errorData: any[][] = [['Row', 'Field', 'Error']];
+    Object.entries(importErrors).forEach(([rowIdx, errors]) => {
+      const row = importData[parseInt(rowIdx)];
+      const itemName = row?.['Item Name'] || 'N/A';
+      errors.forEach(error => {
+        errorData.push([`${parseInt(rowIdx) + 2} (${itemName})`, '', error]);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(errorData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Validation Errors');
+    XLSX.writeFile(wb, 'import-validation-report.xlsx');
   }
 
   function handleBack() {
