@@ -452,6 +452,9 @@ export function UsersDashboardPage() {
     setImportErrors({});
     setImportValidRows([]);
     setImportResult(null);
+    
+    // Refresh users list after closing modal
+    fetchUsers();
   }
 
   function downloadValidationReport() {

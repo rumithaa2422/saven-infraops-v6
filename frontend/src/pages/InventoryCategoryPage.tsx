@@ -741,6 +741,9 @@ export function InventoryCategoryPage() {
     setImportErrors({});
     setImportValidRows([]);
     setImportResult(null);
+    
+    // Refresh inventory data after closing modal
+    loadData();
   }
 
   function formatDate(dateStr?: string): string {

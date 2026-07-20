@@ -615,6 +615,10 @@ export function VendorDirectoryPage() {
     setImportErrors({});
     setImportValidRows([]);
     setImportResult(null);
+    
+    // Refresh vendors list after closing modal
+    loadVendors();
+    loadSummary();
   }
 
   function downloadValidationReport() {

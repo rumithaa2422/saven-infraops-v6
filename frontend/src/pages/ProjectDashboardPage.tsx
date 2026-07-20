@@ -539,6 +539,9 @@ export function ProjectDashboardPage() {
     setImportErrors({});
     setImportValidRows([]);
     setImportResult(null);
+    
+    // Refresh projects list after closing modal
+    fetchProjects();
   }
 
   function downloadValidationReport() {

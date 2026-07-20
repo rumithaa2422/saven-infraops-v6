@@ -576,6 +576,9 @@ export function IncidentsPage() {
     setImportErrors({});
     setImportValidRows([]);
     setImportResult(null);
+    
+    // Refresh incidents list after closing modal
+    load();
   }
 
   function downloadValidationReport() {
