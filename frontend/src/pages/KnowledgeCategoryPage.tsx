@@ -1012,83 +1012,71 @@ export function KnowledgeCategoryPage() {
         </>
       )}
 
-      {/* Articles View */}
+      {/* Articles View - Modern Design */}
       {viewMode === 'articles' && (
         <>
           {/* Article Stats */}
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">📚</div>
-              <div className="stat-content">
-                <span className="stat-label">
+          <div className="kb-articles-stats">
+            <div className="kb-stat-card">
+              <div className="kb-stat-icon">📚</div>
+              <div className="kb-stat-content">
+                <span className="kb-stat-label">
                   {selectedCategory ? selectedCategory.name : 'All Categories'}
                 </span>
-                <strong className="stat-value">{articles.length}</strong>
-                <small className="stat-hint">
+                <strong className="kb-stat-value">{articles.length}</strong>
+                <small className="kb-stat-hint">
                   {selectedCategory ? 'In this category' : 'Total articles'}
                 </small>
               </div>
             </div>
           </div>
 
-          {/* Article List Header */}
-          <div className="articles-header">
-            <h2>
-              {selectedCategory ? selectedCategory.name : 'All Articles'}
-            </h2>
-            <span className="article-count">
-              Showing {articles.length} {articles.length === 1 ? 'article' : 'articles'}
-            </span>
-          </div>
-
-          {/* Filters Bar */}
-          <div className="filters-bar">
-            <div className="search-box">
-              <span className="search-icon">🔍</span>
+          {/* Search and Filters */}
+          <div className="kb-search-filter-bar">
+            <div className="kb-search-box">
+              <span className="kb-search-icon">🔍</span>
               <input
                 type="text"
-                placeholder="Search articles..."
+                className="kb-search-input"
+                placeholder="Search articles by title, author..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
               {searchInput && (
                 <button 
-                  className="search-clear"
+                  className="kb-search-clear"
                   onClick={() => setSearchInput('')}
-                  title="Clear search"
                 >
                   ×
                 </button>
               )}
             </div>
-            <div className="sort-info">
-              {articleLoading ? (
-                <span className="searching">Searching...</span>
-              ) : (
-                <>{articles.length} article{articles.length !== 1 ? 's' : ''} found</>
-              )}
+            <div className="kb-filter-actions">
+              <span className="kb-results-count">
+                {articleLoading ? 'Searching...' : `${articles.length} article${articles.length !== 1 ? 's' : ''}`}
+              </span>
             </div>
           </div>
 
-          {/* Article List */}
+          {/* Article Table */}
           {articleLoading ? (
-            <div className="loading-state">
-              <div className="loading-spinner"></div>
+            <div className="kb-loading-state">
+              <div className="kb-loading-spinner"></div>
               <p>Loading articles...</p>
             </div>
           ) : articleError ? (
-            <div className="error-state">
-              <div className="error-card">
-                <span className="error-icon">⚠</span>
+            <div className="kb-error-state">
+              <div className="kb-error-card">
+                <span className="kb-error-icon">⚠️</span>
                 <h3>Unable to Load Knowledge Base Articles</h3>
                 <p>{articleError || 'Please refresh the page or contact your administrator if the issue continues.'}</p>
-                <button className="primary" onClick={handleRefresh}>Retry</button>
+                <button className="kb-btn-primary-sm" onClick={handleRefresh}>Retry</button>
               </div>
             </div>
           ) : articles.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-card">
-                <span className="empty-icon">📄</span>
+            <div className="kb-empty-state">
+              <div className="kb-empty-card">
+                <span className="kb-empty-icon">📄</span>
                 <h3>
                   {search 
                     ? 'No articles match your search' 
@@ -1097,88 +1085,103 @@ export function KnowledgeCategoryPage() {
                       : 'No articles found'}
                 </h3>
                 {canManageArticles && !search && (
-                  <button className="primary" onClick={openCreateArticleModal}>
+                  <button className="kb-btn-primary-sm" onClick={openCreateArticleModal}>
                     Create First Article
                   </button>
                 )}
               </div>
             </div>
           ) : (
-            <div className="table-card">
+            <div className="kb-table-card">
               <table>
                 <thead>
                   <tr>
                     <th 
-                      className="sortable" 
+                      className="kb-sortable" 
                       onClick={() => handleSort('title')}
                     >
-                      Title{getSortIndicator('title')}
+                      <span>Title</span>
+                      <span className="kb-sort-indicator">{getSortIndicator('title')}</span>
                     </th>
                     <th>Description</th>
                     <th 
-                      className="sortable"
+                      className="kb-sortable"
                       onClick={() => handleSort('authorName')}
                     >
-                      Created By{getSortIndicator('authorName')}
+                      <span>Author</span>
+                      <span className="kb-sort-indicator">{getSortIndicator('authorName')}</span>
                     </th>
                     <th 
-                      className="sortable"
+                      className="kb-sortable"
                       onClick={() => handleSort('createdAt')}
                     >
-                      Created{getSortIndicator('createdAt')}
+                      <span>Created</span>
+                      <span className="kb-sort-indicator">{getSortIndicator('createdAt')}</span>
                     </th>
                     <th 
-                      className="sortable"
+                      className="kb-sortable"
                       onClick={() => handleSort('updatedAt')}
                     >
-                      Last Updated{getSortIndicator('updatedAt')}
+                      <span>Updated</span>
+                      <span className="kb-sort-indicator">{getSortIndicator('updatedAt')}</span>
                     </th>
-                    {canManageKB && <th className="actions-col">Actions</th>}
+                    {canManageKB && <th className="kb-actions-header">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {articles.map((article) => (
                     <tr 
                       key={article.id} 
-                      className="clickable-row"
+                      className="kb-table-row"
                       onClick={() => viewArticle(article)}
                     >
                       <td>
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium text-slate-900 hover:text-brand-600 transition-colors cursor-pointer">
-                            {article.title}
-                          </span>
+                        <div className="kb-article-title">
+                          <span className="kb-article-name">{article.title}</span>
                         </div>
                       </td>
-                      <td className="description-cell">{article.summary || '-'}</td>
-                      <td>{article.authorName || '-'}</td>
-                      <td>{formatDate(article.createdAt)}</td>
-                      <td>{formatDate(article.updatedAt)}</td>
+                      <td className="kb-description-cell">{article.summary || '-'}</td>
+                      <td>
+                        <span className="kb-author-badge">{article.authorName || '-'}</span>
+                      </td>
+                      <td>
+                        <span className="kb-date">{formatDate(article.createdAt)}</span>
+                      </td>
+                      <td>
+                        <span className="kb-date">{formatDate(article.updatedAt)}</span>
+                      </td>
                       {canManageKB && (
-                        <td className="actions-col" onClick={(e) => e.stopPropagation()}>
-                          <div className="action-buttons">
+                        <td className="kb-actions-cell" onClick={(e) => e.stopPropagation()}>
+                          <div className="kb-action-buttons">
                             <button 
-                              className="action-btn view"
+                              className="kb-action-btn view"
                               onClick={() => viewArticle(article)}
                               title="View"
                             >
-                              👁️
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
                             </button>
                             {canUpdateArticles && (
                               <>
                                 <button 
-                                  className="action-btn edit"
+                                  className="kb-action-btn edit"
                                   onClick={() => openEditArticleModal(article)}
                                   title="Edit"
                                 >
-                                  ✏️
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                  </svg>
                                 </button>
                                 <button 
-                                  className="action-btn delete"
+                                  className="kb-action-btn delete"
                                   onClick={() => openDeleteArticleConfirm(article)}
                                   title="Delete"
                                 >
-                                  🗑️
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                  </svg>
                                 </button>
                               </>
                             )}
@@ -1262,88 +1265,88 @@ export function KnowledgeCategoryPage() {
             />
           </div>
 
-          {/* Article Attachments */}
-          <div className="article-attachments-section">
-            <div className="attachments-header">
-              <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Attachments
+          {/* Article Attachments - Modern Design */}
+          <div className="kb-attachments-section">
+            <div className="kb-attachments-header">
+              <div className="kb-attachments-title">
+                <span className="kb-attachments-icon">📎</span>
+                <h3>Attachments</h3>
                 {viewingArticle.attachments && viewingArticle.attachments.length > 0 && (
-                  <span className="attachment-count">{viewingArticle.attachments.length}</span>
+                  <span className="kb-attachments-count">{viewingArticle.attachments.length}</span>
                 )}
-              </h3>
+              </div>
             </div>
 
             {/* Empty State */}
             {!viewingArticle.attachments?.length && !canUpdateArticles && (
-              <div className="attachments-empty">
-                <div className="empty-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <p className="empty-title">No attachments available</p>
-                <p className="empty-subtitle">Upload files to provide additional resources.</p>
+              <div className="kb-attachments-empty">
+                <div className="kb-attachments-empty-icon">📄</div>
+                <p className="kb-attachments-empty-title">No attachments available</p>
+                <p className="kb-attachments-empty-text">Upload files to provide additional resources.</p>
               </div>
             )}
 
-            {/* Attachments List */}
+            {/* Attachments List - Modern Cards */}
             {viewingArticle.attachments && viewingArticle.attachments.length > 0 && (
-              <div className="attachments-grid" role="list" aria-label="Attachments list">
+              <div className="kb-attachments-grid" role="list" aria-label="Attachments list">
                 {viewingArticle.attachments.map((attachment) => (
-                  <div key={attachment.id} className="attachment-card" role="listitem">
-                    <div className="attachment-card-icon">
+                  <div key={attachment.id} className="kb-attachment-card" role="listitem">
+                    <div className="kb-attachment-icon">
                       {getFileIconSvg(attachment.mimeType)}
                     </div>
-                    <div className="attachment-card-content">
+                    <div className="kb-attachment-info">
                       <button 
                         type="button"
-                        className="attachment-card-name"
+                        className="kb-attachment-name"
                         onClick={() => previewAttachmentFile(attachment)}
                         aria-label={`Preview ${attachment.originalFileName}`}
-                        title="Click to preview"
                       >
                         {attachment.originalFileName}
                       </button>
-                      <div className="attachment-card-meta">
-                        <span className="file-type-badge" style={{ backgroundColor: getFileTypeInfo(attachment.mimeType).color + '20', color: getFileTypeInfo(attachment.mimeType).color }}>
+                      <div className="kb-attachment-meta">
+                        <span 
+                          className="kb-attachment-type" 
+                          style={{ 
+                            backgroundColor: getFileTypeInfo(attachment.mimeType).color + '20', 
+                            color: getFileTypeInfo(attachment.mimeType).color 
+                          }}
+                        >
                           {getFileTypeInfo(attachment.mimeType).label}
                         </span>
-                        <span className="file-size">{formatFileSize(attachment.fileSize)}</span>
+                        <span className="kb-attachment-size">{formatFileSize(attachment.fileSize)}</span>
                       </div>
-                      <div className="attachment-card-footer">
-                        <span className="upload-info">
-                          Uploaded {formatDate(attachment.uploadedAt)}
-                          {attachment.uploadedBy && ` by ${attachment.uploadedBy}`}
+                      <div className="kb-attachment-details">
+                        <span className="kb-attachment-date">
+                          📅 {formatDate(attachment.uploadedAt)}
                         </span>
+                        {attachment.uploadedBy && (
+                          <span className="kb-attachment-uploader">
+                            👤 {attachment.uploadedBy}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="attachment-card-actions">
+                    <div className="kb-attachment-actions">
                       <button 
-                        className="action-btn download-btn"
+                        className="kb-attachment-btn download"
                         onClick={() => downloadAttachment(attachment.id, attachment.originalFileName)}
                         title="Download"
                         aria-label={`Download ${attachment.originalFileName}`}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                         </svg>
-                        <span>Download</span>
                       </button>
-                      {/* PART 5/6: Delete attachment requires kb:delete or kb:manage */}
                       {(hasPermission('kb:delete') || hasPermission('kb:manage') || isSuperAdmin) && (
                         <button 
-                          className="action-btn delete-btn"
+                          className="kb-attachment-btn delete"
                           onClick={() => setDeleteConfirmAttachment({ id: attachment.id, name: attachment.originalFileName })}
                           title="Delete"
                           aria-label={`Delete ${attachment.originalFileName}`}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
                           </svg>
-                          <span>Delete</span>
                         </button>
                       )}
                     </div>
@@ -2641,6 +2644,583 @@ export function KnowledgeCategoryPage() {
 
         .action-btn.delete:hover {
           background: #fee2e2;
+        }
+
+        /* ===== MODERN ARTICLES VIEW STYLES ===== */
+
+        /* Article Stats - Modern Style */
+        .kb-articles-stats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 20px;
+          margin-bottom: 24px;
+        }
+
+        .kb-stat-card {
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: all 0.2s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .kb-stat-card:hover {
+          box-shadow: 0 4px 16px rgba(102, 126, 234, 0.12);
+          border-color: #667eea;
+          transform: translateY(-2px);
+        }
+
+        .kb-stat-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          background: linear-gradient(135deg, #667eea20, #764ba220);
+        }
+
+        .kb-stat-content {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .kb-stat-label {
+          font-size: 13px;
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .kb-stat-value {
+          font-size: 32px;
+          font-weight: 700;
+          color: #1e293b;
+          line-height: 1.1;
+        }
+
+        .kb-stat-hint {
+          font-size: 12px;
+          color: #94a3b8;
+          margin-top: 2px;
+        }
+
+        /* Search and Filter Bar */
+        .kb-search-filter-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 20px;
+          padding: 16px 20px;
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .kb-search-box {
+          flex: 1;
+          position: relative;
+          max-width: 500px;
+        }
+
+        .kb-search-icon {
+          position: absolute;
+          left: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 16px;
+          color: #94a3b8;
+          pointer-events: none;
+        }
+
+        .kb-search-input {
+          width: 100%;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 12px 40px 12px 44px;
+          font-size: 14px;
+          background: #f9fafb;
+          transition: all 0.2s;
+        }
+
+        .kb-search-input:focus {
+          outline: none;
+          border-color: #667eea;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .kb-search-input::placeholder {
+          color: #9ca3af;
+        }
+
+        .kb-search-clear {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: none;
+          background: #e5e7eb;
+          color: #6b7280;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.15s;
+        }
+
+        .kb-search-clear:hover {
+          background: #d1d5db;
+          color: #374151;
+        }
+
+        .kb-filter-actions {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .kb-results-count {
+          font-size: 14px;
+          color: #64748b;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        /* Modern Table Card */
+        .kb-table-card {
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .kb-table-card table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .kb-table-card thead {
+          background: #f8fafc;
+        }
+
+        .kb-table-card th {
+          padding: 14px 16px;
+          text-align: left;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #64748b;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .kb-sortable {
+          cursor: pointer;
+          user-select: none;
+          transition: all 0.15s;
+        }
+
+        .kb-sortable:hover {
+          color: #667eea;
+          background: #f1f5f9;
+        }
+
+        .kb-sortable span {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .kb-sort-indicator {
+          font-size: 10px;
+          opacity: 0.7;
+        }
+
+        .kb-actions-header {
+          text-align: right;
+          padding-right: 20px;
+        }
+
+        .kb-table-row {
+          cursor: pointer;
+          transition: all 0.15s;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        .kb-table-row:hover {
+          background: #f8fafc;
+        }
+
+        .kb-table-row:last-child {
+          border-bottom: none;
+        }
+
+        .kb-table-card td {
+          padding: 16px;
+          font-size: 14px;
+          color: #475569;
+          vertical-align: middle;
+        }
+
+        .kb-article-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .kb-article-name {
+          font-weight: 600;
+          color: #1e293b;
+          transition: color 0.15s;
+        }
+
+        .kb-table-row:hover .kb-article-name {
+          color: #667eea;
+        }
+
+        .kb-description-cell {
+          max-width: 300px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #64748b;
+        }
+
+        .kb-author-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          background: #f1f5f9;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #475569;
+        }
+
+        .kb-date {
+          font-size: 13px;
+          color: #64748b;
+        }
+
+        .kb-actions-cell {
+          text-align: right;
+          padding-right: 20px;
+        }
+
+        .kb-action-buttons {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .kb-action-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          border: none;
+          background: #f1f5f9;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          color: #64748b;
+        }
+
+        .kb-action-btn:hover {
+          transform: scale(1.1);
+        }
+
+        .kb-action-btn.view:hover {
+          background: #e0e7ff;
+          color: #667eea;
+        }
+
+        .kb-action-btn.edit:hover {
+          background: #fef3c7;
+          color: #d97706;
+        }
+
+        .kb-action-btn.delete:hover {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+
+        /* Loading, Error, Empty States */
+        .kb-loading-state,
+        .kb-error-state,
+        .kb-empty-state {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 300px;
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+        }
+
+        .kb-loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid #e5e7eb;
+          border-top-color: #667eea;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        .kb-error-card,
+        .kb-empty-card {
+          text-align: center;
+          padding: 48px;
+        }
+
+        .kb-error-icon,
+        .kb-empty-icon {
+          font-size: 56px;
+          margin-bottom: 16px;
+        }
+
+        .kb-error-card h3,
+        .kb-empty-card h3 {
+          margin: 0 0 8px 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .kb-error-card p,
+        .kb-empty-card p {
+          margin: 0 0 24px 0;
+          color: #64748b;
+          font-size: 14px;
+        }
+
+        .kb-btn-primary-sm {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .kb-btn-primary-sm:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* ===== MODERN ATTACHMENTS SECTION ===== */
+
+        .kb-attachments-section {
+          margin-top: 24px;
+          padding: 24px;
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .kb-attachments-header {
+          margin-bottom: 20px;
+        }
+
+        .kb-attachments-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .kb-attachments-icon {
+          font-size: 24px;
+        }
+
+        .kb-attachments-title h3 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .kb-attachments-count {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 4px 12px;
+          border-radius: 20px;
+        }
+
+        .kb-attachments-empty {
+          text-align: center;
+          padding: 48px 24px;
+          background: #f8fafc;
+          border-radius: 12px;
+        }
+
+        .kb-attachments-empty-icon {
+          font-size: 48px;
+          margin-bottom: 12px;
+        }
+
+        .kb-attachments-empty-title {
+          margin: 0 0 4px 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .kb-attachments-empty-text {
+          margin: 0;
+          font-size: 14px;
+          color: #64748b;
+        }
+
+        /* Attachment Cards Grid */
+        .kb-attachments-grid {
+          display: grid;
+          gap: 16px;
+        }
+
+        .kb-attachment-card {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px 20px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          transition: all 0.2s;
+        }
+
+        .kb-attachment-card:hover {
+          background: #f1f5f9;
+          border-color: #d1d5db;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .kb-attachment-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: white;
+          flex-shrink: 0;
+        }
+
+        .kb-attachment-icon svg {
+          width: 28px;
+          height: 28px;
+        }
+
+        .kb-attachment-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .kb-attachment-name {
+          display: block;
+          font-size: 14px;
+          font-weight: 600;
+          color: #1e293b;
+          margin-bottom: 6px;
+          background: none;
+          border: none;
+          padding: 0;
+          text-align: left;
+          cursor: pointer;
+          transition: color 0.15s;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .kb-attachment-name:hover {
+          color: #667eea;
+        }
+
+        .kb-attachment-meta {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 6px;
+        }
+
+        .kb-attachment-type {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+
+        .kb-attachment-size {
+          font-size: 12px;
+          color: #64748b;
+        }
+
+        .kb-attachment-details {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          font-size: 12px;
+          color: #94a3b8;
+        }
+
+        .kb-attachment-date,
+        .kb-attachment-uploader {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .kb-attachment-actions {
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .kb-attachment-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          border: none;
+          background: white;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          color: #64748b;
+        }
+
+        .kb-attachment-btn:hover {
+          transform: scale(1.08);
+        }
+
+        .kb-attachment-btn.download:hover {
+          background: #dcfce7;
+          color: #16a34a;
+        }
+
+        .kb-attachment-btn.delete:hover {
+          background: #fee2e2;
+          color: #dc2626;
         }
 
         /* ===== MODERN MODAL STYLES ===== */
