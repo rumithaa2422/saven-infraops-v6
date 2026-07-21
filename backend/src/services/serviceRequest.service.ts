@@ -8,7 +8,8 @@ import {
   notifyRequesterAssignment,
   notifyRequesterStatusChange,
   notifyOldAssigneeRemoval,
-  notifyRequesterReassignment
+  notifyRequesterReassignment,
+  notifyRequesterTicketClosed
 } from './notification.service.js';
 
 function withRef(prefix: string, count: number) {
@@ -398,14 +399,24 @@ export async function updateServiceRequestStatus(
 
   // Notify requester about status change
   if (item.requesterId) {
-    await notifyRequesterStatusChange(
-      item.requesterId,
-      id,
-      item.ticketNo,
-      STATUS_DISPLAY_NAMES[oldStatus] || oldStatus,
-      STATUS_DISPLAY_NAMES[item.status] || item.status,
-      data.actorName || 'System'
-    );
+    // Special notification for ticket closure
+    if (item.status === 'CLOSED') {
+      await notifyRequesterTicketClosed(
+        item.requesterId,
+        id,
+        item.ticketNo,
+        data.actorName || 'System'
+      );
+    } else {
+      await notifyRequesterStatusChange(
+        item.requesterId,
+        id,
+        item.ticketNo,
+        STATUS_DISPLAY_NAMES[oldStatus] || oldStatus,
+        STATUS_DISPLAY_NAMES[item.status] || item.status,
+        data.actorName || 'System'
+      );
+    }
   }
 
   return item;

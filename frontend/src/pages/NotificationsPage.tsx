@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { 
   Bell, 
-  Check, 
   CheckCircle, 
   FileText, 
   Clock,
   User,
   AlertCircle,
-  Trash2
+  Trash2,
+  Filter
 } from 'lucide-react';
 import { Button } from '../components/serviceRequests';
 
@@ -25,11 +25,14 @@ type Notification = {
   createdAt: string;
 };
 
+type FilterType = 'all' | 'unread' | 'read';
+
 export function NotificationsPage() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [filter, setFilter] = useState<FilterType>('all');
 
   async function loadNotifications() {
     try {
@@ -81,12 +84,10 @@ export function NotificationsPage() {
   }
 
   function handleNotificationClick(notification: Notification) {
-    // Mark as read
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
     
-    // Navigate if there's an action URL
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
     }
@@ -115,6 +116,45 @@ export function NotificationsPage() {
     if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString();
   }
+
+  function getDateGroup(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 86400000);
+    const notificationDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    if (notificationDate.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (notificationDate.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    } else {
+      return 'Older';
+    }
+  }
+
+  // Filter notifications
+  const filteredNotifications = notifications.filter(n => {
+    if (filter === 'unread') return !n.isRead;
+    if (filter === 'read') return n.isRead;
+    return true;
+  });
+
+  // Group notifications by date
+  const groupedNotifications = filteredNotifications.reduce((groups, notification) => {
+    const group = getDateGroup(notification.createdAt);
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    groups[group].push(notification);
+    return groups;
+  }, {} as Record<string, Notification[]>);
+
+  // Sort groups: Today first, then Yesterday, then Older
+  const groupOrder = ['Today', 'Yesterday', 'Older'];
+  const sortedGroups = Object.keys(groupedNotifications).sort((a, b) => {
+    return groupOrder.indexOf(a) - groupOrder.indexOf(b);
+  });
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -148,6 +188,48 @@ export function NotificationsPage() {
               </Button>
             )}
           </div>
+
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-2 mt-4">
+            <Filter className="w-4 h-4 text-slate-400" />
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  filter === 'all' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('unread')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+                  filter === 'unread' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Unread
+                {unreadCount > 0 && (
+                  <span className="w-5 h-5 flex items-center justify-center bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setFilter('read')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  filter === 'read' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Read
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -157,67 +239,106 @@ export function NotificationsPage() {
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
           </div>
-        ) : notifications.length === 0 ? (
+        ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <Bell className="w-8 h-8 text-slate-400" />
             </div>
-            <h2 className="text-lg font-medium text-slate-900 mb-2">No notifications</h2>
+            <h2 className="text-lg font-medium text-slate-900 mb-2">
+              {filter === 'all' ? 'No notifications' : filter === 'unread' ? 'No unread notifications' : 'No read notifications'}
+            </h2>
             <p className="text-sm text-slate-500">
-              You're all caught up! New notifications will appear here.
+              {filter === 'all' ? "You're all caught up! New notifications will appear here." : 'Check back later for notifications.'}
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`bg-white rounded-xl border p-4 transition-all hover:shadow-sm cursor-pointer ${
-                  notification.isRead 
-                    ? 'border-slate-200' 
-                    : 'border-brand-200 bg-brand-50/50'
-                }`}
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {getIcon(notification.referenceModule)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <p className={`text-sm font-medium ${
-                          notification.isRead ? 'text-slate-700' : 'text-slate-900'
-                        }`}>
-                          {notification.title}
-                        </p>
-                        <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">
-                          {notification.message}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          <span className="text-xs text-slate-400">
-                            {formatTime(notification.createdAt)}
-                          </span>
+          <div className="space-y-6">
+            {sortedGroups.map(group => (
+              <div key={group}>
+                {/* Group Header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-sm font-semibold text-slate-700">{group}</h3>
+                  <div className="flex-1 h-px bg-slate-200"></div>
+                  <span className="text-xs text-slate-400">
+                    {groupedNotifications[group].length} {groupedNotifications[group].length === 1 ? 'notification' : 'notifications'}
+                  </span>
+                </div>
+
+                {/* Timeline Style Notifications */}
+                <div className="relative">
+                  {/* Timeline Line */}
+                  <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200"></div>
+
+                  <div className="space-y-3">
+                    {groupedNotifications[group].map((notification, index) => (
+                      <div
+                        key={notification.id}
+                        className={`relative pl-12 transition-all ${
+                          !notification.isRead ? 'opacity-100' : 'opacity-80'
+                        }`}
+                      >
+                        {/* Timeline Dot */}
+                        <div className={`absolute left-3 top-4 w-5 h-5 rounded-full border-2 border-white ${
+                          !notification.isRead 
+                            ? 'bg-brand-500' 
+                            : 'bg-slate-300'
+                        }`}></div>
+
+                        <div
+                          className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md ${
+                            notification.isRead 
+                              ? 'border-slate-200' 
+                              : 'border-brand-200 shadow-sm'
+                          }`}
+                          onClick={() => handleNotificationClick(notification)}
+                        >
+                          <div className="flex gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                              {getIcon(notification.referenceModule)}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className={`text-sm font-medium ${
+                                    notification.isRead ? 'text-slate-600' : 'text-slate-900'
+                                  }`}>
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-sm text-slate-500 mt-0.5">
+                                    {notification.message}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <Clock className="w-3 h-3 text-slate-400" />
+                                    <span className="text-xs text-slate-400">
+                                      {formatTime(notification.createdAt)}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  {!notification.isRead && (
+                                    <span className="px-2 py-0.5 bg-brand-100 text-brand-700 text-xs font-medium rounded-full">
+                                      New
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notification.id);
+                                    }}
+                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                                    title="Delete notification"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {!notification.isRead && (
-                          <div className="w-2 h-2 rounded-full bg-brand-500" />
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteNotification(notification.id);
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>

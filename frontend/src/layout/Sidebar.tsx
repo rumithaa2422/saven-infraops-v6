@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import {
   LayoutDashboard,
+  Bell,
   Ticket,
   AlertTriangle,
   GitBranch,
@@ -21,6 +22,7 @@ import {
 // Phase 3C: Migrated to new RBAC permission namespaces
 const menuPermissionMap: Record<string, string> = {
   '/': 'dashboard:view',
+  '/notifications': 'dashboard:view',
   '/service-requests': 'tickets:view',
   '/incidents': 'incidents:view',
   '/problems': 'problems:view',
@@ -39,6 +41,7 @@ const menuPermissionMap: Record<string, string> = {
 
 const allMenuItems = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { label: 'Notifications', path: '/notifications', icon: Bell },
   { label: 'Service Requests', path: '/service-requests', icon: Ticket },
   { label: 'Incidents', path: '/incidents', icon: AlertTriangle },
   { label: 'Problems', path: '/problems', icon: AlertTriangle },

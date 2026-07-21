@@ -16,6 +16,11 @@ import {
   getAllStatuses,
   STATUS_DISPLAY_NAMES
 } from '../../services/serviceRequest.service.js';
+import {
+  notifyAdminEmployeeReply,
+  notifyEmployeeAdminReply,
+  notifySuperAdminsCommentAdded
+} from '../../services/notification.service.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
 import { hasPermissionViaAlias } from '../../common/permissionAliases.js';
@@ -862,6 +867,13 @@ const commentSchema = z.object({
   message: z.string().min(1).max(5000)
 });
 
+// Helper to check if user is an employee (not Super Admin or Admin)
+function isEmployee(user: Express.Request['user']): boolean {
+  if (!user) return false;
+  const roles = user.roles || [];
+  return !roles.includes('Super Admin') && !roles.includes('Admin');
+}
+
 serviceRequestRouter.post('/:id/comments', requireAuth, requirePermissionOr(['tickets:write', 'tickets:manage']), async (req, res, next) => {
   try {
     const id = req.params.id as string;
@@ -891,6 +903,39 @@ serviceRequestRouter.post('/:id/comments', requireAuth, requirePermissionOr(['ti
       `Added comment: "${messagePreview}"`,
       req.user
     );
+    
+    // Send notifications based on who is posting the comment
+    const userIsEmployee = isEmployee(req.user);
+    
+    if (userIsEmployee) {
+      // Notify assigned admin about employee reply
+      if (request.assigneeId) {
+        await notifyAdminEmployeeReply(
+          request.assigneeId,
+          id,
+          request.ticketNo,
+          req.user?.name || 'Customer'
+        );
+      }
+      // Also notify Super Admins
+      await notifySuperAdminsCommentAdded(
+        id,
+        request.ticketNo,
+        request.title,
+        req.user?.name || 'Customer',
+        true // isEmployee = true
+      );
+    } else {
+      // Admin or Super Admin replied - notify the employee
+      if (request.requesterId) {
+        await notifyEmployeeAdminReply(
+          request.requesterId,
+          id,
+          request.ticketNo,
+          req.user?.name || 'Support'
+        );
+      }
+    }
     
     res.status(201).json({ comment });
   } catch (error) {

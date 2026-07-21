@@ -268,3 +268,98 @@ export async function notifyRequesterReassignment(
     actionUrl: `/service-requests/${requestId}`
   });
 }
+
+/**
+ * Notify admin when employee replies
+ */
+export async function notifyAdminEmployeeReply(
+  assigneeId: string,
+  requestId: string,
+  ticketNo: string,
+  employeeName: string
+) {
+  return createNotification({
+    userId: assigneeId,
+    title: 'Customer replied',
+    message: `${ticketNo}: Customer ${employeeName} has replied.`,
+    referenceModule: 'ServiceRequest',
+    referenceId: requestId,
+    actionUrl: `/service-requests/${requestId}`
+  });
+}
+
+/**
+ * Notify employee when admin replies
+ */
+export async function notifyEmployeeAdminReply(
+  requesterId: string,
+  requestId: string,
+  ticketNo: string,
+  adminName: string
+) {
+  return createNotification({
+    userId: requesterId,
+    title: 'Support replied',
+    message: `${ticketNo}: ${adminName} has replied to your request.`,
+    referenceModule: 'ServiceRequest',
+    referenceId: requestId,
+    actionUrl: `/service-requests/${requestId}`
+  });
+}
+
+/**
+ * Notify requester when ticket is closed
+ */
+export async function notifyRequesterTicketClosed(
+  requesterId: string,
+  requestId: string,
+  ticketNo: string,
+  closedBy: string
+) {
+  return createNotification({
+    userId: requesterId,
+    title: 'Your ticket has been closed',
+    message: `${ticketNo}: Your request has been closed by ${closedBy}.`,
+    referenceModule: 'ServiceRequest',
+    referenceId: requestId,
+    actionUrl: `/service-requests/${requestId}`
+  });
+}
+
+/**
+ * Notify Super Admins when a comment is added
+ */
+export async function notifySuperAdminsCommentAdded(
+  requestId: string,
+  ticketNo: string,
+  title: string,
+  commenterName: string,
+  isEmployee: boolean
+) {
+  // Get all Super Admins
+  const superAdmins = await prisma.user.findMany({
+    where: {
+      roles: {
+        some: {
+          role: {
+            name: 'Super Admin'
+          }
+        }
+      }
+    },
+    select: { id: true }
+  });
+
+  const adminIds = superAdmins.map(admin => admin.id);
+  
+  if (adminIds.length === 0) return;
+
+  return createNotificationsForUsers(
+    adminIds,
+    isEmployee ? 'Customer replied' : 'Admin replied',
+    `${ticketNo}: ${commenterName} ${isEmployee ? 'replied' : 'responded'}.`,
+    'ServiceRequest',
+    requestId,
+    `/service-requests/${requestId}`
+  );
+}

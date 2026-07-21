@@ -1,15 +1,60 @@
 import { RefreshCw, User, ChevronDown, Plus, Bell, Settings } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import { api } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
 
+type Notification = {
+  id: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  actionUrl?: string;
+  createdAt: string;
+};
+
 export function DashboardHeader({ onRefresh, isRefreshing = false }: DashboardHeaderProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch unread notifications count and recent notifications
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const res = await api.get('/notifications');
+        setNotifications(res.data.notifications || []);
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+      }
+    }
+    
+    if (showNotifications) {
+      fetchNotifications();
+    }
+  }, [showNotifications]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
 
   const getGreeting = useCallback(() => {
     const hour = new Date().getHours();
@@ -34,6 +79,47 @@ export function DashboardHeader({ onRefresh, isRefreshing = false }: DashboardHe
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} min${minutes > 1 ? 's' : ''} ago`;
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const handleMarkAsRead = async (id: string, actionUrl?: string) => {
+    try {
+      await api.post(`/notifications/${id}/read`);
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, isRead: true } : n
+      ));
+      if (actionUrl) {
+        setShowNotifications(false);
+        navigate(actionUrl);
+      }
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.post('/notifications/mark-all-read');
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
   };
 
   return (
@@ -63,14 +149,87 @@ export function DashboardHeader({ onRefresh, isRefreshing = false }: DashboardHe
           </button>
 
           {/* Notifications */}
-          <button 
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2.5 rounded-xl hover:bg-slate-100 transition-colors group"
-            title="Notifications"
-          >
-            <Bell className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          </button>
+          <div className="relative" ref={dropdownRef}>
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2.5 rounded-xl hover:bg-slate-100 transition-colors group"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5 text-slate-500 group-hover:text-slate-700 transition-colors" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
+                {/* Dropdown Header */}
+                <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                  <h3 className="font-semibold text-slate-900">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={handleMarkAllRead}
+                      className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                {/* Notification List */}
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-slate-500 text-sm">
+                      No notifications
+                    </div>
+                  ) : (
+                    notifications.slice(0, 5).map((notification) => (
+                      <div
+                        key={notification.id}
+                        onClick={() => handleMarkAsRead(notification.id, notification.actionUrl)}
+                        className={`px-4 py-3 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors ${
+                          !notification.isRead ? 'bg-brand-50/50' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {!notification.isRead && (
+                            <span className="w-2 h-2 bg-brand-500 rounded-full mt-2 flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${!notification.isRead ? 'font-semibold text-slate-900' : 'text-slate-700'}`}>
+                              {notification.title}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              {formatTimeAgo(notification.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* View All Link */}
+                <div className="px-4 py-3 border-t border-slate-100 bg-slate-50">
+                  <button
+                    onClick={() => {
+                      setShowNotifications(false);
+                      navigate('/notifications');
+                    }}
+                    className="w-full text-center text-sm text-brand-600 hover:text-brand-700 font-medium"
+                  >
+                    View All Notifications
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Settings */}
           <button 

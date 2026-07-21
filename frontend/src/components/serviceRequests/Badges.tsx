@@ -6,20 +6,25 @@ interface StatusBadgeProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
+// Status colors consistent across the application
+// New: Blue, Assigned: Purple, In Progress: Orange, Pending: Yellow
+// Waiting for User: Cyan, Waiting for Vendor: Indigo, Resolved: Green
+// Closed: Gray, Cancelled: Red
 const statusConfig: Record<string, { label: string; bg: string; text: string; ring: string }> = {
   OPEN: { label: 'Open', bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-1 ring-blue-200' },
   NEW: { label: 'New', bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-1 ring-blue-200' },
   ASSIGNED: { label: 'Assigned', bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-1 ring-purple-200' },
-  IN_PROGRESS: { label: 'In Progress', bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-1 ring-amber-200' },
-  WAITING_FOR_USER: { label: 'Waiting', bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-1 ring-orange-200' },
-  RESOLVED: { label: 'Resolved', bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-1 ring-emerald-200' },
-  COMPLETED: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-1 ring-emerald-200' },
+  IN_PROGRESS: { label: 'In Progress', bg: 'bg-orange-100', text: 'text-orange-700', ring: 'ring-1 ring-orange-200' },
+  PENDING: { label: 'Pending', bg: 'bg-yellow-50', text: 'text-yellow-700', ring: 'ring-1 ring-yellow-200' },
+  WAITING_FOR_USER: { label: 'Waiting for User', bg: 'bg-cyan-50', text: 'text-cyan-700', ring: 'ring-1 ring-cyan-200' },
+  WAITING_FOR_VENDOR: { label: 'Waiting for Vendor', bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-1 ring-indigo-200' },
+  RESOLVED: { label: 'Resolved', bg: 'bg-green-50', text: 'text-green-700', ring: 'ring-1 ring-green-200' },
+  COMPLETED: { label: 'Completed', bg: 'bg-green-50', text: 'text-green-700', ring: 'ring-1 ring-green-200' },
   CLOSED: { label: 'Closed', bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-1 ring-slate-200' },
-  CANCELLED: { label: 'Cancelled', bg: 'bg-slate-100', text: 'text-slate-500', ring: 'ring-1 ring-slate-200' },
-  PENDING: { label: 'Pending', bg: 'bg-slate-100', text: 'text-slate-600', ring: 'ring-1 ring-slate-200' },
-  APPROVED: { label: 'Approved', bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-1 ring-emerald-200' },
+  CANCELLED: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-700', ring: 'ring-1 ring-red-200' },
+  APPROVED: { label: 'Approved', bg: 'bg-green-50', text: 'text-green-700', ring: 'ring-1 ring-green-200' },
   REJECTED: { label: 'Rejected', bg: 'bg-red-50', text: 'text-red-700', ring: 'ring-1 ring-red-200' },
-  PENDING_APPROVAL: { label: 'Pending Approval', bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-1 ring-amber-200' },
+  PENDING_APPROVAL: { label: 'Pending Approval', bg: 'bg-yellow-50', text: 'text-yellow-700', ring: 'ring-1 ring-yellow-200' },
 };
 
 export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
