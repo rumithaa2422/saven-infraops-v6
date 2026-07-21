@@ -160,17 +160,18 @@ export function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4">
+      {/* Header - Purple Gradient like ServiceRequestsPage */}
+      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
-                <Bell className="w-5 h-5 text-brand-600" />
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              {/* Icon */}
+              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
+                <Bell className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-slate-900">Notifications</h1>
-                <p className="text-sm text-slate-500">
+                <h1 className="text-2xl font-bold text-white">Notifications</h1>
+                <p className="text-sm text-white/70 mt-0.5">
                   {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
                 </p>
               </div>
@@ -182,6 +183,7 @@ export function NotificationsPage() {
                 size="sm"
                 onClick={markAllAsRead}
                 loading={markingAllRead}
+                className="bg-white hover:bg-white/90 text-purple-700 border-0"
               >
                 <CheckCircle className="w-4 h-4 mr-1" />
                 Mark all read
@@ -191,14 +193,14 @@ export function NotificationsPage() {
 
           {/* Filter Tabs */}
           <div className="flex items-center gap-2 mt-4">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+            <Filter className="w-4 h-4 text-white/70" />
+            <div className="flex gap-1 bg-white/10 backdrop-blur-sm p-1 rounded-lg">
               <button
                 onClick={() => setFilter('all')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   filter === 'all' 
-                    ? 'bg-white text-slate-900 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-purple-700 shadow-sm' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 All
@@ -207,13 +209,13 @@ export function NotificationsPage() {
                 onClick={() => setFilter('unread')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
                   filter === 'unread' 
-                    ? 'bg-white text-slate-900 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-purple-700 shadow-sm' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Unread
                 {unreadCount > 0 && (
-                  <span className="w-5 h-5 flex items-center justify-center bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                  <span className="w-5 h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -222,8 +224,8 @@ export function NotificationsPage() {
                 onClick={() => setFilter('read')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   filter === 'read' 
-                    ? 'bg-white text-slate-900 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-purple-700 shadow-sm' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Read
@@ -237,7 +239,7 @@ export function NotificationsPage() {
       <div className="max-w-3xl mx-auto px-4 py-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
           </div>
         ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
@@ -280,7 +282,7 @@ export function NotificationsPage() {
                         {/* Timeline Dot */}
                         <div className={`absolute left-3 top-4 w-5 h-5 rounded-full border-2 border-white ${
                           !notification.isRead 
-                            ? 'bg-brand-500' 
+                            ? 'bg-purple-500' 
                             : 'bg-slate-300'
                         }`}></div>
 
@@ -288,7 +290,7 @@ export function NotificationsPage() {
                           className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md ${
                             notification.isRead 
                               ? 'border-slate-200' 
-                              : 'border-brand-200 shadow-sm'
+                              : 'border-purple-200 shadow-sm'
                           }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
@@ -318,7 +320,7 @@ export function NotificationsPage() {
                                 
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   {!notification.isRead && (
-                                    <span className="px-2 py-0.5 bg-brand-100 text-brand-700 text-xs font-medium rounded-full">
+                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
                                       New
                                     </span>
                                   )}

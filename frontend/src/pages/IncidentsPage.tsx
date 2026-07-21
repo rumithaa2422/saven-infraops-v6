@@ -637,7 +637,7 @@ export function IncidentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-slate-50">
       {/* Page Header */}
       <PageHeader
         title="Incidents"
@@ -645,7 +645,7 @@ export function IncidentsPage() {
         icon={AlertTriangle}
         actions={
           canCreate ? (
-            <Button icon={Plus} onClick={() => setCreateOpen(true)}>
+            <Button icon={Plus} onClick={() => setCreateOpen(true)} className="bg-white hover:bg-white/90 text-purple-700 border-0 shadow-sm shadow-black/10">
               Create Incident
             </Button>
           ) : undefined

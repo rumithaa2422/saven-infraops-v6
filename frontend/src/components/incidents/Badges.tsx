@@ -18,14 +18,31 @@ const incidentStatusConfig: Record<string, { label: string; bg: string; text: st
   CANCELLED: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-600', ring: 'ring-1 ring-red-200', dot: 'bg-red-500' },
 };
 
-export function IncidentStatusBadge({ status, size = 'md' }: IncidentStatusBadgeProps) {
-  const config = incidentStatusConfig[status.toUpperCase()] || {
+export function IncidentStatusBadge({ status, size = 'md', variant = 'default' }: IncidentStatusBadgeProps & { variant?: 'default' | 'light' }) {
+  const baseConfig = incidentStatusConfig[status.toUpperCase()] || {
     label: status.replace(/_/g, ' '),
     bg: 'bg-slate-100',
     text: 'text-slate-600',
     ring: 'ring-1 ring-slate-200',
     dot: 'bg-slate-400'
   };
+  
+  // Light variant for use on dark backgrounds
+  const lightConfig = {
+    OPEN: { label: 'Open', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    NEW: { label: 'New', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    ASSIGNED: { label: 'Assigned', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    IN_PROGRESS: { label: 'In Progress', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    WAITING_FOR_USER: { label: 'Waiting', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    PENDING: { label: 'Pending', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    RESOLVED: { label: 'Resolved', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    CLOSED: { label: 'Closed', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+    CANCELLED: { label: 'Cancelled', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' },
+  };
+  
+  const config = variant === 'light' 
+    ? (lightConfig[status.toUpperCase()] || { label: status.replace(/_/g, ' '), bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' })
+    : baseConfig;
 
   const sizeClasses = {
     sm: 'px-2 py-0.5 text-xs gap-1.5',
@@ -129,8 +146,8 @@ const severityConfig: Record<string, { label: string; bg: string; text: string; 
   },
 };
 
-export function SeverityBadge({ severity, size = 'md', showIcon = false }: SeverityBadgeProps) {
-  const config = severityConfig[severity.toUpperCase()] || {
+export function SeverityBadge({ severity, size = 'md', showIcon = false, variant = 'default' }: SeverityBadgeProps & { variant?: 'default' | 'light' }) {
+  const baseConfig = severityConfig[severity.toUpperCase()] || {
     label: severity,
     bg: 'bg-slate-100',
     text: 'text-slate-600',
@@ -138,6 +155,23 @@ export function SeverityBadge({ severity, size = 'md', showIcon = false }: Sever
     icon: '⚪',
     gradient: 'from-slate-400 to-slate-500'
   };
+
+  // Light variant for use on dark backgrounds
+  const lightConfig: Record<string, { label: string; bg: string; text: string; border: string; icon: string; gradient: string }> = {
+    CRITICAL: { label: 'Critical', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '🔴', gradient: 'from-white/40 to-white/30' },
+    SEV1: { label: 'SEV1', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '🔴', gradient: 'from-white/40 to-white/30' },
+    HIGH: { label: 'High', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '🟠', gradient: 'from-white/40 to-white/30' },
+    SEV2: { label: 'SEV2', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '🟠', gradient: 'from-white/40 to-white/30' },
+    MEDIUM: { label: 'Medium', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '🟡', gradient: 'from-white/40 to-white/30' },
+    SEV3: { label: 'SEV3', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '🟡', gradient: 'from-white/40 to-white/30' },
+    LOW: { label: 'Low', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '⚪', gradient: 'from-white/40 to-white/30' },
+    SEV4: { label: 'SEV4', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '⚪', gradient: 'from-white/40 to-white/30' },
+    URGENT: { label: 'Urgent', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '🔴', gradient: 'from-white/40 to-white/30' },
+  };
+
+  const config = variant === 'light'
+    ? (lightConfig[severity.toUpperCase()] || { label: severity, bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '⚪', gradient: 'from-white/40 to-white/30' })
+    : baseConfig;
 
   const sizeClasses = {
     sm: 'px-2 py-0.5 text-xs gap-1',

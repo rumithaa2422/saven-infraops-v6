@@ -16,8 +16,8 @@ interface SectionCardProps {
 export function SectionCard({
   title,
   icon: Icon,
-  iconColor = 'text-brand-600',
-  iconBg = 'bg-brand-50',
+  iconColor = 'text-purple-600',
+  iconBg = 'bg-purple-50',
   action,
   children,
   className = '',
@@ -164,7 +164,7 @@ export function IncidentSummaryCard({ title, count, icon: Icon, color, trend, tr
   return (
     <div 
       onClick={onClick}
-      className={`bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-brand-200 ${onClick ? 'cursor-pointer' : ''}`}
+      className={`bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-purple-200 ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div className={`p-2.5 rounded-xl ${config.bg} ring-2 ${config.ring}`}>

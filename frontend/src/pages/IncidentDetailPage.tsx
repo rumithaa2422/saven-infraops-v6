@@ -481,20 +481,20 @@ export function IncidentDetailPage() {
   const nextStatus = getNextStatus();
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <IncidentDetailHeader
         incidentNo={incident.incidentNo}
         title={incident.title}
-        statusBadge={<IncidentStatusBadge status={incident.status} size="lg" />}
-        severityBadge={<SeverityBadge severity={incident.severity} size="lg" />}
+        statusBadge={<IncidentStatusBadge status={incident.status} size="lg" variant="light" />}
+        severityBadge={<SeverityBadge severity={incident.severity} size="lg" variant="light" />}
         ownerName={incident.ownerName}
         createdAt={incident.createdAt || ''}
         onBackClick={handleBack}
         actions={
           <div className="flex items-center gap-2">
             {canUpdate && (
-              <Button variant="secondary" size="sm" icon={Edit2}>
+              <Button variant="secondary" size="sm" icon={Edit2} className="bg-white hover:bg-white/90 text-purple-700 border-0">
                 Edit
               </Button>
             )}
@@ -504,12 +504,13 @@ export function IncidentDetailPage() {
                 size="sm" 
                 icon={nextStatus === 'RESOLVED' ? CheckCircle : AlertTriangle}
                 onClick={() => setResolveDialogOpen(true)}
+                className="bg-white hover:bg-white/90 text-purple-700 border-0"
               >
                 {getStatusButtonLabel()}
               </Button>
             )}
             {canDelete && (
-              <Button variant="danger" size="sm" icon={Trash2} onClick={() => setDeleteDialogOpen(true)}>
+              <Button variant="danger" size="sm" icon={Trash2} onClick={() => setDeleteDialogOpen(true)} className="bg-white hover:bg-white/90 text-red-600 border-0">
                 Delete
               </Button>
             )}

@@ -14,8 +14,8 @@ export function BackButton({ onClick, label = 'Back', className = '' }: BackButt
       onClick={onClick}
       className={`
         inline-flex items-center gap-2 px-3 py-2 rounded-xl
-        text-sm font-medium text-slate-600 hover:text-slate-900
-        hover:bg-slate-100 transition-all duration-200
+        text-sm font-medium text-white/80 hover:text-white
+        hover:bg-white/10 transition-all duration-200
         group ${className}
       `}
     >
@@ -42,7 +42,7 @@ export function PageHeader({
   title,
   subtitle,
   icon: Icon,
-  iconColor = 'text-brand-600',
+  iconColor = 'text-white',
   actions,
   breadcrumbs,
   className = '',
@@ -50,18 +50,24 @@ export function PageHeader({
   onBackClick
 }: PageHeaderProps) {
   return (
-    <div className={`bg-white border-b border-slate-200/60 px-6 py-5 ${className}`}>
+    <div className={`bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6 ${className}`}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Back Button */}
           {showBackButton && onBackClick && (
-            <BackButton onClick={onBackClick} />
+            <button
+              onClick={onBackClick}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Back
+            </button>
           )}
 
           {/* Icon */}
           {Icon && (
-            <div className="hidden sm:flex p-3 rounded-2xl bg-brand-50 transition-transform duration-200 hover:scale-105">
-              <Icon className={`w-6 h-6 ${iconColor}`} />
+            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
+              <Icon className={`w-7 h-7 ${iconColor}`} />
             </div>
           )}
 
@@ -72,16 +78,16 @@ export function PageHeader({
               <nav className="flex items-center gap-2 text-sm mb-1">
                 {breadcrumbs.map((crumb, index) => (
                   <React.Fragment key={index}>
-                    {index > 0 && <span className="text-slate-300">/</span>}
+                    {index > 0 && <span className="text-white/40">/</span>}
                     {crumb.onClick ? (
                       <button
                         onClick={crumb.onClick}
-                        className="text-slate-500 hover:text-brand-600 transition-colors"
+                        className="text-white/70 hover:text-white transition-colors"
                       >
                         {crumb.label}
                       </button>
                     ) : (
-                      <span className="text-slate-500">{crumb.label}</span>
+                      <span className="text-white/70">{crumb.label}</span>
                     )}
                   </React.Fragment>
                 ))}
@@ -90,9 +96,9 @@ export function PageHeader({
 
             {/* Title */}
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900 truncate">{title}</h1>
+              <h1 className="text-2xl font-bold text-white truncate">{title}</h1>
               {subtitle && (
-                <span className="hidden md:inline-flex px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">
+                <span className="hidden md:inline-flex px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
                   {subtitle}
                 </span>
               )}
@@ -150,11 +156,17 @@ export function IncidentDetailHeader({
   };
 
   return (
-    <div className={`bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/60 ${className}`}>
+    <div className={`bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 ${className}`}>
       <div className="px-6 py-5">
         {/* Top Row - Back Button and Actions */}
         <div className="flex items-center justify-between mb-4">
-          <BackButton onClick={onBackClick} label="Back to Incidents" />
+          <button
+            onClick={onBackClick}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Incidents
+          </button>
           {actions && (
             <div className="flex items-center gap-2">
               {actions}
@@ -167,7 +179,7 @@ export function IncidentDetailHeader({
           <div className="flex-1 min-w-0">
             {/* Incident Number */}
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-mono font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">
+              <span className="text-sm font-mono font-semibold text-white bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded">
                 {incidentNo}
               </span>
               <div className="flex items-center gap-2">
@@ -178,18 +190,18 @@ export function IncidentDetailHeader({
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-3">
+            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-3">
               {title}
             </h1>
 
             {/* Meta Info */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/70">
               {ownerName && (
                 <div className="flex items-center gap-1.5">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span>Assigned to <span className="font-medium text-slate-700">{ownerName}</span></span>
+                  <span>Assigned to <span className="font-medium text-white">{ownerName}</span></span>
                 </div>
               )}
               <div className="flex items-center gap-1.5">
@@ -289,7 +301,7 @@ export function TabNavigation({ tabs, activeTab, onTabChange, className = '' }: 
             {tab.count !== undefined && (
               <span className={`
                 px-1.5 py-0.5 rounded-md text-xs font-semibold
-                ${isActive ? 'bg-brand-100 text-brand-700' : 'bg-slate-200 text-slate-600'}
+                ${isActive ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-600'}
               `}>
                 {tab.count}
               </span>
