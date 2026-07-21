@@ -10,7 +10,11 @@ import { ServiceRequestStatus } from '@prisma/client';
 import {
   createServiceRequest,
   updateServiceRequest,
-  assignServiceRequest
+  assignServiceRequest,
+  updateServiceRequestStatus,
+  getAllowedTransitions,
+  getAllStatuses,
+  STATUS_DISPLAY_NAMES
 } from '../../services/serviceRequest.service.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
@@ -334,11 +338,12 @@ function validateStatusTransition(
   currentStatus: string,
   newStatus: string,
   userRoles: string[],
+  currentUserId: string | null | undefined,
   assigneeId?: string | null
 ): { valid: boolean; error?: string } {
   const isSuperAdmin = userRoles.includes('Super Admin');
   const isAdmin = userRoles.includes('Admin');
-  const isAssignedToUser = assigneeId === assigneeId; // Already checked in canPerformAction
+  const isAssignedToUser = currentUserId && assigneeId && currentUserId === assigneeId;
 
   // Super Admin can move to any status
   if (isSuperAdmin) {
@@ -388,6 +393,7 @@ serviceRequestRouter.patch('/:id', requireAuth, requirePermissionOr(['tickets:ed
         existing.status,
         payload.status,
         req.user?.roles || [],
+        req.user?.id,
         existing.assigneeId
       );
       if (!validation.valid) {
@@ -464,6 +470,118 @@ serviceRequestRouter.patch('/:id/assign', requireAuth, requirePermissionOr(['tic
     }
     
     res.json({ item });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================================
+// Status Update Endpoint (Phase D1)
+// ============================================================================
+
+const updateStatusSchema = z.object({
+  status: z.enum(['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'WAITING_FOR_USER', 'COMPLETED', 'CLOSED']),
+  comment: z.string().optional()
+});
+
+// PATCH /api/service-requests/:id/status - Update ticket status with timeline and notifications
+serviceRequestRouter.patch('/:id/status', requireAuth, requirePermissionOr(['tickets:edit', 'tickets:update_status', 'tickets:manage']), async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const { status, comment } = updateStatusSchema.parse(req.body);
+    
+    // Get existing ticket
+    const existing = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!existing) {
+      throw new HttpError(404, 'Service request not found');
+    }
+
+    const userRoles = req.user?.roles || [];
+    const isSuperAdmin = userRoles.includes('Super Admin');
+    const isAdmin = userRoles.includes('Admin');
+    const isAssignedToUser = existing.assigneeId === req.user?.id;
+
+    // Validate status transition
+    const validation = validateStatusTransition(
+      existing.status,
+      status,
+      userRoles,
+      req.user?.id,
+      existing.assigneeId
+    );
+
+    if (!validation.valid) {
+      throw new HttpError(400, validation.error || 'Invalid status transition');
+    }
+
+    // Update status with timeline, comments, and notifications
+    const item = await updateServiceRequestStatus(id, {
+      status,
+      actorId: req.user?.id,
+      actorName: req.user?.name || 'System',
+      comment
+    });
+
+    // Reload timeline and comments to return updated data
+    const [timeline, comments] = await Promise.all([
+      prisma.serviceRequestTimeline.findMany({
+        where: { requestId: id },
+        orderBy: { createdAt: 'asc' }
+      }),
+      prisma.serviceRequestComment.findMany({
+        where: { requestId: id },
+        orderBy: { createdAt: 'asc' }
+      })
+    ]);
+
+    res.json({
+      item,
+      timeline,
+      comments,
+      message: `Status updated to ${STATUS_DISPLAY_NAMES[status] || status}`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/service-requests/:id/status-options - Get allowed status transitions
+serviceRequestRouter.get('/:id/status-options', requireAuth, async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    
+    const existing = await prisma.serviceRequest.findUnique({ where: { id } });
+    if (!existing) {
+      throw new HttpError(404, 'Service request not found');
+    }
+
+    const userRoles = req.user?.roles || [];
+    const isSuperAdmin = userRoles.includes('Super Admin');
+    const isAdmin = userRoles.includes('Admin');
+    const isAssignedToUser = existing.assigneeId === req.user?.id;
+
+    const allowedTransitions = getAllowedTransitions(
+      existing.status,
+      isSuperAdmin,
+      isAdmin,
+      isAssignedToUser
+    );
+
+    const allStatuses = getAllStatuses();
+
+    res.json({
+      currentStatus: existing.status,
+      statusDisplayName: STATUS_DISPLAY_NAMES[existing.status] || existing.status,
+      allowedTransitions: allowedTransitions.map(s => ({
+        value: s,
+        displayName: STATUS_DISPLAY_NAMES[s] || s
+      })),
+      allStatuses: allStatuses.map(s => ({
+        value: s,
+        displayName: STATUS_DISPLAY_NAMES[s] || s
+      })),
+      canChangeStatus: isSuperAdmin || (isAdmin && isAssignedToUser)
+    });
   } catch (error) {
     next(error);
   }

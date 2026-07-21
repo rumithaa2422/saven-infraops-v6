@@ -137,6 +137,13 @@ export function ServiceRequestDetailPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  // Ticket Progress state
+  const [statusOptions, setStatusOptions] = useState<{ value: string; displayName: string }[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [canChangeStatus, setCanChangeStatus] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [statusComment, setStatusComment] = useState('');
+
   // Permission checks
   const canManage = hasPermission('tickets:update') || hasPermission('tickets:manage');
   const canDelete = hasPermission('tickets:delete');
@@ -155,6 +162,7 @@ export function ServiceRequestDetailPage() {
   const canPostChat = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
   const canViewTimeline = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id);
   const canViewAttachments = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id) || (isEmployee && request?.requesterId === user?.id);
+  const canUpdateStatus = isSuperAdmin || (isAdmin && request?.assigneeId === user?.id);
 
   async function load() {
     if (!id) return;
@@ -227,6 +235,41 @@ export function ServiceRequestDetailPage() {
     }
   }
 
+  async function loadStatusOptions() {
+    if (!id || !request) return;
+    try {
+      const res = await api.get(`/service-requests/${id}/status-options`);
+      setStatusOptions(res.data.allowedTransitions || []);
+      setCanChangeStatus(res.data.canChangeStatus || false);
+      setSelectedStatus(request.status);
+    } catch {
+      setStatusOptions([]);
+      setCanChangeStatus(false);
+    }
+  }
+
+  async function updateTicketStatus() {
+    if (!id || !request || !selectedStatus || selectedStatus === request.status) return;
+    setIsUpdatingStatus(true);
+    try {
+      const response = await api.patch(`/service-requests/${id}/status`, {
+        status: selectedStatus,
+        comment: statusComment || undefined
+      });
+      // Update request with new data
+      setRequest(response.data.item);
+      // Reload timeline and comments
+      setTimeline(response.data.timeline || []);
+      setComments(response.data.comments || []);
+      setStatusComment('');
+      setMessage(response.data.message || 'Status updated successfully.');
+    } catch (err: any) {
+      setMessage(err.response?.data?.message || err.message || 'Failed to update status.');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  }
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
@@ -241,6 +284,7 @@ export function ServiceRequestDetailPage() {
       loadAttachments();
       loadComments();
       loadTimeline();
+      loadStatusOptions();
     }
   }, [request?.id]);
 
@@ -897,6 +941,80 @@ export function ServiceRequestDetailPage() {
                 )}
               </div>
             </SectionCard>
+
+            {/* Ticket Progress - Phase D1 */}
+            {canUpdateStatus && (
+              <SectionCard title="Ticket Progress" icon={Ticket}>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
+                      <Ticket className="w-5 h-5 text-brand-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {request.status === 'OPEN' && 'Open'}
+                        {request.status === 'ASSIGNED' && 'Assigned'}
+                        {request.status === 'IN_PROGRESS' && 'In Progress'}
+                        {request.status === 'WAITING_FOR_USER' && 'Waiting for User'}
+                        {request.status === 'COMPLETED' && 'Completed'}
+                        {request.status === 'CLOSED' && 'Closed'}
+                      </p>
+                      <p className="text-xs text-slate-500">Current Status</p>
+                    </div>
+                  </div>
+                  
+                  {statusOptions.length > 0 ? (
+                    <div className="space-y-3">
+                      <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                      >
+                        <option value={request.status} disabled>
+                          {request.status === 'OPEN' && 'Open'}
+                          {request.status === 'ASSIGNED' && 'Assigned'}
+                          {request.status === 'IN_PROGRESS' && 'In Progress'}
+                          {request.status === 'WAITING_FOR_USER' && 'Waiting for User'}
+                          {request.status === 'COMPLETED' && 'Completed'}
+                          {request.status === 'CLOSED' && 'Closed'}
+                        </option>
+                        {statusOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.displayName}</option>
+                        ))}
+                      </select>
+                      
+                      <input
+                        type="text"
+                        placeholder="Add a note (optional)"
+                        value={statusComment}
+                        onChange={(e) => setStatusComment(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                      />
+                      
+                      <Button 
+                        size="sm" 
+                        onClick={updateTicketStatus}
+                        disabled={!selectedStatus || selectedStatus === request.status || isUpdatingStatus}
+                        loading={isUpdatingStatus}
+                        fullWidth
+                      >
+                        Update Status
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      No status transitions available from this status.
+                    </p>
+                  )}
+                  
+                  {request.updatedAt && (
+                    <p className="text-xs text-slate-400">
+                      Last updated: {new Date(request.updatedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </SectionCard>
+            )}
 
             {/* Timeline */}
             {canViewTimeline && timeline.length > 0 && (

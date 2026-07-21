@@ -784,3 +784,20 @@ model DocumentActivity {
   @@index([folderId])
   @@index([createdAt])
 }
+
+// Phase D1: In-App Notifications
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String   // Recipient user ID
+  title       String   // Notification title
+  message     String   @db.Text // Notification message
+  isRead      Boolean  @default(false)
+  referenceModule String? // e.g., 'ServiceRequest', 'Incident'
+  referenceId   String? // e.g., service request ID
+  actionUrl    String? // Optional URL to navigate to
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}

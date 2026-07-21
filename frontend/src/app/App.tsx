@@ -34,6 +34,7 @@ import { VendorDirectoryPage } from '../pages/VendorDirectoryPage';
 import { VendorDetailsPage } from '../pages/VendorDetailsPage';
 import { KnowledgeCategoryPage } from '../pages/KnowledgeCategoryPage';
 import { KnowledgeAnalyticsPage } from '../pages/KnowledgeAnalyticsPage';
+import { NotificationsPage } from '../pages/NotificationsPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 
@@ -381,6 +382,7 @@ export function App() {
           } 
         />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
       </Route>
     </Routes>
   );

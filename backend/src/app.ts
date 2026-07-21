@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { serviceRequestRouter } from './modules/serviceRequests/serviceRequest.routes.js';
+import { notificationRouter } from './modules/notifications/notification.routes.js';
 import { genericModuleRouter } from './modules/generic/generic.routes.js';
 import { settingsRouter } from './modules/settings/settings.routes.js';
 import { aiRouter } from './modules/ai/ai.routes.js';
@@ -48,6 +49,7 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/service-requests', serviceRequestRouter);
+  app.use('/api/notifications', notificationRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/ai', aiRouter);
   app.use('/api/import', importRouter);
