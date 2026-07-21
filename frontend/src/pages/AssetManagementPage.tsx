@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { ModalLayout } from '../components/inventory/Modal';
 
 type Category = {
   id: string;
@@ -123,6 +124,24 @@ export function AssetManagementPage() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'inventory' | 'user' | 'project'>('inventory');
+
+  // Assignment Modal State
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [availableInventory, setAvailableInventory] = useState<InventoryItem[]>([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [assignmentForm, setAssignmentForm] = useState({
+    inventoryId: '',
+    userId: '',
+    projectId: '',
+    remarks: ''
+  });
+  const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [projects, setProjects] = useState<{ id: string; projectName: string; projectCode: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [assignmentError, setAssignmentError] = useState('');
+  const [assignmentSuccess, setAssignmentSuccess] = useState('');
 
   // Load stats and categories on mount
   useEffect(() => {
@@ -321,6 +340,95 @@ export function AssetManagementPage() {
     }
   }
 
+  // Assignment Modal Functions
+  async function openAssignmentModal() {
+    setShowAssignmentModal(true);
+    setAssignmentError('');
+    setAssignmentSuccess('');
+    setAssignmentForm({ inventoryId: '', userId: '', projectId: '', remarks: '' });
+    
+    // Load available inventory items
+    setLoadingInventory(true);
+    try {
+      const res = await api.get('/inventory-master', { 
+        params: { status: 'AVAILABLE' } 
+      });
+      setAvailableInventory(res.data.items || []);
+    } catch (err) {
+      console.error('Failed to load inventory:', err);
+      setAssignmentError('Failed to load available inventory items');
+    } finally {
+      setLoadingInventory(false);
+    }
+    
+    // Load users
+    setLoadingUsers(true);
+    try {
+      const res = await api.get('/users', { params: { pageSize: 1000 } });
+      setUsers(res.data.users || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+    
+    // Load projects
+    setLoadingProjects(true);
+    try {
+      const res = await api.get('/projects/environments', { params: { pageSize: 1000 } });
+      setProjects(res.data.environments || []);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+    } finally {
+      setLoadingProjects(false);
+    }
+  }
+
+  function closeAssignmentModal() {
+    setShowAssignmentModal(false);
+    setAssignmentError('');
+    setAssignmentSuccess('');
+    setAssignmentForm({ inventoryId: '', userId: '', projectId: '', remarks: '' });
+  }
+
+  async function handleAssignmentSubmit() {
+    if (!assignmentForm.inventoryId) {
+      setAssignmentError('Please select an inventory item');
+      return;
+    }
+    if (!assignmentForm.userId) {
+      setAssignmentError('Please select a user');
+      return;
+    }
+    if (!assignmentForm.projectId) {
+      setAssignmentError('Please select a project');
+      return;
+    }
+    
+    setSubmitting(true);
+    setAssignmentError('');
+    
+    try {
+      await api.post('/inventory-assignments', {
+        inventoryId: assignmentForm.inventoryId,
+        userId: assignmentForm.userId,
+        projectId: assignmentForm.projectId,
+        remarks: assignmentForm.remarks
+      });
+      
+      setAssignmentSuccess('Inventory assigned successfully!');
+      setTimeout(() => {
+        closeAssignmentModal();
+        handleRefresh();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Failed to assign inventory:', err);
+      setAssignmentError(err.response?.data?.message || 'Failed to assign inventory');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function handleExport() {
     if (items.length === 0) return;
     
@@ -406,7 +514,7 @@ export function AssetManagementPage() {
           </div>
         </div>
         {isSuperAdmin && (
-          <button className="btn-primary-asset">
+          <button className="btn-primary-asset" onClick={openAssignmentModal}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -1197,6 +1305,154 @@ function ProjectView() {
           ))}
         </div>
       )}
+
+      {/* Assign Inventory Modal */}
+      <ModalLayout
+        isOpen={showAssignmentModal}
+        onClose={closeAssignmentModal}
+        title="Assign Inventory"
+        subtitle="Assign an available inventory item to a user and project"
+        icon="📦"
+        size="lg"
+      >
+        <div className="space-y-5">
+          {/* Error Message */}
+          {assignmentError && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+              {assignmentError}
+            </div>
+          )}
+          
+          {/* Success Message */}
+          {assignmentSuccess && (
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+              {assignmentSuccess}
+            </div>
+          )}
+
+          {/* Inventory Item Selection */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Select Inventory Item <span className="text-red-500">*</span>
+            </label>
+            {loadingInventory ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="spinner"></div>
+                <span className="ml-2 text-sm text-slate-500">Loading available items...</span>
+              </div>
+            ) : availableInventory.length === 0 ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-sm text-center">
+                No available inventory items found. All items may already be assigned or in non-assignable status.
+              </div>
+            ) : (
+              <select
+                value={assignmentForm.inventoryId}
+                onChange={(e) => setAssignmentForm({ ...assignmentForm, inventoryId: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all"
+              >
+                <option value="">Select an inventory item...</option>
+                {availableInventory.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.itemNo} - {item.itemName} {item.brand ? `(${item.brand})` : ''} - Qty: {item.currentQty}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* User Selection */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Assign To User <span className="text-red-500">*</span>
+            </label>
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="spinner"></div>
+                <span className="ml-2 text-sm text-slate-500">Loading users...</span>
+              </div>
+            ) : (
+              <select
+                value={assignmentForm.userId}
+                onChange={(e) => setAssignmentForm({ ...assignmentForm, userId: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all"
+              >
+                <option value="">Select a user...</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Project Selection */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Assign To Project <span className="text-red-500">*</span>
+            </label>
+            {loadingProjects ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="spinner"></div>
+                <span className="ml-2 text-sm text-slate-500">Loading projects...</span>
+              </div>
+            ) : (
+              <select
+                value={assignmentForm.projectId}
+                onChange={(e) => setAssignmentForm({ ...assignmentForm, projectId: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all"
+              >
+                <option value="">Select a project...</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.projectName} ({project.projectCode})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Remarks */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Remarks (Optional)
+            </label>
+            <textarea
+              value={assignmentForm.remarks}
+              onChange={(e) => setAssignmentForm({ ...assignmentForm, remarks: e.target.value })}
+              placeholder="Add any remarks or notes for this assignment..."
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={closeAssignmentModal}
+              disabled={submitting}
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAssignmentSubmit}
+              disabled={submitting || loadingInventory || loadingUsers || loadingProjects}
+              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-200"
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Assigning...
+                </span>
+              ) : 'Assign Inventory'}
+            </button>
+          </div>
+        </div>
+      </ModalLayout>
     </div>
   );
 }
