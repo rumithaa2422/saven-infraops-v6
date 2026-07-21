@@ -361,24 +361,32 @@ export function AssetManagementPage() {
       setLoadingInventory(false);
     }
     
-    // Load users
+    // Load users from /api/users-teams endpoint
     setLoadingUsers(true);
     try {
-      const res = await api.get('/users', { params: { pageSize: 1000 } });
-      setUsers(res.data.users || []);
+      const res = await api.get('/users-teams');
+      // Extract users from the items array returned by generic module
+      const userList = res.data.items || res.data || [];
+      setUsers(userList.map((u: any) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email
+      })));
     } catch (err) {
       console.error('Failed to load users:', err);
+      setAssignmentError('Failed to load users list');
     } finally {
       setLoadingUsers(false);
     }
     
-    // Load projects
+    // Load projects from /api/inventory-assignments/projects endpoint
     setLoadingProjects(true);
     try {
-      const res = await api.get('/projects/environments', { params: { pageSize: 1000 } });
-      setProjects(res.data.environments || []);
+      const res = await api.get('/inventory-assignments/projects');
+      setProjects(res.data.projects || []);
     } catch (err) {
       console.error('Failed to load projects:', err);
+      setAssignmentError('Failed to load projects list');
     } finally {
       setLoadingProjects(false);
     }
