@@ -1488,63 +1488,114 @@ export function KnowledgeCategoryPage() {
         </div>
       )}
 
-      {/* Category Form Modal */}
+      {/* Category Form Modal - Modern Design */}
       {showCategoryForm && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <div className="page-title-row">
-              <h3>{editingCategory ? 'Edit Category' : 'Create Category'}</h3>
-              <button type="button" className="close" onClick={closeCategoryForm}>×</button>
+        <div className="kb-modal-backdrop" onClick={closeCategoryForm}>
+          <div className="kb-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="kb-modal-header">
+              <div className="kb-modal-icon">
+                {editingCategory ? '📝' : '📁'}
+              </div>
+              <div className="kb-modal-title-area">
+                <h2>{editingCategory ? 'Edit Category' : 'Create Category'}</h2>
+                <p>{editingCategory ? 'Update category details' : 'Add a new knowledge category'}</p>
+              </div>
+              <button type="button" className="kb-modal-close" onClick={closeCategoryForm}>
+                ✕
+              </button>
             </div>
 
-            {categoryFormError && (
-              <div className="form-error-banner">{categoryFormError}</div>
-            )}
+            {/* Modal Body */}
+            <div className="kb-modal-body">
+              {categoryFormError && (
+                <div className="kb-modal-error">{categoryFormError}</div>
+              )}
 
-            <div className="form-group">
-              <label>Category Name *</label>
-              <input
-                type="text"
-                value={categoryFormData.name}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                placeholder="e.g., Infrastructure"
-                maxLength={100}
-                autoFocus
-              />
+              <div className="kb-form-group">
+                <label>
+                  <span className="kb-label-icon">🏷️</span>
+                  Category Name <span className="kb-required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="kb-input"
+                  value={categoryFormData.name}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                  placeholder="Enter category name..."
+                  maxLength={100}
+                  autoFocus
+                />
+                <span className="kb-input-hint">Max 100 characters</span>
+              </div>
+
+              <div className="kb-form-group">
+                <label>
+                  <span className="kb-label-icon">📝</span>
+                  Description
+                </label>
+                <textarea
+                  className="kb-textarea"
+                  value={categoryFormData.description}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+                  placeholder="Add a brief description for this category..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="kb-form-group">
+                <label>
+                  <span className="kb-label-icon">📊</span>
+                  Status
+                </label>
+                <div className="kb-toggle-group">
+                  <button
+                    type="button"
+                    className={`kb-toggle-btn ${categoryFormData.isActive ? 'active' : ''}`}
+                    onClick={() => setCategoryFormData({ ...categoryFormData, isActive: true })}
+                  >
+                    <span className="kb-toggle-dot green"></span>
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    className={`kb-toggle-btn ${!categoryFormData.isActive ? 'active' : ''}`}
+                    onClick={() => setCategoryFormData({ ...categoryFormData, isActive: false })}
+                  >
+                    <span className="kb-toggle-dot gray"></span>
+                    Inactive
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                value={categoryFormData.description}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                placeholder="Optional description..."
-                rows={3}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                value={categoryFormData.isActive ? 'true' : 'false'}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, isActive: e.target.value === 'true' })}
-              >
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="secondary" onClick={closeCategoryForm}>
+            {/* Modal Footer */}
+            <div className="kb-modal-footer">
+              <button type="button" className="kb-btn-secondary" onClick={closeCategoryForm}>
                 Cancel
               </button>
               <button 
                 type="button" 
-                className="primary" 
+                className="kb-btn-primary" 
                 onClick={handleSaveCategory}
                 disabled={savingCategory || !categoryFormData.name.trim()}
               >
-                {savingCategory ? 'Saving...' : (editingCategory ? 'Update' : 'Create')}
+                {savingCategory ? (
+                  <>
+                    <span className="kb-btn-spinner"></span>
+                    Saving...
+                  </>
+                ) : editingCategory ? (
+                  <>
+                    <span>✓</span>
+                    Update Category
+                  </>
+                ) : (
+                  <>
+                    <span>+</span>
+                    Create Category
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -2592,7 +2643,305 @@ export function KnowledgeCategoryPage() {
           background: #fee2e2;
         }
 
-        /* Modals */
+        /* ===== MODERN MODAL STYLES ===== */
+        .kb-modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .kb-modal {
+          background: white;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 480px;
+          max-height: 90vh;
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+          animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* Modal Header */
+        .kb-modal-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 24px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+
+        .kb-modal-icon {
+          width: 56px;
+          height: 56px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+        }
+
+        .kb-modal-title-area {
+          flex: 1;
+        }
+
+        .kb-modal-title-area h2 {
+          margin: 0 0 4px 0;
+          font-size: 20px;
+          font-weight: 700;
+          color: white;
+        }
+
+        .kb-modal-title-area p {
+          margin: 0;
+          font-size: 13px;
+          opacity: 0.85;
+        }
+
+        .kb-modal-close {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          border: none;
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .kb-modal-close:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: rotate(90deg);
+        }
+
+        /* Modal Body */
+        .kb-modal-body {
+          padding: 24px;
+        }
+
+        .kb-modal-error {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          padding: 12px 16px;
+          border-radius: 12px;
+          font-size: 13px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .kb-form-group {
+          margin-bottom: 20px;
+        }
+
+        .kb-form-group label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 8px;
+        }
+
+        .kb-label-icon {
+          font-size: 16px;
+        }
+
+        .kb-required {
+          color: #ef4444;
+        }
+
+        .kb-input,
+        .kb-textarea {
+          width: 100%;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 14px 16px;
+          font-size: 14px;
+          color: #1f2937;
+          background: #f9fafb;
+          transition: all 0.2s;
+        }
+
+        .kb-input:focus,
+        .kb-textarea:focus {
+          outline: none;
+          border-color: #667eea;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .kb-input::placeholder,
+        .kb-textarea::placeholder {
+          color: #9ca3af;
+        }
+
+        .kb-textarea {
+          resize: vertical;
+          min-height: 100px;
+        }
+
+        .kb-input-hint {
+          display: block;
+          font-size: 11px;
+          color: #9ca3af;
+          margin-top: 6px;
+        }
+
+        /* Toggle Group */
+        .kb-toggle-group {
+          display: flex;
+          gap: 10px;
+        }
+
+        .kb-toggle-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 14px 20px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          background: #f9fafb;
+          font-size: 14px;
+          font-weight: 500;
+          color: #6b7280;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .kb-toggle-btn:hover {
+          border-color: #d1d5db;
+          background: #f3f4f6;
+        }
+
+        .kb-toggle-btn.active {
+          border-color: #667eea;
+          background: #eef2ff;
+          color: #667eea;
+        }
+
+        .kb-toggle-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+        }
+
+        .kb-toggle-dot.green {
+          background: #22c55e;
+        }
+
+        .kb-toggle-dot.gray {
+          background: #9ca3af;
+        }
+
+        /* Modal Footer */
+        .kb-modal-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 20px 24px;
+          background: #f9fafb;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .kb-btn-secondary {
+          padding: 12px 24px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          background: white;
+          font-size: 14px;
+          font-weight: 600;
+          color: #6b7280;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .kb-btn-secondary:hover {
+          border-color: #d1d5db;
+          background: #f3f4f6;
+        }
+
+        .kb-btn-primary {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 28px;
+          border: none;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          font-size: 14px;
+          font-weight: 600;
+          color: white;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .kb-btn-primary:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .kb-btn-primary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .kb-btn-primary span {
+          font-size: 16px;
+          font-weight: 700;
+        }
+
+        .kb-btn-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        /* Legacy modal styles (keep for other modals) */
         .modal-backdrop {
           position: fixed;
           top: 0;
