@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
@@ -30,6 +31,12 @@ export function ProjectCreatePage() {
   const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [managerSearch, setManagerSearch] = useState('');
+  
+  // Refs for dropdown positioning
+  const managerInputRef = useRef<HTMLInputElement>(null);
+  const teamMemberInputRef = useRef<HTMLInputElement>(null);
+  const [managerDropdownPos, setManagerDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
+  const [teamMemberDropdownPos, setTeamMemberDropdownPos] = useState<{top: number, left: number, width: number} | null>(null);
 
   const [formData, setFormData] = useState({
     projectName: '',
@@ -102,6 +109,36 @@ export function ProjectCreatePage() {
     return user.roles?.[0]?.role?.name || 'Employee';
   };
 
+  // Update dropdown position based on input element
+  const updateDropdownPosition = (setPosition: (pos: {top: number, left: number, width: number} | null) => void, inputRef: React.RefObject<HTMLInputElement | null>) => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  };
+
+  const handleManagerSearchChange = (value: string) => {
+    setManagerSearch(value);
+    if (value) {
+      updateDropdownPosition(setManagerDropdownPos, managerInputRef);
+    } else {
+      setManagerDropdownPos(null);
+    }
+  };
+
+  const handleTeamMemberSearchChange = (value: string) => {
+    setUserSearch(value);
+    if (value) {
+      updateDropdownPosition(setTeamMemberDropdownPos, teamMemberInputRef);
+    } else {
+      setTeamMemberDropdownPos(null);
+    }
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -149,6 +186,7 @@ export function ProjectCreatePage() {
       teamMemberIds: prev.teamMemberIds.filter(id => id !== userId) // Remove from team if selected as manager
     }));
     setManagerSearch('');
+    setManagerDropdownPos(null);
     setErrors(prev => ({ ...prev, managerId: '' }));
   };
 
@@ -434,47 +472,25 @@ export function ProjectCreatePage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search users..."
-                      value={managerSearch}
-                      onChange={(e) => setManagerSearch(e.target.value)}
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.managerId ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
-                    />
-                    {/* Manager Dropdown */}
-                    {managerSearch && filteredManagers.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl max-h-64 overflow-y-auto">
-                        {filteredManagers.map(user => (
-                          <div
-                            key={user.id}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors"
-                            onClick={() => handleManagerSelect(user.id)}
-                          >
-                            <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-sm">
-                              {user.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex-1">
-                              <span className="font-medium text-slate-900 text-sm">{user.name}</span>
-                              <span className="text-xs text-slate-500 ml-2">{user.email}</span>
-                            </div>
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">{getUserRole(user)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {managerSearch && filteredManagers.length === 0 && !usersLoading && (
-                      <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl p-4 text-center text-sm text-slate-500">
-                        No users found
-                      </div>
-                    )}
-                    {errors.managerId && <span className="text-xs text-red-600 mt-1">{errors.managerId}</span>}
-                  </div>
+                  <input
+                    ref={managerInputRef}
+                    type="text"
+                    placeholder="Search users..."
+                    value={managerSearch}
+                    onChange={(e) => handleManagerSearchChange(e.target.value)}
+                    onFocus={() => {
+                      if (managerSearch) {
+                        updateDropdownPosition(setManagerDropdownPos, managerInputRef);
+                      }
+                    }}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.managerId ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
+                  />
                 )}
+                {errors.managerId && <span className="text-xs text-red-600 mt-1">{errors.managerId}</span>}
               </div>
 
               {/* Team Members */}
-              <div className="relative">
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-3">Team Members *</label>
                 
                 {/* Selected Team Members */}
@@ -500,43 +516,18 @@ export function ProjectCreatePage() {
                 )}
                 
                 <input
+                  ref={teamMemberInputRef}
                   type="text"
                   placeholder="Search to add team members..."
                   value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
+                  onChange={(e) => handleTeamMemberSearchChange(e.target.value)}
+                  onFocus={() => {
+                    if (userSearch) {
+                      updateDropdownPosition(setTeamMemberDropdownPos, teamMemberInputRef);
+                    }
+                  }}
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.teamMemberIds ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                 />
-                {/* Team Members Dropdown */}
-                {userSearch && filteredTeamMembers.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl max-h-64 overflow-y-auto">
-                    {filteredTeamMembers.map(user => (
-                      <div
-                        key={user.id}
-                        className={`flex items-center gap-3 px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors ${formData.teamMemberIds.includes(user.id) ? 'bg-purple-50' : ''}`}
-                        onClick={() => handleTeamMemberToggle(user.id)}
-                      >
-                        <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-sm">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-medium text-slate-900 text-sm">{user.name}</span>
-                          <span className="text-xs text-slate-500 ml-2">{user.email}</span>
-                        </div>
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">{getUserRole(user)}</span>
-                        {formData.teamMemberIds.includes(user.id) && (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-600">
-                            <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {userSearch && filteredTeamMembers.length === 0 && !usersLoading && (
-                  <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl p-4 text-center text-sm text-slate-500">
-                    No users found
-                  </div>
-                )}
                 {errors.teamMemberIds && <span className="text-xs text-red-600 mt-1 block">{errors.teamMemberIds}</span>}
               </div>
             </div>
@@ -568,6 +559,85 @@ export function ProjectCreatePage() {
             </button>
           </div>
         </form>
+
+        {/* Portal-based Manager Dropdown - Renders at body level */}
+        {managerDropdownPos && managerSearch && createPortal(
+          <div 
+            className="fixed bg-white rounded-xl border border-slate-200 shadow-2xl max-h-72 overflow-y-auto"
+            style={{ 
+              top: managerDropdownPos.top, 
+              left: managerDropdownPos.left, 
+              width: managerDropdownPos.width,
+              zIndex: 9999
+            }}
+          >
+            {filteredManagers.length > 0 ? (
+              filteredManagers.map(user => (
+                <div
+                  key={user.id}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0"
+                  onClick={() => handleManagerSelect(user.id)}
+                >
+                  <div className="w-9 h-9 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-slate-900 text-sm truncate">{user.name}</div>
+                    <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                  </div>
+                  <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full flex-shrink-0">{getUserRole(user)}</span>
+                </div>
+              ))
+            ) : !usersLoading && (
+              <div className="px-4 py-6 text-center text-sm text-slate-500">
+                No users found
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
+
+        {/* Portal-based Team Members Dropdown - Renders at body level */}
+        {teamMemberDropdownPos && userSearch && createPortal(
+          <div 
+            className="fixed bg-white rounded-xl border border-slate-200 shadow-2xl max-h-72 overflow-y-auto"
+            style={{ 
+              top: teamMemberDropdownPos.top, 
+              left: teamMemberDropdownPos.left, 
+              width: teamMemberDropdownPos.width,
+              zIndex: 9999
+            }}
+          >
+            {filteredTeamMembers.length > 0 ? (
+              filteredTeamMembers.map(user => (
+                <div
+                  key={user.id}
+                  className={`flex items-center gap-3 px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0 ${formData.teamMemberIds.includes(user.id) ? 'bg-purple-50' : ''}`}
+                  onClick={() => handleTeamMemberToggle(user.id)}
+                >
+                  <div className="w-9 h-9 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-slate-900 text-sm truncate">{user.name}</div>
+                    <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                  </div>
+                  <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full flex-shrink-0">{getUserRole(user)}</span>
+                  {formData.teamMemberIds.includes(user.id) && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-600 flex-shrink-0">
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+              ))
+            ) : !usersLoading && (
+              <div className="px-4 py-6 text-center text-sm text-slate-500">
+                No users found
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
       </main>
     </div>
   );
