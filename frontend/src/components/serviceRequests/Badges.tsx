@@ -4,6 +4,7 @@ import React from 'react';
 interface StatusBadgeProps {
   status: string;
   size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'light';
 }
 
 // Status colors consistent across the application
@@ -27,13 +28,40 @@ const statusConfig: Record<string, { label: string; bg: string; text: string; ri
   PENDING_APPROVAL: { label: 'Pending Approval', bg: 'bg-yellow-50', text: 'text-yellow-700', ring: 'ring-1 ring-yellow-200' },
 };
 
-export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
-  const config = statusConfig[status.toUpperCase()] || {
+// Light variant config for dark backgrounds
+const statusConfigLight: Record<string, { label: string; bg: string; text: string; ring: string }> = {
+  OPEN: { label: 'Open', bg: 'bg-blue-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  NEW: { label: 'New', bg: 'bg-blue-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  ASSIGNED: { label: 'Assigned', bg: 'bg-purple-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  IN_PROGRESS: { label: 'In Progress', bg: 'bg-orange-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  PENDING: { label: 'Pending', bg: 'bg-yellow-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  WAITING_FOR_USER: { label: 'Waiting for User', bg: 'bg-cyan-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  WAITING_FOR_VENDOR: { label: 'Waiting for Vendor', bg: 'bg-indigo-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  RESOLVED: { label: 'Resolved', bg: 'bg-green-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  COMPLETED: { label: 'Completed', bg: 'bg-green-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  CLOSED: { label: 'Closed', bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  CANCELLED: { label: 'Cancelled', bg: 'bg-red-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  APPROVED: { label: 'Approved', bg: 'bg-green-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  REJECTED: { label: 'Rejected', bg: 'bg-red-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+  PENDING_APPROVAL: { label: 'Pending Approval', bg: 'bg-yellow-500/30', text: 'text-white', ring: 'ring-1 ring-white/30' },
+};
+
+export function StatusBadge({ status, size = 'md', variant = 'default' }: StatusBadgeProps) {
+  const baseConfig = statusConfig[status.toUpperCase()] || {
     label: status.replace(/_/g, ' '),
     bg: 'bg-slate-100',
     text: 'text-slate-600',
     ring: 'ring-1 ring-slate-200'
   };
+
+  const lightConfig = statusConfigLight[status.toUpperCase()] || {
+    label: status.replace(/_/g, ' '),
+    bg: 'bg-white/20',
+    text: 'text-white',
+    ring: 'ring-1 ring-white/30'
+  };
+
+  const config = variant === 'light' ? lightConfig : baseConfig;
 
   const sizeClasses = {
     sm: 'px-2.5 py-1 text-xs',
@@ -43,7 +71,7 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
 
   return (
     <span className={`inline-flex items-center font-bold rounded-xl ${config.bg} ${config.text} ${config.ring} ${sizeClasses[size]} transition-all duration-200 hover:shadow-md hover:scale-105`}>
-      <span className={`w-2 h-2 rounded-full mr-2 ${config.text.replace('text-', 'bg-')}`} />
+      <span className={`w-2 h-2 rounded-full mr-2 ${variant === 'light' ? 'bg-white' : config.text.replace('text-', 'bg-')}`} />
       {config.label}
     </span>
   );
@@ -54,6 +82,7 @@ interface PriorityBadgeProps {
   priority: string;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
+  variant?: 'default' | 'light';
 }
 
 const priorityConfig: Record<string, { label: string; bg: string; text: string; border: string; icon: string }> = {
@@ -64,14 +93,33 @@ const priorityConfig: Record<string, { label: string; bg: string; text: string; 
   URGENT: { label: 'Urgent', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', icon: '🔴' },
 };
 
-export function PriorityBadge({ priority, size = 'md', showIcon = false }: PriorityBadgeProps) {
-  const config = priorityConfig[priority.toUpperCase()] || {
+// Light variant config for dark backgrounds
+const priorityConfigLight: Record<string, { label: string; bg: string; text: string; border: string; icon: string }> = {
+  CRITICAL: { label: 'Critical', bg: 'bg-red-500/30', text: 'text-white', border: 'border-red-400/40', icon: '🔴' },
+  HIGH: { label: 'High', bg: 'bg-orange-500/30', text: 'text-white', border: 'border-orange-400/40', icon: '🟠' },
+  MEDIUM: { label: 'Medium', bg: 'bg-amber-500/30', text: 'text-white', border: 'border-amber-400/40', icon: '🟡' },
+  LOW: { label: 'Low', bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '⚪' },
+  URGENT: { label: 'Urgent', bg: 'bg-red-500/30', text: 'text-white', border: 'border-red-400/40', icon: '🔴' },
+};
+
+export function PriorityBadge({ priority, size = 'md', showIcon = false, variant = 'default' }: PriorityBadgeProps) {
+  const baseConfig = priorityConfig[priority.toUpperCase()] || {
     label: priority,
     bg: 'bg-slate-100',
     text: 'text-slate-600',
     border: 'border-slate-200',
     icon: '⚪'
   };
+
+  const lightConfig = priorityConfigLight[priority.toUpperCase()] || {
+    label: priority,
+    bg: 'bg-white/20',
+    text: 'text-white',
+    border: 'border-white/30',
+    icon: '⚪'
+  };
+
+  const config = variant === 'light' ? lightConfig : baseConfig;
 
   const sizeClasses = {
     sm: 'px-2.5 py-1 text-xs gap-1',
@@ -91,6 +139,7 @@ export function PriorityBadge({ priority, size = 'md', showIcon = false }: Prior
 interface CategoryBadgeProps {
   category: string;
   size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'light';
 }
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
@@ -105,8 +154,23 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
   General: { bg: 'bg-slate-100', text: 'text-slate-600' },
 };
 
-export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
-  const config = categoryColors[category] || { bg: 'bg-slate-100', text: 'text-slate-600' };
+// Light variant config for dark backgrounds
+const categoryColorsLight: Record<string, { bg: string; text: string }> = {
+  Network: { bg: 'bg-blue-500/30', text: 'text-white' },
+  Hardware: { bg: 'bg-purple-500/30', text: 'text-white' },
+  Software: { bg: 'bg-emerald-500/30', text: 'text-white' },
+  Security: { bg: 'bg-red-500/30', text: 'text-white' },
+  Infrastructure: { bg: 'bg-amber-500/30', text: 'text-white' },
+  Database: { bg: 'bg-cyan-500/30', text: 'text-white' },
+  Cloud: { bg: 'bg-sky-500/30', text: 'text-white' },
+  Support: { bg: 'bg-teal-500/30', text: 'text-white' },
+  General: { bg: 'bg-white/20', text: 'text-white' },
+};
+
+export function CategoryBadge({ category, size = 'md', variant = 'default' }: CategoryBadgeProps) {
+  const baseConfig = categoryColors[category] || { bg: 'bg-slate-100', text: 'text-slate-600' };
+  const lightConfig = categoryColorsLight[category] || { bg: 'bg-white/20', text: 'text-white' };
+  const config = variant === 'light' ? lightConfig : baseConfig;
 
   const sizeClasses = {
     sm: 'px-2.5 py-1 text-xs',

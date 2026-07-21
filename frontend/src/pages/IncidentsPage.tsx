@@ -649,8 +649,8 @@ export function IncidentsPage() {
               onClick={() => setCreateOpen(true)}
               className="px-5 py-2.5 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2"
             >
-              <Plus className="w-5 h-5" />
-              Create Incident
+              <Plus className="w-5 h-5 text-purple-600" />
+              <span className="text-purple-600">Create Incident</span>
             </button>
           ) : undefined
         }

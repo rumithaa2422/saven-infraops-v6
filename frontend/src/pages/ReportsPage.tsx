@@ -318,17 +318,20 @@ export function ReportsPage() {
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 24px;
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+          padding: 24px 32px;
+          border-radius: 16px;
         }
 
         .page-header h1 {
           font-size: 28px;
           font-weight: 700;
-          color: var(--text);
+          color: white;
           margin: 0 0 4px 0;
         }
 
         .subtitle {
-          color: var(--muted);
+          color: rgba(255, 255, 255, 0.8);
           margin: 0;
           font-size: 14px;
         }
@@ -336,6 +339,33 @@ export function ReportsPage() {
         .header-actions {
           display: flex;
           gap: 12px;
+        }
+
+        .page-header .btn-secondary {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          background: rgba(255, 255, 255, 0.95);
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #6366f1;
+          cursor: pointer;
+          transition: all 0.15s;
+          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .page-header .btn-secondary:hover {
+          background: white;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+          transform: translateY(-1px);
+        }
+
+        .page-header .btn-secondary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .summary-grid {

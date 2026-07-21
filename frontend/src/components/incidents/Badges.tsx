@@ -41,7 +41,7 @@ export function IncidentStatusBadge({ status, size = 'md', variant = 'default' }
   };
   
   const config = variant === 'light' 
-    ? (lightConfig[status.toUpperCase()] || { label: status.replace(/_/g, ' '), bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' })
+    ? (lightConfig[status.toUpperCase() as keyof typeof lightConfig] || { label: status.replace(/_/g, ' '), bg: 'bg-white/20', text: 'text-white', ring: 'ring-1 ring-white/30', dot: 'bg-white' })
     : baseConfig;
 
   const sizeClasses = {
@@ -170,7 +170,7 @@ export function SeverityBadge({ severity, size = 'md', showIcon = false, variant
   };
 
   const config = variant === 'light'
-    ? (lightConfig[severity.toUpperCase()] || { label: severity, bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '⚪', gradient: 'from-white/40 to-white/30' })
+    ? (lightConfig[severity.toUpperCase() as keyof typeof lightConfig] || { label: severity, bg: 'bg-white/20', text: 'text-white', border: 'border-white/30', icon: '⚪', gradient: 'from-white/40 to-white/30' })
     : baseConfig;
 
   const sizeClasses = {

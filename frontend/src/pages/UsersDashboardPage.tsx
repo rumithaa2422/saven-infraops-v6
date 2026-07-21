@@ -617,7 +617,7 @@ export function UsersDashboardPage() {
 
   return (
     <div className="workspace">
-      <div className="page-stack">
+      <div className="page-stack users-dashboard">
         {/* Header */}
         <div className="page-header">
           <div>
