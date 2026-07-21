@@ -590,11 +590,11 @@ export function ServiceRequestDetailPage() {
         showBackButton
         onBackClick={handleBack}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {canPerformActions && (
               <button
                 onClick={openEditDialog}
-                className="px-4 py-2.5 rounded-xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all duration-200 flex items-center gap-2"
+                className="px-4 py-2 rounded-xl bg-white text-purple-600 font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
               >
                 <Edit2 className="w-4 h-4" />
                 Edit
@@ -603,7 +603,7 @@ export function ServiceRequestDetailPage() {
             {canDelete && (
               <button
                 onClick={openDeleteDialog}
-                className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-red-500 text-white font-semibold transition-all duration-200 flex items-center gap-2"
+                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 shadow-lg shadow-red-500/30 flex items-center gap-2 text-sm"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -1063,6 +1063,7 @@ export function ServiceRequestDetailPage() {
         title="Edit Service Request"
         subtitle={`Editing ${request.ticketNo}`}
         size="xl"
+        icon="✏️"
         footer={
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={closeEditDialog}>

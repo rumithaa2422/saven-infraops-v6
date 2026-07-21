@@ -445,7 +445,7 @@ export function ServiceRequestsPage() {
             {canExport && (
               <button
                 onClick={exportCsv}
-                className="px-4 py-2.5 rounded-xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all duration-200 flex items-center gap-2"
+                className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
               >
                 <Download className="w-4 h-4" />
                 Export
@@ -454,7 +454,7 @@ export function ServiceRequestsPage() {
             {canCreate && (
               <button
                 onClick={() => setCreateOpen(true)}
-                className="px-5 py-2.5 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2"
+                className="px-5 py-2 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
               >
                 <Plus className="w-5 h-5" />
                 Create Request
@@ -735,6 +735,7 @@ export function ServiceRequestsPage() {
         title="Create Service Request"
         subtitle="Submit a new service request for assistance"
         size="xl"
+        icon="🎫"
         footer={
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={clearCreateForm}>

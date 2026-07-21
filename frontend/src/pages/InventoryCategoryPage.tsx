@@ -893,46 +893,42 @@ export function InventoryCategoryPage() {
           ...(category?.name ? [{ label: category.name }] : [])
         ]}
         actions={
-          <div className="flex items-center gap-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={RefreshCw}
+          <div className="flex items-center gap-2">
+            <button
               onClick={handleRefresh}
-              loading={refreshing}
+              disabled={refreshing}
+              className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
             >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
-            </Button>
+            </button>
             {canExport && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Download}
+              <button
                 onClick={handleExport}
                 disabled={filteredItems.length === 0}
+                className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <Download className="w-4 h-4" />
                 Export
-              </Button>
+              </button>
             )}
             {isSuperAdmin && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Upload}
+              <button
                 onClick={handleImportClick}
+                className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
               >
+                <Upload className="w-4 h-4" />
                 Import
-              </Button>
+              </button>
             )}
             {isSuperAdmin && (
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Plus}
+              <button
                 onClick={handleCreateInventory}
+                className="px-5 py-2 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
               >
+                <Plus className="w-5 h-5" />
                 Create Item
-              </Button>
+              </button>
             )}
           </div>
         }
@@ -989,14 +985,13 @@ export function InventoryCategoryPage() {
           iconBg="bg-purple-50"
           action={
             isSuperAdmin && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Plus}
+              <button
                 onClick={() => openSubcategoryForm()}
+                className="px-4 py-2 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
               >
+                <Plus className="w-4 h-4" />
                 Add Subcategory
-              </Button>
+              </button>
             )
           }
         >
@@ -1417,6 +1412,7 @@ export function InventoryCategoryPage() {
         title="Import Inventory Items"
         subtitle="Upload an Excel file to bulk import inventory items"
         size="xl"
+        icon="📊"
         footer={
           !importResult && (
             <div className="flex justify-end gap-3">

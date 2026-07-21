@@ -24,11 +24,11 @@ export function SectionCard({
   noPadding = false
 }: SectionCardProps) {
   return (
-    <div className={`bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md ${className}`}>
+    <div className={`bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden hover:shadow-lg hover:border-purple-200 transition-all duration-300 ${className}`}>
       <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {Icon && (
-            <div className={`p-2 rounded-xl ${iconBg} transition-transform duration-200 group-hover:scale-105`}>
+            <div className={`p-2.5 rounded-xl ${iconBg} transition-transform duration-200`}>
               <Icon className={`w-5 h-5 ${iconColor}`} />
             </div>
           )}
