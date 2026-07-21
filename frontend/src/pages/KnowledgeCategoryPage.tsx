@@ -962,11 +962,13 @@ export function KnowledgeCategoryPage() {
                     <div className="category-meta">
                       <span className="meta-item">
                         <span className="meta-icon">👤</span>
-                        {category.createdBy || 'Unknown'}
+                        <span className="text-xs text-slate-500">Created By</span>
+                        <span className="font-medium text-slate-700 ml-1">{category.createdBy || 'Unknown'}</span>
                       </span>
                       <span className="meta-item">
                         <span className="meta-icon">📅</span>
-                        {formatDate(category.updatedAt)}
+                        <span className="text-xs text-slate-500">Created</span>
+                        <span className="font-medium text-slate-700 ml-1">{formatDate(category.updatedAt)}</span>
                       </span>
                     </div>
                     {canManageCategories && (
@@ -976,14 +978,18 @@ export function KnowledgeCategoryPage() {
                           onClick={() => openEditCategoryModal(category)}
                           title="Edit"
                         >
-                          ✏️
+                          <svg className="w-4 h-4 text-slate-500 hover:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
                         </button>
                         <button 
                           className="icon-btn delete"
                           onClick={() => openDeleteCategoryConfirm(category)}
                           title="Delete"
                         >
-                          🗑️
+                          <svg className="w-4 h-4 text-slate-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
                     )}
@@ -1121,21 +1127,24 @@ export function KnowledgeCategoryPage() {
                 </thead>
                 <tbody>
                   {articles.map((article) => (
-                    <tr key={article.id}>
+                    <tr 
+                      key={article.id} 
+                      className="clickable-row"
+                      onClick={() => viewArticle(article)}
+                    >
                       <td>
-                        <button 
-                          className="article-title-link"
-                          onClick={() => viewArticle(article)}
-                        >
-                          {article.title}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-slate-900 hover:text-brand-600 transition-colors cursor-pointer">
+                            {article.title}
+                          </span>
+                        </div>
                       </td>
                       <td className="description-cell">{article.summary || '-'}</td>
                       <td>{article.authorName || '-'}</td>
                       <td>{formatDate(article.createdAt)}</td>
                       <td>{formatDate(article.updatedAt)}</td>
                       {canManageKB && (
-                        <td className="actions-col">
+                        <td className="actions-col" onClick={(e) => e.stopPropagation()}>
                           <div className="action-buttons">
                             <button 
                               className="action-btn view"
@@ -1894,29 +1903,34 @@ export function KnowledgeCategoryPage() {
       )}
 
       <style>{`
+        /* Page Header - Enterprise Style */
         .page-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 24px;
+          padding: 24px;
+          background: white;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
         }
 
         .page-header h1 {
           font-size: 24px;
-          font-weight: 600;
+          font-weight: 700;
           margin: 0 0 4px 0;
-          color: var(--text);
+          color: #1e293b;
         }
 
         .page-header .subtitle {
-          color: var(--muted);
+          color: #64748b;
           font-size: 14px;
           margin: 0;
         }
 
         .header-actions {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           align-items: center;
         }
 
@@ -1927,7 +1941,7 @@ export function KnowledgeCategoryPage() {
         .breadcrumb-link {
           background: none;
           border: none;
-          color: var(--brand);
+          color: #5469f5;
           cursor: pointer;
           font-size: 14px;
           padding: 0;
@@ -1937,7 +1951,7 @@ export function KnowledgeCategoryPage() {
           text-decoration: underline;
         }
 
-        /* Stats Grid */
+        /* Stats Grid - Enterprise Style */
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -1947,17 +1961,19 @@ export function KnowledgeCategoryPage() {
 
         .stat-card {
           background: white;
-          border: 1px solid var(--line);
+          border: 1px solid #e2e8f0;
           border-radius: 12px;
           padding: 20px;
           display: flex;
           align-items: flex-start;
           gap: 16px;
-          transition: box-shadow 0.2s;
+          transition: all 0.2s;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .stat-card:hover {
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          transform: translateY(-1px);
         }
 
         .stat-icon {
@@ -1969,7 +1985,7 @@ export function KnowledgeCategoryPage() {
           justify-content: center;
           font-size: 18px;
           flex-shrink: 0;
-          background: var(--panel-soft);
+          background: #f1f5f9;
         }
 
         .stat-content {
@@ -1989,7 +2005,7 @@ export function KnowledgeCategoryPage() {
           font-size: 18px;
           font-weight: 600;
           margin: 0;
-          color: var(--text);
+          color: #1e293b;
         }
 
         /* Articles Header */
@@ -2004,71 +2020,72 @@ export function KnowledgeCategoryPage() {
           font-size: 18px;
           font-weight: 600;
           margin: 0;
-          color: var(--text);
+          color: #1e293b;
         }
 
         .article-count {
-          color: var(--muted);
+          color: #64748b;
           font-size: 13px;
         }
 
-        /* Category Grid */
+        /* Category Grid - Enterprise Style */
         .category-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 20px;
-          margin-top: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+          gap: 24px;
+          margin-top: 24px;
         }
 
-        /* Category Card */
+        /* Category Card - Modern Enterprise Style */
         .category-card {
           background: white;
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 20px;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
           flex-direction: column;
-          min-height: 160px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .category-card:hover {
-          border-color: var(--brand);
-          box-shadow: 0 4px 12px rgba(84, 104, 255, 0.15);
+          border-color: #5469f5;
+          box-shadow: 0 8px 24px rgba(84, 104, 255, 0.12);
           transform: translateY(-2px);
         }
 
         .category-card-header {
+          padding: 20px 20px 16px 20px;
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 12px;
+          gap: 12px;
         }
 
         .category-name {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 600;
           margin: 0;
-          color: var(--text);
+          color: #1e293b;
           line-height: 1.3;
         }
 
         .article-count-badge {
-          background: var(--panel-soft);
-          color: var(--muted);
-          font-size: 11px;
+          background: #f1f5f9;
+          color: #64748b;
+          font-size: 12px;
           font-weight: 600;
-          padding: 4px 10px;
-          border-radius: 12px;
+          padding: 4px 12px;
+          border-radius: 20px;
           white-space: nowrap;
           flex-shrink: 0;
         }
 
         .category-description {
-          font-size: 13px;
-          color: var(--muted);
-          margin: 0 0 auto;
+          font-size: 14px;
+          color: #64748b;
+          margin: 0 20px 16px 20px;
           line-height: 1.5;
           flex-grow: 1;
           overflow: hidden;
@@ -2077,71 +2094,79 @@ export function KnowledgeCategoryPage() {
           -webkit-box-orient: vertical;
         }
 
+        /* Category Card Footer - Like Service Requests */
         .category-card-footer {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 16px;
-          padding-top: 12px;
-          border-top: 1px solid var(--line);
+          padding: 16px 20px;
+          background: #f8fafc;
+          border-top: 1px solid #f1f5f9;
+          margin-top: auto;
         }
 
         .category-meta {
           display: flex;
-          gap: 16px;
-          font-size: 12px;
-          color: var(--muted);
+          gap: 20px;
+          font-size: 13px;
+          color: #64748b;
         }
 
         .meta-item {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
         }
 
         .meta-icon {
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .category-actions {
           display: flex;
-          gap: 4px;
+          gap: 8px;
         }
 
+        /* Icon Buttons - Enterprise Style */
         .icon-btn {
-          background: none;
+          background: #f1f5f9;
           border: none;
-          padding: 4px;
+          padding: 8px;
           cursor: pointer;
           font-size: 14px;
-          border-radius: 4px;
-          transition: background 0.15s;
+          border-radius: 8px;
+          transition: all 0.15s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .icon-btn:hover {
-          background: var(--panel-soft);
+          background: #e2e8f0;
         }
 
         .icon-btn.delete:hover {
           background: #fee2e2;
+          color: #dc2626;
         }
 
         .stat-label {
-          font-size: 12px;
-          color: var(--muted);
+          font-size: 13px;
+          color: #64748b;
           margin-bottom: 4px;
+          font-weight: 500;
         }
 
         .stat-value {
-          font-size: 24px;
+          font-size: 28px;
           font-weight: 700;
           line-height: 1.2;
-          color: var(--text);
+          color: #1e293b;
         }
 
         .stat-hint {
-          font-size: 11px;
-          color: var(--muted);
+          font-size: 12px;
+          color: #94a3b8;
           margin-top: 2px;
         }
 
@@ -2164,34 +2189,34 @@ export function KnowledgeCategoryPage() {
           position: absolute;
           left: 12px;
           font-size: 14px;
-          color: var(--muted);
+          color: #94a3b8;
           pointer-events: none;
         }
 
         .search-box input {
           width: 320px;
-          border: 1px solid var(--line);
-          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
           padding: 10px 36px 10px 36px;
           font-size: 14px;
           background: white;
-          transition: border-color 0.15s, box-shadow 0.15s;
+          transition: all 0.2s;
         }
 
         .search-box input:focus {
           outline: none;
-          border-color: var(--brand);
+          border-color: #5469f5;
           box-shadow: 0 0 0 3px rgba(84, 104, 255, 0.1);
         }
 
         .search-box input::placeholder {
-          color: var(--muted);
+          color: #94a3b8;
         }
 
         .search-clear {
           position: absolute;
           right: 8px;
-          background: var(--panel-soft);
+          background: #f8fafc;
           border: none;
           width: 24px;
           height: 24px;
@@ -2199,7 +2224,7 @@ export function KnowledgeCategoryPage() {
           cursor: pointer;
           font-size: 16px;
           line-height: 1;
-          color: var(--muted);
+          color: #64748b;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -2207,18 +2232,18 @@ export function KnowledgeCategoryPage() {
         }
 
         .search-clear:hover {
-          background: var(--line);
-          color: var(--text);
+          background: #e2e8f0;
+          color: #1e293b;
         }
 
         .sort-info {
-          color: var(--muted);
+          color: #64748b;
           font-size: 13px;
           white-space: nowrap;
         }
 
         .searching {
-          color: var(--brand);
+          color: #5469f5;
           font-style: italic;
         }
 
@@ -2235,8 +2260,8 @@ export function KnowledgeCategoryPage() {
         .loading-spinner {
           width: 36px;
           height: 36px;
-          border: 3px solid var(--line);
-          border-top-color: var(--brand);
+          border: 3px solid #e2e8f0;
+          border-top-color: #5469f5;
           border-radius: 50%;
           animation: spin 1s linear infinite;
         }
@@ -2249,8 +2274,8 @@ export function KnowledgeCategoryPage() {
         .empty-card {
           text-align: center;
           padding: 40px;
-          background: var(--panel);
-          border: 1px solid var(--line);
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
           border-radius: 16px;
           max-width: 400px;
         }
@@ -2276,16 +2301,18 @@ export function KnowledgeCategoryPage() {
 
         .error-card p,
         .empty-card p {
-          color: var(--muted);
+          color: #64748b;
           margin: 0 0 20px 0;
           font-size: 14px;
         }
 
+        /* Table Card - Enterprise Style */
         .table-card {
           background: white;
-          border: 1px solid var(--line);
-          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
           overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .table-card table {
@@ -2294,43 +2321,54 @@ export function KnowledgeCategoryPage() {
         }
 
         .table-card th {
-          background: var(--panel-soft);
+          background: #f8fafc;
           font-size: 11px;
           text-transform: uppercase;
-          letter-spacing: 0.04em;
-          color: #6b7280;
+          letter-spacing: 0.05em;
+          color: #64748b;
           font-weight: 600;
-          padding: 12px 16px;
+          padding: 14px 16px;
           text-align: left;
-          border-bottom: 1px solid var(--line);
+          border-bottom: 1px solid #e2e8f0;
         }
 
         .table-card th.sortable {
           cursor: pointer;
           user-select: none;
+          transition: all 0.15s;
         }
 
         .table-card th.sortable:hover {
-          color: var(--text);
+          color: #1e293b;
+          background: #f1f5f9;
         }
 
         .table-card td {
-          padding: 14px 16px;
-          border-bottom: 1px solid var(--line);
+          padding: 16px;
+          border-bottom: 1px solid #f1f5f9;
           vertical-align: middle;
           font-size: 14px;
+          color: #475569;
         }
 
         .table-card tbody tr:last-child td {
           border-bottom: none;
         }
 
+        .table-card tbody tr {
+          transition: all 0.15s;
+        }
+
         .table-card tbody tr:hover {
-          background: var(--panel-soft);
+          background: #f8fafc;
         }
 
         .clickable-row {
           cursor: pointer;
+        }
+
+        .clickable-row:hover td {
+          background: #f1f5f9;
         }
 
         .description-cell {
@@ -2338,7 +2376,7 @@ export function KnowledgeCategoryPage() {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: var(--muted);
+          color: #64748b;
           font-size: 13px;
         }
 
@@ -2350,18 +2388,18 @@ export function KnowledgeCategoryPage() {
           display: inline-block;
           min-width: 28px;
           padding: 4px 8px;
-          background: var(--panel-soft);
+          background: #f8fafc;
           border-radius: 12px;
           font-size: 12px;
           font-weight: 600;
-          color: var(--text);
+          color: #1e293b;
         }
 
         /* Article Title Cell */
         .article-title-link {
           background: none;
           border: none;
-          color: var(--text);
+          color: #1e293b;
           cursor: pointer;
           font-size: 14px;
           font-weight: 600;
@@ -2371,7 +2409,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-title-link:hover {
-          color: var(--brand);
+          color: #5469f5;
         }
 
         /* Status Badges */
@@ -2389,7 +2427,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .status-badge.inactive {
-          background: var(--panel-soft);
+          background: #f8fafc;
           color: #6b7280;
         }
 
@@ -2407,7 +2445,7 @@ export function KnowledgeCategoryPage() {
 
         .action-btn {
           border: none;
-          background: var(--panel-soft);
+          background: #f8fafc;
           padding: 6px 8px;
           border-radius: 6px;
           cursor: pointer;
@@ -2416,7 +2454,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .action-btn:hover {
-          background: var(--line);
+          background: #e2e8f0;
         }
 
         .action-btn.delete:hover {
@@ -2474,13 +2512,13 @@ export function KnowledgeCategoryPage() {
           border: none;
           font-size: 24px;
           cursor: pointer;
-          color: var(--muted);
+          color: #64748b;
           padding: 0;
           line-height: 1;
         }
 
         .page-title-row .close:hover {
-          color: var(--text);
+          color: #1e293b;
         }
 
         .form-error-banner {
@@ -2500,7 +2538,7 @@ export function KnowledgeCategoryPage() {
           display: block;
           font-size: 13px;
           font-weight: 600;
-          color: var(--text);
+          color: #1e293b;
           margin-bottom: 6px;
         }
 
@@ -2508,7 +2546,7 @@ export function KnowledgeCategoryPage() {
         .form-group textarea,
         .form-group select {
           width: 100%;
-          border: 1px solid var(--line);
+          border: 1px solid #e2e8f0;
           border-radius: 8px;
           padding: 10px 12px;
           font-size: 14px;
@@ -2518,7 +2556,7 @@ export function KnowledgeCategoryPage() {
         .form-group textarea:focus,
         .form-group select:focus {
           outline: none;
-          border-color: var(--brand);
+          border-color: #5469f5;
         }
 
         .form-row-2 {
@@ -2528,7 +2566,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .tags-input-container {
-          border: 1px solid var(--line);
+          border: 1px solid #e2e8f0;
           border-radius: 8px;
           padding: 10px;
         }
@@ -2544,7 +2582,7 @@ export function KnowledgeCategoryPage() {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          background: var(--panel-soft);
+          background: #f8fafc;
           padding: 4px 8px;
           border-radius: 12px;
           font-size: 12px;
@@ -2555,7 +2593,7 @@ export function KnowledgeCategoryPage() {
           border: none;
           cursor: pointer;
           font-size: 14px;
-          color: var(--muted);
+          color: #64748b;
           padding: 0;
           line-height: 1;
         }
@@ -2612,22 +2650,22 @@ export function KnowledgeCategoryPage() {
           gap: 12px;
           margin-bottom: 16px;
           padding-bottom: 16px;
-          border-bottom: 1px solid var(--line);
+          border-bottom: 1px solid #e2e8f0;
         }
 
         .article-category {
           font-size: 13px;
-          color: var(--muted);
+          color: #64748b;
         }
 
         .article-views {
           font-size: 13px;
-          color: var(--muted);
+          color: #64748b;
           margin-left: auto;
         }
 
         .article-summary {
-          background: var(--panel-soft);
+          background: #f8fafc;
           padding: 16px;
           border-radius: 10px;
           margin-bottom: 16px;
@@ -2648,7 +2686,7 @@ export function KnowledgeCategoryPage() {
 
         .tag-static {
           display: inline-block;
-          background: var(--brand);
+          background: #5469f5;
           color: white;
           padding: 4px 10px;
           border-radius: 12px;
@@ -2677,7 +2715,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-body code {
-          background: var(--panel-soft);
+          background: #f8fafc;
           padding: 2px 6px;
           border-radius: 4px;
           font-family: monospace;
@@ -2685,7 +2723,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-body pre {
-          background: var(--panel-soft);
+          background: #f8fafc;
           padding: 16px;
           border-radius: 10px;
           overflow-x: auto;
@@ -2700,14 +2738,14 @@ export function KnowledgeCategoryPage() {
         .article-footer {
           margin-top: 24px;
           padding-top: 16px;
-          border-top: 1px solid var(--line);
+          border-top: 1px solid #e2e8f0;
         }
 
         .article-author {
           display: flex;
           gap: 16px;
           font-size: 13px;
-          color: var(--muted);
+          color: #64748b;
         }
 
         /* Toast */
@@ -2810,49 +2848,50 @@ export function KnowledgeCategoryPage() {
       <style>{`
         /* Breadcrumb Separator */
         .breadcrumb-separator {
-          color: var(--muted);
+          color: #64748b;
           margin: 0 8px;
         }
 
-        /* Article Detail View */
+        /* Article Detail View - Enterprise Style */
         .article-detail-view {
           background: white;
-          border: 1px solid var(--line);
-          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
           overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         /* Article Detail Header */
         .article-detail-header {
-          padding: 32px 32px 24px;
-          border-bottom: 1px solid var(--line);
+          padding: 32px;
+          border-bottom: 1px solid #f1f5f9;
         }
 
         .article-detail-category {
-          margin-bottom: 12px;
+          margin-bottom: 16px;
         }
 
         .category-badge {
           display: inline-block;
-          background: var(--brand);
+          background: #5469f5;
           color: white;
           font-size: 12px;
           font-weight: 600;
           padding: 6px 14px;
-          border-radius: 16px;
+          border-radius: 20px;
         }
 
         .article-detail-title {
           font-size: 28px;
           font-weight: 700;
-          color: var(--text);
-          margin: 0 0 12px 0;
+          color: #1e293b;
+          margin: 0 0 16px 0;
           line-height: 1.3;
         }
 
         .article-detail-summary {
           font-size: 16px;
-          color: var(--muted);
+          color: #64748b;
           line-height: 1.6;
           margin: 0;
         }
@@ -2862,9 +2901,9 @@ export function KnowledgeCategoryPage() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px 32px;
-          background: var(--panel-soft);
-          border-bottom: 1px solid var(--line);
+          padding: 20px 32px;
+          background: #f8fafc;
+          border-bottom: 1px solid #f1f5f9;
         }
 
         .meta-left {
@@ -2879,43 +2918,45 @@ export function KnowledgeCategoryPage() {
         .meta-views {
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          color: var(--muted);
+          gap: 8px;
+          font-size: 14px;
+          color: #64748b;
         }
 
         .meta-icon {
-          font-size: 14px;
+          font-size: 16px;
         }
 
         .meta-actions {
           display: flex;
-          gap: 8px;
+          gap: 12px;
         }
 
         .meta-actions button {
-          font-size: 13px;
-          padding: 8px 16px;
+          font-size: 14px;
+          padding: 10px 20px;
+          border-radius: 10px;
+          font-weight: 500;
         }
 
         /* Article Tags */
         .article-detail-tags {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
-          padding: 16px 32px;
-          border-bottom: 1px solid var(--line);
+          gap: 10px;
+          padding: 20px 32px;
+          border-bottom: 1px solid #f1f5f9;
         }
 
         .article-tag {
           display: inline-block;
-          background: var(--panel-soft);
-          color: var(--text);
-          font-size: 12px;
+          background: #f1f5f9;
+          color: #475569;
+          font-size: 13px;
           font-weight: 500;
-          padding: 6px 12px;
-          border-radius: 12px;
-          border: 1px solid var(--line);
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1px solid #e2e8f0;
         }
 
         /* Article Content */
@@ -2926,7 +2967,7 @@ export function KnowledgeCategoryPage() {
         .article-content-body {
           font-size: 15px;
           line-height: 1.8;
-          color: var(--text);
+          color: #1e293b;
           max-width: 800px;
         }
 
@@ -2934,21 +2975,21 @@ export function KnowledgeCategoryPage() {
           font-size: 24px;
           font-weight: 700;
           margin: 32px 0 16px;
-          color: var(--text);
+          color: #1e293b;
         }
 
         .article-content-body h2 {
           font-size: 20px;
           font-weight: 600;
           margin: 28px 0 12px;
-          color: var(--text);
+          color: #1e293b;
         }
 
         .article-content-body h3 {
           font-size: 18px;
           font-weight: 600;
           margin: 24px 0 10px;
-          color: var(--text);
+          color: #1e293b;
         }
 
         .article-content-body p {
@@ -2966,7 +3007,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-content-body code {
-          background: var(--panel-soft);
+          background: #f8fafc;
           padding: 2px 6px;
           border-radius: 4px;
           font-family: 'Courier New', Courier, monospace;
@@ -2974,12 +3015,12 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-content-body pre {
-          background: var(--panel-soft);
+          background: #f8fafc;
           padding: 16px 20px;
           border-radius: 8px;
           overflow-x: auto;
           margin: 0 0 16px;
-          border: 1px solid var(--line);
+          border: 1px solid #e2e8f0;
         }
 
         .article-content-body pre code {
@@ -2990,10 +3031,10 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-content-body blockquote {
-          border-left: 4px solid var(--brand);
+          border-left: 4px solid #5469f5;
           padding: 12px 20px;
           margin: 0 0 16px;
-          background: var(--panel-soft);
+          background: #f8fafc;
           border-radius: 0 8px 8px 0;
         }
 
@@ -3002,7 +3043,7 @@ export function KnowledgeCategoryPage() {
         }
 
         .article-content-body a {
-          color: var(--brand);
+          color: #5469f5;
           text-decoration: none;
         }
 
@@ -3026,12 +3067,12 @@ export function KnowledgeCategoryPage() {
         .article-content-body th,
         .article-content-body td {
           padding: 10px 14px;
-          border: 1px solid var(--line);
+          border: 1px solid #e2e8f0;
           text-align: left;
         }
 
         .article-content-body th {
-          background: var(--panel-soft);
+          background: #f8fafc;
           font-weight: 600;
         }
 
@@ -3075,14 +3116,14 @@ export function KnowledgeCategoryPage() {
           /* Article Attachments */
           .article-attachments-section {
             padding: 20px;
-            border-top: 1px solid var(--line);
-            background: var(--panel-soft);
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
           }
 
           .article-attachments-section h3 {
             font-size: 16px;
             font-weight: 600;
-            color: var(--text);
+            color: #1e293b;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
@@ -3090,7 +3131,7 @@ export function KnowledgeCategoryPage() {
           }
 
           .attachment-count {
-            background: var(--brand);
+            background: #5469f5;
             color: white;
             font-size: 11px;
             font-weight: 600;
@@ -3104,7 +3145,7 @@ export function KnowledgeCategoryPage() {
             text-align: center;
             padding: 48px 24px;
             background: white;
-            border: 1px dashed var(--line);
+            border: 1px dashed #e2e8f0;
             border-radius: 12px;
           }
 
@@ -3112,24 +3153,24 @@ export function KnowledgeCategoryPage() {
             width: 64px;
             height: 64px;
             margin: 0 auto 16px;
-            background: var(--panel-soft);
+            background: #f8fafc;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--muted);
+            color: #64748b;
           }
 
           .empty-title {
             font-size: 15px;
             font-weight: 600;
-            color: var(--text);
+            color: #1e293b;
             margin: 0 0 4px;
           }
 
           .empty-subtitle {
             font-size: 13px;
-            color: var(--muted);
+            color: #64748b;
             margin: 0;
           }
 
@@ -3143,7 +3184,7 @@ export function KnowledgeCategoryPage() {
 
           .attachment-card {
             background: white;
-            border: 1px solid var(--line);
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 16px;
             display: flex;
@@ -3152,7 +3193,7 @@ export function KnowledgeCategoryPage() {
           }
 
           .attachment-card:hover {
-            border-color: var(--brand);
+            border-color: #5469f5;
             box-shadow: 0 4px 12px rgba(84, 104, 255, 0.1);
             transform: translateY(-1px);
           }
@@ -3170,7 +3211,7 @@ export function KnowledgeCategoryPage() {
             display: block;
             font-size: 14px;
             font-weight: 600;
-            color: var(--text);
+            color: #1e293b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -3183,7 +3224,7 @@ export function KnowledgeCategoryPage() {
           }
 
           .attachment-card-name:hover {
-            color: var(--brand);
+            color: #5469f5;
             text-decoration: underline;
           }
 
@@ -3204,7 +3245,7 @@ export function KnowledgeCategoryPage() {
 
           .file-size {
             font-size: 12px;
-            color: var(--muted);
+            color: #64748b;
           }
 
           .attachment-card-footer {
@@ -3213,7 +3254,7 @@ export function KnowledgeCategoryPage() {
 
           .upload-info {
             font-size: 11px;
-            color: var(--muted);
+            color: #64748b;
           }
 
           .attachment-card-actions {
@@ -3237,24 +3278,24 @@ export function KnowledgeCategoryPage() {
           }
 
           .action-btn.download-btn {
-            background: var(--brand);
+            background: #5469f5;
             color: white;
           }
 
           .action-btn.download-btn:hover {
-            background: var(--brand-dark);
+            background: #4758e6;
           }
 
           .action-btn.delete-btn {
             background: white;
-            color: var(--error);
-            border: 1px solid var(--line);
+            color: #dc2626;
+            border: 1px solid #e2e8f0;
           }
 
           .action-btn.delete-btn:hover {
-            background: var(--error);
+            background: #dc2626;
             color: white;
-            border-color: var(--error);
+            border-color: #dc2626;
           }
 
           /* Upload Section */
@@ -3263,7 +3304,7 @@ export function KnowledgeCategoryPage() {
           }
 
           .upload-dropzone {
-            border: 2px dashed var(--line);
+            border: 2px dashed #e2e8f0;
             border-radius: 12px;
             padding: 32px;
             text-align: center;
@@ -3274,7 +3315,7 @@ export function KnowledgeCategoryPage() {
 
           .upload-dropzone:hover,
           .upload-dropzone.dragging {
-            border-color: var(--brand);
+            border-color: #5469f5;
             background: rgba(84, 104, 255, 0.02);
           }
 
@@ -3297,12 +3338,12 @@ export function KnowledgeCategoryPage() {
           .dropzone-icon {
             width: 56px;
             height: 56px;
-            background: var(--panel-soft);
+            background: #f8fafc;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--brand);
+            color: #5469f5;
           }
 
           .dropzone-text {
@@ -3311,12 +3352,12 @@ export function KnowledgeCategoryPage() {
 
           .dropzone-primary {
             font-size: 14px;
-            color: var(--text);
+            color: #1e293b;
             margin: 0 0 4px;
           }
 
           .browse-link {
-            color: var(--brand);
+            color: #5469f5;
             cursor: pointer;
           }
 
@@ -3326,13 +3367,13 @@ export function KnowledgeCategoryPage() {
 
           .dropzone-secondary {
             font-size: 12px;
-            color: var(--muted);
+            color: #64748b;
             margin: 0;
           }
 
           .dropzone-limit {
             font-size: 11px;
-            color: var(--muted);
+            color: #64748b;
             margin: 4px 0 0;
           }
 
@@ -3348,13 +3389,13 @@ export function KnowledgeCategoryPage() {
             margin-bottom: 12px;
             font-size: 13px;
             font-weight: 500;
-            color: var(--text);
+            color: #1e293b;
           }
 
           .clear-all-btn {
             background: none;
             border: none;
-            color: var(--brand);
+            color: #5469f5;
             font-size: 12px;
             cursor: pointer;
           }
@@ -3375,13 +3416,13 @@ export function KnowledgeCategoryPage() {
             gap: 10px;
             padding: 12px;
             background: white;
-            border: 1px solid var(--line);
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
             transition: all 0.15s;
           }
 
           .selected-file-card:hover {
-            border-color: var(--brand);
+            border-color: #5469f5;
           }
 
           .selected-file-card.complete {
@@ -3402,7 +3443,7 @@ export function KnowledgeCategoryPage() {
             display: block;
             font-size: 13px;
             font-weight: 500;
-            color: var(--text);
+            color: #1e293b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -3425,13 +3466,13 @@ export function KnowledgeCategoryPage() {
 
           .file-size-small {
             font-size: 11px;
-            color: var(--muted);
+            color: #64748b;
           }
 
           .progress-bar-container {
             width: 100%;
             height: 4px;
-            background: var(--panel-soft);
+            background: #f8fafc;
             border-radius: 2px;
             margin-top: 8px;
             overflow: hidden;
@@ -3439,7 +3480,7 @@ export function KnowledgeCategoryPage() {
 
           .progress-bar {
             height: 100%;
-            background: var(--brand);
+            background: #5469f5;
             border-radius: 2px;
             transition: width 0.2s;
           }
@@ -3457,21 +3498,21 @@ export function KnowledgeCategoryPage() {
             border: none;
             padding: 4px;
             cursor: pointer;
-            color: var(--muted);
+            color: #64748b;
             border-radius: 4px;
             transition: all 0.15s;
           }
 
           .remove-file-btn:hover {
-            color: var(--error);
+            color: #dc2626;
             background: rgba(239, 68, 68, 0.1);
           }
 
           .upload-spinner {
             width: 16px;
             height: 16px;
-            border: 2px solid var(--line);
-            border-top-color: var(--brand);
+            border: 2px solid #e2e8f0;
+            border-top-color: #5469f5;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
@@ -3488,7 +3529,7 @@ export function KnowledgeCategoryPage() {
             width: 100%;
             margin-top: 16px;
             padding: 12px;
-            background: var(--brand);
+            background: #5469f5;
             color: white;
             border: none;
             border-radius: 8px;
@@ -3499,7 +3540,7 @@ export function KnowledgeCategoryPage() {
           }
 
           .upload-btn:hover {
-            background: var(--brand-dark);
+            background: #4758e6;
           }
 
           .uploading-status {
@@ -3509,17 +3550,17 @@ export function KnowledgeCategoryPage() {
             gap: 8px;
             margin-top: 16px;
             padding: 12px;
-            background: var(--panel-soft);
+            background: #f8fafc;
             border-radius: 8px;
             font-size: 14px;
-            color: var(--brand);
+            color: #5469f5;
           }
 
           .spinner {
             width: 16px;
             height: 16px;
-            border: 2px solid var(--line);
-            border-top-color: var(--brand);
+            border: 2px solid #e2e8f0;
+            border-top-color: #5469f5;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
@@ -3530,18 +3571,18 @@ export function KnowledgeCategoryPage() {
           }
 
           .form-dropzone {
-            border: 2px dashed var(--line);
+            border: 2px dashed #e2e8f0;
             border-radius: 8px;
             padding: 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
-            background: var(--panel-soft);
+            background: #f8fafc;
           }
 
           .form-dropzone:hover,
           .form-dropzone.dragging {
-            border-color: var(--brand);
+            border-color: #5469f5;
             background: rgba(84, 104, 255, 0.05);
           }
 
@@ -3550,17 +3591,17 @@ export function KnowledgeCategoryPage() {
             flex-direction: column;
             align-items: center;
             gap: 8px;
-            color: var(--muted);
+            color: #64748b;
             font-size: 13px;
           }
 
           .form-dropzone-content svg {
-            color: var(--brand);
+            color: #5469f5;
           }
 
           .form-dropzone-limit {
             font-size: 11px;
-            color: var(--muted);
+            color: #64748b;
           }
 
           .form-selected-files {
@@ -3573,7 +3614,7 @@ export function KnowledgeCategoryPage() {
             gap: 10px;
             padding: 10px;
             background: white;
-            border: 1px solid var(--line);
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
             margin-bottom: 8px;
           }
@@ -3591,7 +3632,7 @@ export function KnowledgeCategoryPage() {
             display: block;
             font-size: 13px;
             font-weight: 500;
-            color: var(--text);
+            color: #1e293b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -3609,13 +3650,13 @@ export function KnowledgeCategoryPage() {
             border: none;
             padding: 4px;
             cursor: pointer;
-            color: var(--muted);
+            color: #64748b;
             border-radius: 4px;
             transition: all 0.15s;
           }
 
           .form-remove-btn:hover {
-            color: var(--error);
+            color: #dc2626;
             background: rgba(239, 68, 68, 0.1);
           }
 
@@ -3641,7 +3682,7 @@ export function KnowledgeCategoryPage() {
 
           .modal-confirm-icon.danger {
             background: rgba(239, 68, 68, 0.1);
-            color: var(--error);
+            color: #dc2626;
           }
 
           .modal-confirm-header h3 {
@@ -3657,14 +3698,14 @@ export function KnowledgeCategoryPage() {
           .modal-confirm-filename {
             font-size: 14px;
             font-weight: 500;
-            color: var(--text);
+            color: #1e293b;
             margin: 0 0 8px;
             word-break: break-all;
           }
 
           .modal-confirm-warning {
             font-size: 13px;
-            color: var(--muted);
+            color: #64748b;
             margin: 0;
           }
 
@@ -3698,7 +3739,7 @@ export function KnowledgeCategoryPage() {
             justify-content: space-between;
             align-items: center;
             padding: 16px 20px;
-            border-bottom: 1px solid var(--line);
+            border-bottom: 1px solid #e2e8f0;
           }
 
           .modal-preview-header h3 {
@@ -3715,20 +3756,20 @@ export function KnowledgeCategoryPage() {
             border: none;
             padding: 8px;
             cursor: pointer;
-            color: var(--muted);
+            color: #64748b;
             border-radius: 6px;
             transition: all 0.15s;
           }
 
           .close-preview:hover {
-            background: var(--panel-soft);
-            color: var(--text);
+            background: #f8fafc;
+            color: #1e293b;
           }
 
           .modal-preview-content {
             flex: 1;
             overflow: auto;
-            background: var(--panel-soft);
+            background: #f8fafc;
           }
 
           .preview-image {
@@ -3749,7 +3790,7 @@ export function KnowledgeCategoryPage() {
             justify-content: flex-end;
             gap: 12px;
             padding: 16px 20px;
-            border-top: 1px solid var(--line);
+            border-top: 1px solid #e2e8f0;
             background: white;
           }
 
