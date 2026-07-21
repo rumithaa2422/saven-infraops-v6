@@ -572,18 +572,30 @@ export function ProjectDashboardPage() {
   const hasActiveFilters = search || statusFilter || priorityFilter || departmentFilter || technologyFilter || managerFilter;
 
   return (
-    <div className="workspace">
-      <div className="page-stack">
-        {/* Header */}
-        <div className="page-header">
-          <div>
-            <p className="eyebrow">Projects & Environments</p>
-            <h1>Project Dashboard</h1>
+    <div className="min-h-screen bg-slate-50">
+      {/* Page Header - Modern Gradient */}
+      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            {/* Icon */}
+            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9 22V12H15V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-white truncate">Project Dashboard</h1>
+              <p className="text-sm text-white/80 mt-1">Projects & Environments</p>
+            </div>
           </div>
         </div>
+      </div>
 
+      {/* Main Content */}
+      <main className="p-6 space-y-6">
         {/* Summary Cards */}
-        <div className="project-summary-cards">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="project-summary-card" onClick={() => { setStatusFilter(''); fetchProjects(); }}>
             <div className="project-summary-icon total">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -691,11 +703,11 @@ export function ProjectDashboardPage() {
           </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="toolbar">
-          <form className="search-form" onSubmit={handleSearch}>
-            <div className="search-input-wrapper">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Toolbar - Modern Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
+          <form className="flex-1 flex gap-2 w-full md:w-auto" onSubmit={handleSearch}>
+            <div className="flex-1 relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
                 <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
@@ -704,49 +716,46 @@ export function ProjectDashboardPage() {
                 placeholder="Search by name, code, client, manager, technology..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="search-input"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300"
               />
             </div>
-            <button type="submit" className="toolbar-btn primary">Search</button>
+            <button type="submit" className="px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-colors">Search</button>
           </form>
 
-          <div className="toolbar-actions">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              className={`toolbar-btn ${showFilters ? 'active' : ''}`}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${showFilters ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               onClick={() => setShowFilters(!showFilters)}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 4H21V6H3V4ZM7 11H17V13H7V11ZM10 18H14V20H10V18Z" stroke="currentColor" strokeWidth="2"/>
-              </svg>
               Filters
-              {hasActiveFilters && <span className="filter-badge"></span>}
+              {hasActiveFilters && <span className="ml-2 w-2 h-2 bg-purple-600 rounded-full inline-block"></span>}
             </button>
 
-            <div className="sort-dropdown">
-              <button type="button" className="toolbar-btn">
+            <div className="relative group">
+              <button type="button" className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
                 Sort
               </button>
-              <div className="sort-dropdown-content">
-                <button className={sortBy === 'createdAt' && sortOrder === 'desc' ? 'active' : ''} onClick={() => { setSortBy('createdAt'); setSortOrder('desc'); }}>
+              <div className="absolute right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-lg py-2 min-w-[140px] z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'createdAt' && sortOrder === 'desc' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => { setSortBy('createdAt'); setSortOrder('desc'); }}>
                   Newest {sortBy === 'createdAt' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
-                <button className={sortBy === 'createdAt' && sortOrder === 'asc' ? 'active' : ''} onClick={() => { setSortBy('createdAt'); setSortOrder('asc'); }}>
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'createdAt' && sortOrder === 'asc' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => { setSortBy('createdAt'); setSortOrder('asc'); }}>
                   Oldest {sortBy === 'createdAt' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
-                <button className={sortBy === 'projectName' ? 'active' : ''} onClick={() => handleSort('projectName')}>
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'projectName' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('projectName')}>
                   Name {sortBy === 'projectName' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
-                <button className={sortBy === 'startDate' ? 'active' : ''} onClick={() => handleSort('startDate')}>
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'startDate' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('startDate')}>
                   Start Date {sortBy === 'startDate' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
-                <button className={sortBy === 'expectedEndDate' ? 'active' : ''} onClick={() => handleSort('expectedEndDate')}>
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'expectedEndDate' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('expectedEndDate')}>
                   End Date {sortBy === 'expectedEndDate' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
-                <button className={sortBy === 'priority' ? 'active' : ''} onClick={() => handleSort('priority')}>
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'priority' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('priority')}>
                   Priority {sortBy === 'priority' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
                 </button>
               </div>
@@ -754,18 +763,18 @@ export function ProjectDashboardPage() {
 
             <button
               type="button"
-              className={`toolbar-btn ${refreshing ? 'refreshing' : ''}`}
+              className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all flex items-center gap-2"
               onClick={handleRefresh}
               disabled={refreshing}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={refreshing ? 'spin' : ''}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={refreshing ? 'animate-spin' : ''}>
                 <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Refresh
             </button>
 
             {(isSuperAdmin || isAdmin) && (
-              <button type="button" className="toolbar-btn" onClick={handleExport}>
+              <button type="button" className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all flex items-center gap-2" onClick={handleExport}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -777,7 +786,7 @@ export function ProjectDashboardPage() {
 
             {isSuperAdmin && (
               <>
-                <button type="button" className="toolbar-btn" onClick={handleImportClick}>
+                <button type="button" className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all flex items-center gap-2" onClick={handleImportClick}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                     <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -786,7 +795,7 @@ export function ProjectDashboardPage() {
                   Import
                 </button>
 
-                <button type="button" className="toolbar-btn primary" onClick={() => navigate('/projects-environments/create')}>
+                <button type="button" className="px-5 py-2.5 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm" onClick={() => navigate('/projects-environments/create')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
@@ -797,13 +806,13 @@ export function ProjectDashboardPage() {
           </div>
         </div>
 
-        {/* Filters Panel */}
+        {/* Filters Panel - Modern Card */}
         {showFilters && (
-          <div className="filters-panel">
-            <div className="filters-grid">
-              <div className="filter-group">
-                <label>Status</label>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                   <option value="">All Statuses</option>
                   <option value="ACTIVE">Active</option>
                   <option value="COMPLETED">Completed</option>
@@ -812,9 +821,9 @@ export function ProjectDashboardPage() {
                   <option value="CANCELLED">Cancelled</option>
                 </select>
               </div>
-              <div className="filter-group">
-                <label>Priority</label>
-                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
+                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                   <option value="">All Priorities</option>
                   <option value="CRITICAL">Critical</option>
                   <option value="HIGH">High</option>
@@ -822,27 +831,27 @@ export function ProjectDashboardPage() {
                   <option value="LOW">Low</option>
                 </select>
               </div>
-              <div className="filter-group">
-                <label>Department</label>
-                <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Department</label>
+                <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                   <option value="">All Departments</option>
                   {departments.map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
               </div>
-              <div className="filter-group">
-                <label>Technology</label>
-                <select value={technologyFilter} onChange={(e) => setTechnologyFilter(e.target.value)}>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Technology</label>
+                <select value={technologyFilter} onChange={(e) => setTechnologyFilter(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                   <option value="">All Technologies</option>
                   {technologies.map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>
-              <div className="filter-group">
-                <label>Project Manager</label>
-                <select value={managerFilter} onChange={(e) => setManagerFilter(e.target.value)}>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Project Manager</label>
+                <select value={managerFilter} onChange={(e) => setManagerFilter(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                   <option value="">All Managers</option>
                   {managers.map(m => (
                     <option key={m} value={m}>{m}</option>
@@ -851,11 +860,11 @@ export function ProjectDashboardPage() {
               </div>
             </div>
             {hasActiveFilters && (
-              <div className="filters-actions">
-                <button type="button" className="clear-filters-btn" onClick={clearFilters}>
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors" onClick={clearFilters}>
                   Clear All Filters
                 </button>
-                <button type="button" className="apply-filters-btn" onClick={() => fetchProjects()}>
+                <button type="button" className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-colors" onClick={() => fetchProjects()}>
                   Apply Filters
                 </button>
               </div>
@@ -863,78 +872,99 @@ export function ProjectDashboardPage() {
           </div>
         )}
 
-        {/* Projects Table */}
-        <div className="table-card">
-          <div className="table-header">
-            <h3>Projects</h3>
-            <span className="table-count">{projects.length} items</span>
+        {/* Projects Table - Modern Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">Projects</h3>
+            <span className="text-sm text-slate-500">{projects.length} items</span>
           </div>
 
           {loading ? (
-            <div className="table-loading">
-              <div className="loading-spinner"></div>
-              <p>Loading projects...</p>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+              <p className="mt-4 text-slate-500">Loading projects...</p>
             </div>
           ) : projects.length === 0 && !hasActiveFilters ? (
-            <div className="table-empty">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              <p>No Projects Available</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+              <p className="text-lg font-medium text-slate-700 mb-4">No Projects Available</p>
               {isSuperAdmin && (
-                <button type="button" className="primary" onClick={() => navigate('/projects-environments/create')}>
+                <button type="button" className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors" onClick={() => navigate('/projects-environments/create')}>
                   Create Project
                 </button>
               )}
             </div>
           ) : projects.length === 0 ? (
-            <div className="table-empty">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <p>No projects match your filters</p>
-              <button type="button" className="secondary" onClick={clearFilters}>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <p className="text-slate-600 mb-4">No projects match your filters</p>
+              <button type="button" className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors" onClick={clearFilters}>
                 Clear Filters
               </button>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table>
+            <div className="overflow-x-auto">
+              <table className="w-full">
                 <thead>
-                  <tr>
-                    <th>Project Code</th>
-                    <th>Project Name</th>
-                    <th>Client</th>
-                    <th>Project Manager</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Department</th>
-                    <th>Start Date</th>
-                    <th>Assigned Assets</th>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Code</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Client</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Manager</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Department</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assets</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {projects.map((project) => (
-                    <tr key={project.id} onClick={() => navigate(`/projects-environments/${project.id}`)}>
-                      <td className="project-code">{project.projectCode}</td>
-                      <td className="project-name">{project.projectName}</td>
-                      <td>{project.client || '-'}</td>
-                      <td>{project.ownerName || '-'}</td>
-                      <td>
-                        <span className={`status-badge status-${project.status.toLowerCase().replace('_', '_')}`}>
+                  {projects.map((project, index) => (
+                    <tr key={project.id} onClick={() => navigate(`/projects-environments/${project.id}`)} className={`border-b border-slate-100 hover:bg-purple-50/30 cursor-pointer transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-mono font-semibold rounded-lg">
+                          {project.projectCode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-medium text-slate-900">{project.projectName}</span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">{project.client || '-'}</td>
+                      <td className="px-6 py-4 text-slate-600">{project.ownerName || '-'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          project.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                          project.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
+                          project.status === 'ON_HOLD' ? 'bg-yellow-100 text-yellow-700' :
+                          project.status === 'DELAYED' ? 'bg-orange-100 text-orange-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
                           {project.status.replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td>
-                        <span className={`priority-badge priority-${project.priority.toLowerCase()}`}>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          project.priority === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                          project.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                          project.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
                           {project.priority}
                         </span>
                       </td>
-                      <td>{project.department || '-'}</td>
-                      <td>{formatDate(project.startDate)}</td>
-                      <td>
-                        <span className="asset-count-badge">
+                      <td className="px-6 py-4 text-slate-600">{project.department || '-'}</td>
+                      <td className="px-6 py-4 text-slate-600">{formatDate(project.startDate)}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center justify-center w-8 h-8 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg">
                           {project.assignedAssets || 0}
                         </span>
                       </td>
@@ -1129,7 +1159,7 @@ export function ProjectDashboardPage() {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

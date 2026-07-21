@@ -216,92 +216,106 @@ export function ProjectCreatePage() {
   const selectedTeamMembers = users.filter(u => formData.teamMemberIds.includes(u.id));
 
   return (
-    <div className="workspace">
-      <div className="page-stack">
-        {/* Header */}
-        <div className="page-header">
-          <button type="button" className="back-btn" onClick={() => navigate('/projects-environments')}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back to Dashboard
-          </button>
-          <div>
-            <p className="eyebrow">Projects & Environments</p>
-            <h1>Create Project</h1>
+    <div className="min-h-screen bg-slate-50">
+      {/* Page Header - Modern Gradient */}
+      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <button type="button" onClick={() => navigate('/projects-environments')} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 group">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:-translate-x-1 transition-transform">
+                <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
+            </button>
+            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-white/70 mb-1">Projects & Environments</p>
+              <h1 className="text-2xl font-bold text-white">Create Project</h1>
+            </div>
           </div>
         </div>
+      </div>
 
-        {error && (
-          <div className="alert alert-error">
+      {error && (
+        <div className="max-w-7xl mx-auto px-6 pt-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
               <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             {error}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="form-cards-container">
+      {/* Form */}
+      <main className="max-w-7xl mx-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Project Information Card */}
-          <div className="form-card">
-            <h3 className="card-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-                <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Project Information
-            </h3>
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                  <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">Project Information</h3>
+            </div>
 
-            <div className="form-section">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Project Name *</label>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Project Name *</label>
                   <input
                     type="text"
                     name="projectName"
                     value={formData.projectName}
                     onChange={handleChange}
                     placeholder="Enter project name"
-                    className={errors.projectName ? 'input-error' : ''}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.projectName ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                   />
-                  {errors.projectName && <span className="error-text">{errors.projectName}</span>}
+                  {errors.projectName && <span className="text-xs text-red-600 mt-1">{errors.projectName}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Project Code *</label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Project Code *</label>
                   <input
                     type="text"
                     name="projectCode"
                     value={formData.projectCode}
                     onChange={handleChange}
                     placeholder="e.g., PRJ-001"
-                    className={errors.projectCode ? 'input-error' : ''}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.projectCode ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                   />
-                  {errors.projectCode && <span className="error-text">{errors.projectCode}</span>}
+                  {errors.projectCode && <span className="text-xs text-red-600 mt-1">{errors.projectCode}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Client Name *</label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Client Name *</label>
                   <input
                     type="text"
                     name="client"
                     value={formData.client}
                     onChange={handleChange}
                     placeholder="Enter client name"
-                    className={errors.client ? 'input-error' : ''}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.client ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                   />
-                  {errors.client && <span className="error-text">{errors.client}</span>}
+                  {errors.client && <span className="text-xs text-red-600 mt-1">{errors.client}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label>Primary Vendor</label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Primary Vendor</label>
                   <select
                     name="primaryVendorId"
                     value={formData.primaryVendorId}
                     onChange={handleChange}
                     disabled={vendorsLoading}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300"
                   >
                     <option value="">Select vendor</option>
                     {vendors.map(vendor => (
@@ -312,31 +326,33 @@ export function ProjectCreatePage() {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Department</label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Department</label>
                   <input
                     type="text"
                     name="department"
                     value={formData.department}
                     onChange={handleChange}
                     placeholder="Enter department"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300"
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Technology Stack</label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Technology Stack</label>
                   <input
                     type="text"
                     name="technologyStack"
                     value={formData.technologyStack}
                     onChange={handleChange}
                     placeholder="e.g., React, Node.js, PostgreSQL"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300"
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Priority</label>
-                  <select name="priority" value={formData.priority} onChange={handleChange}>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
+                  <select name="priority" value={formData.priority} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
                     <option value="HIGH">High</option>
@@ -344,9 +360,9 @@ export function ProjectCreatePage() {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Status</label>
-                  <select name="status" value={formData.status} onChange={handleChange}>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+                  <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                     <option value="ACTIVE">Active</option>
                     <option value="ON_HOLD">On Hold</option>
                     <option value="DELAYED">Delayed</option>
@@ -355,9 +371,9 @@ export function ProjectCreatePage() {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Project Type</label>
-                  <select name="projectType" value={formData.projectType} onChange={handleChange}>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Project Type</label>
+                  <select name="projectType" value={formData.projectType} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300">
                     <option value="">Select type</option>
                     <option value="DEVELOPMENT">Development</option>
                     <option value="MAINTENANCE">Maintenance</option>
@@ -368,14 +384,15 @@ export function ProjectCreatePage() {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Project Location</label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Project Location</label>
                   <input
                     type="text"
                     name="projectLocation"
                     value={formData.projectLocation}
                     onChange={handleChange}
                     placeholder="Enter location"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300"
                   />
                 </div>
               </div>
@@ -383,242 +400,92 @@ export function ProjectCreatePage() {
           </div>
 
           {/* Team Management Card */}
-          <div className="form-card">
-            <h3 className="card-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Team Management
-            </h3>
-
-            {/* Project Manager */}
-            <div className="form-section">
-              <label className="section-label">Project Manager *</label>
-              
-              {selectedManager ? (
-                <div className="selected-user-card">
-                  <div className="user-avatar">
-                    {selectedManager.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="user-info">
-                    <span className="user-name">{selectedManager.name}</span>
-                    <span className="user-details">{selectedManager.email}</span>
-                    <span className="user-role-badge">Manager</span>
-                  </div>
-                  <button type="button" className="remove-btn" onClick={() => setFormData(prev => ({ ...prev, managerId: '' }))}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <div className="user-selector">
-                  <input
-                    type="text"
-                    placeholder="Search users..."
-                    value={managerSearch}
-                    onChange={(e) => setManagerSearch(e.target.value)}
-                    className={errors.managerId ? 'input-error' : ''}
-                  />
-                  {errors.managerId && <span className="error-text">{errors.managerId}</span>}
-                  
-                  {managerSearch && (
-                    <div className="user-dropdown">
-                      {usersLoading ? (
-                        <div className="dropdown-loading">Loading...</div>
-                      ) : filteredManagers.length === 0 ? (
-                        <div className="dropdown-empty">No users found</div>
-                      ) : (
-                        filteredManagers.map(u => (
-                          <div
-                            key={u.id}
-                            className="user-option"
-                            onClick={() => handleManagerSelect(u.id)}
-                          >
-                            <div className="user-avatar small">{u.name.charAt(0).toUpperCase()}</div>
-                            <div className="user-info">
-                              <span className="user-name">{u.name}</span>
-                              <span className="user-details">{u.email} • {u.department || 'No department'}</span>
-                            </div>
-                            <span className="user-role">{getUserRole(u)}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">Team Management</h3>
             </div>
-
-            {/* Team Members */}
-            <div className="form-section">
-              <label className="section-label">Team Members *</label>
-              
-              {/* Selected Team Members */}
-              {selectedTeamMembers.length > 0 && (
-                <div className="selected-users-list">
-                  {selectedTeamMembers.map(member => (
-                    <div key={member.id} className="selected-user-card">
-                      <div className="user-avatar">
-                        {member.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="user-info">
-                        <span className="user-name">{member.name}</span>
-                        <span className="user-details">{member.email}</span>
-                        <span className="user-role">{getUserRole(member)}</span>
-                      </div>
-                      <button type="button" className="remove-btn" onClick={() => handleTeamMemberToggle(member.id)}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                      </button>
+            <div className="p-6">
+              {/* Project Manager */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-3">Project Manager *</label>
+                
+                {selectedManager ? (
+                  <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                    <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+                      {selectedManager.name.charAt(0).toUpperCase()}
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              <div className="user-selector">
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-900">{selectedManager.name}</span>
+                      <span className="text-sm text-slate-500 ml-2">{selectedManager.email}</span>
+                      <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">Manager</span>
+                    </div>
+                    <button type="button" className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" onClick={() => setFormData(prev => ({ ...prev, managerId: '' }))}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={managerSearch}
+                      onChange={(e) => setManagerSearch(e.target.value)}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.managerId ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
+                    />
+                    {errors.managerId && <span className="text-xs text-red-600 mt-1">{errors.managerId}</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* Team Members */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-3">Team Members *</label>
+                
+                {/* Selected Team Members */}
+                {selectedTeamMembers.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {selectedTeamMembers.map(member => (
+                      <div key={member.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-semibold text-sm">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <span className="font-medium text-slate-900 text-sm">{member.name}</span>
+                          <span className="text-xs text-slate-500 ml-2">{member.email}</span>
+                        </div>
+                        <button type="button" className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" onClick={() => handleTeamMemberToggle(member.id)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 <input
                   type="text"
                   placeholder="Search to add team members..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className={errors.teamMemberIds ? 'input-error' : ''}
+                  className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.teamMemberIds ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                 />
-                {errors.teamMemberIds && <span className="error-text">{errors.teamMemberIds}</span>}
-                
-                {userSearch && (
-                  <div className="user-dropdown">
-                    {usersLoading ? (
-                      <div className="dropdown-loading">Loading...</div>
-                    ) : filteredTeamMembers.length === 0 ? (
-                      <div className="dropdown-empty">No users found</div>
-                    ) : (
-                      filteredTeamMembers
-                        .filter(u => u.id !== formData.managerId && !formData.teamMemberIds.includes(u.id))
-                        .map(u => (
-                          <div
-                            key={u.id}
-                            className="user-option"
-                            onClick={() => handleTeamMemberToggle(u.id)}
-                          >
-                            <div className="user-avatar small">{u.name.charAt(0).toUpperCase()}</div>
-                            <div className="user-info">
-                              <span className="user-name">{u.name}</span>
-                              <span className="user-details">{u.email} • {u.department || 'No department'}</span>
-                            </div>
-                            <span className="user-role">{getUserRole(u)}</span>
-                          </div>
-                        ))
-                    )}
-                  </div>
-                )}
+                {errors.teamMemberIds && <span className="text-xs text-red-600 mt-1">{errors.teamMemberIds}</span>}
               </div>
             </div>
-          </div>
-
-          {/* Timeline & Budget Card */}
-          <div className="form-card">
-            <h3 className="card-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Timeline & Budget
-            </h3>
-
-            <div className="form-section">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Start Date *</label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleChange}
-                    className={errors.startDate ? 'input-error' : ''}
-                  />
-                  {errors.startDate && <span className="error-text">{errors.startDate}</span>}
-                </div>
-
-                <div className="form-group">
-                  <label>Expected End Date *</label>
-                  <input
-                    type="date"
-                    name="expectedEndDate"
-                    value={formData.expectedEndDate}
-                    onChange={handleChange}
-                    className={errors.expectedEndDate ? 'input-error' : ''}
-                  />
-                  {errors.expectedEndDate && <span className="error-text">{errors.expectedEndDate}</span>}
-                </div>
-
-                <div className="form-group">
-                  <label>Budget</label>
-                  <input
-                    type="number"
-                    name="budget"
-                    value={formData.budget}
-                    onChange={handleChange}
-                    placeholder="Enter budget amount"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Information Card */}
-          <div className="form-card">
-            <h3 className="card-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Additional Information
-            </h3>
-
-            <div className="form-section">
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Enter project description"
-                  rows={4}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Remarks</label>
-                <textarea
-                  name="remarks"
-                  value={formData.remarks}
-                  onChange={handleChange}
-                  placeholder="Enter any additional remarks"
-                  rows={3}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Form Actions */}
-          <div className="form-actions">
-            <button type="button" className="secondary" onClick={() => navigate('/projects-environments')}>
-              Cancel
-            </button>
-            <button type="submit" className="primary" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Project'}
-            </button>
           </div>
         </form>
-      </div>
+      </main>
     </div>
   );
 }
