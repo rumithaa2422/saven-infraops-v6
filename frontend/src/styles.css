@@ -11965,24 +11965,52 @@ input:disabled {
   margin: 0 auto;
 }
 
-/* Page Header */
+/* Page Header - Modern Gradient */
 .asset-header {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  border-radius: 18px;
+  padding: 24px 28px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin: -8px -8px 24px -8px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.asset-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.asset-header-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asset-header-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: white;
 }
 
 .asset-header-left h1 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  color: var(--text);
+  color: white;
   margin: 0 0 4px 0;
 }
 
 .asset-subtitle {
   font-size: 14px;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.8);
   margin: 0;
 }
 
@@ -11990,19 +12018,22 @@ input:disabled {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  background: var(--brand);
+  padding: 10px 20px;
+  background: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: white;
+  color: #7c3aed;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
 }
 
 .btn-primary-asset:hover {
-  background: #4355e0;
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
 }
 
 /* Summary Cards */
@@ -12038,35 +12069,41 @@ input:disabled {
 }
 
 .asset-summary-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px;
+  background: white;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 18px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  box-shadow: 0 2px 8px rgba(16,24,44,0.04);
-  transition: all 0.2s;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
 }
 
 .asset-summary-card:hover {
-  box-shadow: 0 4px 16px rgba(16,24,44,0.08);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.2);
 }
 
 .asset-summary-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.asset-summary-card:hover .asset-summary-icon {
+  transform: scale(1.1);
 }
 
 .asset-summary-icon.total {
-  background: rgba(84, 104, 255, 0.1);
-  color: #5468ff;
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
 }
 
 .asset-summary-icon.assigned {
@@ -12080,12 +12117,12 @@ input:disabled {
 }
 
 .asset-summary-icon.repair {
-  background: rgba(234, 179, 8, 0.1);
-  color: #eab308;
+  background: rgba(251, 191, 36, 0.1);
+  color: #f59e0b;
 }
 
 .asset-summary-icon.retired {
-  background: rgba(107, 114, 128, 0.1);
+  background: rgba(156, 163, 175, 0.1);
   color: #6b7280;
 }
 
@@ -12106,55 +12143,59 @@ input:disabled {
 }
 
 .asset-summary-label {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 13px;
+  color: #64748b;
   font-weight: 500;
 }
 
 .asset-summary-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
-  color: var(--text);
+  color: #0f172a;
+  line-height: 1.2;
 }
 
-/* Tabs */
+/* Tabs - Modern Style */
 .asset-tabs {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  gap: 4px;
   margin-bottom: 20px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 12px;
+  padding: 4px;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .asset-tab {
   padding: 10px 20px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--muted);
+  color: #64748b;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .asset-tab:hover {
-  background: var(--panel-soft);
-  color: var(--text);
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
 }
 
 .asset-tab.active {
-  background: var(--brand);
-  color: white;
-  border-color: var(--brand);
+  background: rgba(139, 92, 246, 0.12);
+  color: #7c3aed;
+  font-weight: 600;
 }
 
-/* Content Area */
+/* Content Area - Modern Card */
 .asset-content {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  background: white;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 18px;
   padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 /* Breadcrumb */
@@ -12169,10 +12210,11 @@ input:disabled {
 .breadcrumb-item {
   background: none;
   border: none;
-  color: var(--brand);
+  color: #7c3aed;
   cursor: pointer;
   padding: 0;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .breadcrumb-item:hover {
