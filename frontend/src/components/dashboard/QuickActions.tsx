@@ -201,7 +201,7 @@ export function QuickActions({ className = '' }: QuickActionsProps) {
         </div>
         <button 
           onClick={() => navigate('/')}
-          className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
+          className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
         >
           View all
           <ArrowRight className="w-4 h-4" />
@@ -215,7 +215,7 @@ export function QuickActions({ className = '' }: QuickActionsProps) {
             <button
               key={action.id}
               onClick={() => handleAction(action.path)}
-              className={`flex flex-col items-center gap-3 p-4 rounded-xl border border-slate-100 ${action.bgColor} ${action.hoverBgColor} transition-all duration-300 group hover:shadow-md hover:shadow-slate-200/50 hover:-translate-y-1`}
+              className={`flex flex-col items-center gap-3 p-4 rounded-xl border border-slate-100 ${action.bgColor} ${action.hoverBgColor} transition-all duration-300 group hover:shadow-md hover:shadow-purple-200/50 hover:-translate-y-1`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className={`p-2.5 rounded-xl bg-white shadow-sm group-hover:scale-110 transition-transform duration-300`}>

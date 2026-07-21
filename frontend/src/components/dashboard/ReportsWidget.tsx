@@ -33,7 +33,7 @@ export function ReportsWidget() {
         </div>
         <button
           onClick={() => navigate('/reports-analytics')}
-          className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
+          className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
         >
           View All
           <ArrowRight className="w-4 h-4" />
@@ -43,14 +43,14 @@ export function ReportsWidget() {
       {/* Generate Report Button */}
       <button
         onClick={() => navigate('/reports-analytics')}
-        className="w-full flex items-center justify-center gap-3 p-4 mb-5 bg-gradient-to-br from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white rounded-xl shadow-sm shadow-brand-500/30 hover:shadow-lg hover:shadow-brand-500/40 transition-all duration-300 hover:-translate-y-0.5 group"
+        className="w-full flex items-center justify-center gap-3 p-4 mb-5 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl shadow-sm shadow-purple-500/30 hover:shadow-lg hover:shadow-purple-500/40 transition-all duration-300 hover:-translate-y-0.5 group"
       >
         <div className="p-2 rounded-lg bg-white/20 group-hover:bg-white/30 transition-colors">
           <Download className="w-5 h-5" />
         </div>
         <div className="text-left">
           <span className="text-sm font-semibold">Generate New Report</span>
-          <p className="text-xs text-brand-100">Create custom analytics reports</p>
+          <p className="text-xs text-purple-100">Create custom analytics reports</p>
         </div>
       </button>
 
@@ -58,12 +58,12 @@ export function ReportsWidget() {
       <div className="grid grid-cols-2 gap-3 mb-5">
         <button
           onClick={() => navigate('/reports-analytics')}
-          className="flex items-center gap-2 p-3 bg-slate-50 hover:bg-brand-50 rounded-xl transition-colors group"
+          className="flex items-center gap-2 p-3 bg-slate-50 hover:bg-purple-50 rounded-xl transition-colors group"
         >
-          <div className="p-2 rounded-lg bg-white shadow-sm group-hover:bg-brand-100 transition-colors">
-            <BarChart2 className="w-4 h-4 text-brand-600" />
+          <div className="p-2 rounded-lg bg-white shadow-sm group-hover:bg-purple-100 transition-colors">
+            <BarChart2 className="w-4 h-4 text-purple-600" />
           </div>
-          <span className="text-xs font-semibold text-slate-700 group-hover:text-brand-600">Performance</span>
+          <span className="text-xs font-semibold text-slate-700 group-hover:text-purple-600">Performance</span>
         </button>
         <button
           onClick={() => navigate('/reports-analytics')}
@@ -86,7 +86,7 @@ export function ReportsWidget() {
               className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl"
             >
               <div className="p-2 rounded-lg bg-white shadow-sm">
-                <FileSpreadsheet className="w-4 h-4 text-brand-600" />
+                <FileSpreadsheet className="w-4 h-4 text-purple-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-700 truncate">{report.type}</p>

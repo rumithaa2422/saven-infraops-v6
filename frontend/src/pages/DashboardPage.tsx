@@ -27,13 +27,13 @@ export function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
-      {/* Header */}
+    <div className="min-h-screen bg-slate-50">
+      {/* Header - Purple Gradient like ServiceRequestsPage */}
       <PermissionGate permission="dashboard:view">
         <DashboardHeader onRefresh={handleRefresh} isRefreshing={isRefreshing} />
       </PermissionGate>
 
-      {/* Main Content */}
+      {/* Main Content - Same styling as ServiceRequestsPage */}
       <main className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-8">
         
         {/* Summary Cards Section */}

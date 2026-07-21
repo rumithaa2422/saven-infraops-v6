@@ -111,8 +111,8 @@ export function AlertWidget() {
     return (
       <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-xl bg-brand-50">
-            <Bell className="w-5 h-5 text-brand-600" />
+          <div className="p-2 rounded-xl bg-purple-100">
+            <Bell className="w-5 h-5 text-purple-600" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Important Alerts</h2>

@@ -86,8 +86,8 @@ export function SummaryCards() {
       trend: data.openTickets > 10 ? 'up' : 'neutral',
       trendValue: '+12%',
       variant: 'default',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
     },
     {
       id: 'criticalIncidents',
@@ -108,8 +108,8 @@ export function SummaryCards() {
       trend: 'up',
       trendValue: '+5%',
       variant: 'success',
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50'
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50'
     },
     {
       id: 'totalUsers',
@@ -119,8 +119,8 @@ export function SummaryCards() {
       trend: 'up',
       trendValue: '+3%',
       variant: 'success',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
+      color: 'text-violet-600',
+      bgColor: 'bg-violet-50'
     },
     {
       id: 'pendingChanges',
@@ -158,11 +158,11 @@ export function SummaryCards() {
         {[1, 2, 3, 4, 5, 6].map(i => (
           <div key={i} className="bg-white rounded-2xl border border-slate-200/60 p-5 animate-pulse">
             <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-100" />
-              <div className="w-16 h-5 rounded-full bg-slate-100" />
+              <div className="w-12 h-12 rounded-xl bg-purple-100" />
+              <div className="w-16 h-5 rounded-full bg-purple-100" />
             </div>
-            <div className="h-8 w-20 bg-slate-100 rounded-lg mb-2" />
-            <div className="h-4 w-24 bg-slate-50 rounded" />
+            <div className="h-8 w-20 bg-purple-100 rounded-lg mb-2" />
+            <div className="h-4 w-24 bg-purple-50 rounded" />
           </div>
         ))}
       </div>
@@ -173,7 +173,7 @@ export function SummaryCards() {
     return (
       <div className="bg-white rounded-2xl border border-red-200/60 p-6 text-center">
         <p className="text-sm text-slate-500">{error}</p>
-        <button onClick={fetchSummary} className="mt-2 text-sm text-brand-600 hover:text-brand-700 font-medium">
+        <button onClick={fetchSummary} className="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium">
           Retry
         </button>
       </div>
@@ -189,7 +189,7 @@ export function SummaryCards() {
         return (
           <div
             key={stat.id}
-            className="group bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+            className="group bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:shadow-purple-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="flex items-start justify-between mb-4">
@@ -201,7 +201,7 @@ export function SummaryCards() {
                   stat.variant === 'danger' ? 'bg-red-50 text-red-600' :
                   stat.variant === 'warning' ? 'bg-amber-50 text-amber-600' :
                   stat.variant === 'success' ? 'bg-emerald-50 text-emerald-600' :
-                  'bg-slate-100 text-slate-600'
+                  'bg-purple-100 text-purple-600'
                 }`}>
                   <TrendIcon trend={stat.trend} />
                   <span>{stat.trendValue}</span>

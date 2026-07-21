@@ -201,8 +201,8 @@ export function ModuleOverview() {
       <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-brand-50">
-              <BarChart3 className="w-5 h-5 text-brand-600" />
+            <div className="p-2.5 rounded-xl bg-purple-100">
+              <BarChart3 className="w-5 h-5 text-purple-600" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Module Overview</h2>
@@ -226,7 +226,7 @@ export function ModuleOverview() {
           <p className="text-sm text-slate-500">{error}</p>
           <button
             onClick={fetchSummary}
-            className="mt-3 text-sm text-brand-600 hover:text-brand-700 font-medium"
+            className="mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium"
           >
             Try again
           </button>
@@ -239,7 +239,7 @@ export function ModuleOverview() {
     <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-sm shadow-brand-500/20">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm shadow-purple-500/20">
             <BarChart3 className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -249,7 +249,7 @@ export function ModuleOverview() {
         </div>
         <button
           onClick={() => navigate('/reports-analytics')}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-600 text-sm font-semibold transition-all duration-200"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-600 text-sm font-semibold transition-all duration-200"
         >
           <FileText className="w-4 h-4" />
           View Reports
@@ -263,7 +263,7 @@ export function ModuleOverview() {
             <button
               key={card.id}
               onClick={() => navigate(card.path)}
-              className="text-left rounded-2xl border border-slate-200/60 p-5 hover:border-brand-300 hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 group"
+              className="text-left rounded-2xl border border-slate-200/60 p-5 hover:border-purple-300 hover:shadow-lg hover:shadow-purple-200/50 hover:-translate-y-1 transition-all duration-300 group"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-center justify-between mb-4">
@@ -271,11 +271,11 @@ export function ModuleOverview() {
                   <div className={`p-2.5 rounded-xl ${card.bgColor} group-hover:scale-110 transition-transform duration-300`}>
                     <Icon className={`w-5 h-5 ${card.color}`} />
                   </div>
-                  <h3 className="font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">
+                  <h3 className="font-semibold text-slate-900 group-hover:text-purple-600 transition-colors">
                     {card.title}
                   </h3>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 group-hover:translate-x-1 transition-all duration-300" />
+                <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-300" />
               </div>
               
               <div className="flex items-end gap-4">

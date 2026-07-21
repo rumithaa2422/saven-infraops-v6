@@ -106,8 +106,8 @@ export function MyWorkWidget() {
       <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-brand-50">
-              <Briefcase className="w-5 h-5 text-brand-600" />
+            <div className="p-2.5 rounded-xl bg-purple-100">
+              <Briefcase className="w-5 h-5 text-purple-600" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">My Work</h2>
@@ -131,7 +131,7 @@ export function MyWorkWidget() {
           <p className="text-sm text-slate-500">{error}</p>
           <button
             onClick={fetchMyTasks}
-            className="mt-3 text-sm text-brand-600 hover:text-brand-700 font-medium"
+            className="mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium"
           >
             Try again
           </button>
@@ -144,7 +144,7 @@ export function MyWorkWidget() {
     <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-sm shadow-brand-500/20">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm shadow-purple-500/20">
             <Briefcase className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -168,7 +168,7 @@ export function MyWorkWidget() {
               onClick={() => navigate(task.path)}
               className={`
                 flex flex-col items-center justify-center p-4 rounded-2xl border border-slate-200/60
-                ${task.bgColor} hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1
+                ${task.bgColor} hover:shadow-lg hover:shadow-purple-200/50 hover:-translate-y-1
                 transition-all duration-300 group
                 ${task.value === 0 ? 'opacity-60' : ''}
               `}

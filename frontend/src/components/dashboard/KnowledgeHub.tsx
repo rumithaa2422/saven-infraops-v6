@@ -83,8 +83,8 @@ export function KnowledgeHub() {
     return (
       <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 rounded-xl bg-brand-50">
-            <BookOpen className="w-5 h-5 text-brand-600" />
+          <div className="p-2 rounded-xl bg-purple-100">
+            <BookOpen className="w-5 h-5 text-purple-600" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Knowledge Hub</h2>
@@ -114,7 +114,7 @@ export function KnowledgeHub() {
         </div>
         <button
           onClick={() => navigate('/knowledge-base')}
-          className="flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
+          className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
         >
           View All
           <ArrowRight className="w-4 h-4" />
@@ -126,7 +126,7 @@ export function KnowledgeHub() {
         <div className="grid grid-cols-3 gap-3 mb-5">
           <div className="flex flex-col items-center p-3 bg-slate-50 rounded-xl">
             <div className="p-2 rounded-lg bg-white shadow-sm mb-2">
-              <FileText className="w-4 h-4 text-brand-600" />
+              <FileText className="w-4 h-4 text-purple-600" />
             </div>
             <p className="text-xl font-bold text-slate-900">{analytics.totalArticles}</p>
             <p className="text-xs text-slate-500 font-medium">Articles</p>
@@ -157,11 +157,11 @@ export function KnowledgeHub() {
               onClick={() => navigate(`/knowledge-base?article=${article.id}`)}
               className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left group border border-transparent hover:border-slate-200"
             >
-              <div className="p-2 rounded-lg bg-brand-50 group-hover:bg-brand-100 transition-colors">
-                <BookOpen className="w-4 h-4 text-brand-600" />
+              <div className="p-2 rounded-lg bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                <BookOpen className="w-4 h-4 text-purple-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-brand-600 transition-colors">
+                <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-purple-600 transition-colors">
                   {article.title}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
@@ -170,7 +170,7 @@ export function KnowledgeHub() {
                   <span>{formatDate(article.createdAt)}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-slate-400 group-hover:text-brand-500 transition-colors">
+              <div className="flex items-center gap-1 text-slate-400 group-hover:text-purple-500 transition-colors">
                 <Eye className="w-3.5 h-3.5" />
                 <span className="text-xs font-medium">{article.viewCount || 0}</span>
               </div>
@@ -186,7 +186,7 @@ export function KnowledgeHub() {
           <p className="text-xs text-slate-400 mt-1">Browse the knowledge base to get started</p>
           <button
             onClick={() => navigate('/knowledge-base')}
-            className="mt-3 text-sm text-brand-600 hover:text-brand-700 font-medium"
+            className="mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium"
           >
             Browse Knowledge Base
           </button>
