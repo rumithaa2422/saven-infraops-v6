@@ -949,45 +949,47 @@ export function KnowledgeCategoryPage() {
                   className="category-card"
                   onClick={() => viewCategory(category)}
                 >
-                  <div className="category-card-header">
-                    <h3 className="category-name">{category.name}</h3>
-                    <span className="article-count-badge">
-                      {category.articleCount || 0} {category.articleCount === 1 ? 'article' : 'articles'}
-                    </span>
+                  {/* Card Header */}
+                  <div className="category-card-body">
+                    <div className="category-card-top">
+                      <h3 className="category-name">{category.name}</h3>
+                      <span className="article-count-badge">
+                        {category.articleCount || 0}
+                      </span>
+                    </div>
+                    <p className="category-description">
+                      {category.description || 'No description available'}
+                    </p>
                   </div>
-                  <p className="category-description">
-                    {category.description || 'No description available'}
-                  </p>
+                  
+                  {/* Card Footer */}
                   <div className="category-card-footer">
                     <div className="category-meta">
-                      <span className="meta-item">
-                        <span className="meta-icon">👤</span>
-                        <span className="text-xs text-slate-500">Created By</span>
-                        <span className="font-medium text-slate-700 ml-1">{category.createdBy || 'Unknown'}</span>
+                      <span className="meta-text">
+                        <span className="meta-label">Created by:</span> {category.createdBy || 'Unknown'}
                       </span>
-                      <span className="meta-item">
-                        <span className="meta-icon">📅</span>
-                        <span className="text-xs text-slate-500">Created</span>
-                        <span className="font-medium text-slate-700 ml-1">{formatDate(category.updatedAt)}</span>
+                      <span className="meta-divider">•</span>
+                      <span className="meta-text">
+                        {formatDate(category.updatedAt)}
                       </span>
                     </div>
                     {canManageCategories && (
                       <div className="category-actions" onClick={(e) => e.stopPropagation()}>
                         <button 
-                          className="icon-btn"
+                          className="icon-btn-sm"
                           onClick={() => openEditCategoryModal(category)}
-                          title="Edit"
+                          title="Edit Category"
                         >
-                          <svg className="w-4 h-4 text-slate-500 hover:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
                         <button 
-                          className="icon-btn delete"
+                          className="icon-btn-sm delete"
                           onClick={() => openDeleteCategoryConfirm(category)}
-                          title="Delete"
+                          title="Delete Category"
                         >
-                          <svg className="w-4 h-4 text-slate-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
@@ -2031,121 +2033,140 @@ export function KnowledgeCategoryPage() {
         /* Category Grid - Enterprise Style */
         .category-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-          gap: 24px;
-          margin-top: 24px;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 20px;
+          margin-top: 20px;
         }
 
-        /* Category Card - Modern Enterprise Style */
+        /* Category Card - Clean & Balanced Layout */
         .category-card {
           background: white;
           border: 1px solid #e2e8f0;
-          border-radius: 16px;
+          border-radius: 12px;
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          min-height: 160px;
         }
 
         .category-card:hover {
           border-color: #5469f5;
-          box-shadow: 0 8px 24px rgba(84, 104, 255, 0.12);
-          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(84, 104, 255, 0.1);
+          transform: translateY(-1px);
         }
 
-        .category-card-header {
-          padding: 20px 20px 16px 20px;
+        /* Card Body - Contains name, description */
+        .category-card-body {
+          padding: 16px 16px 12px 16px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .category-card-top {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
+          margin-bottom: 8px;
           gap: 12px;
         }
 
         .category-name {
-          font-size: 18px;
+          font-size: 15px;
           font-weight: 600;
           margin: 0;
           color: #1e293b;
           line-height: 1.3;
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .article-count-badge {
-          background: #f1f5f9;
-          color: #64748b;
-          font-size: 12px;
+          background: #e0e7ff;
+          color: #4338ca;
+          font-size: 11px;
           font-weight: 600;
-          padding: 4px 12px;
-          border-radius: 20px;
+          padding: 2px 8px;
+          border-radius: 10px;
           white-space: nowrap;
           flex-shrink: 0;
         }
 
         .category-description {
-          font-size: 14px;
+          font-size: 13px;
           color: #64748b;
-          margin: 0 20px 16px 20px;
-          line-height: 1.5;
-          flex-grow: 1;
+          margin: 0;
+          line-height: 1.4;
           overflow: hidden;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
 
-        /* Category Card Footer - Like Service Requests */
+        /* Card Footer - Contains meta info and actions */
         .category-card-footer {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px 20px;
+          padding: 10px 16px;
           background: #f8fafc;
           border-top: 1px solid #f1f5f9;
-          margin-top: auto;
         }
 
         .category-meta {
           display: flex;
-          gap: 20px;
-          font-size: 13px;
-          color: #64748b;
-        }
-
-        .meta-item {
-          display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
+          font-size: 12px;
+          color: #64748b;
+          overflow: hidden;
         }
 
-        .meta-icon {
-          font-size: 14px;
+        .meta-text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .meta-label {
+          color: #94a3b8;
+        }
+
+        .meta-divider {
+          color: #cbd5e1;
         }
 
         .category-actions {
           display: flex;
-          gap: 8px;
+          gap: 4px;
+          flex-shrink: 0;
         }
 
-        /* Icon Buttons - Enterprise Style */
-        .icon-btn {
-          background: #f1f5f9;
+        /* Icon Buttons - Small & Clean */
+        .icon-btn-sm {
+          background: transparent;
           border: none;
-          padding: 8px;
+          padding: 4px;
           cursor: pointer;
-          font-size: 14px;
-          border-radius: 8px;
+          border-radius: 4px;
           transition: all 0.15s;
           display: flex;
           align-items: center;
           justify-content: center;
+          color: #94a3b8;
         }
 
-        .icon-btn:hover {
+        .icon-btn-sm:hover {
           background: #e2e8f0;
+          color: #475569;
         }
 
-        .icon-btn.delete:hover {
+        .icon-btn-sm.delete:hover {
           background: #fee2e2;
           color: #dc2626;
         }
