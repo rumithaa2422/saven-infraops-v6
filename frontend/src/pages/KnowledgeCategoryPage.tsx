@@ -605,6 +605,23 @@ export function KnowledgeCategoryPage() {
     });
   };
 
+  // Get category icon based on name
+  const getCategoryIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('network') || lowerName.includes('infrastructure')) return '🌐';
+    if (lowerName.includes('security')) return '🔒';
+    if (lowerName.includes('software') || lowerName.includes('app')) return '💻';
+    if (lowerName.includes('hardware')) return '🖥️';
+    if (lowerName.includes('database') || lowerName.includes('data')) return '🗄️';
+    if (lowerName.includes('cloud')) return '☁️';
+    if (lowerName.includes('support')) return '🎧';
+    if (lowerName.includes('faq') || lowerName.includes('question')) return '❓';
+    if (lowerName.includes('guide') || lowerName.includes('how')) return '📖';
+    if (lowerName.includes('policy')) return '📋';
+    if (lowerName.includes('training')) return '🎓';
+    return '📁';
+  };
+
   // Get sort indicator
   const getSortIndicator = (field: string) => {
     if (sortBy !== field) return null;
@@ -822,10 +839,10 @@ export function KnowledgeCategoryPage() {
       )}
 
       {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1>Knowledge Base</h1>
-          <p className="subtitle">
+      <div className="kb-page-header">
+        <div className="kb-header-left">
+          <h1 className="kb-title">Knowledge Base</h1>
+          <p className="kb-subtitle">
             {viewMode === 'browse' 
               ? 'Browse categories and articles' 
               : selectedCategory 
@@ -833,25 +850,25 @@ export function KnowledgeCategoryPage() {
                 : 'All articles'}
           </p>
         </div>
-        <div className="header-actions">
-          {viewMode === 'articles' && canManageArticles && (
-            <button className="primary" onClick={openCreateArticleModal}>
-              + Create Article
-            </button>
-          )}
-          {viewMode === 'browse' && canManageCategories && (
-            <button className="primary" onClick={openCreateCategoryModal}>
-              + Create Category
-            </button>
-          )}
+        <div className="kb-header-right">
           <button 
-            className="secondary icon-button" 
+            className="kb-refresh-btn" 
             onClick={handleRefresh}
             disabled={refreshing || articleLoading}
             title="Refresh"
           >
-            {refreshing || articleLoading ? '...' : '↻'}
+            ↻
           </button>
+          {viewMode === 'articles' && canManageArticles && (
+            <button className="kb-create-btn" onClick={openCreateArticleModal}>
+              <span>+</span> Create Article
+            </button>
+          )}
+          {viewMode === 'browse' && canManageCategories && (
+            <button className="kb-create-btn" onClick={openCreateCategoryModal}>
+              <span>+</span> Create Category
+            </button>
+          )}
         </div>
       </div>
 
@@ -942,56 +959,48 @@ export function KnowledgeCategoryPage() {
               </div>
             </div>
           ) : (
-            <div className="category-grid">
-              {categories.map((category) => (
+            <div className="kb-category-grid">
+              {categories.map((category, index) => (
                 <div 
                   key={category.id} 
-                  className="category-card"
+                  className={`kb-category-card kb-card-${(index % 6) + 1}`}
                   onClick={() => viewCategory(category)}
                 >
-                  {/* Card Header */}
-                  <div className="category-card-body">
-                    <div className="category-card-top">
-                      <h3 className="category-name">{category.name}</h3>
-                      <span className="article-count-badge">
-                        {category.articleCount || 0}
+                  <div className="kb-card-accent"></div>
+                  <div className="kb-card-content">
+                    <div className="kb-card-header">
+                      <div className="kb-card-icon">
+                        {getCategoryIcon(category.name)}
+                      </div>
+                      <span className="kb-card-count">
+                        {category.articleCount || 0} articles
                       </span>
                     </div>
-                    <p className="category-description">
+                    <h3 className="kb-card-title">{category.name}</h3>
+                    <p className="kb-card-desc">
                       {category.description || 'No description available'}
                     </p>
                   </div>
-                  
-                  {/* Card Footer */}
-                  <div className="category-card-footer">
-                    <div className="category-meta">
-                      <span className="meta-text">
-                        <span className="meta-label">Created by:</span> {category.createdBy || 'Unknown'}
-                      </span>
-                      <span className="meta-divider">•</span>
-                      <span className="meta-text">
-                        {formatDate(category.updatedAt)}
-                      </span>
+                  <div className="kb-card-footer">
+                    <div className="kb-card-meta">
+                      <span className="kb-meta-author">{category.createdBy || 'Unknown'}</span>
+                      <span className="kb-meta-date">{formatDate(category.updatedAt)}</span>
                     </div>
                     {canManageCategories && (
-                      <div className="category-actions" onClick={(e) => e.stopPropagation()}>
+                      <div className="kb-card-actions" onClick={(e) => e.stopPropagation()}>
                         <button 
-                          className="icon-btn-sm"
+                          className="kb-action-btn"
                           onClick={() => openEditCategoryModal(category)}
-                          title="Edit Category"
+                          title="Edit"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
+                          ✏️
                         </button>
                         <button 
-                          className="icon-btn-sm delete"
+                          className="kb-action-btn kb-delete"
                           onClick={() => openDeleteCategoryConfirm(category)}
-                          title="Delete Category"
+                          title="Delete"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          🗑️
                         </button>
                       </div>
                     )}
@@ -2030,147 +2039,248 @@ export function KnowledgeCategoryPage() {
           font-size: 13px;
         }
 
-        /* Category Grid - Enterprise Style */
-        .category-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 20px;
-          margin-top: 20px;
-        }
-
-        /* Category Card - Clean & Balanced Layout */
-        .category-card {
-          background: white;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-          min-height: 160px;
-        }
-
-        .category-card:hover {
-          border-color: #5469f5;
-          box-shadow: 0 4px 12px rgba(84, 104, 255, 0.1);
-          transform: translateY(-1px);
-        }
-
-        /* Card Body - Contains name, description */
-        .category-card-body {
-          padding: 16px 16px 12px 16px;
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .category-card-top {
+        /* ===== MODERN KB PAGE HEADER ===== */
+        .kb-page-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 8px;
+          margin-bottom: 28px;
+          padding: 24px 28px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 16px;
+          box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .kb-header-left {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .kb-title {
+          font-size: 26px;
+          font-weight: 700;
+          margin: 0;
+          color: white;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .kb-subtitle {
+          color: rgba(255,255,255,0.85);
+          font-size: 14px;
+          margin: 0;
+        }
+
+        .kb-header-right {
+          display: flex;
+          align-items: center;
           gap: 12px;
         }
 
-        .category-name {
-          font-size: 15px;
+        .kb-refresh-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          border: none;
+          background: rgba(255,255,255,0.2);
+          color: white;
+          font-size: 18px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .kb-refresh-btn:hover {
+          background: rgba(255,255,255,0.3);
+          transform: rotate(180deg);
+        }
+
+        .kb-refresh-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .kb-create-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 24px;
+          background: white;
+          color: #667eea;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
           font-weight: 600;
-          margin: 0;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .kb-create-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .kb-create-btn span {
+          font-size: 18px;
+          font-weight: 700;
+        }
+
+        /* ===== MODERN CATEGORY GRID ===== */
+        .kb-category-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 24px;
+          margin-top: 24px;
+        }
+
+        /* ===== MODERN COLORFUL CATEGORY CARDS ===== */
+        .kb-category-card {
+          background: white;
+          border-radius: 16px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+          min-height: 200px;
+          position: relative;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .kb-category-card:hover {
+          transform: translateY(-6px) scale(1.02);
+          box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+        }
+
+        /* Colorful accent bars */
+        .kb-card-1 .kb-card-accent { background: linear-gradient(90deg, #667eea, #764ba2); }
+        .kb-card-2 .kb-card-accent { background: linear-gradient(90deg, #f093fb, #f5576c); }
+        .kb-card-3 .kb-card-accent { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+        .kb-card-4 .kb-card-accent { background: linear-gradient(90deg, #43e97b, #38f9d7); }
+        .kb-card-5 .kb-card-accent { background: linear-gradient(90deg, #fa709a, #fee140); }
+        .kb-card-6 .kb-card-accent { background: linear-gradient(90deg, #a8edea, #fed6e3); }
+
+        .kb-card-1:hover { box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25); }
+        .kb-card-2:hover { box-shadow: 0 12px 32px rgba(245, 87, 108, 0.25); }
+        .kb-card-3:hover { box-shadow: 0 12px 32px rgba(79, 172, 254, 0.25); }
+        .kb-card-4:hover { box-shadow: 0 12px 32px rgba(67, 233, 123, 0.25); }
+        .kb-card-5:hover { box-shadow: 0 12px 32px rgba(250, 112, 154, 0.25); }
+        .kb-card-6:hover { box-shadow: 0 12px 32px rgba(168, 237, 234, 0.25); }
+
+        .kb-card-accent {
+          height: 6px;
+          width: 100%;
+        }
+
+        .kb-card-content {
+          padding: 20px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .kb-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+        }
+
+        .kb-card-icon {
+          font-size: 32px;
+          line-height: 1;
+        }
+
+        .kb-card-count {
+          background: #f1f5f9;
+          color: #64748b;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 4px 12px;
+          border-radius: 20px;
+        }
+
+        .kb-card-title {
+          font-size: 18px;
+          font-weight: 700;
+          margin: 0 0 10px 0;
           color: #1e293b;
           line-height: 1.3;
-          flex: 1;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .article-count-badge {
-          background: #e0e7ff;
-          color: #4338ca;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 2px 8px;
-          border-radius: 10px;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
-
-        .category-description {
+        .kb-card-desc {
           font-size: 13px;
           color: #64748b;
           margin: 0;
-          line-height: 1.4;
+          line-height: 1.5;
+          flex: 1;
           overflow: hidden;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
 
-        /* Card Footer - Contains meta info and actions */
-        .category-card-footer {
+        .kb-card-footer {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 10px 16px;
+          padding: 14px 20px;
           background: #f8fafc;
           border-top: 1px solid #f1f5f9;
         }
 
-        .category-meta {
+        .kb-card-meta {
           display: flex;
-          align-items: center;
-          gap: 8px;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .kb-meta-author {
           font-size: 12px;
-          color: #64748b;
-          overflow: hidden;
-        }
-
-        .meta-text {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .meta-label {
-          color: #94a3b8;
-        }
-
-        .meta-divider {
-          color: #cbd5e1;
-        }
-
-        .category-actions {
-          display: flex;
-          gap: 4px;
-          flex-shrink: 0;
-        }
-
-        /* Icon Buttons - Small & Clean */
-        .icon-btn-sm {
-          background: transparent;
-          border: none;
-          padding: 4px;
-          cursor: pointer;
-          border-radius: 4px;
-          transition: all 0.15s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #94a3b8;
-        }
-
-        .icon-btn-sm:hover {
-          background: #e2e8f0;
+          font-weight: 600;
           color: #475569;
         }
 
-        .icon-btn-sm.delete:hover {
-          background: #fee2e2;
-          color: #dc2626;
+        .kb-meta-date {
+          font-size: 11px;
+          color: #94a3b8;
         }
 
+        .kb-card-actions {
+          display: flex;
+          gap: 6px;
+        }
+
+        .kb-action-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: none;
+          background: #e2e8f0;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .kb-action-btn:hover {
+          background: #cbd5e1;
+          transform: scale(1.1);
+        }
+
+        .kb-action-btn.kb-delete:hover {
+          background: #fee2e2;
+        }
+
+        /* Stats label */
         .stat-label {
           font-size: 13px;
           color: #64748b;
