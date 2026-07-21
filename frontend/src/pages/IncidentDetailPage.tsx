@@ -494,25 +494,29 @@ export function IncidentDetailPage() {
         actions={
           <div className="flex items-center gap-2">
             {canUpdate && (
-              <Button variant="secondary" size="sm" icon={Edit2} className="bg-white hover:bg-white/90 text-purple-700 border-0">
+              <button className="px-4 py-2 rounded-xl bg-white text-purple-600 font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm">
+                <Edit2 className="w-4 h-4" />
                 Edit
-              </Button>
+              </button>
             )}
             {canChangeStatus && nextStatus && (
-              <Button 
-                variant={nextStatus === 'RESOLVED' ? 'success' : 'primary'} 
-                size="sm" 
-                icon={nextStatus === 'RESOLVED' ? CheckCircle : AlertTriangle}
+              <button 
                 onClick={() => setResolveDialogOpen(true)}
-                className="bg-white hover:bg-white/90 text-purple-700 border-0"
+                className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center gap-2 text-sm text-white ${
+                  nextStatus === 'RESOLVED' 
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30' 
+                    : 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/30'
+                }`}
               >
+                {nextStatus === 'RESOLVED' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                 {getStatusButtonLabel()}
-              </Button>
+              </button>
             )}
             {canDelete && (
-              <Button variant="danger" size="sm" icon={Trash2} onClick={() => setDeleteDialogOpen(true)} className="bg-white hover:bg-white/90 text-red-600 border-0">
+              <button onClick={() => setDeleteDialogOpen(true)} className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 shadow-lg shadow-red-500/30 flex items-center gap-2 text-sm">
+                <Trash2 className="w-4 h-4" />
                 Delete
-              </Button>
+              </button>
             )}
           </div>
         }

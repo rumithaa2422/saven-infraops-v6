@@ -645,9 +645,13 @@ export function IncidentsPage() {
         icon={AlertTriangle}
         actions={
           canCreate ? (
-            <Button icon={Plus} onClick={() => setCreateOpen(true)} className="bg-white hover:bg-white/90 text-purple-700 border-0 shadow-sm shadow-black/10">
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
               Create Incident
-            </Button>
+            </button>
           ) : undefined
         }
       />
@@ -929,6 +933,7 @@ export function IncidentsPage() {
         title="Create Incident"
         subtitle="Report a new incident for immediate attention"
         size="xl"
+        icon="⚠️"
         footer={
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => {
@@ -1006,6 +1011,7 @@ export function IncidentsPage() {
         title="Edit Incident"
         subtitle={editingIncident ? `Editing ${editingIncident.incidentNo}` : ''}
         size="xl"
+        icon="✏️"
         footer={
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={closeEditDialog}>

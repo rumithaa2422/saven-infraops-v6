@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X, AlertTriangle, CheckCircle, FileWarning } from 'lucide-react';
 
-// Modal Layout Component - Same style as serviceRequests
+// Modal Layout Component - Modern Design with Gradient Header
 interface ModalLayoutProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,6 +11,7 @@ interface ModalLayoutProps {
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
   showCloseButton?: boolean;
+  icon?: string;
 }
 
 export function ModalLayout({
@@ -21,7 +22,8 @@ export function ModalLayout({
   children,
   footer,
   size = 'lg',
-  showCloseButton = true
+  showCloseButton = true,
+  icon = '⚠️'
 }: ModalLayoutProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -61,31 +63,34 @@ export function ModalLayout({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
 
-      {/* Modal */}
+      {/* Modal - Modern Design */}
       <div
         ref={modalRef}
         className={`
-          relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl
+          relative w-full ${sizeClasses[size]} bg-white rounded-3xl shadow-2xl
           animate-modal-in max-h-[calc(100vh-4rem)]
-          flex flex-col
+          flex flex-col overflow-hidden
         `}
       >
-        {/* Header */}
-        <div className="flex-shrink-0 px-6 py-5 border-b border-slate-100 flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+        {/* Modern Header with Gradient */}
+        <div className="flex-shrink-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-5 flex items-center gap-4">
+          <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-2xl backdrop-blur-sm">
+            {icon}
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-white">{title}</h2>
             {subtitle && (
-              <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+              <p className="text-sm text-white/80 mt-0.5">{subtitle}</p>
             )}
           </div>
           {showCloseButton && (
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-xl text-white flex items-center justify-center transition-all hover:rotate-90"
             >
               <X className="w-5 h-5" />
             </button>
@@ -93,13 +98,13 @@ export function ModalLayout({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6 bg-white">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex-shrink-0 px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl">
+          <div className="flex-shrink-0 px-6 py-4 bg-slate-50/80 border-t border-slate-100 rounded-b-3xl">
             {footer}
           </div>
         )}
