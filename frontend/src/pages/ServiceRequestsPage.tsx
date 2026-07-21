@@ -434,8 +434,8 @@ export function ServiceRequestsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
-      {/* Header */}
+    <div className="min-h-screen">
+      {/* Header - Modern Purple Gradient */}
       <PageHeader
         title="Service Requests"
         subtitle={`${summaryStats.total} total`}
@@ -443,14 +443,22 @@ export function ServiceRequestsPage() {
         actions={
           <>
             {canExport && (
-              <Button variant="secondary" icon={Download} onClick={exportCsv}>
+              <button
+                onClick={exportCsv}
+                className="px-4 py-2.5 rounded-xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all duration-200 flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
                 Export
-              </Button>
+              </button>
             )}
             {canCreate && (
-              <Button icon={Plus} onClick={() => setCreateOpen(true)}>
+              <button
+                onClick={() => setCreateOpen(true)}
+                className="px-5 py-2.5 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
                 Create Request
-              </Button>
+              </button>
             )}
           </>
         }
@@ -459,71 +467,96 @@ export function ServiceRequestsPage() {
       {/* Main Content */}
       <main className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
         
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-slate-100">
-                <FileText className="w-5 h-5 text-slate-600" />
+        {/* Stats Cards - Modern Design */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="w-7 h-7 text-slate-600" />
               </div>
-              <span className="text-sm font-medium text-slate-500">Total</span>
+              <div>
+                <p className="text-3xl font-bold text-slate-900">{summaryStats.total}</p>
+                <p className="text-sm font-medium text-slate-500">Total</p>
+              </div>
             </div>
-            <p className="text-3xl font-bold text-slate-900">{summaryStats.total}</p>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-blue-50">
-                <AlertCircle className="w-5 h-5 text-blue-600" />
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <AlertCircle className="w-7 h-7 text-blue-600" />
               </div>
-              <span className="text-sm font-medium text-slate-500">Open</span>
+              <div>
+                <p className="text-3xl font-bold text-blue-600">{summaryStats.open}</p>
+                <p className="text-sm font-medium text-slate-500">Open</p>
+              </div>
             </div>
-            <p className="text-3xl font-bold text-blue-600">{summaryStats.open}</p>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-amber-50">
-                <Clock className="w-5 h-5 text-amber-600" />
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-amber-200 transition-all duration-300 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Clock className="w-7 h-7 text-amber-600" />
               </div>
-              <span className="text-sm font-medium text-slate-500">In Progress</span>
+              <div>
+                <p className="text-3xl font-bold text-amber-600">{summaryStats.inProgress}</p>
+                <p className="text-sm font-medium text-slate-500">In Progress</p>
+              </div>
             </div>
-            <p className="text-3xl font-bold text-amber-600">{summaryStats.inProgress}</p>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 rounded-xl bg-emerald-50">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <CheckCircle className="w-7 h-7 text-emerald-600" />
               </div>
-              <span className="text-sm font-medium text-slate-500">Closed</span>
+              <div>
+                <p className="text-3xl font-bold text-emerald-600">{summaryStats.closed}</p>
+                <p className="text-sm font-medium text-slate-500">Closed</p>
+              </div>
             </div>
-            <p className="text-3xl font-bold text-emerald-600">{summaryStats.closed}</p>
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4">
+        {/* Search and Filters - Modern Design */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-4 items-center">
             {/* Search */}
             <div className="flex-1">
-              <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search by title, ticket number, requester..."
-              />
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by title, ticket number, requester..."
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
             
             {/* Filter Toggle */}
-            <Button
-              variant={showFilters ? 'primary' : 'secondary'}
-              icon={SlidersHorizontal}
+            <button
               onClick={() => setShowFilters(!showFilters)}
+              className={`px-5 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 ${
+                showFilters
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
             >
+              <SlidersHorizontal className="w-4 h-4" />
               Filters
               {hasActiveFilters && (
-                <span className="ml-1 px-1.5 py-0.5 bg-brand-200 text-brand-800 text-xs rounded-md">
+                <span className="ml-1 px-1.5 py-0.5 bg-white/30 text-white text-xs rounded-md">
                   {[statusFilter, priorityFilter, categoryFilter].filter(Boolean).length}
                 </span>
               )}
-            </Button>
+            </button>
           </div>
 
           {/* Filter Panel */}

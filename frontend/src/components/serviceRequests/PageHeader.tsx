@@ -25,7 +25,7 @@ export function BackButton({ onClick, label = 'Back', className = '' }: BackButt
   );
 }
 
-// Page Header Component
+// Page Header Component - Modern Design
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
@@ -42,7 +42,7 @@ export function PageHeader({
   title,
   subtitle,
   icon: Icon,
-  iconColor = 'text-brand-600',
+  iconColor = 'text-white',
   actions,
   breadcrumbs,
   className = '',
@@ -50,18 +50,24 @@ export function PageHeader({
   onBackClick
 }: PageHeaderProps) {
   return (
-    <div className={`bg-white border-b border-slate-200/60 px-6 py-5 ${className}`}>
+    <div className={`bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6 ${className}`}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Back Button */}
           {showBackButton && onBackClick && (
-            <BackButton onClick={onBackClick} />
+            <button
+              onClick={onBackClick}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 group"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Back
+            </button>
           )}
 
           {/* Icon */}
           {Icon && (
-            <div className="hidden sm:flex p-3 rounded-2xl bg-brand-50">
-              <Icon className={`w-6 h-6 ${iconColor}`} />
+            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
+              <Icon className={`w-7 h-7 ${iconColor}`} />
             </div>
           )}
 
@@ -72,16 +78,16 @@ export function PageHeader({
               <nav className="flex items-center gap-2 text-sm mb-1">
                 {breadcrumbs.map((crumb, index) => (
                   <React.Fragment key={index}>
-                    {index > 0 && <span className="text-slate-300">/</span>}
+                    {index > 0 && <span className="text-white/40">/</span>}
                     {crumb.onClick ? (
                       <button
                         onClick={crumb.onClick}
-                        className="text-slate-500 hover:text-brand-600 transition-colors"
+                        className="text-white/70 hover:text-white transition-colors"
                       >
                         {crumb.label}
                       </button>
                     ) : (
-                      <span className="text-slate-500">{crumb.label}</span>
+                      <span className="text-white/70">{crumb.label}</span>
                     )}
                   </React.Fragment>
                 ))}
@@ -90,9 +96,9 @@ export function PageHeader({
 
             {/* Title */}
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900 truncate">{title}</h1>
+              <h1 className="text-2xl font-bold text-white truncate">{title}</h1>
               {subtitle && (
-                <span className="hidden md:inline-flex px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">
+                <span className="hidden md:inline-flex px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
                   {subtitle}
                 </span>
               )}

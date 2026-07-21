@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Status Badge Component
+// Status Badge Component - Modern Design
 interface StatusBadgeProps {
   status: string;
   size?: 'sm' | 'md' | 'lg';
@@ -36,20 +36,20 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   };
 
   const sizeClasses = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-1 text-xs',
-    lg: 'px-3 py-1.5 text-sm'
+    sm: 'px-2.5 py-1 text-xs',
+    md: 'px-3 py-1.5 text-xs',
+    lg: 'px-4 py-2 text-sm'
   };
 
   return (
-    <span className={`inline-flex items-center font-semibold rounded-full ${config.bg} ${config.text} ${config.ring} ${sizeClasses[size]} transition-all duration-200 hover:shadow-sm`}>
-      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${config.text.replace('text-', 'bg-')} opacity-70`} />
+    <span className={`inline-flex items-center font-bold rounded-xl ${config.bg} ${config.text} ${config.ring} ${sizeClasses[size]} transition-all duration-200 hover:shadow-md hover:scale-105`}>
+      <span className={`w-2 h-2 rounded-full mr-2 ${config.text.replace('text-', 'bg-')}`} />
       {config.label}
     </span>
   );
 }
 
-// Priority Badge Component
+// Priority Badge Component - Modern Design
 interface PriorityBadgeProps {
   priority: string;
   size?: 'sm' | 'md' | 'lg';
@@ -74,20 +74,20 @@ export function PriorityBadge({ priority, size = 'md', showIcon = false }: Prior
   };
 
   const sizeClasses = {
-    sm: 'px-2 py-0.5 text-xs gap-1',
-    md: 'px-2.5 py-1 text-xs gap-1.5',
-    lg: 'px-3 py-1.5 text-sm gap-2'
+    sm: 'px-2.5 py-1 text-xs gap-1',
+    md: 'px-3 py-1.5 text-xs gap-1.5',
+    lg: 'px-4 py-2 text-sm gap-2'
   };
 
   return (
-    <span className={`inline-flex items-center font-semibold rounded-lg border ${config.bg} ${config.text} ${config.border} ${sizeClasses[size]} transition-all duration-200 hover:shadow-sm`}>
+    <span className={`inline-flex items-center font-bold rounded-xl border-2 ${config.bg} ${config.text} ${config.border} ${sizeClasses[size]} transition-all duration-200 hover:shadow-md hover:scale-105`}>
       {showIcon && <span className="text-base leading-none">{config.icon}</span>}
       {config.label}
     </span>
   );
 }
 
-// Category Badge Component
+// Category Badge Component - Modern Design
 interface CategoryBadgeProps {
   category: string;
   size?: 'sm' | 'md' | 'lg';
@@ -109,13 +109,13 @@ export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
   const config = categoryColors[category] || { bg: 'bg-slate-100', text: 'text-slate-600' };
 
   const sizeClasses = {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-1 text-xs',
-    lg: 'px-3 py-1.5 text-sm'
+    sm: 'px-2.5 py-1 text-xs',
+    md: 'px-3 py-1.5 text-xs',
+    lg: 'px-4 py-2 text-sm'
   };
 
   return (
-    <span className={`inline-flex items-center font-medium rounded-md ${config.bg} ${config.text} ${sizeClasses[size]} transition-all duration-200`}>
+    <span className={`inline-flex items-center font-semibold rounded-xl ${config.bg} ${config.text} ${sizeClasses[size]} transition-all duration-200 hover:shadow-md`}>
       {category}
     </span>
   );

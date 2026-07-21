@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown, LucideIcon, FileQuestion } from 'lucide-react';
 
-// Table Container Component
+// Table Container Component - Modern Design
 interface TableContainerProps {
   children: React.ReactNode;
   className?: string;
@@ -41,10 +41,10 @@ export function TableContainer({
     return (
       <div className={`bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden ${className}`}>
         <div className="flex flex-col items-center justify-center py-16 px-6">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-            <EmptyIcon className="w-8 h-8 text-slate-400" />
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center mb-4">
+            <EmptyIcon className="w-10 h-10 text-slate-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-700 mb-2">{emptyTitle}</h3>
+          <h3 className="text-lg font-bold text-slate-700 mb-2">{emptyTitle}</h3>
           <p className="text-sm text-slate-500 text-center max-w-sm">{emptyDescription}</p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export function TableContainer({
   );
 }
 
-// Sort Header Component
+// Sort Header Component - Modern Design
 interface SortHeaderProps {
   label: string;
   sortKey?: string;
@@ -76,20 +76,20 @@ export function SortHeader({ label, sortKey, currentSort, onSort, className = ''
 
   if (!sortable) {
     return (
-      <th className={`px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider ${className}`}>
+      <th className={`px-4 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider ${className}`}>
         {label}
       </th>
     );
   }
 
   return (
-    <th className={`px-4 py-3.5 text-left ${className}`}>
+    <th className={`px-4 py-4 text-left ${className}`}>
       <button
         onClick={() => onSort(sortKey || label)}
-        className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors group"
+        className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider hover:text-purple-600 transition-colors group"
       >
         {label}
-        <span className={`transition-colors ${isActive ? 'text-brand-600' : 'text-slate-300 group-hover:text-slate-500'}`}>
+        <span className={`transition-all duration-200 ${isActive ? 'text-purple-600' : 'text-slate-300 group-hover:text-purple-400'}`}>
           {isActive ? (
             isAsc ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
           ) : (
@@ -101,7 +101,7 @@ export function SortHeader({ label, sortKey, currentSort, onSort, className = ''
   );
 }
 
-// Table Row Component
+// Table Row Component - Modern Design
 interface TableRowProps {
   children: React.ReactNode;
   onClick?: () => void;
@@ -112,7 +112,7 @@ interface TableRowProps {
 export function TableRow({ children, onClick, className = '', disabled = false }: TableRowProps) {
   if (!onClick) {
     return (
-      <tr className={`border-b border-slate-100 last:border-b-0 ${className}`}>
+      <tr className={`border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors ${className}`}>
         {children}
       </tr>
     );
@@ -305,7 +305,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search...', classN
   );
 }
 
-// Filter Chip Component
+// Filter Chip Component - Modern Design
 interface FilterChipProps {
   label: string;
   value?: string;
@@ -318,7 +318,7 @@ export function FilterChip({ label, value, onRemove, onClick, active = false }: 
   const content = (
     <span className="inline-flex items-center gap-1.5">
       {label}
-      {value && <span className="text-slate-500">({value})</span>}
+      {value && <span className="text-current opacity-60">({value})</span>}
     </span>
   );
 
@@ -327,11 +327,11 @@ export function FilterChip({ label, value, onRemove, onClick, active = false }: 
       <button
         onClick={onClick}
         className={`
-          inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+          inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold
           transition-all duration-200
           ${active
-            ? 'bg-brand-100 text-brand-700 border border-brand-200'
-            : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50'
+            : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700'
           }
         `}
       >
@@ -345,7 +345,7 @@ export function FilterChip({ label, value, onRemove, onClick, active = false }: 
       className={`
         inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
         ${active
-          ? 'bg-brand-100 text-brand-700 border border-brand-200'
+          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
           : 'bg-slate-100 text-slate-600 border border-slate-200'
         }
       `}

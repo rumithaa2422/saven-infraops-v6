@@ -583,8 +583,8 @@ export function ServiceRequestDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
-      {/* Header */}
+    <div className="min-h-screen">
+      {/* Header - Modern Purple Gradient */}
       <PageHeader
         title="Service Request Details"
         showBackButton
@@ -592,14 +592,22 @@ export function ServiceRequestDetailPage() {
         actions={
           <div className="flex items-center gap-3">
             {canPerformActions && (
-              <Button variant="secondary" icon={Edit2} onClick={openEditDialog}>
+              <button
+                onClick={openEditDialog}
+                className="px-4 py-2.5 rounded-xl border-2 border-white/30 text-white font-semibold hover:bg-white/10 transition-all duration-200 flex items-center gap-2"
+              >
+                <Edit2 className="w-4 h-4" />
                 Edit
-              </Button>
+              </button>
             )}
             {canDelete && (
-              <Button variant="danger" icon={Trash2} onClick={openDeleteDialog}>
+              <button
+                onClick={openDeleteDialog}
+                className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-red-500 text-white font-semibold transition-all duration-200 flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
                 Delete
-              </Button>
+              </button>
             )}
           </div>
         }
