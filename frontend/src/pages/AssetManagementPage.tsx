@@ -185,10 +185,18 @@ export function AssetManagementPage() {
         }
       });
 
+      // Calculate stats using same logic as assignment modal
+      // Items without active assignment that have assignable status
+      const availableItems = items.filter((i: InventoryItem) => {
+        const hasNoActiveAssignment = !i.assignedTo;
+        const isAssignableStatus = !['UNDER_REPAIR', 'RETIRED', 'LOST', 'DAMAGED'].includes(i.status);
+        return hasNoActiveAssignment && isAssignableStatus;
+      });
+
       setStats({
         totalInventory: items.length,
-        assigned: items.filter((i: InventoryItem) => i.status === 'ASSIGNED').length,
-        available: items.filter((i: InventoryItem) => i.status === 'AVAILABLE').length,
+        assigned: items.filter((i: InventoryItem) => i.assignedTo || i.status === 'ASSIGNED').length,
+        available: availableItems.length,
         underRepair: items.filter((i: InventoryItem) => i.status === 'UNDER_REPAIR').length,
         retired: items.filter((i: InventoryItem) => i.status === 'RETIRED').length,
         lost: items.filter((i: InventoryItem) => i.status === 'LOST').length,
@@ -347,13 +355,23 @@ export function AssetManagementPage() {
     setAssignmentSuccess('');
     setAssignmentForm({ inventoryId: '', userId: '', projectId: '', remarks: '' });
     
-    // Load available inventory items
+    // Load all inventory items (no status filter)
+    // Backend returns items with their assignment status via 'assignedTo' field
     setLoadingInventory(true);
     try {
-      const res = await api.get('/inventory-master', { 
-        params: { status: 'AVAILABLE' } 
+      const res = await api.get('/inventory-master');
+      const allItems = res.data.items || [];
+      
+      // Filter items that are available for assignment:
+      // - No active assignment (assignedTo is null)
+      // - Status is not in NON_ASSIGNABLE_STATUSES (UNDER_REPAIR, RETIRED, LOST, DAMAGED)
+      const availableItems = allItems.filter((item: InventoryItem) => {
+        const hasNoActiveAssignment = !item.assignedTo;
+        const isAssignableStatus = !['UNDER_REPAIR', 'RETIRED', 'LOST', 'DAMAGED', 'ASSIGNED'].includes(item.status);
+        return hasNoActiveAssignment && isAssignableStatus;
       });
-      setAvailableInventory(res.data.items || []);
+      
+      setAvailableInventory(availableItems);
     } catch (err) {
       console.error('Failed to load inventory:', err);
       setAssignmentError('Failed to load available inventory items');
