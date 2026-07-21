@@ -144,6 +144,9 @@ inventoryMasterRouter.get('/:id', requireAuth, async (req, res, next) => {
 // POST /inventory-master - Create inventory item
 inventoryMasterRouter.post('/', requireAuth, async (req, res, next) => {
   try {
+    // Log incoming payload for debugging
+    console.log('Inventory Create - Incoming payload:', JSON.stringify(req.body, null, 2));
+
     if (!isSuperAdmin(req.user)) {
       return res.status(403).json({ message: 'Only Super Admin can create inventory items' });
     }
@@ -152,7 +155,8 @@ inventoryMasterRouter.post('/', requireAuth, async (req, res, next) => {
       itemName,
       brand,
       model,
-      vendor,
+      vendorName,
+      vendorId,
       invoiceNo,
       purchaseCost,
       gst,
@@ -181,23 +185,41 @@ inventoryMasterRouter.post('/', requireAuth, async (req, res, next) => {
       errors.push('Subcategory is required');
     }
     
-    if (currentQty !== undefined && currentQty < 0) {
+    // Parse numeric fields safely
+    const parsedCurrentQty = currentQty !== undefined && currentQty !== null && currentQty !== '' ? parseInt(currentQty) : 0;
+    const parsedPurchaseCost = purchaseCost !== undefined && purchaseCost !== null && purchaseCost !== '' ? parseFloat(purchaseCost) : null;
+    const parsedMinStock = minStock !== undefined && minStock !== null && minStock !== '' ? parseInt(minStock) : null;
+    const parsedWarrantyMonths = warrantyMonths !== undefined && warrantyMonths !== null && warrantyMonths !== '' ? parseInt(warrantyMonths) : null;
+    
+    if (parsedCurrentQty < 0) {
       errors.push('Quantity cannot be negative');
     }
     
-    if (purchaseCost !== undefined && purchaseCost < 0) {
+    if (parsedPurchaseCost !== null && parsedPurchaseCost < 0) {
       errors.push('Purchase Cost cannot be negative');
     }
-    
+
+    // Parse and validate purchaseDate
+    let parsedPurchaseDate: Date | null = null;
+    if (purchaseDate) {
+      try {
+        parsedPurchaseDate = new Date(purchaseDate);
+        if (isNaN(parsedPurchaseDate.getTime())) {
+          errors.push('Invalid Purchase Date format');
+        }
+      } catch (e) {
+        errors.push('Invalid Purchase Date format');
+      }
+    }
+
     // Calculate warranty expiry for validation
-    let calculatedWarrantyExpiry = req.body.warrantyExpiry;
-    if (purchaseDate && warrantyMonths && !calculatedWarrantyExpiry) {
-      const purchase = new Date(purchaseDate);
-      purchase.setMonth(purchase.getMonth() + warrantyMonths);
-      calculatedWarrantyExpiry = purchase;
+    let calculatedWarrantyExpiry = req.body.warrantyExpiry ? new Date(req.body.warrantyExpiry) : null;
+    if (parsedPurchaseDate && parsedWarrantyMonths && !calculatedWarrantyExpiry) {
+      calculatedWarrantyExpiry = new Date(parsedPurchaseDate);
+      calculatedWarrantyExpiry.setMonth(calculatedWarrantyExpiry.getMonth() + parsedWarrantyMonths);
     }
     
-    if (purchaseDate && calculatedWarrantyExpiry && new Date(calculatedWarrantyExpiry) < new Date(purchaseDate)) {
+    if (parsedPurchaseDate && calculatedWarrantyExpiry && calculatedWarrantyExpiry < parsedPurchaseDate) {
       errors.push('Warranty Expiry cannot be before Purchase Date');
     }
 
@@ -227,15 +249,45 @@ inventoryMasterRouter.post('/', requireAuth, async (req, res, next) => {
       return res.status(400).json({ message: 'Subcategory does not belong to the selected category' });
     }
 
+    // Verify vendor exists if vendorId is provided
+    if (vendorId) {
+      const vendor = await prisma.vendor.findUnique({
+        where: { id: vendorId }
+      });
+      if (!vendor) {
+        return res.status(400).json({ message: 'Vendor not found' });
+      }
+    }
+
     // Calculate warranty expiry if not provided
-    let warrantyExpiry = req.body.warrantyExpiry;
-    if (purchaseDate && warrantyMonths && !warrantyExpiry) {
-      const purchase = new Date(purchaseDate);
-      purchase.setMonth(purchase.getMonth() + warrantyMonths);
-      warrantyExpiry = purchase;
+    let warrantyExpiry = req.body.warrantyExpiry ? new Date(req.body.warrantyExpiry) : null;
+    if (parsedPurchaseDate && parsedWarrantyMonths && !warrantyExpiry) {
+      warrantyExpiry = new Date(parsedPurchaseDate);
+      warrantyExpiry.setMonth(warrantyExpiry.getMonth() + parsedWarrantyMonths);
     }
 
     const itemNo = await generateItemNo();
+
+    console.log('Creating inventory with data:', {
+      itemNo,
+      itemName: itemName.trim(),
+      brand: brand?.trim() || null,
+      model: model?.trim() || null,
+      vendorName: vendorName?.trim() || null,
+      vendorId: vendorId || null,
+      invoiceNo: invoiceNo?.trim() || null,
+      purchaseCost: parsedPurchaseCost,
+      gst: gst ? parseFloat(gst) : null,
+      purchaseDate: parsedPurchaseDate,
+      warrantyMonths: parsedWarrantyMonths,
+      warrantyExpiry: warrantyExpiry,
+      location: location?.trim() || null,
+      minStock: parsedMinStock,
+      currentQty: parsedCurrentQty,
+      status: status || 'ACTIVE',
+      categoryId,
+      subcategoryId
+    });
 
     const item = await prisma.inventoryMaster.create({
       data: {
@@ -243,16 +295,17 @@ inventoryMasterRouter.post('/', requireAuth, async (req, res, next) => {
         itemName: itemName.trim(),
         brand: brand?.trim() || null,
         model: model?.trim() || null,
-        vendor: vendor?.trim() || null,
+        vendorName: vendorName?.trim() || null,
+        vendorId: vendorId || null,
         invoiceNo: invoiceNo?.trim() || null,
-        purchaseCost: purchaseCost ? parseFloat(purchaseCost) : null,
+        purchaseCost: parsedPurchaseCost,
         gst: gst ? parseFloat(gst) : null,
-        purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
-        warrantyMonths: warrantyMonths ? parseInt(warrantyMonths) : null,
-        warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry) : null,
+        purchaseDate: parsedPurchaseDate,
+        warrantyMonths: parsedWarrantyMonths,
+        warrantyExpiry: warrantyExpiry,
         location: location?.trim() || null,
-        minStock: minStock !== undefined ? parseInt(minStock) : null,
-        currentQty: currentQty !== undefined ? parseInt(currentQty) : 0,
+        minStock: parsedMinStock,
+        currentQty: parsedCurrentQty,
         status: status || 'ACTIVE',
         categoryId,
         subcategoryId
@@ -473,6 +526,9 @@ inventoryMasterRouter.post('/bulk-import', requireAuth, async (req, res, next) =
 // PATCH /inventory-master/:id - Update inventory item
 inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
   try {
+    // Log incoming payload for debugging
+    console.log('Inventory Update - Incoming payload:', JSON.stringify(req.body, null, 2));
+
     if (!isSuperAdmin(req.user)) {
       return res.status(403).json({ message: 'Only Super Admin can update inventory items' });
     }
@@ -482,7 +538,8 @@ inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
       itemName,
       brand,
       model,
-      vendor,
+      vendorName,
+      vendorId,
       invoiceNo,
       purchaseCost,
       gst,
@@ -501,11 +558,17 @@ inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
       return res.status(400).json({ message: 'Item Name cannot be empty' });
     }
     
-    if (currentQty !== undefined && currentQty < 0) {
+    // Parse numeric fields safely
+    const parsedCurrentQty = currentQty !== undefined && currentQty !== null && currentQty !== '' ? parseInt(currentQty) : undefined;
+    const parsedPurchaseCost = purchaseCost !== undefined && purchaseCost !== null && purchaseCost !== '' ? parseFloat(purchaseCost) : undefined;
+    const parsedMinStock = minStock !== undefined && minStock !== null && minStock !== '' ? parseInt(minStock) : undefined;
+    const parsedWarrantyMonths = warrantyMonths !== undefined && warrantyMonths !== null && warrantyMonths !== '' ? parseInt(warrantyMonths) : undefined;
+    
+    if (parsedCurrentQty !== undefined && parsedCurrentQty < 0) {
       return res.status(400).json({ message: 'Quantity cannot be negative' });
     }
     
-    if (purchaseCost !== undefined && purchaseCost < 0) {
+    if (parsedPurchaseCost !== undefined && parsedPurchaseCost < 0) {
       return res.status(400).json({ message: 'Purchase Cost cannot be negative' });
     }
 
@@ -520,10 +583,22 @@ inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
 
     // Calculate warranty expiry
     let warrantyExpiry = req.body.warrantyExpiry;
-    if (purchaseDate && warrantyMonths) {
+    if (purchaseDate && parsedWarrantyMonths) {
       const purchase = new Date(purchaseDate);
-      purchase.setMonth(purchase.getMonth() + warrantyMonths);
+      purchase.setMonth(purchase.getMonth() + parsedWarrantyMonths);
       warrantyExpiry = purchase;
+    }
+
+    // Verify vendor exists if vendorId is provided
+    if (vendorId !== undefined) {
+      if (vendorId) {
+        const vendor = await prisma.vendor.findUnique({
+          where: { id: vendorId }
+        });
+        if (!vendor) {
+          return res.status(400).json({ message: 'Vendor not found' });
+        }
+      }
     }
 
     const item = await prisma.inventoryMaster.update({
@@ -532,16 +607,17 @@ inventoryMasterRouter.patch('/:id', requireAuth, async (req, res, next) => {
         ...(itemName !== undefined && { itemName: itemName.trim() }),
         ...(brand !== undefined && { brand: brand?.trim() || null }),
         ...(model !== undefined && { model: model?.trim() || null }),
-        ...(vendor !== undefined && { vendor: vendor?.trim() || null }),
+        ...(vendorName !== undefined && { vendorName: vendorName?.trim() || null }),
+        ...(vendorId !== undefined && { vendorId: vendorId || null }),
         ...(invoiceNo !== undefined && { invoiceNo: invoiceNo?.trim() || null }),
-        ...(purchaseCost !== undefined && { purchaseCost: purchaseCost ? parseFloat(purchaseCost) : null }),
+        ...(purchaseCost !== undefined && { purchaseCost: parsedPurchaseCost }),
         ...(gst !== undefined && { gst: gst ? parseFloat(gst) : null }),
         ...(purchaseDate !== undefined && { purchaseDate: purchaseDate ? new Date(purchaseDate) : null }),
-        ...(warrantyMonths !== undefined && { warrantyMonths: warrantyMonths ? parseInt(warrantyMonths) : null }),
+        ...(warrantyMonths !== undefined && { warrantyMonths: parsedWarrantyMonths }),
         ...(warrantyExpiry !== undefined && { warrantyExpiry: warrantyExpiry ? new Date(warrantyExpiry) : null }),
         ...(location !== undefined && { location: location?.trim() || null }),
-        ...(minStock !== undefined && { minStock: minStock !== null ? parseInt(minStock) : null }),
-        ...(currentQty !== undefined && { currentQty: parseInt(currentQty) }),
+        ...(minStock !== undefined && { minStock: parsedMinStock }),
+        ...(currentQty !== undefined && { currentQty: parsedCurrentQty }),
         ...(status !== undefined && { status }),
         ...(categoryId !== undefined && { categoryId }),
         ...(subcategoryId !== undefined && { subcategoryId })

@@ -122,10 +122,12 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
         });
         return;
       case 'P2003':
+        // In development, show the actual constraint field
+        const isDev = process.env.NODE_ENV === 'development';
         res.status(400).json({ 
           success: false,
           code: 'FOREIGN_KEY_ERROR',
-          message: 'Cannot complete this operation because the related record does not exist.' 
+          message: isDev ? `Foreign key constraint failed: ${error.message}` : 'Cannot complete this operation because the related record does not exist.' 
         });
         return;
       case 'P2014':
@@ -156,9 +158,16 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   }
 
   // Handle other errors - PART 10: Include user-friendly message
+  // In development mode, show the real error message for debugging
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
   res.status(500).json({ 
     success: false,
     code: 'INTERNAL_ERROR',
-    message: getUserFriendlyMessage(error)
+    message: isDevelopment ? error.message : getUserFriendlyMessage(error),
+    ...(isDevelopment && { 
+      originalError: error.message,
+      stack: error.stack 
+    })
   });
 };
