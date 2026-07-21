@@ -444,7 +444,7 @@ export function ProjectCreatePage() {
                     />
                     {/* Manager Dropdown */}
                     {managerSearch && filteredManagers.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto">
+                      <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl max-h-64 overflow-y-auto">
                         {filteredManagers.map(user => (
                           <div
                             key={user.id}
@@ -464,7 +464,7 @@ export function ProjectCreatePage() {
                       </div>
                     )}
                     {managerSearch && filteredManagers.length === 0 && !usersLoading && (
-                      <div className="absolute z-10 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-lg p-4 text-center text-sm text-slate-500">
+                      <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl p-4 text-center text-sm text-slate-500">
                         No users found
                       </div>
                     )}
@@ -474,7 +474,7 @@ export function ProjectCreatePage() {
               </div>
 
               {/* Team Members */}
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-slate-700 mb-3">Team Members *</label>
                 
                 {/* Selected Team Members */}
@@ -499,49 +499,73 @@ export function ProjectCreatePage() {
                   </div>
                 )}
                 
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search to add team members..."
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.teamMemberIds ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
-                  />
-                  {/* Team Members Dropdown */}
-                  {userSearch && filteredTeamMembers.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-lg max-h-60 overflow-y-auto">
-                      {filteredTeamMembers.map(user => (
-                        <div
-                          key={user.id}
-                          className={`flex items-center gap-3 px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors ${formData.teamMemberIds.includes(user.id) ? 'bg-purple-50' : ''}`}
-                          onClick={() => handleTeamMemberToggle(user.id)}
-                        >
-                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-sm">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1">
-                            <span className="font-medium text-slate-900 text-sm">{user.name}</span>
-                            <span className="text-xs text-slate-500 ml-2">{user.email}</span>
-                          </div>
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">{getUserRole(user)}</span>
-                          {formData.teamMemberIds.includes(user.id) && (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-600">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          )}
+                <input
+                  type="text"
+                  placeholder="Search to add team members..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all ${errors.teamMemberIds ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
+                />
+                {/* Team Members Dropdown */}
+                {userSearch && filteredTeamMembers.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl max-h-64 overflow-y-auto">
+                    {filteredTeamMembers.map(user => (
+                      <div
+                        key={user.id}
+                        className={`flex items-center gap-3 px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors ${formData.teamMemberIds.includes(user.id) ? 'bg-purple-50' : ''}`}
+                        onClick={() => handleTeamMemberToggle(user.id)}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-sm">
+                          {user.name.charAt(0).toUpperCase()}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  {userSearch && filteredTeamMembers.length === 0 && !usersLoading && (
-                    <div className="absolute z-10 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-lg p-4 text-center text-sm text-slate-500">
-                      No users found
-                    </div>
-                  )}
-                </div>
-                {errors.teamMemberIds && <span className="text-xs text-red-600 mt-1">{errors.teamMemberIds}</span>}
+                        <div className="flex-1">
+                          <span className="font-medium text-slate-900 text-sm">{user.name}</span>
+                          <span className="text-xs text-slate-500 ml-2">{user.email}</span>
+                        </div>
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">{getUserRole(user)}</span>
+                        {formData.teamMemberIds.includes(user.id) && (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-600">
+                            <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {userSearch && filteredTeamMembers.length === 0 && !usersLoading && (
+                  <div className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-slate-200 shadow-xl p-4 text-center text-sm text-slate-500">
+                    No users found
+                  </div>
+                )}
+                {errors.teamMemberIds && <span className="text-xs text-red-600 mt-1 block">{errors.teamMemberIds}</span>}
               </div>
             </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex items-center justify-end gap-4 pt-4 border-t border-slate-200 bg-white rounded-2xl p-6 shadow-sm">
+            <button
+              type="button"
+              onClick={() => navigate('/projects-environments')}
+              className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-200"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Creating...
+                </span>
+              ) : 'Create Project'}
+            </button>
           </div>
         </form>
       </main>
