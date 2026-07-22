@@ -346,7 +346,7 @@ export function DesignSystemPreviewPage() {
 
         {/* KPI Cards */}
         <div className={styles.kpiGrid}>
-          <div className={styles.kpiCard}>
+          <div className={styles.kpiCard} data-accent="requests">
             <div className={styles.kpiHeader}>
               <span className={styles.kpiLabel}>Active Requests</span>
               <Ticket size={14} className={styles.kpiIcon} />
@@ -360,7 +360,7 @@ export function DesignSystemPreviewPage() {
             </div>
           </div>
 
-          <div className={styles.kpiCard}>
+          <div className={styles.kpiCard} data-accent="incidents">
             <div className={styles.kpiHeader}>
               <span className={styles.kpiLabel}>Open Incidents</span>
               <AlertCircle size={14} className={styles.kpiIcon} />
@@ -374,7 +374,7 @@ export function DesignSystemPreviewPage() {
             </div>
           </div>
 
-          <div className={styles.kpiCard}>
+          <div className={styles.kpiCard} data-accent="approvals">
             <div className={styles.kpiHeader}>
               <span className={styles.kpiLabel}>Pending Approvals</span>
               <Clock size={14} className={styles.kpiIcon} />
@@ -388,7 +388,7 @@ export function DesignSystemPreviewPage() {
             </div>
           </div>
 
-          <div className={styles.kpiCard}>
+          <div className={styles.kpiCard} data-accent="resolved">
             <div className={styles.kpiHeader}>
               <span className={styles.kpiLabel}>Resolved Today</span>
               <CheckCircle2 size={14} className={styles.kpiIcon} />
@@ -442,19 +442,19 @@ export function DesignSystemPreviewPage() {
               <h3 className={styles.cardTitle}>Quick Actions</h3>
             </div>
             <div className={styles.quickActions}>
-              <button type="button" className={styles.quickAction}>
+              <button type="button" className={styles.quickAction} data-action="new">
                 <div className={styles.quickActionIcon}><Plus size={14} /></div>
                 <span>New Request</span>
               </button>
-              <button type="button" className={styles.quickAction}>
+              <button type="button" className={styles.quickAction} data-action="report">
                 <div className={styles.quickActionIcon}><FileText size={14} /></div>
                 <span>Create Report</span>
               </button>
-              <button type="button" className={styles.quickAction}>
+              <button type="button" className={styles.quickAction} data-action="schedule">
                 <div className={styles.quickActionIcon}><Calendar size={14} /></div>
                 <span>Schedule Task</span>
               </button>
-              <button type="button" className={styles.quickAction}>
+              <button type="button" className={styles.quickAction} data-action="user">
                 <div className={styles.quickActionIcon}><User size={14} /></div>
                 <span>Assign User</span>
               </button>
@@ -510,28 +510,28 @@ export function DesignSystemPreviewPage() {
               <span className={styles.alertBadge}>4 new</span>
             </div>
             <div className={styles.alertList}>
-              <div className={styles.alertItem}>
+              <div className={styles.alertItem} data-type="warning">
                 <AlertTriangle size={14} className={styles.alertIconWarning} />
                 <div className={styles.alertContent}>
                   <span className={styles.alertText}>3 licenses expiring within 30 days</span>
                   <span className={styles.alertTime}>2 hours ago</span>
                 </div>
               </div>
-              <div className={styles.alertItem}>
+              <div className={styles.alertItem} data-type="critical">
                 <AlertCircle size={14} className={styles.alertIconError} />
                 <div className={styles.alertContent}>
                   <span className={styles.alertText}>Server SR-4567 exceeded SLA</span>
                   <span className={styles.alertTime}>5 hours ago</span>
                 </div>
               </div>
-              <div className={styles.alertItem}>
+              <div className={styles.alertItem} data-type="information">
                 <Bell size={14} className={styles.alertIconInfo} />
                 <div className={styles.alertContent}>
                   <span className={styles.alertText}>New comment on SR-890</span>
                   <span className={styles.alertTime}>Yesterday</span>
                 </div>
               </div>
-              <div className={styles.alertItem}>
+              <div className={styles.alertItem} data-type="success">
                 <CheckCircle2 size={14} className={styles.alertIconSuccess} />
                 <div className={styles.alertContent}>
                   <span className={styles.alertText}>Incident INC-234 resolved</span>
@@ -549,35 +549,35 @@ export function DesignSystemPreviewPage() {
             </div>
             <div className={styles.activityList}>
               <div className={styles.activityItem}>
-                <div className={styles.activityAvatar}>JD</div>
+                <div className={styles.activityAvatar} data-user="JD">JD</div>
                 <div className={styles.activityContent}>
                   <span className={styles.activityText}><strong>John D.</strong> updated SR-1234 status to In Progress</span>
                   <span className={styles.activityTime}>15 minutes ago</span>
                 </div>
               </div>
               <div className={styles.activityItem}>
-                <div className={styles.activityAvatar}>MK</div>
+                <div className={styles.activityAvatar} data-user="MK">MK</div>
                 <div className={styles.activityContent}>
                   <span className={styles.activityText}><strong>Mary K.</strong> commented on INC-567</span>
                   <span className={styles.activityTime}>32 minutes ago</span>
                 </div>
               </div>
               <div className={styles.activityItem}>
-                <div className={styles.activityAvatar}>RS</div>
+                <div className={styles.activityAvatar} data-user="RS">RS</div>
                 <div className={styles.activityContent}>
                   <span className={styles.activityText}><strong>Robert S.</strong> assigned SR-890 to you</span>
                   <span className={styles.activityTime}>1 hour ago</span>
                 </div>
               </div>
               <div className={styles.activityItem}>
-                <div className={styles.activityAvatar}>AL</div>
+                <div className={styles.activityAvatar} data-user="AL">AL</div>
                 <div className={styles.activityContent}>
                   <span className={styles.activityText}><strong>Anna L.</strong> created new inventory item</span>
                   <span className={styles.activityTime}>2 hours ago</span>
                 </div>
               </div>
               <div className={styles.activityItem}>
-                <div className={styles.activityAvatar}>TW</div>
+                <div className={styles.activityAvatar} data-user="TW">TW</div>
                 <div className={styles.activityContent}>
                   <span className={styles.activityText}><strong>Tom W.</strong> resolved SR-456</span>
                   <span className={styles.activityTime}>3 hours ago</span>
@@ -594,53 +594,53 @@ export function DesignSystemPreviewPage() {
             </div>
             <div className={styles.teamList}>
               <div className={styles.teamMember}>
-                <div className={styles.teamAvatar}>JD</div>
+                <div className={styles.teamAvatar} data-member="JD">JD</div>
                 <div className={styles.teamInfo}>
                   <span className={styles.teamName}>John Doe</span>
                   <span className={styles.teamRole}>Support Engineer</span>
                 </div>
                 <div className={styles.teamWorkload}>
                   <div className={styles.workloadBar}>
-                    <div className={styles.workloadFill} style={{ width: '75%' }} />
+                    <div className={styles.workloadFill} data-level="medium" style={{ width: '75%' }} />
                   </div>
                   <span className={styles.workloadCount}>12</span>
                 </div>
               </div>
               <div className={styles.teamMember}>
-                <div className={styles.teamAvatar}>MK</div>
+                <div className={styles.teamAvatar} data-member="MK">MK</div>
                 <div className={styles.teamInfo}>
                   <span className={styles.teamName}>Mary Kim</span>
                   <span className={styles.teamRole}>Senior Engineer</span>
                 </div>
                 <div className={styles.teamWorkload}>
                   <div className={styles.workloadBar}>
-                    <div className={styles.workloadFill} style={{ width: '45%' }} />
+                    <div className={styles.workloadFill} data-level="low" style={{ width: '45%' }} />
                   </div>
                   <span className={styles.workloadCount}>7</span>
                 </div>
               </div>
               <div className={styles.teamMember}>
-                <div className={styles.teamAvatar}>RS</div>
+                <div className={styles.teamAvatar} data-member="RS">RS</div>
                 <div className={styles.teamInfo}>
                   <span className={styles.teamName}>Robert Smith</span>
                   <span className={styles.teamRole}>IT Manager</span>
                 </div>
                 <div className={styles.teamWorkload}>
                   <div className={styles.workloadBar}>
-                    <div className={styles.workloadFill} style={{ width: '30%' }} />
+                    <div className={styles.workloadFill} data-level="low" style={{ width: '30%' }} />
                   </div>
                   <span className={styles.workloadCount}>4</span>
                 </div>
               </div>
               <div className={styles.teamMember}>
-                <div className={styles.teamAvatar}>AL</div>
+                <div className={styles.teamAvatar} data-member="AL">AL</div>
                 <div className={styles.teamInfo}>
                   <span className={styles.teamName}>Anna Lee</span>
                   <span className={styles.teamRole}>Support Engineer</span>
                 </div>
                 <div className={styles.teamWorkload}>
                   <div className={styles.workloadBar}>
-                    <div className={styles.workloadFill} style={{ width: '85%' }} />
+                    <div className={styles.workloadFill} data-level="high" style={{ width: '85%' }} />
                   </div>
                   <span className={styles.workloadCount}>15</span>
                 </div>
