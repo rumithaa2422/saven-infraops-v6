@@ -44,6 +44,7 @@ const formatDate = (dateStr: string): string => {
 };
 
 const ALLOWED_EXTENSIONS = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.zip';
+const ALLOWED_FORMATS = 'PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, PNG, JPG, JPEG, ZIP';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvidenceChange }: EvidenceModalProps) {
@@ -92,7 +93,7 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     const allowedExts = ALLOWED_EXTENSIONS.split(',');
     if (!allowedExts.includes(ext)) {
-      setError(`File type not allowed. Allowed: ${ALLOWED_EXTENSIONS}`);
+      setError(`File type not allowed. Allowed: ${ALLOWED_FORMATS}`);
       return;
     }
 
@@ -132,26 +133,20 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
     }
   };
 
-  // Handle file download
-  const handleDownload = async (evidenceItem: Evidence) => {
-    try {
-      const response = await api.get(
-        `/compliance-management/evidence/${evidenceItem.id}/download`,
-        { responseType: 'blob' }
-      );
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', evidenceItem.filePath);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setError('Failed to download file');
-    }
+  // Handle file download - opens in new window for direct download
+  const handleDownload = (evidenceItem: Evidence) => {
+    // Build download URL with auth token
+    const token = localStorage.getItem('token');
+    const downloadUrl = `/api/compliance-management/evidence/${evidenceItem.id}/download`;
+    
+    // Open download in new tab
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Handle file deletion
@@ -169,25 +164,26 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal evidence-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="evidence-modal-overlay" onClick={onClose}>
+      <div className="evidence-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="modal-header">
-          <div className="modal-header-content">
+        <div className="evidence-modal-header">
+          <div className="evidence-modal-header-content">
             <h2>Evidence Documents</h2>
-            <p className="modal-subtitle">{controlName}</p>
+            <p className="evidence-modal-subtitle">{controlName}</p>
           </div>
-          <button type="button" className="modal-close" onClick={onClose}>
+          <button type="button" className="evidence-modal-close" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="modal-body">
+        <div className="evidence-modal-body">
+          {/* Error Alert */}
           {error && (
-            <div className="alert alert-error">
-              {error}
-              <button type="button" className="alert-close" onClick={() => setError('')}>
+            <div className="evidence-alert evidence-alert-error">
+              <span>{error}</span>
+              <button type="button" className="evidence-alert-close" onClick={() => setError('')}>
                 <X size={14} />
               </button>
             </div>
@@ -195,6 +191,16 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
 
           {/* Upload Section */}
           <div className="evidence-upload-section">
+            <div className="evidence-upload-info">
+              <div className="evidence-upload-stats">
+                <span className="evidence-count">{evidence.length} document{evidence.length !== 1 ? 's' : ''}</span>
+                <span className="evidence-separator">•</span>
+                <span className="evidence-format">Max {formatFileSize(MAX_FILE_SIZE)}</span>
+              </div>
+              <div className="evidence-format-list">
+                Allowed: {ALLOWED_FORMATS}
+              </div>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -206,13 +212,13 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
             />
             <button
               type="button"
-              className="upload-btn"
+              className="evidence-upload-btn"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
             >
               {uploading ? (
                 <>
-                  <Loader2 size={16} className="spin" />
+                  <Loader2 size={16} className="evidence-spin" />
                   Uploading...
                 </>
               ) : (
@@ -222,31 +228,28 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
                 </>
               )}
             </button>
-            <span className="upload-hint">
-              Max 20 MB. Allowed: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, PNG, JPG, JPEG, ZIP
-            </span>
             {uploading && (
-              <div className="upload-progress">
-                <div className="progress-bar">
+              <div className="evidence-progress">
+                <div className="evidence-progress-bar">
                   <div 
-                    className="progress-fill" 
+                    className="evidence-progress-fill" 
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <span className="progress-text">{uploadProgress}%</span>
+                <span className="evidence-progress-text">{uploadProgress}%</span>
               </div>
             )}
           </div>
 
           {/* Evidence Table */}
-          <div className="evidence-table-container">
+          <div className="evidence-table-wrapper">
             {loading ? (
-              <div className="evidence-loading">
-                <Loader2 size={24} className="spin" />
+              <div className="evidence-state evidence-loading">
+                <Loader2 size={32} className="evidence-spin" />
                 <span>Loading evidence...</span>
               </div>
             ) : evidence.length === 0 ? (
-              <div className="evidence-empty">
+              <div className="evidence-state evidence-empty">
                 <FileText size={48} strokeWidth={1} />
                 <p>No evidence documents</p>
                 <span>Upload files to document compliance</span>
@@ -255,47 +258,48 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
               <table className="evidence-table">
                 <thead>
                   <tr>
-                    <th>File Name</th>
-                    <th>Uploaded By</th>
-                    <th>Uploaded Date</th>
-                    <th>Actions</th>
+                    <th className="col-filename">File Name</th>
+                    <th className="col-filesize">File Size</th>
+                    <th className="col-uploadedby">Uploaded By</th>
+                    <th className="col-date">Uploaded Date</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {evidence.map((item) => (
                     <tr key={item.id}>
-                      <td>
-                        <div className="file-name-cell">
-                          <FileText size={16} />
-                          <div className="file-info">
-                            <span className="file-name">{item.filePath}</span>
-                            <span className="file-size">{formatFileSize(item.fileSize)}</span>
-                          </div>
+                      <td className="col-filename">
+                        <div className="evidence-file-cell" title={item.filePath}>
+                          <FileText size={18} />
+                          <span className="evidence-filename">{item.filePath}</span>
                         </div>
                       </td>
-                      <td className="uploaded-by-cell">
+                      <td className="col-filesize">
+                        {formatFileSize(item.fileSize)}
+                      </td>
+                      <td className="col-uploadedby">
                         {item.uploadedBy || 'System'}
                       </td>
-                      <td className="date-cell">
+                      <td className="col-date">
                         {formatDate(item.uploadedAt)}
                       </td>
-                      <td>
-                        <div className="action-buttons">
+                      <td className="col-actions">
+                        <div className="evidence-actions">
                           <button
                             type="button"
-                            className="action-btn"
+                            className="evidence-action-btn"
                             title="Download"
                             onClick={() => handleDownload(item)}
                           >
-                            <Download size={14} />
+                            <Download size={16} />
                           </button>
                           <button
                             type="button"
-                            className="action-btn danger"
+                            className="evidence-action-btn evidence-action-delete"
                             title="Delete"
                             onClick={() => setDeleteConfirm(item.id)}
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -308,29 +312,29 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
         </div>
 
         {/* Footer */}
-        <div className="modal-footer">
-          <button type="button" className="secondary" onClick={onClose}>
+        <div className="evidence-modal-footer">
+          <button type="button" className="evidence-btn evidence-btn-secondary" onClick={onClose}>
             Close
           </button>
         </div>
 
         {/* Delete Confirmation Dialog */}
         {deleteConfirm && (
-          <div className="confirmation-overlay" onClick={() => setDeleteConfirm(null)}>
-            <div className="confirmation-dialog" onClick={(e) => e.stopPropagation()}>
+          <div className="evidence-confirm-overlay" onClick={() => setDeleteConfirm(null)}>
+            <div className="evidence-confirm-dialog" onClick={(e) => e.stopPropagation()}>
               <h3>Delete Evidence</h3>
               <p>Are you sure you want to delete this evidence document? This action cannot be undone.</p>
-              <div className="confirmation-actions">
+              <div className="evidence-confirm-actions">
                 <button 
                   type="button" 
-                  className="secondary" 
+                  className="evidence-btn evidence-btn-secondary" 
                   onClick={() => setDeleteConfirm(null)}
                 >
                   Cancel
                 </button>
                 <button 
                   type="button" 
-                  className="danger" 
+                  className="evidence-btn evidence-btn-danger" 
                   onClick={() => handleDelete(deleteConfirm)}
                 >
                   Delete

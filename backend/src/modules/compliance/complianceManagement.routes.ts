@@ -544,7 +544,8 @@ complianceManagementRouter.get('/evidence/:id/download', requireAuth, async (req
     });
 
     if (!evidence) {
-      throw new HttpError(404, 'Evidence not found');
+      res.status(404).json({ message: 'Evidence not found' });
+      return;
     }
 
     const filePath = path.join(uploadsDir, evidence.fileName);
@@ -553,17 +554,28 @@ complianceManagementRouter.get('/evidence/:id/download', requireAuth, async (req
     try {
       await fs.access(filePath);
     } catch {
-      throw new HttpError(404, 'File not found on server');
+      res.status(404).json({ message: 'File not found on server' });
+      return;
     }
 
+    // Use sendFile for reliable file serving
     res.setHeader('Content-Type', evidence.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${evidence.filePath}"`);
-    res.setHeader('Content-Length', evidence.fileSize);
-
-    const fileStream = require('fs').createReadStream(filePath);
-    fileStream.pipe(res);
+    // Properly encode the filename for Content-Disposition
+    const encodedFilename = encodeURIComponent(evidence.filePath).replace(/'/g, '%27');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`);
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Error sending file' });
+        }
+      }
+    });
   } catch (error) {
-    next(error);
+    console.error('Download error:', error);
+    if (!res.headersSent) {
+      next(error);
+    }
   }
 });
 
@@ -584,14 +596,17 @@ complianceManagementRouter.delete('/evidence/:id', requireAuth, async (req: Requ
     });
 
     if (!evidence) {
-      throw new HttpError(404, 'Evidence not found');
+      res.status(404).json({ message: 'Evidence not found' });
+      return;
     }
 
     // Delete file from disk
     const filePath = path.join(uploadsDir, evidence.fileName);
     try {
       await fs.unlink(filePath);
-    } catch {
+      console.log('Deleted file:', filePath);
+    } catch (err) {
+      console.log('File deletion error (continuing):', err);
       // File might not exist, continue with database deletion
     }
 
@@ -599,9 +614,11 @@ complianceManagementRouter.delete('/evidence/:id', requireAuth, async (req: Requ
     await prisma.complianceEvidence.delete({
       where: { id }
     });
+    console.log('Deleted evidence record:', id);
 
     res.json({ success: true, message: 'Evidence deleted successfully' });
   } catch (error) {
+    console.error('Delete error:', error);
     next(error);
   }
 });
