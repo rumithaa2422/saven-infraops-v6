@@ -193,49 +193,45 @@ export function CompliancePage() {
   };
 
   // Handle export - downloads ZIP file with controls and evidence
-  const handleExport = () => {
+  const handleExport = async () => {
     if (selectedIds.size === 0) {
       alert('Please select at least one control to export');
       return;
     }
 
-    const token = localStorage.getItem('token');
-    const exportUrl = '/api/compliance-management/export';
+    try {
+      const response = await api.post(
+        '/compliance-management/export',
+        { controlIds: Array.from(selectedIds) },
+        { responseType: 'blob' }
+      );
 
-    fetch(exportUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ controlIds: Array.from(selectedIds) })
-    })
-      .then(response => {
-        if (!response.ok) throw new Error('Export failed');
-        // Extract filename from Content-Disposition header
-        const disposition = response.headers.get('Content-Disposition');
-        let filename = `Compliance_Export_${new Date().toISOString().split('T')[0]}.zip`;
-        if (disposition) {
-          const match = disposition.match(/filename="?([^"]+)"?/);
-          if (match) {
-            filename = match[1];
-          }
+      // Create blob from response
+      const blob = new Blob([response.data], { type: 'application/zip' });
+
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `Compliance_Export_${new Date().toISOString().split('T')[0]}.zip`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
         }
-        return response.blob().then(blob => ({ blob, filename }));
-      })
-      .then(({ blob, filename }) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(() => {
-        alert('Failed to export data');
-      });
+      }
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export data');
+    }
   };
 
   // Handle framework creation
