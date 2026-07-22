@@ -1833,6 +1833,370 @@ export function DesignSystemPreviewPage() {
           </div>
         </div>
       </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE DIALOG & DRAWER SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.dialogShowcase}>
+        {/* Section Header */}
+        <div className={styles.dialogShowcaseHeader}>
+          <h3 className={styles.dialogShowcaseTitle}>Dialog & Drawer Showcase</h3>
+          <p className={styles.dialogShowcaseSub}>Premium modal dialogs, drawers, and slide panels for enterprise applications.</p>
+        </div>
+
+        {/* Dialog Grid */}
+        <div className={styles.dialogGrid}>
+          {/* Dialog Cards */}
+          <div className={styles.dialogCard}>
+            <h4 className={styles.dialogCardTitle}>Confirmation Dialog</h4>
+            <p className={styles.dialogCardDesc}>Standard confirmation with overlay and blur</p>
+            <div className={styles.dialogPreview}>
+              <div className={styles.dialogOverlay} />
+              <div className={styles.dialogBox} style={{ maxWidth: 400 }}>
+                <div className={styles.dialogHeader}>
+                  <div className={styles.dialogIconWrap}>
+                    <HelpCircle size={20} />
+                  </div>
+                  <div className={styles.dialogHeaderContent}>
+                    <h3 className={styles.dialogTitle}>Confirm Action</h3>
+                    <p className={styles.dialogSubtitle}>Please review the details below</p>
+                  </div>
+                  <button className={styles.dialogClose}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.dialogBody}>
+                  <p className={styles.dialogText}>Are you sure you want to proceed with this action? This operation cannot be undone.</p>
+                </div>
+                <div className={styles.dialogFooter}>
+                  <button className={styles.dialogBtnSecondary}>Cancel</button>
+                  <button className={styles.dialogBtnPrimary}>Confirm</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.dialogCard}>
+            <h4 className={styles.dialogCardTitle}>Delete Dialog</h4>
+            <p className={styles.dialogCardDesc}>Dangerous action with red accent</p>
+            <div className={styles.dialogPreview}>
+              <div className={styles.dialogOverlay} />
+              <div className={styles.dialogBox} style={{ maxWidth: 400 }}>
+                <div className={styles.dialogHeader}>
+                  <div className={styles.dialogIconWrap} style={{ background: 'var(--dialog-danger-bg)' }}>
+                    <Trash2 size={20} style={{ color: 'var(--dialog-danger)' }} />
+                  </div>
+                  <div className={styles.dialogHeaderContent}>
+                    <h3 className={styles.dialogTitle}>Delete Item</h3>
+                    <p className={styles.dialogSubtitle}>This action is permanent</p>
+                  </div>
+                  <button className={styles.dialogClose}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.dialogBody}>
+                  <p className={styles.dialogText}>You are about to permanently delete <strong>"Server Authentication Timeout"</strong>. This action cannot be undone.</p>
+                </div>
+                <div className={styles.dialogFooter}>
+                  <button className={styles.dialogBtnSecondary}>Cancel</button>
+                  <button className={styles.dialogBtnDanger}>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.dialogCard}>
+            <h4 className={styles.dialogCardTitle}>Success Dialog</h4>
+            <p className={styles.dialogCardDesc}>Positive feedback with green accent</p>
+            <div className={styles.dialogPreview}>
+              <div className={styles.dialogOverlay} />
+              <div className={styles.dialogBox} style={{ maxWidth: 400 }}>
+                <div className={styles.dialogHeader}>
+                  <div className={styles.dialogIconWrap} style={{ background: 'var(--dialog-success-bg)' }}>
+                    <CheckCircle size={20} style={{ color: 'var(--dialog-success)' }} />
+                  </div>
+                  <div className={styles.dialogHeaderContent}>
+                    <h3 className={styles.dialogTitle}>Request Approved</h3>
+                    <p className={styles.dialogSubtitle}>Operation completed</p>
+                  </div>
+                  <button className={styles.dialogClose}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.dialogBody}>
+                  <p className={styles.dialogText}>Your request has been successfully approved and processed. You will receive a confirmation email shortly.</p>
+                </div>
+                <div className={styles.dialogFooter}>
+                  <button className={styles.dialogBtnPrimary}>Great!</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.dialogCard}>
+            <h4 className={styles.dialogCardTitle}>Warning Dialog</h4>
+            <p className={styles.dialogCardDesc}>Caution with amber accent</p>
+            <div className={styles.dialogPreview}>
+              <div className={styles.dialogOverlay} />
+              <div className={styles.dialogBox} style={{ maxWidth: 400 }}>
+                <div className={styles.dialogHeader}>
+                  <div className={styles.dialogIconWrap} style={{ background: 'var(--dialog-warning-bg)' }}>
+                    <AlertTriangle size={20} style={{ color: 'var(--dialog-warning)' }} />
+                  </div>
+                  <div className={styles.dialogHeaderContent}>
+                    <h3 className={styles.dialogTitle}>Storage Warning</h3>
+                    <p className={styles.dialogSubtitle}>Attention required</p>
+                  </div>
+                  <button className={styles.dialogClose}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.dialogBody}>
+                  <p className={styles.dialogText}>Your storage usage has reached 85% capacity. Consider deleting unused files or upgrading your plan.</p>
+                </div>
+                <div className={styles.dialogFooter}>
+                  <button className={styles.dialogBtnSecondary}>Dismiss</button>
+                  <button className={styles.dialogBtnPrimary}>Upgrade</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.dialogCard}>
+            <h4 className={styles.dialogCardTitle}>Error Dialog</h4>
+            <p className={styles.dialogCardDesc}>Error feedback with red accent</p>
+            <div className={styles.dialogPreview}>
+              <div className={styles.dialogOverlay} />
+              <div className={styles.dialogBox} style={{ maxWidth: 400 }}>
+                <div className={styles.dialogHeader}>
+                  <div className={styles.dialogIconWrap} style={{ background: 'var(--dialog-danger-bg)' }}>
+                    <AlertOctagon size={20} style={{ color: 'var(--dialog-danger)' }} />
+                  </div>
+                  <div className={styles.dialogHeaderContent}>
+                    <h3 className={styles.dialogTitle}>Connection Failed</h3>
+                    <p className={styles.dialogSubtitle}>Something went wrong</p>
+                  </div>
+                  <button className={styles.dialogClose}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.dialogBody}>
+                  <p className={styles.dialogText}>Unable to connect to the server. Please check your internet connection and try again.</p>
+                </div>
+                <div className={styles.dialogFooter}>
+                  <button className={styles.dialogBtnSecondary}>Cancel</button>
+                  <button className={styles.dialogBtnPrimary}>Retry</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.dialogCard}>
+            <h4 className={styles.dialogCardTitle}>Form Dialog</h4>
+            <p className={styles.dialogCardDesc}>With scrollable body and form fields</p>
+            <div className={styles.dialogPreview}>
+              <div className={styles.dialogOverlay} />
+              <div className={styles.dialogBox} style={{ maxWidth: 480 }}>
+                <div className={styles.dialogHeader}>
+                  <div className={styles.dialogHeaderContent}>
+                    <h3 className={styles.dialogTitle}>Create New Request</h3>
+                    <p className={styles.dialogSubtitle}>Fill in the details below</p>
+                  </div>
+                  <button className={styles.dialogClose}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className={styles.dialogBodyScroll}>
+                  <div className={styles.dialogFormGroup}>
+                    <label className={styles.dialogLabel}>Title <span className={styles.dialogRequired}>*</span></label>
+                    <input type="text" className={styles.dialogInput} placeholder="Enter request title" />
+                  </div>
+                  <div className={styles.dialogFormGroup}>
+                    <label className={styles.dialogLabel}>Description</label>
+                    <textarea className={styles.dialogTextarea} rows={3} placeholder="Describe your request..." />
+                  </div>
+                  <div className={styles.dialogFormGroup}>
+                    <label className={styles.dialogLabel}>Priority</label>
+                    <select className={styles.dialogSelect}>
+                      <option>Low</option>
+                      <option>Medium</option>
+                      <option>High</option>
+                    </select>
+                  </div>
+                  <div className={styles.dialogFormGroup}>
+                    <label className={styles.dialogLabel}>Assignee</label>
+                    <select className={styles.dialogSelect}>
+                      <option>Select assignee...</option>
+                      <option>John Doe</option>
+                      <option>Mary Kim</option>
+                      <option>Robert Smith</option>
+                    </select>
+                  </div>
+                  <div className={styles.dialogFormGroup}>
+                    <label className={styles.dialogLabel}>Due Date</label>
+                    <input type="date" className={styles.dialogInput} />
+                  </div>
+                  <div className={styles.dialogFormGroup}>
+                    <label className={styles.dialogLabel}>Tags</label>
+                    <input type="text" className={styles.dialogInput} placeholder="Add tags..." />
+                  </div>
+                </div>
+                <div className={styles.dialogFooter}>
+                  <button className={styles.dialogBtnSecondary}>Cancel</button>
+                  <button className={styles.dialogBtnPrimary}>Create Request</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Drawer Previews */}
+        <div className={styles.drawerSection}>
+          <h4 className={styles.drawerSectionTitle}>Drawer & Panel Variants</h4>
+          
+          <div className={styles.drawerGrid}>
+            {/* Right Drawer */}
+            <div className={styles.drawerCard}>
+              <h4 className={styles.dialogCardTitle}>Right Drawer</h4>
+              <p className={styles.dialogCardDesc}>Slide from right side</p>
+              <div className={styles.drawerPreview}>
+                <div className={styles.drawerOverlay} />
+                <div className={styles.rightDrawer}>
+                  <div className={styles.drawerHeader}>
+                    <h3 className={styles.drawerTitle}>Request Details</h3>
+                    <button className={styles.drawerClose}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className={styles.drawerBody}>
+                    <div className={styles.drawerSection}>
+                      <span className={styles.drawerSectionLabel}>Status</span>
+                      <span className={styles.statusBadge} data-status="open">Open</span>
+                    </div>
+                    <div className={styles.drawerSection}>
+                      <span className={styles.drawerSectionLabel}>Requester</span>
+                      <span className={styles.drawerValue}>John Doe</span>
+                    </div>
+                    <div className={styles.drawerSection}>
+                      <span className={styles.drawerSectionLabel}>Assignee</span>
+                      <span className={styles.drawerValue}>Mary Kim</span>
+                    </div>
+                    <div className={styles.drawerSection}>
+                      <span className={styles.drawerSectionLabel}>Created</span>
+                      <span className={styles.drawerValue}>Jan 15, 2024</span>
+                    </div>
+                    <div className={styles.drawerSection}>
+                      <span className={styles.drawerSectionLabel}>Priority</span>
+                      <span className={styles.priorityBadge} data-priority="high">High</span>
+                    </div>
+                  </div>
+                  <div className={styles.drawerFooter}>
+                    <button className={styles.drawerBtnSecondary}>Cancel</button>
+                    <button className={styles.drawerBtnPrimary}>Save Changes</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Left Drawer */}
+            <div className={styles.drawerCard}>
+              <h4 className={styles.dialogCardTitle}>Left Drawer</h4>
+              <p className={styles.dialogCardDesc}>Navigation panel from left</p>
+              <div className={styles.drawerPreview}>
+                <div className={styles.drawerOverlay} />
+                <div className={styles.leftDrawer}>
+                  <div className={styles.drawerNav}>
+                    <div className={styles.drawerNavItem}>
+                      <Home size={18} />
+                      <span>Dashboard</span>
+                    </div>
+                    <div className={styles.drawerNavItem}>
+                      <FileText size={18} />
+                      <span>Requests</span>
+                    </div>
+                    <div className={styles.drawerNavItem}>
+                      <Users size={18} />
+                      <span>Users</span>
+                    </div>
+                    <div className={styles.drawerNavItem}>
+                      <Settings size={18} />
+                      <span>Settings</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Sheet */}
+            <div className={styles.drawerCard}>
+              <h4 className={styles.dialogCardTitle}>Bottom Sheet</h4>
+              <p className={styles.dialogCardDesc}>Mobile-friendly bottom panel</p>
+              <div className={styles.drawerPreview}>
+                <div className={styles.drawerOverlay} />
+                <div className={styles.bottomSheet}>
+                  <div className={styles.sheetHandle} />
+                  <div className={styles.sheetContent}>
+                    <h3 className={styles.sheetTitle}>Share Request</h3>
+                    <div className={styles.shareOptions}>
+                      <div className={styles.shareOption}>
+                        <Mail size={20} />
+                        <span>Email</span>
+                      </div>
+                      <div className={styles.shareOption}>
+                        <Link2 size={20} />
+                        <span>Copy Link</span>
+                      </div>
+                      <div className={styles.shareOption}>
+                        <MessageSquare size={20} />
+                        <span>Message</span>
+                      </div>
+                      <div className={styles.shareOption}>
+                        <Send size={20} />
+                        <span>Slack</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Slide Panel */}
+            <div className={styles.drawerCard}>
+              <h4 className={styles.dialogCardTitle}>Slide Panel</h4>
+              <p className={styles.dialogCardDesc}>Expandable details panel</p>
+              <div className={styles.drawerPreview}>
+                <div className={styles.drawerOverlay} />
+                <div className={styles.slidePanel}>
+                  <div className={styles.slidePanelHeader}>
+                    <h3 className={styles.slidePanelTitle}>Quick Actions</h3>
+                    <button className={styles.drawerClose}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className={styles.slidePanelBody}>
+                    <button className={styles.slidePanelAction}>
+                      <Edit2 size={16} />
+                      <span>Edit Request</span>
+                    </button>
+                    <button className={styles.slidePanelAction}>
+                      <Trash2 size={16} />
+                      <span>Delete Request</span>
+                    </button>
+                    <button className={styles.slidePanelAction}>
+                      <Download size={16} />
+                      <span>Export PDF</span>
+                    </button>
+                    <button className={styles.slidePanelAction}>
+                      <Clock size={16} />
+                      <span>View History</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     </div>
   );
@@ -1841,5 +2205,8 @@ export function DesignSystemPreviewPage() {
 // Missing import for Lock and Save
 const Lock = (props: any) => <Eye {...props} />;
 const Save = (props: any) => <Download {...props} />;
+
+// Missing icon for Dialog Showcase
+const HelpCircle = (props: any) => <Circle {...props} />;
 
 export default DesignSystemPreviewPage;
