@@ -1,0 +1,54 @@
+/**
+ * Breadcrumb Component Styles
+ * Enterprise Design System V2
+ */
+
+.breadcrumb {
+  font-size: var(--text-sm);
+}
+
+.breadcrumb__list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breadcrumb__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.breadcrumb__separator {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.breadcrumb__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.breadcrumb__link:hover {
+  color: var(--color-primary-600);
+}
+
+.breadcrumb__current {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+
+.breadcrumb__homeIcon {
+  color: var(--text-secondary);
+}

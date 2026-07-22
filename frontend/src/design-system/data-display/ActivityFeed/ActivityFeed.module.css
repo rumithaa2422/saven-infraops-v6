@@ -1,0 +1,114 @@
+/**
+ * ActivityFeed Component Styles
+ * Enterprise Design System V2
+ */
+
+.activityFeed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.activityFeed__item {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.activityFeed__avatar {
+  flex-shrink: 0;
+}
+
+.activityFeed__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activityFeed__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.activityFeed__title {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.activityFeed__title strong {
+  font-weight: var(--font-semibold);
+}
+
+.activityFeed__timestamp {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.activityFeed__description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-1) 0 0 0;
+  line-height: 1.5;
+}
+
+.activityFeed__link {
+  color: var(--color-primary-600);
+  text-decoration: none;
+  font-weight: var(--font-medium);
+}
+
+.activityFeed__link:hover {
+  text-decoration: underline;
+}
+
+/* Activity type icons */
+.activityFeed__typeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.activityFeed__typeIcon--created {
+  background-color: var(--color-success-100);
+  color: var(--color-success-600);
+}
+
+.activityFeed__typeIcon--updated {
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+
+.activityFeed__typeIcon--deleted {
+  background-color: var(--color-danger-100);
+  color: var(--color-danger-600);
+}
+
+.activityFeed__typeIcon--commented {
+  background-color: var(--color-info-100);
+  color: var(--color-info-600);
+}
+
+.activityFeed__typeIcon--assigned {
+  background-color: #F5F3FF;
+  color: #8B5CF6;
+}
+
+.activityFeed__typeIcon--status_changed {
+  background-color: var(--color-warning-100);
+  color: var(--color-warning-600);
+}
+
+/* Load more */
+.activityFeed__loadMore {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-2);
+}

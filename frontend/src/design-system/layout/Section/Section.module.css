@@ -1,0 +1,68 @@
+/**
+ * Section Component Styles
+ * Enterprise Design System V2
+ */
+
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.section__headerContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.section__titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.section__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.section__title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.375;
+}
+
+.section__description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-1) 0 0 0;
+  line-height: 1.5;
+}
+
+.section__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: var(--breakpoint-md)) {
+  .section__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .section__actions {
+    margin-top: var(--space-3);
+  }
+}

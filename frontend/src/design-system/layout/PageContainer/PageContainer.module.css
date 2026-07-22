@@ -1,0 +1,67 @@
+/**
+ * PageContainer Component Styles
+ * Enterprise Design System V2
+ */
+
+.pageContainer {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-app);
+}
+
+/* Max width */
+.pageContainer--sm {
+  max-width: var(--breakpoint-sm);
+  margin: 0 auto;
+}
+
+.pageContainer--md {
+  max-width: var(--breakpoint-md);
+  margin: 0 auto;
+}
+
+.pageContainer--lg {
+  max-width: var(--breakpoint-lg);
+  margin: 0 auto;
+}
+
+.pageContainer--xl {
+  max-width: var(--container-max, 90rem);
+  margin: 0 auto;
+}
+
+.pageContainer--full {
+  max-width: 100%;
+}
+
+/* Padding */
+.pageContainer--padding-none {
+  padding: 0;
+}
+
+.pageContainer--padding-sm {
+  padding: var(--space-4);
+}
+
+.pageContainer--padding-lg {
+  padding: var(--space-8);
+}
+
+/* Default padding is responsive */
+@media (min-width: var(--breakpoint-md)) {
+  .pageContainer {
+    padding: var(--space-6);
+  }
+}
+
+@media (min-width: var(--breakpoint-lg)) {
+  .pageContainer {
+    padding: var(--space-8);
+  }
+}
+
+@media (max-width: calc(var(--breakpoint-md) - 1px)) {
+  .pageContainer {
+    padding: var(--space-4);
+  }
+}

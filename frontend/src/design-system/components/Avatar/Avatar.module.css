@@ -1,0 +1,142 @@
+/**
+ * Avatar Component Styles
+ * Enterprise Design System V2
+ */
+
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--font-medium);
+  color: var(--text-inverse);
+  background-color: var(--color-primary-500);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Sizes */
+.avatar--xs {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.avatar--sm {
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-xs);
+}
+
+.avatar--md {
+  width: 40px;
+  height: 40px;
+  font-size: var(--text-sm);
+}
+
+.avatar--lg {
+  width: 48px;
+  height: 48px;
+  font-size: var(--text-base);
+}
+
+.avatar--xl {
+  width: 64px;
+  height: 64px;
+  font-size: var(--text-lg);
+}
+
+/* Shapes */
+.avatar--circle {
+  border-radius: var(--radius-full);
+}
+
+.avatar--square {
+  border-radius: var(--radius-md);
+}
+
+/* Image */
+.avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Fallback */
+.avatar__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-transform: uppercase;
+}
+
+/* Status indicator */
+.avatar__status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 25%;
+  height: 25%;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-surface);
+}
+
+.avatar__status--online {
+  background-color: var(--color-success-500);
+}
+
+.avatar__status--away {
+  background-color: var(--color-warning-500);
+}
+
+.avatar__status--busy {
+  background-color: var(--color-danger-500);
+}
+
+.avatar__status--offline {
+  background-color: var(--color-slate-400);
+}
+
+/* ============================================
+ * AVATAR GROUP
+ * ============================================ */
+
+.avatarGroup {
+  display: flex;
+  align-items: center;
+}
+
+.avatarGroup__item {
+  border: 2px solid var(--bg-surface);
+  margin-left: -8px;
+}
+
+.avatarGroup__item:first-child {
+  margin-left: 0;
+}
+
+.avatarGroup__item--overlap {
+  margin-left: -12px;
+}
+
+.avatarGroup__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-slate-200);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  border: 2px solid var(--bg-surface);
+  margin-left: -8px;
+}
+
+.avatarGroup__more--overlap {
+  margin-left: -12px;
+}

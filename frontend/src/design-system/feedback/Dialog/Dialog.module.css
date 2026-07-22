@@ -1,0 +1,197 @@
+/**
+ * Dialog Component Styles
+ * Enterprise Design System V2
+ */
+
+/* Overlay */
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-4);
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dialogOverlay--exiting {
+  animation: fadeOut 0.15s ease-in forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Dialog */
+.dialog {
+  position: relative;
+  width: 100%;
+  max-height: calc(100vh - var(--space-8));
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.dialog--sm {
+  max-width: 400px;
+}
+
+.dialog--md {
+  max-width: 500px;
+}
+
+.dialog--lg {
+  max-width: 700px;
+}
+
+.dialog--xl {
+  max-width: 900px;
+}
+
+.dialog--full {
+  max-width: calc(100vw - var(--space-8));
+  max-height: calc(100vh - var(--space-8));
+}
+
+/* Header */
+.dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-6);
+  padding-bottom: 0;
+}
+
+.dialog__headerContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog__title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.375;
+}
+
+.dialog__description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-1) 0 0 0;
+  line-height: 1.5;
+}
+
+.dialog__close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: calc(-1 * var(--space-2));
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.dialog__close:hover {
+  background-color: var(--color-slate-100);
+  color: var(--text-secondary);
+}
+
+/* Content */
+.dialog__content {
+  flex: 1;
+  padding: var(--space-6);
+  overflow-y: auto;
+}
+
+/* Footer */
+.dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Confirm dialog */
+.confirmDialog__icon {
+  margin-bottom: var(--space-4);
+}
+
+.confirmDialog__icon--success {
+  color: var(--color-success-500);
+}
+
+.confirmDialog__icon--warning {
+  color: var(--color-warning-500);
+}
+
+.confirmDialog__icon--danger {
+  color: var(--color-danger-500);
+}
+
+.confirmDialog__message {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: var(--breakpoint-sm)) {
+  .dialogOverlay {
+    padding: var(--space-4);
+    align-items: flex-end;
+  }
+  
+  .dialog {
+    max-height: calc(100vh - var(--space-4));
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  
+  .dialog__footer {
+    flex-direction: column-reverse;
+  }
+  
+  .dialog__footer > * {
+    width: 100%;
+  }
+}

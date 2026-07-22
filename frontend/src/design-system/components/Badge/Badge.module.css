@@ -1,0 +1,181 @@
+/**
+ * Badge Component Styles
+ * Enterprise Design System V2
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+/* Sizes */
+.badge--sm {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.badge--md {
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+}
+
+/* Pill variant */
+.badge--pill {
+  border-radius: var(--radius-full);
+}
+
+/* Dot indicator */
+.badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+/* ============================================
+ * COLOR VARIANTS
+ * ============================================ */
+
+/* Default */
+.badge--default {
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-700);
+}
+
+/* Primary */
+.badge--primary {
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+/* Success */
+.badge--success {
+  background-color: var(--color-success-50);
+  color: var(--color-success-700);
+}
+
+/* Warning */
+.badge--warning {
+  background-color: var(--color-warning-50);
+  color: var(--color-warning-700);
+}
+
+/* Danger */
+.badge--danger {
+  background-color: var(--color-danger-50);
+  color: var(--color-danger-700);
+}
+
+/* Info */
+.badge--info {
+  background-color: var(--color-info-50);
+  color: var(--color-info-700);
+}
+
+/* ============================================
+ * STATUS VARIANTS
+ * ============================================ */
+
+/* New */
+.badge--new {
+  background-color: var(--status-new-bg);
+  color: var(--status-new-text);
+}
+
+.badge--new .badge__dot {
+  background-color: var(--status-new-dot);
+}
+
+/* Assigned */
+.badge--assigned {
+  background-color: var(--status-assigned-bg);
+  color: var(--status-assigned-text);
+}
+
+.badge--assigned .badge__dot {
+  background-color: var(--status-assigned-dot);
+}
+
+/* In Progress */
+.badge--inProgress {
+  background-color: var(--status-progress-bg);
+  color: var(--status-progress-text);
+}
+
+.badge--inProgress .badge__dot {
+  background-color: var(--status-progress-dot);
+}
+
+/* Waiting */
+.badge--waiting {
+  background-color: var(--status-waiting-bg);
+  color: var(--status-waiting-text);
+}
+
+.badge--waiting .badge__dot {
+  background-color: var(--status-waiting-dot);
+}
+
+/* Resolved */
+.badge--resolved {
+  background-color: var(--status-resolved-bg);
+  color: var(--status-resolved-text);
+}
+
+.badge--resolved .badge__dot {
+  background-color: var(--status-resolved-dot);
+}
+
+/* Closed */
+.badge--closed {
+  background-color: var(--status-closed-bg);
+  color: var(--status-closed-text);
+}
+
+.badge--closed .badge__dot {
+  background-color: var(--status-closed-dot);
+}
+
+/* Blocked */
+.badge--blocked {
+  background-color: var(--status-blocked-bg);
+  color: var(--status-blocked-text);
+}
+
+.badge--blocked .badge__dot {
+  background-color: var(--status-blocked-dot);
+}
+
+/* ============================================
+ * PRIORITY VARIANTS
+ * ============================================ */
+
+/* Critical */
+.badge--critical {
+  background-color: var(--priority-critical-bg);
+  color: var(--priority-critical-text);
+}
+
+/* High */
+.badge--high {
+  background-color: var(--priority-high-bg);
+  color: var(--priority-high-text);
+}
+
+/* Medium */
+.badge--medium {
+  background-color: var(--priority-medium-bg);
+  color: var(--priority-medium-text);
+}
+
+/* Low */
+.badge--low {
+  background-color: var(--priority-low-bg);
+  color: var(--priority-low-text);
+}

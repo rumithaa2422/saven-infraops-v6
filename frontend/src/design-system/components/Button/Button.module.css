@@ -1,0 +1,200 @@
+/**
+ * Button Component Styles
+ * Enterprise Design System V2
+ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Sizes */
+.button--sm {
+  height: var(--button-height-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.button--md {
+  height: var(--button-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.button--lg {
+  height: 48px;
+  padding: 0 var(--space-6);
+  font-size: var(--text-base);
+}
+
+/* Full width */
+.button--fullWidth {
+  width: 100%;
+}
+
+/* Primary variant */
+.button--primary {
+  background-color: var(--color-primary-600);
+  color: var(--text-inverse);
+  border-color: var(--color-primary-600);
+}
+
+.button--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+}
+
+.button--primary:active:not(:disabled) {
+  background-color: var(--color-primary-800);
+  border-color: var(--color-primary-800);
+}
+
+/* Secondary variant */
+.button--secondary {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+.button--secondary:active:not(:disabled) {
+  background-color: var(--bg-surface-active);
+}
+
+/* Ghost variant */
+.button--ghost {
+  background-color: transparent;
+  color: var(--text-primary);
+  border-color: transparent;
+}
+
+.button--ghost:hover:not(:disabled) {
+  background-color: var(--overlay-light);
+}
+
+.button--ghost:active:not(:disabled) {
+  background-color: var(--overlay-medium);
+}
+
+/* Danger variant */
+.button--danger {
+  background-color: var(--color-danger-600);
+  color: var(--text-inverse);
+  border-color: var(--color-danger-600);
+}
+
+.button--danger:hover:not(:disabled) {
+  background-color: var(--color-danger-700);
+  border-color: var(--color-danger-700);
+}
+
+.button--danger:active:not(:disabled) {
+  background-color: var(--color-danger-800);
+  border-color: var(--color-danger-800);
+}
+
+/* Link variant */
+.button--link {
+  background-color: transparent;
+  color: var(--color-primary-600);
+  border-color: transparent;
+  padding: 0;
+  height: auto;
+}
+
+.button--link:hover:not(:disabled) {
+  color: var(--color-primary-700);
+  text-decoration: underline;
+}
+
+.button--link:active:not(:disabled) {
+  color: var(--color-primary-800);
+}
+
+/* Loading state */
+.button__loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.button__spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Icon only button */
+.button--iconOnly {
+  padding: 0;
+}
+
+.button--iconOnly.button--sm {
+  width: var(--button-height-sm);
+}
+
+.button--iconOnly.button--md {
+  width: var(--button-height);
+}
+
+.button--iconOnly.button--lg {
+  width: 48px;
+}
+
+/* Tooltip */
+.button__tooltip {
+  position: relative;
+}
+
+.button__tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-slate-800);
+  color: var(--text-inverse);
+  font-size: var(--text-xs);
+  font-weight: var(--font-normal);
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--duration-fast) var(--ease-out);
+  z-index: var(--z-tooltip);
+  margin-bottom: var(--space-1);
+}
+
+.button__tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}

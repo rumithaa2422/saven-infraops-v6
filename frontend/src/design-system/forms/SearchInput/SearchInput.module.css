@@ -1,0 +1,70 @@
+/**
+ * SearchInput Component Styles
+ * Enterprise Design System V2
+ */
+
+.searchInput {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput--fullWidth {
+  width: 100%;
+}
+
+.searchInput__icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.searchInput__input {
+  width: 100%;
+  height: var(--input-height);
+  padding: 0 var(--space-10) 0 var(--space-10);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.searchInput__input::placeholder {
+  color: var(--text-muted);
+}
+
+.searchInput__input:hover {
+  border-color: var(--border-strong);
+}
+
+.searchInput__input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.searchInput__clear {
+  position: absolute;
+  right: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.searchInput__clear:hover {
+  background-color: var(--color-slate-100);
+  color: var(--text-secondary);
+}

@@ -1,0 +1,83 @@
+/**
+ * Tooltip Component Styles
+ * Enterprise Design System V2
+ */
+
+.tooltip {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  opacity: 0;
+  animation: tooltipFadeIn var(--duration-fast) var(--ease-out) forwards;
+  max-width: 250px;
+  white-space: normal;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Variants */
+.tooltip--default {
+  background-color: var(--color-slate-800);
+  color: var(--text-inverse);
+}
+
+.tooltip--dark {
+  background-color: var(--color-slate-950);
+  color: var(--text-inverse);
+}
+
+/* Positions */
+.tooltip--top::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--color-slate-800);
+}
+
+.tooltip--bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--color-slate-800);
+}
+
+.tooltip--left::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-left-color: var(--color-slate-800);
+}
+
+.tooltip--right::after {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--color-slate-800);
+}
