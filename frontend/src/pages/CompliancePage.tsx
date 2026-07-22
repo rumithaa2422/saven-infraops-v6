@@ -192,33 +192,50 @@ export function CompliancePage() {
     }
   };
 
-  // Handle export
-  const handleExport = async () => {
+  // Handle export - downloads ZIP file with controls and evidence
+  const handleExport = () => {
     if (selectedIds.size === 0) {
       alert('Please select at least one control to export');
       return;
     }
 
-    try {
-      const response = await api.post(
-        '/compliance-management/export',
-        { controlIds: Array.from(selectedIds), format: 'xlsx' },
-        { responseType: 'blob' }
-      );
+    const token = localStorage.getItem('token');
+    const exportUrl = '/api/compliance-management/export';
 
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Compliance_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Export failed:', err);
-      alert('Failed to export data');
-    }
+    fetch(exportUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ controlIds: Array.from(selectedIds) })
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Export failed');
+        // Extract filename from Content-Disposition header
+        const disposition = response.headers.get('Content-Disposition');
+        let filename = `Compliance_Export_${new Date().toISOString().split('T')[0]}.zip`;
+        if (disposition) {
+          const match = disposition.match(/filename="?([^"]+)"?/);
+          if (match) {
+            filename = match[1];
+          }
+        }
+        return response.blob().then(blob => ({ blob, filename }));
+      })
+      .then(({ blob, filename }) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        alert('Failed to export data');
+      });
   };
 
   // Handle framework creation

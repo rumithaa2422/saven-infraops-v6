@@ -16,6 +16,7 @@ import { prisma } from '../../common/prisma.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
 import { generateExcel, formatDate } from '../../services/excelGenerator.service.js';
+import { ZipArchive } from 'archiver';
 
 export const complianceManagementRouter = Router();
 
@@ -629,7 +630,7 @@ complianceManagementRouter.delete('/evidence/:id', requireAuth, async (req: Requ
 
 /**
  * POST /api/compliance-management/export
- * Export selected controls to Excel
+ * Export selected controls with evidence as a ZIP archive
  */
 complianceManagementRouter.post('/export', requireAuth, async (req: Request, res: Response, next) => {
   try {
@@ -637,13 +638,13 @@ complianceManagementRouter.post('/export', requireAuth, async (req: Request, res
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage', 'compliance:export'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
-    const { controlIds, format = 'xlsx' } = req.body;
+    const { controlIds } = req.body;
 
     if (!controlIds || !Array.isArray(controlIds) || controlIds.length === 0) {
       throw new HttpError(400, 'No controls selected for export');
     }
 
-    // Fetch controls with their evidence
+    // Fetch controls with their evidence and reviewer info
     const controls = await prisma.complianceControl.findMany({
       where: { id: { in: controlIds } },
       include: {
@@ -652,53 +653,186 @@ complianceManagementRouter.post('/export', requireAuth, async (req: Request, res
         },
         evidence: {
           select: {
-            filePath: true
+            id: true,
+            fileName: true,
+            filePath: true,
+            fileSize: true,
+            mimeType: true,
+            uploadedBy: true,
+            uploadedAt: true
           }
         }
       }
     });
 
+    // Fetch reviewer names for controls
+    const reviewerIds = controls.map(c => c.createdBy).filter(Boolean) as string[];
+    const reviewers = reviewerIds.length > 0 
+      ? await prisma.user.findMany({
+          where: { id: { in: reviewerIds } },
+          select: { id: true, name: true, email: true }
+        })
+      : [];
+    const reviewerMap = new Map(reviewers.map(r => [r.id, r]));
+
     if (controls.length === 0) {
       throw new HttpError(404, 'No controls found');
     }
 
-    // Prepare export data
-    const rows = controls.map((control) => {
+    // Generate timestamp for filename
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+    const zipFilename = `Compliance_Export_${timestamp}.zip`;
+
+    // Set ZIP headers
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
+
+    // Create archive
+    const archive = new ZipArchive({ zlib: { level: 9 } });
+
+    archive.on('error', (err: Error) => {
+      throw err;
+    });
+
+    archive.pipe(res);
+
+    // 1. Add Excel file with control information
+    const excelRows = controls.map((control) => {
       const evidenceFileNames = control.evidence.map(e => e.filePath).join(', ');
+      const reviewer = control.createdBy ? reviewerMap.get(control.createdBy) : null;
       return {
         Framework: control.framework.name,
-        Control: control.name,
+        'Control Name': control.name,
         Description: control.description || '',
         Status: control.status,
-        'Evidence Count': control.evidence.length,
         'Evidence File Names': evidenceFileNames || 'None',
-        'Last Updated': formatDate(control.updatedAt)
+        'Evidence Count': control.evidence.length,
+        'Last Updated': formatDate(control.updatedAt),
+        Reviewer: reviewer?.name || reviewer?.email || 'N/A'
       };
     });
 
-    if (format === 'xlsx') {
-      const buffer = generateExcel({
-        headers: ['Framework', 'Control', 'Description', 'Status', 'Evidence Count', 'Evidence File Names', 'Last Updated'],
-        rows,
-        reportName: 'Compliance_Export'
-      });
+    const excelBuffer = generateExcel({
+      headers: ['Framework', 'Control Name', 'Description', 'Status', 'Evidence File Names', 'Evidence Count', 'Last Updated', 'Reviewer'],
+      rows: excelRows,
+      reportName: 'Compliance_Controls'
+    });
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="Compliance_Export_${new Date().toISOString().split('T')[0]}.xlsx"`);
-      res.send(buffer);
-    } else {
-      // Default to xlsx
-      const buffer = generateExcel({
-        headers: ['Framework', 'Control', 'Description', 'Status', 'Evidence Count', 'Evidence File Names', 'Last Updated'],
-        rows,
-        reportName: 'Compliance_Export'
-      });
+    archive.append(excelBuffer, { name: 'Compliance_Controls.xlsx' });
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="Compliance_Export_${new Date().toISOString().split('T')[0]}.xlsx"`);
-      res.send(buffer);
+    // 2. Track missing files and add evidence documents
+    const missingFiles: string[] = [];
+
+    // Group evidence by framework and control for folder structure
+    for (const control of controls) {
+      const frameworkName = sanitizeFolderName(control.framework.name);
+      const controlName = sanitizeFolderName(control.name);
+      const folderPath = `Evidence Documents/${frameworkName}/${controlName}`;
+
+      for (const evidence of control.evidence) {
+        const evidenceFilePath = path.join(uploadsDir, evidence.fileName);
+        
+        try {
+          await fs.access(evidenceFilePath);
+          // Add file to archive with original filename preserved
+          archive.file(evidenceFilePath, { 
+            name: `${folderPath}/${evidence.filePath}` 
+          });
+        } catch {
+          missingFiles.push(`${frameworkName}/${controlName}/${evidence.filePath}`);
+          console.error(`File not found: ${evidenceFilePath}`);
+        }
+      }
     }
+
+    // 3. Add README.txt if there are missing files
+    const readmeContent = generateReadme(controls, missingFiles);
+    archive.append(readmeContent, { name: 'README.txt' });
+
+    // Finalize the archive
+    archive.finalize();
   } catch (error) {
     next(error);
   }
 });
+
+// Helper function to sanitize folder names (remove invalid characters)
+function sanitizeFolderName(name: string): string {
+  // Replace characters that are invalid in folder names
+  return name
+    .replace(/[/\\?%*:|"<>]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Generate README content
+function generateReadme(controls: any[], missingFiles: string[]): string {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  let readme = `# Compliance Export - ${dateStr}
+
+## Contents
+
+This ZIP archive contains compliance control data and evidence documents.
+
+## Structure
+
+- **Compliance_Controls.xlsx**
+  Excel spreadsheet containing all exported control information including:
+  - Framework name
+  - Control name
+  - Description
+  - Status
+  - Evidence file names
+  - Evidence count
+  - Last updated date
+  - Reviewer name
+
+- **Evidence Documents/**
+  Contains all uploaded evidence files organized by framework and control:
+`;
+
+  // Add folder structure
+  for (const control of controls) {
+    const frameworkName = sanitizeFolderName(control.framework.name);
+    const controlName = sanitizeFolderName(control.name);
+    readme += `  ${frameworkName}/\n    ${controlName}/\n`;
+    for (const evidence of control.evidence) {
+      readme += `      - ${evidence.filePath}\n`;
+    }
+  }
+
+  // Add missing files section if any
+  if (missingFiles.length > 0) {
+    readme += `
+## ⚠️ Missing Files
+
+The following evidence files could not be found and were not included:
+`;
+    for (const file of missingFiles) {
+      readme += `- ${file}\n`;
+    }
+  }
+
+  readme += `
+## Export Summary
+
+- Total Frameworks: ${new Set(controls.map(c => c.framework.name)).size}
+- Total Controls: ${controls.length}
+- Total Evidence Files: ${controls.reduce((sum, c) => sum + c.evidence.length, 0)}
+- Missing Evidence Files: ${missingFiles.length}
+
+---
+Generated by Enterprise Compliance Management System
+`;
+
+  return readme;
+}
