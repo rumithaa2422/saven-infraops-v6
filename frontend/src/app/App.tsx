@@ -39,6 +39,7 @@ import { NotificationsPage } from '../pages/NotificationsPage';
 import { useAuth } from '../auth/AuthContext';
 import { UnauthorizedPage } from '../components/auth';
 import { DesignSystemPreviewPage } from '../pages/DesignSystemPreviewPage';
+import { ToastProvider } from '../design-system';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { token, isBootstrapping } = useAuth();
@@ -385,7 +386,11 @@ export function App() {
         />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="design-system" element={<DesignSystemPreviewPage />} />
+        <Route path="design-system" element={
+          <ToastProvider>
+            <DesignSystemPreviewPage />
+          </ToastProvider>
+        } />
       </Route>
     </Routes>
   );

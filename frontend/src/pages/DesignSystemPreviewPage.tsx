@@ -91,7 +91,6 @@ import {
   // Feedback
   Dialog,
   ConfirmDialog,
-  ToastProvider,
   useToast,
   
   // Navigation
@@ -830,90 +829,88 @@ export function DesignSystemPreviewPage() {
   };
 
   return (
-    <ToastProvider>
-      <div className={styles.page}>
-        {/* Sidebar Navigation */}
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <h3>Components</h3>
-          </div>
-          <nav className={styles.nav}>
-            {sections.map((section) => (
-              <NavItem
-                key={section.id}
-                label={section.label}
-                icon={section.icon}
-                active={activeSection === section.id}
-                onClick={() => scrollToSection(section.id)}
-              />
-            ))}
-          </nav>
-        </aside>
+    <div className={styles.page}>
+      {/* Sidebar Navigation */}
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarHeader}>
+          <h3>Components</h3>
+        </div>
+        <nav className={styles.nav}>
+          {sections.map((section) => (
+            <NavItem
+              key={section.id}
+              label={section.label}
+              icon={section.icon}
+              active={activeSection === section.id}
+              onClick={() => scrollToSection(section.id)}
+            />
+          ))}
+        </nav>
+      </aside>
 
-        {/* Main Content */}
-        <main className={styles.main}>
-          <PageHeader
-            title="Enterprise Design System V2"
-            subtitle="Component Library Preview - Build Version 2.0.0"
-            breadcrumbs={[
-              { label: 'Home', href: '#', icon: Home },
-              { label: 'Design System' },
-            ]}
-          />
-
-          <div className={styles.content}>
-            {sections.map((section) => (
-              <div key={section.id} id={section.id}>
-                {renderContent()}
-              </div>
-            ))}
-          </div>
-        </main>
-
-        {/* Dialogs */}
-        <ConfirmDialog
-          isOpen={confirmDialogOpen}
-          onClose={() => setConfirmDialogOpen(false)}
-          onConfirm={() => {
-            setConfirmDialogOpen(false);
-            showToast('success');
-          }}
-          title="Confirm Action"
-          message="Are you sure you want to proceed with this action? This cannot be undone."
-          confirmLabel="Confirm"
-          cancelLabel="Cancel"
+      {/* Main Content */}
+      <main className={styles.main}>
+        <PageHeader
+          title="Enterprise Design System V2"
+          subtitle="Component Library Preview - Build Version 2.0.0"
+          breadcrumbs={[
+            { label: 'Home', href: '#', icon: Home },
+            { label: 'Design System' },
+          ]}
         />
 
-        <Dialog
-          isOpen={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          title="Edit Request"
-          size="lg"
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button variant="primary" onClick={() => {
-                setDialogOpen(false);
-                showToast('success');
-              }}>Save Changes</Button>
-            </>
-          }
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <Input label="Title" defaultValue="Service Request" />
-            <TextArea label="Description" rows={4} />
-            <Select
-              label="Priority"
-              options={[
-                { value: 'low', label: 'Low' },
-                { value: 'medium', label: 'Medium' },
-                { value: 'high', label: 'High' },
-              ]}
-            />
-          </div>
-        </Dialog>
-      </div>
-    </ToastProvider>
+        <div className={styles.content}>
+          {sections.map((section) => (
+            <div key={section.id} id={section.id}>
+              {renderContent()}
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* Dialogs */}
+      <ConfirmDialog
+        isOpen={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        onConfirm={() => {
+          setConfirmDialogOpen(false);
+          showToast('success');
+        }}
+        title="Confirm Action"
+        message="Are you sure you want to proceed with this action? This cannot be undone."
+        confirmLabel="Confirm"
+        cancelLabel="Cancel"
+      />
+
+      <Dialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title="Edit Request"
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="primary" onClick={() => {
+              setDialogOpen(false);
+              showToast('success');
+            }}>Save Changes</Button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input label="Title" defaultValue="Service Request" />
+          <TextArea label="Description" rows={4} />
+          <Select
+            label="Priority"
+            options={[
+              { value: 'low', label: 'Low' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'high', label: 'High' },
+            ]}
+          />
+        </div>
+      </Dialog>
+    </div>
   );
 }
 
