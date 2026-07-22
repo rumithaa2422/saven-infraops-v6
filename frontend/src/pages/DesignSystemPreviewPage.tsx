@@ -1171,12 +1171,14 @@ export function DesignSystemPreviewPage() {
                   <span className={styles.relatedType}>Incident</span>
                   <span className={styles.relatedId}>INC-456</span>
                   <span className={styles.relatedTitle}>Server authentication timeout</span>
+                  <ArrowRight size={14} className={styles.relatedArrow} />
                 </div>
                 <div className={styles.relatedItem}>
                   <Link2 size={14} className={styles.relatedIcon} />
                   <span className={styles.relatedType}>SR</span>
                   <span className={styles.relatedId}>SR-0155</span>
                   <span className={styles.relatedTitle}>Password reset request</span>
+                  <ArrowRight size={14} className={styles.relatedArrow} />
                 </div>
               </div>
             </div>
@@ -1221,21 +1223,21 @@ export function DesignSystemPreviewPage() {
             <div className={styles.detailCard}>
               <h3 className={styles.cardTitle}>Timeline</h3>
               <div className={styles.timeline}>
-                <div className={styles.timelineItem}>
+                <div className={styles.timelineItem} data-state="current">
                   <div className={styles.timelineDot} />
                   <div className={styles.timelineContent}>
                     <span className={styles.timelineTitle}>Status changed to Open</span>
                     <span className={styles.timelineMeta}>by John Doe · 2 hours ago</span>
                   </div>
                 </div>
-                <div className={styles.timelineItem}>
+                <div className={styles.timelineItem} data-state="completed">
                   <div className={styles.timelineDot} />
                   <div className={styles.timelineContent}>
                     <span className={styles.timelineTitle}>Assigned to John Doe</span>
                     <span className={styles.timelineMeta}>by System · 3 hours ago</span>
                   </div>
                 </div>
-                <div className={styles.timelineItem}>
+                <div className={styles.timelineItem} data-state="completed">
                   <div className={styles.timelineDot} />
                   <div className={styles.timelineContent}>
                     <span className={styles.timelineTitle}>Request created</span>
