@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { StatCard } from '../components/StatCard';
 
 type Item = {
   id: string;

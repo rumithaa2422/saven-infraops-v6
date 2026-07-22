@@ -30,6 +30,7 @@ import { CreateUserPage } from '../pages/CreateUserPage';
 import { EditUserPage } from '../pages/EditUserPage';
 import { UsersImportExportPage } from '../pages/UsersImportExportPage';
 import { DocumentRepositoryPage } from '../pages/DocumentRepositoryPage';
+import { CompliancePage } from '../pages/CompliancePage';
 import { VendorDirectoryPage } from '../pages/VendorDirectoryPage';
 import { VendorDetailsPage } from '../pages/VendorDetailsPage';
 import { KnowledgeCategoryPage } from '../pages/KnowledgeCategoryPage';
@@ -257,7 +258,7 @@ export function App() {
           path="compliance" 
           element={
             <PermissionRoute permission={modulePermissions['compliance']}>
-              <DocumentRepositoryPage />
+              <CompliancePage />
             </PermissionRoute>
           } 
         />

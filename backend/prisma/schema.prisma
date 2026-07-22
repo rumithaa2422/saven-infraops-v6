@@ -801,3 +801,74 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
 }
+
+// Compliance Management - Phase C
+enum ComplianceFrameworkStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum ComplianceControlStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+// Compliance Framework - Top level container for controls
+model ComplianceFramework {
+  id          String                     @id @default(cuid())
+  name        String
+  description String?                    @db.Text
+  status      ComplianceFrameworkStatus @default(DRAFT)
+  createdBy   String?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  // Relations
+  controls    ComplianceControl[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Compliance Control - Individual control within a framework
+model ComplianceControl {
+  id           String                    @id @default(cuid())
+  frameworkId  String
+  name         String
+  description  String?                   @db.Text
+  status       ComplianceControlStatus   @default(DRAFT)
+  createdBy    String?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  // Relations
+  framework    ComplianceFramework       @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  evidence     ComplianceEvidence[]
+
+  @@index([frameworkId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Compliance Evidence - Document evidence for controls
+model ComplianceEvidence {
+  id          String   @id @default(cuid())
+  controlId   String
+  fileName    String
+  filePath    String
+  fileSize    Int      @default(0)
+  mimeType    String   @default("application/octet-stream")
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Relations
+  control     ComplianceControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@index([controlId])
+  @@index([uploadedAt])
+}

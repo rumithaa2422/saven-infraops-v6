@@ -17,6 +17,7 @@ import { importRouter } from './modules/import/import.routes.js';
 import { rolesRouter } from './modules/roles/roles.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { complianceRouter } from './modules/compliance/compliance.routes.js';
+import { complianceManagementRouter } from './modules/compliance/complianceManagement.routes.js';
 import { reportsRouter } from './modules/reports/reports.routes.js';
 import { inventoryCategoryRouter } from './modules/inventory/inventoryCategory.routes.js';
 import { inventoryMasterRouter } from './modules/inventory/inventoryMaster.routes.js';
@@ -56,6 +57,7 @@ export function createApp() {
   app.use('/api/roles', rolesRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/compliance', complianceRouter);
+  app.use('/api/compliance-management', complianceManagementRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/inventory', inventoryCategoryRouter);
   app.use('/api/inventory', inventoryAnalyticsRouter);
