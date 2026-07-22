@@ -406,7 +406,7 @@ export function DesignSystemPreviewPage() {
         {/* Main Content Grid */}
         <div className={styles.dashboardGrid}>
           {/* Charts Section */}
-          <div className={styles.dashboardCard}>
+          <div className={`${styles.dashboardCard} ${styles.chartCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>Request Volume</h3>
               <div className={styles.cardActions}>
@@ -437,7 +437,7 @@ export function DesignSystemPreviewPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className={styles.dashboardCard}>
+          <div className={`${styles.dashboardCard} ${styles.quickActionsCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>Quick Actions</h3>
             </div>
@@ -462,7 +462,7 @@ export function DesignSystemPreviewPage() {
           </div>
 
           {/* My Work */}
-          <div className={styles.dashboardCard}>
+          <div className={`${styles.dashboardCard} ${styles.workCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>My Work</h3>
               <button type="button" className={styles.cardAction}>View All</button>
@@ -504,7 +504,7 @@ export function DesignSystemPreviewPage() {
           </div>
 
           {/* Alerts */}
-          <div className={styles.dashboardCard}>
+          <div className={`${styles.dashboardCard} ${styles.alertsCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>Alerts</h3>
               <span className={styles.alertBadge}>4 new</span>
@@ -542,7 +542,7 @@ export function DesignSystemPreviewPage() {
           </div>
 
           {/* Recent Activity */}
-          <div className={styles.dashboardCard}>
+          <div className={`${styles.dashboardCard} ${styles.activityCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>Recent Activity</h3>
               <button type="button" className={styles.cardAction}>View All</button>
@@ -587,7 +587,7 @@ export function DesignSystemPreviewPage() {
           </div>
 
           {/* Team Workload */}
-          <div className={styles.dashboardCard}>
+          <div className={`${styles.dashboardCard} ${styles.teamCard}`}>
             <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>Team Workload</h3>
               <button type="button" className={styles.cardAction}><Filter size={12} /></button>
