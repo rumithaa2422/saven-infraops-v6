@@ -7,8 +7,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { FileCheck, Plus, Search, Download, ChevronDown, ExternalLink, Edit2, Trash2 } from 'lucide-react';
-import { StatusBadge, AddFrameworkDialog, AddControlDialog, EditControlDialog } from '../components/compliance';
+import { FileCheck, Plus, Download, ChevronDown, ExternalLink, Edit2, Trash2, Paperclip } from 'lucide-react';
+import { StatusBadge, AddFrameworkDialog, AddControlDialog, EditControlDialog, EvidenceModal } from '../components/compliance';
 
 // Types
 interface Framework {
@@ -83,11 +83,17 @@ export function CompliancePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+
   // Dialog states
   const [showAddFramework, setShowAddFramework] = useState(false);
   const [showAddControl, setShowAddControl] = useState(false);
   const [showEditControl, setShowEditControl] = useState(false);
   const [editingControl, setEditingControl] = useState<Control | null>(null);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [evidenceControl, setEvidenceControl] = useState<Control | null>(null);
 
   // Fetch summary
   const fetchSummary = useCallback(async () => {
@@ -164,6 +170,57 @@ export function CompliancePage() {
     setSelectedFrameworkId(e.target.value);
   };
 
+  // Handle row selection
+  const handleRowSelect = (controlId: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(controlId);
+    } else {
+      newSelected.delete(controlId);
+    }
+    setSelectedIds(newSelected);
+    setSelectAll(newSelected.size === controls.length && controls.length > 0);
+  };
+
+  // Handle select all
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(new Set(controls.map(c => c.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  // Handle export
+  const handleExport = async () => {
+    if (selectedIds.size === 0) {
+      alert('Please select at least one control to export');
+      return;
+    }
+
+    try {
+      const response = await api.post(
+        '/compliance-management/export',
+        { controlIds: Array.from(selectedIds), format: 'xlsx' },
+        { responseType: 'blob' }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Compliance_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export data');
+    }
+  };
+
   // Handle framework creation
   const handleCreateFramework = async (data: { name: string; description: string }) => {
     await api.post('/compliance-management/frameworks', data);
@@ -206,6 +263,19 @@ export function CompliancePage() {
   const openEditControl = (control: Control) => {
     setEditingControl(control);
     setShowEditControl(true);
+  };
+
+  // Open evidence modal
+  const openEvidenceModal = (control: Control, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEvidenceControl(control);
+    setShowEvidenceModal(true);
+  };
+
+  // Handle evidence change (refresh controls after upload/delete)
+  const handleEvidenceChange = () => {
+    fetchControls();
+    fetchSummary();
   };
 
   return (
@@ -316,9 +386,14 @@ export function CompliancePage() {
 
           <div className="toolbar-actions">
             {(isSuperAdmin || isAdmin) && (
-              <button type="button" className="toolbar-btn">
+              <button 
+                type="button" 
+                className="toolbar-btn"
+                onClick={handleExport}
+                disabled={selectedIds.size === 0}
+              >
                 <Download size={14} />
-                Export
+                Export {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
               </button>
             )}
             
@@ -354,7 +429,11 @@ export function CompliancePage() {
               <thead>
                 <tr>
                   <th style={{ width: '40px' }}>
-                    <input type="checkbox" />
+                    <input 
+                      type="checkbox" 
+                      checked={selectAll}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
                   </th>
                   <th>Control List Name</th>
                   <th>Description</th>
@@ -388,7 +467,11 @@ export function CompliancePage() {
                       style={{ cursor: 'pointer' }}
                     >
                       <td onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" />
+                        <input 
+                          type="checkbox" 
+                          checked={selectedIds.has(control.id)}
+                          onChange={(e) => handleRowSelect(control.id, e.target.checked)}
+                        />
                       </td>
                       <td>
                         <div className="control-name-cell">
@@ -399,8 +482,11 @@ export function CompliancePage() {
                       <td className="description-cell">
                         {control.description || '-'}
                       </td>
-                      <td className="evidence-cell">
-                        {control._count.evidence}
+                      <td className="evidence-cell" onClick={(e) => openEvidenceModal(control, e)}>
+                        <button type="button" className="evidence-btn" title="View Evidence">
+                          <Paperclip size={14} />
+                          <span>{control._count.evidence}</span>
+                        </button>
                       </td>
                       <td>
                         <StatusBadge status={control.status as any} />
@@ -470,6 +556,17 @@ export function CompliancePage() {
             setEditingControl(null);
           }}
           onSave={handleUpdateControl}
+        />
+
+        <EvidenceModal
+          isOpen={showEvidenceModal}
+          controlId={evidenceControl?.id || null}
+          controlName={evidenceControl?.name || ''}
+          onClose={() => {
+            setShowEvidenceModal(false);
+            setEvidenceControl(null);
+          }}
+          onEvidenceChange={handleEvidenceChange}
         />
       </div>
     </div>
