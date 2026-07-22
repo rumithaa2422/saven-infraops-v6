@@ -711,14 +711,11 @@ export function DesignSystemPreviewPage() {
               />
             </div>
 
-            {/* Filter Dropdown */}
-            <div className={styles.dropdown}>
-              <button type="button" className={styles.dropdownTrigger}>
-                <Filter size={14} />
-                Status
-                <ChevronDown size={12} />
-              </button>
-            </div>
+            {/* Filter Button */}
+            <button type="button" className={styles.toolbarButton} data-action="filter">
+              <Filter size={14} />
+              <span>Filter</span>
+            </button>
 
             {/* Sort Dropdown */}
             <div className={styles.dropdown}>
@@ -735,15 +732,15 @@ export function DesignSystemPreviewPage() {
             <span className={styles.selectionCount}>0 selected</span>
 
             {/* Toolbar Actions */}
-            <button type="button" className={styles.toolbarButton} title="Export">
+            <button type="button" className={styles.toolbarButton} data-action="export" title="Export">
               <Download size={14} />
               <span>Export</span>
             </button>
-            <button type="button" className={styles.toolbarButton} title="Import">
+            <button type="button" className={styles.toolbarButton} data-action="import" title="Import">
               <Upload size={14} />
               <span>Import</span>
             </button>
-            <button type="button" className={styles.toolbarButton} title="Refresh">
+            <button type="button" className={styles.toolbarButton} data-action="refresh" title="Refresh">
               <RotateCw size={14} />
             </button>
           </div>
@@ -824,22 +821,22 @@ export function DesignSystemPreviewPage() {
                 <td className={styles.tdPriority}>
                   <span className={styles.priorityBadge} data-priority="high">High</span>
                 </td>
-                <td className={styles.tdCategory}>Authentication</td>
+                <td className={styles.tdCategory}><span className={styles.categoryBadge} data-category="authentication">Authentication</span></td>
                 <td className={styles.tdAssignee}>
                   <div className={styles.assigneeCell}>
-                    <span className={styles.assigneeAvatar}>JD</span>
+                    <span className={styles.assigneeAvatar} data-initials="JD">JD</span>
                     <span>John Doe</span>
                   </div>
                 </td>
                 <td className={styles.tdDate}>Jan 15, 2024</td>
                 <td className={styles.tdActions}>
-                  <button type="button" className={styles.actionButton} title="View">
+                  <button type="button" className={styles.actionButton} data-action="view" title="View">
                     <Eye size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Edit">
+                  <button type="button" className={styles.actionButton} data-action="edit" title="Edit">
                     <Edit2 size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Delete">
+                  <button type="button" className={styles.actionButton} data-action="delete" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -859,22 +856,22 @@ export function DesignSystemPreviewPage() {
                 <td className={styles.tdPriority}>
                   <span className={styles.priorityBadge} data-priority="medium">Medium</span>
                 </td>
-                <td className={styles.tdCategory}>Account</td>
+                <td className={styles.tdCategory}><span className={styles.categoryBadge} data-category="account">Account</span></td>
                 <td className={styles.tdAssignee}>
                   <div className={styles.assigneeCell}>
-                    <span className={styles.assigneeAvatar}>MK</span>
+                    <span className={styles.assigneeAvatar} data-initials="MK">MK</span>
                     <span>Mary Kim</span>
                   </div>
                 </td>
                 <td className={styles.tdDate}>Jan 14, 2024</td>
                 <td className={styles.tdActions}>
-                  <button type="button" className={styles.actionButton} title="View">
+                  <button type="button" className={styles.actionButton} data-action="view" title="View">
                     <Eye size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Edit">
+                  <button type="button" className={styles.actionButton} data-action="edit" title="Edit">
                     <Edit2 size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Delete">
+                  <button type="button" className={styles.actionButton} data-action="delete" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -894,22 +891,22 @@ export function DesignSystemPreviewPage() {
                 <td className={styles.tdPriority}>
                   <span className={styles.priorityBadge} data-priority="low">Low</span>
                 </td>
-                <td className={styles.tdCategory}>Email</td>
+                <td className={styles.tdCategory}><span className={styles.categoryBadge} data-category="email">Email</span></td>
                 <td className={styles.tdAssignee}>
                   <div className={styles.assigneeCell}>
-                    <span className={styles.assigneeAvatar}>RS</span>
+                    <span className={styles.assigneeAvatar} data-initials="RS">RS</span>
                     <span>Robert Smith</span>
                   </div>
                 </td>
                 <td className={styles.tdDate}>Jan 13, 2024</td>
                 <td className={styles.tdActions}>
-                  <button type="button" className={styles.actionButton} title="View">
+                  <button type="button" className={styles.actionButton} data-action="view" title="View">
                     <Eye size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Edit">
+                  <button type="button" className={styles.actionButton} data-action="edit" title="Edit">
                     <Edit2 size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Delete">
+                  <button type="button" className={styles.actionButton} data-action="delete" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -929,22 +926,22 @@ export function DesignSystemPreviewPage() {
                 <td className={styles.tdPriority}>
                   <span className={styles.priorityBadge} data-priority="high">High</span>
                 </td>
-                <td className={styles.tdCategory}>Network</td>
+                <td className={styles.tdCategory}><span className={styles.categoryBadge} data-category="network">Network</span></td>
                 <td className={styles.tdAssignee}>
                   <div className={styles.assigneeCell}>
-                    <span className={styles.assigneeAvatar}>AL</span>
+                    <span className={styles.assigneeAvatar} data-initials="AL">AL</span>
                     <span>Anna Lee</span>
                   </div>
                 </td>
                 <td className={styles.tdDate}>Jan 12, 2024</td>
                 <td className={styles.tdActions}>
-                  <button type="button" className={styles.actionButton} title="View">
+                  <button type="button" className={styles.actionButton} data-action="view" title="View">
                     <Eye size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Edit">
+                  <button type="button" className={styles.actionButton} data-action="edit" title="Edit">
                     <Edit2 size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Delete">
+                  <button type="button" className={styles.actionButton} data-action="delete" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -964,7 +961,7 @@ export function DesignSystemPreviewPage() {
                 <td className={styles.tdPriority}>
                   <span className={styles.priorityBadge} data-priority="medium">Medium</span>
                 </td>
-                <td className={styles.tdCategory}>Software</td>
+                <td className={styles.tdCategory}><span className={styles.categoryBadge} data-category="software">Software</span></td>
                 <td className={styles.tdAssignee}>
                   <div className={styles.assigneeCell}>
                     <span className={styles.assigneeAvatar}>TW</span>
@@ -973,13 +970,13 @@ export function DesignSystemPreviewPage() {
                 </td>
                 <td className={styles.tdDate}>Jan 11, 2024</td>
                 <td className={styles.tdActions}>
-                  <button type="button" className={styles.actionButton} title="View">
+                  <button type="button" className={styles.actionButton} data-action="view" title="View">
                     <Eye size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Edit">
+                  <button type="button" className={styles.actionButton} data-action="edit" title="Edit">
                     <Edit2 size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Delete">
+                  <button type="button" className={styles.actionButton} data-action="delete" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -999,22 +996,22 @@ export function DesignSystemPreviewPage() {
                 <td className={styles.tdPriority}>
                   <span className={styles.priorityBadge} data-priority="low">Low</span>
                 </td>
-                <td className={styles.tdCategory}>Hardware</td>
+                <td className={styles.tdCategory}><span className={styles.categoryBadge} data-category="infrastructure">Hardware</span></td>
                 <td className={styles.tdAssignee}>
                   <div className={styles.assigneeCell}>
-                    <span className={styles.assigneeAvatar}>JD</span>
+                    <span className={styles.assigneeAvatar} data-initials="JD">JD</span>
                     <span>John Doe</span>
                   </div>
                 </td>
                 <td className={styles.tdDate}>Jan 10, 2024</td>
                 <td className={styles.tdActions}>
-                  <button type="button" className={styles.actionButton} title="View">
+                  <button type="button" className={styles.actionButton} data-action="view" title="View">
                     <Eye size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Edit">
+                  <button type="button" className={styles.actionButton} data-action="edit" title="Edit">
                     <Edit2 size={14} />
                   </button>
-                  <button type="button" className={styles.actionButton} title="Delete">
+                  <button type="button" className={styles.actionButton} data-action="delete" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </td>
