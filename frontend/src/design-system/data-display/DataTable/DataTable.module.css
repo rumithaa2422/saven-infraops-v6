@@ -179,7 +179,7 @@
 }
 
 /* Responsive */
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
   .dataTable__wrapper {
     overflow-x: auto;
   }

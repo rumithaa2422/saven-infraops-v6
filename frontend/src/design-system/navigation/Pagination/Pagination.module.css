@@ -112,7 +112,7 @@
 }
 
 /* Responsive */
-@media (max-width: var(--breakpoint-sm)) {
+@media (max-width: 640px) {
   .pagination {
     flex-direction: column;
     align-items: stretch;

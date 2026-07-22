@@ -153,7 +153,7 @@
 }
 
 /* Responsive */
-@media (max-width: var(--breakpoint-sm)) {
+@media (max-width: 640px) {
   .toastContainer {
     left: var(--space-4);
     right: var(--space-4);

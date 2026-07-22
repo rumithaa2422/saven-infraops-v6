@@ -23,20 +23,20 @@
 }
 
 /* Responsive */
-@media (max-width: var(--breakpoint-lg)) {
+@media (max-width: 1024px) {
   .summaryGrid--cols-4 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: var(--breakpoint-md)) {
+@media (max-width: 768px) {
   .summaryGrid--cols-3,
   .summaryGrid--cols-4 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: var(--breakpoint-sm)) {
+@media (max-width: 640px) {
   .summaryGrid--cols-2,
   .summaryGrid--cols-3,
   .summaryGrid--cols-4 {
