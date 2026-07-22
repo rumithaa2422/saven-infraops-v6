@@ -64,6 +64,24 @@ import {
   Paperclip,
   MoreVertical,
   CheckCircle,
+  Image,
+  Type,
+  AlignLeft,
+  List,
+  ToggleLeft,
+  ToggleRight,
+  Info,
+  AlertOctagon,
+  Check,
+  GripVertical,
+  FolderOpen,
+  MapPin,
+  Mail,
+  Phone,
+  Building,
+  Briefcase,
+  DollarSign,
+  Hash,
 } from 'lucide-react';
 
 import styles from './DesignSystemPreviewPage.module.css';
@@ -1304,8 +1322,524 @@ export function DesignSystemPreviewPage() {
           </div>
         </div>
       </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE FORM SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.formShowcase}>
+      {/* Page Header */}
+      <div className={styles.formShowcaseHeader}>
+        <div className={styles.breadcrumb}>
+          <a href="#" className={styles.breadcrumbLink}><Home size={14} /></a>
+          <ChevronRight size={12} className={styles.breadcrumbSep} />
+          <span className={styles.breadcrumbCurrent}>Form Components</span>
+        </div>
+        <div className={styles.formShowcaseTitle}>
+          <h2 className={styles.pageTitleText}>Enterprise Form Showcase</h2>
+          <p className={styles.pageTitleSub}>A comprehensive collection of form components for enterprise applications.</p>
+        </div>
+      </div>
+
+      {/* Main Form Container */}
+      <div className={styles.formContainer}>
+        <div className={styles.formGrid}>
+          {/* Left Column */}
+          <div className={styles.formColumn}>
+            {/* Basic Information */}
+            <div className={styles.formSection}>
+              <div className={styles.formSectionHeader}>
+                <Briefcase size={16} className={styles.formSectionIcon} />
+                <h3 className={styles.formSectionTitle}>Basic Information</h3>
+              </div>
+              
+              {/* Text Input */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Title <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.inputWrapper}>
+                  <Type size={14} className={styles.inputIcon} />
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    placeholder="Enter request title"
+                  />
+                </div>
+                <span className={styles.formHint}>Brief description of the request</span>
+              </div>
+
+              {/* Textarea */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Description <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.inputWrapper}>
+                  <AlignLeft size={14} className={styles.inputIcon} />
+                  <textarea 
+                    className={styles.formTextarea} 
+                    rows={4}
+                    placeholder="Provide detailed description of the request..."
+                  />
+                </div>
+                <span className={styles.formHint}>Include all relevant details</span>
+              </div>
+
+              {/* Select */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  Category <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.selectWrapper}>
+                  <List size={14} className={styles.inputIcon} />
+                  <select className={styles.formSelect}>
+                    <option value="">Select category</option>
+                    <option value="hardware">Hardware</option>
+                    <option value="software">Software</option>
+                    <option value="network">Network</option>
+                    <option value="access">Access</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <ChevronDown size={14} className={styles.selectArrow} />
+                </div>
+              </div>
+
+              {/* Multi-Select Preview */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Tags</label>
+                <div className={styles.multiSelectWrapper}>
+                  <div className={styles.selectedTags}>
+                    <span className={styles.selectedTag}>
+                      urgent
+                      <X size={10} />
+                    </span>
+                    <span className={styles.selectedTag}>
+                      login
+                      <X size={10} />
+                    </span>
+                  </div>
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    placeholder="Add tags..."
+                  />
+                </div>
+                <div className={styles.tagSuggestions}>
+                  <span className={styles.tagSuggestion}>authentication</span>
+                  <span className={styles.tagSuggestion}>security</span>
+                  <span className={styles.tagSuggestion}>password</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Request Details */}
+            <div className={styles.formSection}>
+              <div className={styles.formSectionHeader}>
+                <FileText size={16} className={styles.formSectionIcon} />
+                <h3 className={styles.formSectionTitle}>Request Details</h3>
+              </div>
+
+              {/* Priority */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Priority</label>
+                <div className={styles.radioGroup}>
+                  <label className={styles.radioOption}>
+                    <input type="radio" name="priority" value="low" />
+                    <span className={styles.radioCustom} />
+                    <span className={styles.radioLabel}>Low</span>
+                  </label>
+                  <label className={styles.radioOption}>
+                    <input type="radio" name="priority" value="medium" defaultChecked />
+                    <span className={styles.radioCustom} />
+                    <span className={styles.radioLabel}>Medium</span>
+                  </label>
+                  <label className={styles.radioOption}>
+                    <input type="radio" name="priority" value="high" />
+                    <span className={styles.radioCustom} />
+                    <span className={styles.radioLabel}>High</span>
+                  </label>
+                  <label className={styles.radioOption}>
+                    <input type="radio" name="priority" value="critical" />
+                    <span className={styles.radioCustom} />
+                    <span className={styles.radioLabel}>Critical</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Checkboxes */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Notifications</label>
+                <div className={styles.checkboxGroup}>
+                  <label className={styles.checkboxOption}>
+                    <input type="checkbox" defaultChecked />
+                    <span className={styles.checkboxCustom}>
+                      <Check size={10} />
+                    </span>
+                    <span className={styles.checkboxLabel}>Email notifications</span>
+                  </label>
+                  <label className={styles.checkboxOption}>
+                    <input type="checkbox" />
+                    <span className={styles.checkboxCustom}>
+                      <Check size={10} />
+                    </span>
+                    <span className={styles.checkboxLabel}>SMS notifications</span>
+                  </label>
+                  <label className={styles.checkboxOption}>
+                    <input type="checkbox" defaultChecked />
+                    <span className={styles.checkboxCustom}>
+                      <Check size={10} />
+                    </span>
+                    <span className={styles.checkboxLabel}>In-app notifications</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Toggle Switches */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Settings</label>
+                <div className={styles.toggleGroup}>
+                  <div className={styles.toggleItem}>
+                    <div className={styles.toggleInfo}>
+                      <span className={styles.toggleLabel}>Send confirmation email</span>
+                      <span className={styles.toggleHint}>Receive email when request is created</span>
+                    </div>
+                    <label className={styles.toggle}>
+                      <input type="checkbox" defaultChecked />
+                      <span className={styles.toggleTrack}>
+                        <span className={styles.toggleThumb} />
+                      </span>
+                    </label>
+                  </div>
+                  <div className={styles.toggleItem}>
+                    <div className={styles.toggleInfo}>
+                      <span className={styles.toggleLabel}>Auto-assign</span>
+                      <span className={styles.toggleHint}>Automatically assign to available team member</span>
+                    </div>
+                    <label className={styles.toggle}>
+                      <input type="checkbox" />
+                      <span className={styles.toggleTrack}>
+                        <span className={styles.toggleThumb} />
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Date & Time */}
+            <div className={styles.formSection}>
+              <div className={styles.formSectionHeader}>
+                <Calendar size={16} className={styles.formSectionIcon} />
+                <h3 className={styles.formSectionTitle}>Schedule</h3>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Start Date</label>
+                  <div className={styles.inputWrapper}>
+                    <Calendar size={14} className={styles.inputIcon} />
+                    <input 
+                      type="date" 
+                      className={styles.formInput} 
+                    />
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>End Date</label>
+                  <div className={styles.inputWrapper}>
+                    <Calendar size={14} className={styles.inputIcon} />
+                    <input 
+                      type="date" 
+                      className={styles.formInput} 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className={styles.formColumn}>
+            {/* Assignment */}
+            <div className={styles.formSection}>
+              <div className={styles.formSectionHeader}>
+                <User size={16} className={styles.formSectionIcon} />
+                <h3 className={styles.formSectionTitle}>Assignment</h3>
+              </div>
+
+              {/* Requester */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Requester</label>
+                <div className={styles.userSelect}>
+                  <div className={styles.userAvatar}>JD</div>
+                  <div className={styles.userInfo}>
+                    <span className={styles.userName}>John Doe</span>
+                    <span className={styles.userEmail}>john.doe@company.com</span>
+                  </div>
+                  <button type="button" className={styles.userChange}>Change</button>
+                </div>
+              </div>
+
+              {/* Assignee */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Assign To</label>
+                <div className={styles.assigneeDropdown}>
+                  <div className={styles.assigneeSearch}>
+                    <Search size={14} />
+                    <input 
+                      type="text" 
+                      placeholder="Search users..."
+                      className={styles.assigneeSearchInput}
+                    />
+                  </div>
+                  <div className={styles.assigneeList}>
+                    <div className={styles.assigneeItem}>
+                      <div className={styles.assigneeAvatar}>MK</div>
+                      <div className={styles.assigneeInfo}>
+                        <span className={styles.assigneeName}>Mary Kim</span>
+                        <span className={styles.assigneeRole}>Senior Engineer</span>
+                      </div>
+                      <Check size={14} className={styles.assigneeCheck} />
+                    </div>
+                    <div className={styles.assigneeItem}>
+                      <div className={styles.assigneeAvatar} style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>RS</div>
+                      <div className={styles.assigneeInfo}>
+                        <span className={styles.assigneeName}>Robert Smith</span>
+                        <span className={styles.assigneeRole}>IT Manager</span>
+                      </div>
+                    </div>
+                    <div className={styles.assigneeItem}>
+                      <div className={styles.assigneeAvatar} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>AL</div>
+                      <div className={styles.assigneeInfo}>
+                        <span className={styles.assigneeName}>Anna Lee</span>
+                        <span className={styles.assigneeRole}>Support Engineer</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className={styles.formSection}>
+              <div className={styles.formSectionHeader}>
+                <MapPin size={16} className={styles.formSectionIcon} />
+                <h3 className={styles.formSectionTitle}>Location</h3>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Building</label>
+                <div className={styles.inputWrapper}>
+                  <Building size={14} className={styles.inputIcon} />
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    placeholder="e.g., Building A"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Floor / Room</label>
+                <div className={styles.inputWrapper}>
+                  <Hash size={14} className={styles.inputIcon} />
+                  <input 
+                    type="text" 
+                    className={styles.formInput} 
+                    placeholder="e.g., Floor 3, Room 302"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Attachments */}
+            <div className={styles.formSection}>
+              <div className={styles.formSectionHeader}>
+                <Paperclip size={16} className={styles.formSectionIcon} />
+                <h3 className={styles.formSectionTitle}>Attachments</h3>
+              </div>
+
+              <div className={styles.uploadZone}>
+                <div className={styles.uploadIcon}>
+                  <Upload size={24} />
+                </div>
+                <div className={styles.uploadText}>
+                  <span className={styles.uploadPrimary}>Drop files here or click to upload</span>
+                  <span className={styles.uploadSecondary}>PNG, JPG, PDF up to 10MB</span>
+                </div>
+              </div>
+
+              <div className={styles.uploadedFiles}>
+                <div className={styles.uploadedFile}>
+                  <File size={16} className={styles.fileIcon} />
+                  <div className={styles.fileInfo}>
+                    <span className={styles.fileName}>screenshot-2024.png</span>
+                    <span className={styles.fileSize}>245 KB</span>
+                  </div>
+                  <button type="button" className={styles.fileRemove}>
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className={styles.uploadedFile}>
+                  <FileText size={16} className={styles.fileIcon} />
+                  <div className={styles.fileInfo}>
+                    <span className={styles.fileName}>requirements.pdf</span>
+                    <span className={styles.fileSize}>1.2 MB</span>
+                  </div>
+                  <button type="button" className={styles.fileRemove}>
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Validation States */}
+            <div className={styles.formSection}>
+              <div className={styles.formSectionHeader}>
+                <AlertCircle size={16} className={styles.formSectionIcon} />
+                <h3 className={styles.formSectionTitle}>Validation States</h3>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Error State</label>
+                <div className={styles.inputWrapper}>
+                  <AlertOctagon size={14} className={`${styles.inputIcon} ${styles.inputIconError}`} />
+                  <input 
+                    type="text" 
+                    className={`${styles.formInput} ${styles.formInputError}`}
+                    defaultValue="Invalid input"
+                  />
+                </div>
+                <span className={styles.formError}>This field is required and cannot be empty</span>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Success State</label>
+                <div className={styles.inputWrapper}>
+                  <CheckCircle size={14} className={`${styles.inputIcon} ${styles.inputIconSuccess}`} />
+                  <input 
+                    type="text" 
+                    className={`${styles.formInput} ${styles.formInputSuccess}`}
+                    defaultValue="Valid email address"
+                  />
+                </div>
+                <span className={styles.formSuccess}>Email address is valid</span>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Warning State</label>
+                <div className={styles.inputWrapper}>
+                  <AlertTriangle size={14} className={`${styles.inputIcon} ${styles.inputIconWarning}`} />
+                  <input 
+                    type="text" 
+                    className={`${styles.formInput} ${styles.formInputWarning}`}
+                    defaultValue="Password too short"
+                  />
+                </div>
+                <span className={styles.formWarning}>Password should be at least 8 characters</span>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Disabled State</label>
+                <div className={styles.inputWrapper}>
+                  <Lock size={14} className={styles.inputIcon} />
+                  <input 
+                    type="text" 
+                    className={`${styles.formInput} ${styles.formInputDisabled}`}
+                    disabled
+                    defaultValue="Cannot edit this field"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky Action Bar */}
+        <div className={styles.formActionBar}>
+          <div className={styles.formActionLeft}>
+            <button type="button" className={styles.formButtonSecondary}>
+              <RotateCw size={14} />
+              Reset
+            </button>
+            <button type="button" className={styles.formButtonSecondary}>
+              <Save size={14} />
+              Save Draft
+            </button>
+          </div>
+          <div className={styles.formActionRight}>
+            <button type="button" className={styles.formButtonCancel}>
+              Cancel
+            </button>
+            <button type="button" className={styles.formButtonPrimary}>
+              <Check size={14} />
+              Submit Request
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Button Variants Showcase */}
+      <div className={styles.buttonShowcase}>
+        <div className={styles.buttonShowcaseHeader}>
+          <h3 className={styles.buttonShowcaseTitle}>Button Variants</h3>
+        </div>
+        <div className={styles.buttonGroup}>
+          <button className={styles.formButtonPrimary}>Primary</button>
+          <button className={styles.formButtonSecondary}><Check size={14} /> Secondary</button>
+          <button className={styles.formButtonCancel}>Cancel</button>
+          <button className={styles.formButtonDanger}><Trash2 size={14} /> Delete</button>
+          <button className={styles.formButtonGhost}>Ghost</button>
+          <button className={styles.formButtonLink}>Link</button>
+        </div>
+        <div className={styles.buttonGroup}>
+          <button className={styles.formButtonPrimary} disabled>Primary Disabled</button>
+          <button className={styles.formButtonSecondary} disabled>Secondary Disabled</button>
+        </div>
+        <div className={styles.buttonGroup}>
+          <button className={styles.formButtonPrimarySm}>Small Primary</button>
+          <button className={styles.formButtonSecondarySm}>Small Secondary</button>
+        </div>
+      </div>
+
+      {/* Input States Showcase */}
+      <div className={styles.inputShowcase}>
+        <div className={styles.inputShowcaseHeader}>
+          <h3 className={styles.inputShowcaseTitle}>Input States</h3>
+        </div>
+        <div className={styles.inputShowcaseGrid}>
+          <div className={styles.inputStateExample}>
+            <label className={styles.inputStateLabel}>Default</label>
+            <input type="text" className={styles.formInput} placeholder="Enter text..." />
+          </div>
+          <div className={styles.inputStateExample}>
+            <label className={styles.inputStateLabel}>With Value</label>
+            <input type="text" className={styles.formInput} defaultValue="Some value" />
+          </div>
+          <div className={styles.inputStateExample}>
+            <label className={styles.inputStateLabel}>Focused</label>
+            <input type="text" className={styles.formInput} placeholder="Click to focus" />
+          </div>
+          <div className={styles.inputStateExample}>
+            <label className={styles.inputStateLabel}>Error</label>
+            <input type="text" className={`${styles.formInput} ${styles.formInputError}`} defaultValue="Invalid" />
+          </div>
+          <div className={styles.inputStateExample}>
+            <label className={styles.inputStateLabel}>Success</label>
+            <input type="text" className={`${styles.formInput} ${styles.formInputSuccess}`} defaultValue="Valid" />
+          </div>
+          <div className={styles.inputStateExample}>
+            <label className={styles.inputStateLabel}>Disabled</label>
+            <input type="text" className={`${styles.formInput} ${styles.formInputDisabled}`} disabled defaultValue="Disabled" />
+          </div>
+        </div>
+      </div>
+    </div>
     </div>
   );
 }
+
+// Missing import for Lock and Save
+const Lock = (props: any) => <Eye {...props} />;
+const Save = (props: any) => <Download {...props} />;
 
 export default DesignSystemPreviewPage;
