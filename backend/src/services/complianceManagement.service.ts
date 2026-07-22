@@ -333,8 +333,6 @@ export class ComplianceManagementService {
       frameworkCount,
       controlCount,
       evidenceCount,
-      pendingControls,
-      approvedControls,
       missingEvidenceControls
     ] = await Promise.all([
       prisma.complianceFramework.count({
@@ -342,12 +340,6 @@ export class ComplianceManagementService {
       }),
       prisma.complianceControl.count(),
       prisma.complianceEvidence.count(),
-      prisma.complianceControl.count({
-        where: { status: 'PENDING' }
-      }),
-      prisma.complianceControl.count({
-        where: { status: 'APPROVED' }
-      }),
       // Controls with no evidence
       prisma.complianceControl.count({
         where: {
@@ -360,8 +352,6 @@ export class ComplianceManagementService {
       frameworks: frameworkCount,
       controls: controlCount,
       evidenceDocuments: evidenceCount,
-      pendingReview: pendingControls,
-      approved: approvedControls,
       missingEvidence: missingEvidenceControls
     };
   }

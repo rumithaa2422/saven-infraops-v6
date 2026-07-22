@@ -638,13 +638,14 @@ complianceManagementRouter.post('/export', requireAuth, async (req: Request, res
       requirePermissionOr(['compliance:read', 'compliance:view', 'compliance:manage', 'compliance:export'])(req, res, (err) => err ? reject(err) : resolve())
     );
 
+    	
     const { controlIds } = req.body;
 
     if (!controlIds || !Array.isArray(controlIds) || controlIds.length === 0) {
       throw new HttpError(400, 'No controls selected for export');
     }
 
-    // Fetch controls with their evidence and reviewer info
+    // Fetch controls with their evidence
     const controls = await prisma.complianceControl.findMany({
       where: { id: { in: controlIds } },
       include: {
@@ -664,16 +665,6 @@ complianceManagementRouter.post('/export', requireAuth, async (req: Request, res
         }
       }
     });
-
-    // Fetch reviewer names for controls
-    const reviewerIds = controls.map(c => c.createdBy).filter(Boolean) as string[];
-    const reviewers = reviewerIds.length > 0 
-      ? await prisma.user.findMany({
-          where: { id: { in: reviewerIds } },
-          select: { id: true, name: true, email: true }
-        })
-      : [];
-    const reviewerMap = new Map(reviewers.map(r => [r.id, r]));
 
     if (controls.length === 0) {
       throw new HttpError(404, 'No controls found');
@@ -700,21 +691,18 @@ complianceManagementRouter.post('/export', requireAuth, async (req: Request, res
     // 1. Add Excel file with control information
     const excelRows = controls.map((control) => {
       const evidenceFileNames = control.evidence.map(e => e.filePath).join(', ');
-      const reviewer = control.createdBy ? reviewerMap.get(control.createdBy) : null;
       return {
         Framework: control.framework.name,
         'Control Name': control.name,
         Description: control.description || '',
-        Status: control.status,
         'Evidence File Names': evidenceFileNames || 'None',
         'Evidence Count': control.evidence.length,
-        'Last Updated': formatDate(control.updatedAt),
-        Reviewer: reviewer?.name || reviewer?.email || 'N/A'
+        'Last Updated': formatDate(control.updatedAt)
       };
     });
 
     const excelBuffer = generateExcel({
-      headers: ['Framework', 'Control Name', 'Description', 'Status', 'Evidence File Names', 'Evidence Count', 'Last Updated', 'Reviewer'],
+      headers: ['Framework', 'Control Name', 'Description', 'Evidence File Names', 'Evidence Count', 'Last Updated'],
       rows: excelRows,
       reportName: 'Compliance_Controls'
     });
@@ -790,11 +778,9 @@ This ZIP archive contains compliance control data and evidence documents.
   - Framework name
   - Control name
   - Description
-  - Status
   - Evidence file names
   - Evidence count
   - Last updated date
-  - Reviewer name
 
 - **Evidence Documents/**
   Contains all uploaded evidence files organized by framework and control:

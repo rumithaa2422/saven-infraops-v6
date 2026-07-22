@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { FileCheck, Plus, Download, ChevronDown, ExternalLink, Edit2, Trash2, Paperclip } from 'lucide-react';
-import { StatusBadge, AddFrameworkDialog, AddControlDialog, EditControlDialog, EvidenceModal } from '../components/compliance';
+import { AddFrameworkDialog, AddControlDialog, EditControlDialog, EvidenceModal } from '../components/compliance';
 
 // Types
 interface Framework {
@@ -39,8 +39,6 @@ interface Summary {
   frameworks: number;
   controls: number;
   evidenceDocuments: number;
-  pendingReview: number;
-  approved: number;
   missingEvidence: number;
 }
 
@@ -65,8 +63,6 @@ export function CompliancePage() {
     frameworks: 0,
     controls: 0,
     evidenceDocuments: 0,
-    pendingReview: 0,
-    approved: 0,
     missingEvidence: 0
   });
 
@@ -249,11 +245,10 @@ export function CompliancePage() {
   };
 
   // Handle control update
-  const handleUpdateControl = async (data: { id: string; name: string; description: string; status: string }) => {
+  const handleUpdateControl = async (data: { id: string; name: string; description: string }) => {
     await api.patch(`/compliance-management/controls/${data.id}`, {
       name: data.name,
-      description: data.description,
-      status: data.status
+      description: data.description
     });
     fetchControls();
     fetchSummary();
@@ -331,26 +326,6 @@ export function CompliancePage() {
             <div className="summary-content">
               <span className="summary-value">{summary.evidenceDocuments}</span>
               <span className="summary-label">Evidence Documents</span>
-            </div>
-          </div>
-
-          <div className="summary-card">
-            <div className="summary-icon pending">
-              <FileCheck size={20} />
-            </div>
-            <div className="summary-content">
-              <span className="summary-value">{summary.pendingReview}</span>
-              <span className="summary-label">Pending Review</span>
-            </div>
-          </div>
-
-          <div className="summary-card">
-            <div className="summary-icon approved">
-              <FileCheck size={20} />
-            </div>
-            <div className="summary-content">
-              <span className="summary-value">{summary.approved}</span>
-              <span className="summary-label">Approved</span>
             </div>
           </div>
 
@@ -451,7 +426,6 @@ export function CompliancePage() {
                   <th>Control List Name</th>
                   <th>Description</th>
                   <th style={{ width: '100px' }}>Evidence</th>
-                  <th style={{ width: '120px' }}>Status</th>
                   <th style={{ width: '130px' }}>Last Updated</th>
                   <th style={{ width: '100px' }}>Actions</th>
                 </tr>
@@ -459,14 +433,14 @@ export function CompliancePage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="table-loading">
+                    <td colSpan={6} className="table-loading">
                       <div className="loading-spinner"></div>
                       <p>Loading...</p>
                     </td>
                   </tr>
                 ) : controls.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="table-empty">
+                    <td colSpan={6} className="table-empty">
                       <FileCheck size={48} strokeWidth={1} />
                       <p>No controls found</p>
                       <span>Add a framework and controls to get started</span>
@@ -500,9 +474,6 @@ export function CompliancePage() {
                           <Paperclip size={14} />
                           <span>{control._count.evidence}</span>
                         </button>
-                      </td>
-                      <td>
-                        <StatusBadge status={control.status as any} />
                       </td>
                       <td className="date-cell">
                         {formatDate(control.updatedAt)}

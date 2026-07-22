@@ -222,16 +222,14 @@ interface EditControlDialogProps {
     id: string;
     name: string;
     description: string | null;
-    status: string;
   } | null;
   onClose: () => void;
-  onSave: (data: { id: string; name: string; description: string; status: string }) => Promise<void>;
+  onSave: (data: { id: string; name: string; description: string }) => Promise<void>;
 }
 
 export function EditControlDialog({ isOpen, control, onClose, onSave }: EditControlDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -239,7 +237,6 @@ export function EditControlDialog({ isOpen, control, onClose, onSave }: EditCont
     if (control) {
       setName(control.name);
       setDescription(control.description || '');
-      setStatus(control.status);
     }
   }, [control]);
 
@@ -254,7 +251,7 @@ export function EditControlDialog({ isOpen, control, onClose, onSave }: EditCont
     setSaving(true);
     setError('');
     try {
-      await onSave({ id: control.id, name: name.trim(), description: description.trim(), status });
+      await onSave({ id: control.id, name: name.trim(), description: description.trim() });
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update control');
@@ -297,20 +294,6 @@ export function EditControlDialog({ isOpen, control, onClose, onSave }: EditCont
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
-            </div>
-            <div className="form-group">
-              <label htmlFor="edit-control-status">Status</label>
-              <select
-                id="edit-control-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="DRAFT">Draft</option>
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="COMPLETED">Completed</option>
-              </select>
             </div>
           </div>
           <div className="modal-footer">
