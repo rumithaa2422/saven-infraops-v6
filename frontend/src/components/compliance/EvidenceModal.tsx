@@ -133,20 +133,33 @@ export function EvidenceModal({ isOpen, controlId, controlName, onClose, onEvide
     }
   };
 
-  // Handle file download - opens in new window for direct download
+  // Handle file download - uses fetch to get blob and trigger browser download
   const handleDownload = (evidenceItem: Evidence) => {
-    // Build download URL with auth token
     const token = localStorage.getItem('token');
     const downloadUrl = `/api/compliance-management/evidence/${evidenceItem.id}/download`;
-    
-    // Open download in new tab
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    fetch(downloadUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Download failed');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = evidenceItem.filePath; // Use original filename
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        setError('Failed to download file. Please try again.');
+      });
   };
 
   // Handle file deletion
