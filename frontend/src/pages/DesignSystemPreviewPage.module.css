@@ -5163,11 +5163,11 @@
   margin: 0;
 }
 
-/* Dialog Grid */
+/* Dialog Grid - Confirmation Dialogs */
 .dialogGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
   margin-bottom: 32px;
 }
 
@@ -5176,61 +5176,63 @@
   background: var(--form-surface);
   border: 1px solid var(--form-border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
   box-shadow: var(--form-shadow-sm);
 }
 
 .dialogCardTitle {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--hero-text-primary);
   margin: 0 0 4px;
 }
 
 .dialogCardDesc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--hero-text-secondary);
-  margin: 0 0 16px;
+  margin: 0 0 12px;
 }
 
 /* Dialog Preview Container */
 .dialogPreview {
   position: relative;
-  min-height: 200px;
+  min-height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--form-bg-start);
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
-/* Dialog Overlay */
+/* Dialog Overlay - Subtle */
 .dialogOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 10;
 }
 
-/* Dialog Box */
-.dialogBox {
+/* ============================================
+   COMPACT CONFIRMATION DIALOG
+   ============================================ */
+.confirmDialog {
   position: relative;
   z-index: 11;
   width: 100%;
-  max-width: 420px;
+  max-width: 340px;
   background: var(--dialog-surface);
-  border-radius: 16px;
-  box-shadow: var(--dialog-shadow);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
   overflow: hidden;
-  animation: dialogFadeIn 0.2s ease;
+  animation: dialogFadeIn 0.15s ease-out;
 }
 
 @keyframes dialogFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
   to {
     opacity: 1;
@@ -5238,45 +5240,205 @@
   }
 }
 
-/* Dialog Header */
-.dialogHeader {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 20px;
-  border-bottom: 1px solid var(--dialog-border);
-}
-
-.dialogIconWrap {
+/* Confirmation Icon - Circular */
+.confirmIconWrap {
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--dialog-primary-bg);
-  color: var(--dialog-primary);
-  border-radius: 12px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.dialogHeaderContent {
-  flex: 1;
+.confirmIconWrap svg {
+  width: 20px;
+  height: 20px;
 }
 
-.dialogTitle {
-  font-size: 16px;
+/* Confirmation - Blue */
+.confirmDialog[data-type="confirmation"] .confirmIconWrap {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--dialog-primary);
+}
+
+/* Delete - Red */
+.confirmDialog[data-type="delete"] .confirmIconWrap {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--dialog-danger);
+}
+
+/* Success - Green */
+.confirmDialog[data-type="success"] .confirmIconWrap {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--dialog-success);
+}
+
+/* Warning - Amber */
+.confirmDialog[data-type="warning"] .confirmIconWrap {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--dialog-warning);
+}
+
+/* Error - Red */
+.confirmDialog[data-type="error"] .confirmIconWrap {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--dialog-danger);
+}
+
+/* Compact Dialog Body */
+.confirmBody {
+  padding: 16px;
+  text-align: center;
+}
+
+.confirmTitle {
+  font-size: 15px;
   font-weight: 600;
   color: var(--hero-text-primary);
-  margin: 0 0 4px;
+  margin: 0 0 6px;
+  line-height: 1.3;
 }
 
-.dialogSubtitle {
-  font-size: 12px;
+.confirmText {
+  font-size: 13px;
   color: var(--hero-text-secondary);
   margin: 0;
+  line-height: 1.5;
 }
 
-.dialogClose {
+/* Compact Dialog Footer */
+.confirmFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--dialog-border);
+  background: var(--form-bg-start);
+}
+
+/* Compact Buttons */
+.confirmBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  background: var(--dialog-primary);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirmBtnPrimary:hover {
+  background: #2563eb;
+}
+
+.confirmBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--hero-text-secondary);
+  background: var(--dialog-surface);
+  border: 1px solid var(--dialog-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirmBtnSecondary:hover {
+  background: var(--form-bg-start);
+  border-color: var(--dialog-primary);
+  color: var(--dialog-primary);
+}
+
+.confirmBtnDanger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  background: var(--dialog-danger);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirmBtnDanger:hover {
+  background: #dc2626;
+}
+
+/* ============================================
+   PREMIUM FORM DIALOG - Main Standard
+   ============================================ */
+.formDialog {
+  position: relative;
+  z-index: 11;
+  width: 90%;
+  max-width: 720px;
+  max-height: 90vh;
+  background: var(--dialog-surface);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.16);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: formDialogFadeIn 0.2s ease-out;
+}
+
+@keyframes formDialogFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Form Dialog Header */
+.formDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--dialog-border);
+  flex-shrink: 0;
+}
+
+.formDialogHeaderContent {
+  flex: 1;
+  padding-right: 16px;
+}
+
+.formDialogTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--hero-text-primary);
+  margin: 0 0 4px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.formDialogSubtitle {
+  font-size: 14px;
+  color: var(--hero-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.formDialogClose {
   width: 32px;
   height: 32px;
   display: flex;
@@ -5291,116 +5453,157 @@
   flex-shrink: 0;
 }
 
-.dialogClose:hover {
+.formDialogClose:hover {
   background: var(--form-bg-start);
   color: var(--hero-text-primary);
 }
 
-/* Dialog Body */
-.dialogBody {
-  padding: 20px;
-}
-
-.dialogBodyScroll {
-  padding: 20px;
-  max-height: 300px;
+/* Form Dialog Scrollable Body */
+.formDialogBody {
+  flex: 1;
   overflow-y: auto;
+  padding: 24px;
 }
 
-.dialogText {
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--hero-text-secondary);
-  margin: 0;
+/* Form Two-Column Layout */
+.formDialogGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
-/* Dialog Form Elements */
-.dialogFormGroup {
-  margin-bottom: 16px;
-}
-
-.dialogFormGroup:last-child {
+.formDialogGrid .formDialogField {
   margin-bottom: 0;
 }
 
-.dialogLabel {
-  display: block;
+/* Full Width Field */
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+/* Form Section */
+.formDialogSection {
+  margin-bottom: 24px;
+}
+
+.formDialogSection:last-child {
+  margin-bottom: 0;
+}
+
+.formDialogSectionTitle {
   font-size: 12px;
   font-weight: 600;
+  color: var(--hero-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dialog-border);
+}
+
+/* Form Dialog Field */
+.formDialogField {
+  margin-bottom: 18px;
+}
+
+.formDialogField:last-child {
+  margin-bottom: 0;
+}
+
+.formDialogLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--hero-text-secondary);
   margin-bottom: 6px;
+  line-height: 1.4;
 }
 
-.dialogRequired {
+.formDialogRequired {
   color: var(--dialog-danger);
+  margin-left: 2px;
 }
 
-.dialogInput,
-.dialogTextarea,
-.dialogSelect {
+.formDialogInput,
+.formDialogTextarea,
+.formDialogSelect {
   width: 100%;
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: 14px;
+  font-family: inherit;
   color: var(--hero-text-primary);
-  background: var(--form-bg-start);
+  background: var(--dialog-surface);
   border: 1px solid var(--dialog-border);
   border-radius: 8px;
   transition: all 0.15s ease;
   outline: none;
+  line-height: 1.5;
 }
 
-.dialogInput:focus,
-.dialogTextarea:focus,
-.dialogSelect:focus {
+.formDialogInput:hover,
+.formDialogTextarea:hover,
+.formDialogSelect:hover {
+  border-color: #cbd5e1;
+}
+
+.formDialogInput:focus,
+.formDialogTextarea:focus,
+.formDialogSelect:focus {
   border-color: var(--dialog-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-.dialogTextarea {
+.formDialogInput::placeholder,
+.formDialogTextarea::placeholder {
+  color: var(--hero-text-muted);
+}
+
+.formDialogTextarea {
   resize: vertical;
   min-height: 80px;
-  font-family: inherit;
 }
 
-/* Dialog Footer */
-.dialogFooter {
+.formDialogSelect {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 36px;
+}
+
+.formDialogHelper {
+  font-size: 12px;
+  color: var(--hero-text-muted);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.formDialogError {
+  font-size: 12px;
+  color: var(--dialog-danger);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* Sticky Footer */
+.formDialogFooter {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 20px;
+  gap: 10px;
+  padding: 16px 24px;
   background: var(--form-bg-start);
   border-top: 1px solid var(--dialog-border);
+  flex-shrink: 0;
 }
 
-/* Dialog Buttons */
-.dialogBtnPrimary {
+.formDialogBtnSecondary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, var(--dialog-primary) 0%, #2563eb 100%);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.2);
-}
-
-.dialogBtnPrimary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-}
-
-.dialogBtnSecondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  font-size: 13px;
+  padding: 10px 18px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--hero-text-secondary);
   background: var(--dialog-surface);
@@ -5410,31 +5613,50 @@
   transition: all 0.15s ease;
 }
 
-.dialogBtnSecondary:hover {
+.formDialogBtnSecondary:hover {
   background: var(--form-bg-start);
   border-color: var(--dialog-primary);
   color: var(--dialog-primary);
 }
 
-.dialogBtnDanger {
+.formDialogBtnDraft {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--hero-text-secondary);
+  background: transparent;
+  border: 1px solid var(--dialog-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.formDialogBtnDraft:hover {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: var(--dialog-primary);
+  color: var(--dialog-primary);
+}
+
+.formDialogBtnPrimary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 10px 20px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, var(--dialog-danger) 0%, #dc2626 100%);
+  background: var(--dialog-primary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
 }
 
-.dialogBtnDanger:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+.formDialogBtnPrimary:hover {
+  background: #2563eb;
 }
 
 /* Drawer Section */
@@ -5484,15 +5706,13 @@
   z-index: 10;
 }
 
-/* Right Drawer */
-.rightDrawer {
+/* Slide Panel - Quick Actions */
+.slidePanel {
   position: relative;
   z-index: 11;
-  width: 280px;
+  width: 200px;
   background: var(--dialog-surface);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
   animation: slideInRight 0.3s ease;
 }
 
@@ -5505,22 +5725,22 @@
   }
 }
 
-.drawerHeader {
+.slidePanelHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--dialog-border);
 }
 
-.drawerTitle {
-  font-size: 14px;
+.slidePanelTitle {
+  font-size: 13px;
   font-weight: 600;
   color: var(--hero-text-primary);
   margin: 0;
 }
 
-.drawerClose {
+.slidePanelClose {
   width: 28px;
   height: 28px;
   display: flex;
@@ -5534,126 +5754,33 @@
   transition: all 0.15s ease;
 }
 
-.drawerClose:hover {
+.slidePanelClose:hover {
   background: var(--form-bg-start);
   color: var(--hero-text-primary);
 }
 
-.drawerBody {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
+.slidePanelBody {
+  padding: 12px;
 }
 
-.drawerSection {
+.slidePanelAction {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--dialog-border-subtle);
-}
-
-.drawerSection:last-child {
-  border-bottom: none;
-}
-
-.drawerSectionLabel {
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--hero-text-muted);
-}
-
-.drawerValue {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--hero-text-primary);
-}
-
-.drawerFooter {
-  display: flex;
-  gap: 8px;
-  padding: 16px;
-  border-top: 1px solid var(--dialog-border);
-  background: var(--form-bg-start);
-}
-
-.drawerBtnPrimary {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, var(--dialog-primary) 0%, #2563eb 100%);
+  color: var(--hero-text-secondary);
+  background: transparent;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
+  text-align: left;
 }
 
-.drawerBtnPrimary:hover {
-  transform: translateY(-1px);
-}
-
-.drawerBtnSecondary {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--hero-text-secondary);
-  background: var(--dialog-surface);
-  border: 1px solid var(--dialog-border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.drawerBtnSecondary:hover {
-  background: var(--form-bg-start);
-}
-
-/* Left Drawer */
-.leftDrawer {
-  position: relative;
-  z-index: 11;
-  width: 220px;
-  background: var(--dialog-surface);
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-  animation: slideInLeft 0.3s ease;
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.drawerNav {
-  padding: 16px;
-}
-
-.drawerNavItem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  color: var(--hero-text-secondary);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.drawerNavItem:hover {
+.slidePanelAction:hover {
   background: var(--form-bg-start);
   color: var(--dialog-primary);
 }
@@ -5663,6 +5790,7 @@
   position: relative;
   z-index: 11;
   width: 100%;
+  max-width: 400px;
   background: var(--dialog-surface);
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
@@ -5778,47 +5906,81 @@
 /* Dialog Responsive */
 @media (max-width: 1200px) {
   .dialogGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .formDialog {
+    max-width: 680px;
   }
 }
 
 @media (max-width: 1024px) {
   .drawerGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .formDialog {
+    max-width: 90%;
+  }
+  
+  .formDialogGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
   .dialogGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .dialogBox {
-    max-width: calc(100% - 32px);
+  .formDialog {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .formDialogHeader {
+    padding: 20px;
+  }
+  
+  .formDialogBody {
+    padding: 20px;
+  }
+  
+  .formDialogGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .formDialogField.fullWidth {
+    grid-column: 1;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  .dialogGrid {
+    grid-template-columns: 1fr;
+  }
+
   .dialogCard {
     padding: 12px;
   }
-
-  .dialogHeader {
-    padding: 16px;
+  
+  .formDialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 16px 16px 0 0;
+    margin-top: auto;
   }
-
-  .dialogBody {
-    padding: 16px;
+  
+  .formDialogFooter {
+    flex-wrap: wrap;
   }
-
-  .dialogFooter {
-    padding: 12px 16px;
-  }
-
-  .dialogBtnPrimary,
-  .dialogBtnSecondary,
-  .dialogBtnDanger {
-    padding: 8px 14px;
-    font-size: 12px;
+  
+  .formDialogBtnSecondary,
+  .formDialogBtnDraft,
+  .formDialogBtnPrimary {
+    flex: 1;
+    justify-content: center;
   }
 }
