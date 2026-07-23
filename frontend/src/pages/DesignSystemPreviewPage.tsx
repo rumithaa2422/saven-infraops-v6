@@ -2586,11 +2586,20 @@ export function DesignSystemPreviewPage() {
 
             {/* Sidebar Navigation */}
             <div className={styles.navComponentCard}>
-              <h4 className={styles.navComponentTitle}>Sidebar Navigation</h4>
+              <h4 className={styles.navComponentTitle}>Sidebar Navigation (Premium Dark Theme)</h4>
               <div style={{ display: 'flex', gap: 16 }}>
+                {/* Full Sidebar */}
                 <div className={styles.sidebarNav}>
+                  {/* Logo Area */}
+                  <div className={styles.sidebarLogo}>
+                    <div className={styles.sidebarLogoIcon}>
+                      <Layers size={20} />
+                    </div>
+                    <span className={styles.sidebarLogoText}>Saven</span>
+                  </div>
+
                   <div className={styles.sidebarNavSection}>
-                    <div className={styles.sidebarNavSectionTitle}>Main</div>
+                    <div className={styles.sidebarNavSectionTitle}>Main Menu</div>
                     <button className={`${styles.sidebarNavItem} ${styles.active}`}>
                       <Layout size={18} />
                       Dashboard
@@ -2608,15 +2617,31 @@ export function DesignSystemPreviewPage() {
                       Projects
                     </button>
                   </div>
+
                   <div className={styles.sidebarNavSection}>
-                    <div className={styles.sidebarNavSectionTitle}>Settings</div>
+                    <div className={styles.sidebarNavSectionTitle}>System</div>
                     <button className={styles.sidebarNavItem}>
                       <Settings size={18} />
                       Settings
                     </button>
                   </div>
+
+                  {/* User Profile Section */}
+                  <div className={styles.sidebarUser}>
+                    <div className={styles.sidebarUserAvatar}>JD</div>
+                    <div className={styles.sidebarUserInfo}>
+                      <div className={styles.sidebarUserName}>John Doe</div>
+                      <div className={styles.sidebarUserRole}>Administrator</div>
+                    </div>
+                    <ChevronRight size={16} className={styles.sidebarUserArrow} />
+                  </div>
                 </div>
+
+                {/* Mini Sidebar */}
                 <div className={styles.miniSidebarNav}>
+                  <div className={styles.miniSidebarLogo}>
+                    <Layers size={24} />
+                  </div>
                   <button className={`${styles.miniSidebarItem} ${styles.active}`}>
                     <Layout size={20} />
                   </button>
@@ -2632,6 +2657,7 @@ export function DesignSystemPreviewPage() {
                   <button className={styles.miniSidebarItem}>
                     <Settings size={20} />
                   </button>
+                  <div className={styles.miniSidebarUser}>JD</div>
                 </div>
               </div>
             </div>

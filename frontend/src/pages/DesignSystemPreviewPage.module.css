@@ -6995,63 +6995,211 @@
 }
 
 /* ============================================
-   Sidebar Navigation
+   Sidebar Navigation (Premium Dark Theme)
    ============================================ */
 .sidebarNav {
-  width: 240px;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  padding: 16px 12px;
+  width: 260px;
+  background: linear-gradient(180deg, #0F172A 0%, #16213E 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  height: 400px;
 }
 
 .sidebarNavSection {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+}
+
+.sidebarNavSection:last-child {
+  margin-bottom: 0;
+  margin-top: auto;
 }
 
 .sidebarNavSectionTitle {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #9ca3af;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0 0 8px;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px;
   padding: 0 12px;
 }
 
-.sidebarNavItem {
+/* Logo Area */
+.sidebarLogo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 0 12px;
+  margin-bottom: 32px;
+}
+
+.sidebarLogoIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  border-radius: 10px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.sidebarLogoText {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+
+/* Navigation Items */
+.sidebarNavItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 14px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: #94a3b8;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   text-align: left;
+  margin-bottom: 4px;
+}
+
+.sidebarNavItem svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
 .sidebarNavItem:hover {
-  color: #111827;
-  background: #f3f4f6;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
 }
 
+.sidebarNavItem:hover svg {
+  color: #94a3b8;
+}
+
+/* Active State */
 .sidebarNavItem.active {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.08);
+  color: #ffffff;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+  box-shadow: 
+    inset 0 0 0 1px rgba(59, 130, 246, 0.3),
+    0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.sidebarNavItem.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.sidebarNavItem.active svg {
+  color: #60a5fa;
+}
+
+/* User Profile Section */
+.sidebarUser {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebarUser:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebarUserAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.sidebarUserInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebarUserName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebarUserRole {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.sidebarUserArrow {
+  color: #475569;
+  flex-shrink: 0;
 }
 
 /* ============================================
-   Mini Sidebar
+   Mini Sidebar (Premium Dark Theme)
    ============================================ */
 .miniSidebarNav {
-  width: 64px;
-  background: #1f2937;
-  padding: 16px 8px;
+  width: 72px;
+  background: linear-gradient(180deg, #0F172A 0%, #16213E 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 400px;
+}
+
+.miniSidebarLogo {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  border-radius: 12px;
+  color: white;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .miniSidebarItem {
@@ -7060,23 +7208,49 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: #64748b;
   background: transparent;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.miniSidebarItem svg {
+  width: 20px;
+  height: 20px;
 }
 
 .miniSidebarItem:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .miniSidebarItem.active {
   color: #ffffff;
-  background: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.15) 100%);
+  box-shadow: 
+    inset 0 0 0 1px rgba(59, 130, 246, 0.3),
+    0 0 16px rgba(59, 130, 246, 0.2);
+}
+
+.miniSidebarItem.active svg {
+  color: #60a5fa;
+}
+
+.miniSidebarUser {
+  margin-top: auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* ============================================
