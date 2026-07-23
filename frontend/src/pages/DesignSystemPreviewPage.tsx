@@ -100,6 +100,9 @@ export function DesignSystemPreviewPage() {
   const [borderRadius, setBorderRadius] = useState<'none' | 'sm' | 'md' | 'lg'>('md');
   const [searchQuery, setSearchQuery] = useState('');
   const [showPremiumForm, setShowPremiumForm] = useState(false);
+  const [previewTheme, setPreviewTheme] = useState<'light' | 'dark' | 'system'>('light');
+  const [previewDensity, setPreviewDensity] = useState<'compact' | 'default' | 'comfortable'>('default');
+  const [previewRadius, setPreviewRadius] = useState<'none' | 'sm' | 'md' | 'lg'>('md');
 
   const features = [
     {
@@ -2947,6 +2950,205 @@ export function DesignSystemPreviewPage() {
                       <div className={styles.searchResultContent}>
                         <div className={styles.searchResultTitle}>Cloud Migration Project</div>
                         <div className={styles.searchResultMeta}>Project · Active</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* THEME & RESPONSIVENESS SHOWCASE */}
+        {/* ============================================ */}
+        <div className={styles.themeShowcaseSection}>
+          <div className={styles.themeShowcaseHeader}>
+            <h2 className={styles.themeShowcaseTitle}>Theme & Responsiveness</h2>
+            <p className={styles.themeShowcaseSub}>Interactive theme controls and responsive design preview</p>
+          </div>
+
+          <div className={styles.themeShowcaseGrid}>
+            {/* Control Panel */}
+            <div className={styles.themeControlPanel}>
+              <h3 className={styles.themeControlTitle}>Controls</h3>
+              
+              {/* Theme Toggle */}
+              <div className={styles.themeControlGroup}>
+                <label className={styles.themeControlLabel}>Theme</label>
+                <div className={styles.themeToggleButtons}>
+                  <button 
+                    className={`${styles.themeToggleBtn} ${previewTheme === 'light' ? styles.active : ''}`}
+                    onClick={() => setPreviewTheme('light')}
+                  >
+                    <Sun size={16} />
+                    Light
+                  </button>
+                  <button 
+                    className={`${styles.themeToggleBtn} ${previewTheme === 'dark' ? styles.active : ''}`}
+                    onClick={() => setPreviewTheme('dark')}
+                  >
+                    <Moon size={16} />
+                    Dark
+                  </button>
+                  <button 
+                    className={`${styles.themeToggleBtn} ${previewTheme === 'system' ? styles.active : ''}`}
+                    onClick={() => setPreviewTheme('system')}
+                  >
+                    <Monitor size={16} />
+                    System
+                  </button>
+                </div>
+              </div>
+
+              {/* Density */}
+              <div className={styles.themeControlGroup}>
+                <label className={styles.themeControlLabel}>Density</label>
+                <div className={styles.densityButtons}>
+                  <button 
+                    className={`${styles.densityBtn} ${previewDensity === 'compact' ? styles.active : ''}`}
+                    onClick={() => setPreviewDensity('compact')}
+                  >
+                    Compact
+                  </button>
+                  <button 
+                    className={`${styles.densityBtn} ${previewDensity === 'default' ? styles.active : ''}`}
+                    onClick={() => setPreviewDensity('default')}
+                  >
+                    Default
+                  </button>
+                  <button 
+                    className={`${styles.densityBtn} ${previewDensity === 'comfortable' ? styles.active : ''}`}
+                    onClick={() => setPreviewDensity('comfortable')}
+                  >
+                    Comfortable
+                  </button>
+                </div>
+              </div>
+
+              {/* Border Radius */}
+              <div className={styles.themeControlGroup}>
+                <label className={styles.themeControlLabel}>Border Radius</label>
+                <div className={styles.radiusButtons}>
+                  <button 
+                    className={`${styles.radiusBtn} ${styles.small} ${previewRadius === 'none' ? styles.active : ''}`}
+                    onClick={() => setPreviewRadius('none')}
+                  >
+                    None
+                  </button>
+                  <button 
+                    className={`${styles.radiusBtn} ${styles.small} ${previewRadius === 'sm' ? styles.active : ''}`}
+                    onClick={() => setPreviewRadius('sm')}
+                  >
+                    Small
+                  </button>
+                  <button 
+                    className={`${styles.radiusBtn} ${styles.medium} ${previewRadius === 'md' ? styles.active : ''}`}
+                    onClick={() => setPreviewRadius('md')}
+                  >
+                    Medium
+                  </button>
+                  <button 
+                    className={`${styles.radiusBtn} ${styles.large} ${previewRadius === 'lg' ? styles.active : ''}`}
+                    onClick={() => setPreviewRadius('lg')}
+                  >
+                    Large
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Preview */}
+              <div className={styles.livePreviewCard}>
+                <div className={styles.livePreviewTitle}>Live Preview</div>
+                <div className={styles.livePreviewContent}>
+                  <button className={styles.livePreviewItem}>
+                    <CheckCircle size={14} />
+                    Item
+                  </button>
+                  <button className={styles.livePreviewItem}>
+                    <FileText size={14} />
+                    Card
+                  </button>
+                  <button className={`${styles.livePreviewItem} ${styles.primary}`}>
+                    <Plus size={14} />
+                    Button
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview Area */}
+            <div className={styles.themePreviewArea}>
+              <h3 className={styles.themePreviewTitle}>Responsive Device Preview</h3>
+              
+              <div className={styles.devicePreviewContainer}>
+                {/* Desktop */}
+                <div className={styles.devicePreview}>
+                  <span className={styles.devicePreviewLabel}>Desktop</span>
+                  <div className={`${styles.deviceFrame} ${styles.desktop}`}>
+                    <div className={styles.deviceHeader}>
+                      <span className={`${styles.deviceDot} ${styles.red}`} />
+                      <span className={`${styles.deviceDot} ${styles.yellow}`} />
+                      <span className={`${styles.deviceDot} ${styles.green}`} />
+                    </div>
+                    <div className={styles.deviceContent}>
+                      <div className={styles.deviceSidebar} />
+                      <div className={styles.deviceMain}>
+                        <div className={styles.deviceBar} />
+                        <div className={styles.deviceCard} />
+                        <div className={styles.deviceCard} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Laptop */}
+                <div className={styles.devicePreview}>
+                  <span className={styles.devicePreviewLabel}>Laptop</span>
+                  <div className={`${styles.deviceFrame} ${styles.laptop}`}>
+                    <div className={styles.deviceScreen}>
+                      <div className={styles.deviceTopbar} />
+                      <div className={styles.deviceBody}>
+                        <div className={styles.deviceSide} />
+                        <div className={styles.deviceContent}>
+                          <div className={styles.deviceItem} />
+                          <div className={styles.deviceItem} />
+                          <div className={styles.deviceItem} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.deviceBase} />
+                  </div>
+                </div>
+
+                {/* Tablet */}
+                <div className={styles.devicePreview}>
+                  <span className={styles.devicePreviewLabel}>Tablet</span>
+                  <div className={`${styles.deviceFrame} ${styles.tablet}`}>
+                    <div className={styles.deviceInner}>
+                      <div className={styles.deviceTopbar} />
+                      <div className={styles.deviceContent}>
+                        <div className={styles.deviceSide} />
+                        <div className={styles.deviceMain}>
+                          <div className={styles.deviceItem} />
+                          <div className={styles.deviceItem} />
+                          <div className={styles.deviceItem} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile */}
+                <div className={styles.devicePreview}>
+                  <span className={styles.devicePreviewLabel}>Mobile</span>
+                  <div className={`${styles.deviceFrame} ${styles.mobile}`}>
+                    <div className={styles.deviceInner}>
+                      <div className={styles.deviceTopbar} />
+                      <div className={styles.deviceContent}>
+                        <div className={styles.deviceItem} />
+                        <div className={styles.deviceItem} />
+                        <div className={styles.deviceItem} />
                       </div>
                     </div>
                   </div>
