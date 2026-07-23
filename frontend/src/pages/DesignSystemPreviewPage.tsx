@@ -144,7 +144,7 @@ export function DesignSystemPreviewPage() {
         <div className={styles.topBar}>
           <div className={styles.topBarLeft}>
             <div className={styles.logo}>
-              <Sparkles size={24} />
+              <Sparkles size={16} />
             </div>
             <span className={styles.versionBadge}>v2.0.0</span>
           </div>
@@ -187,7 +187,7 @@ export function DesignSystemPreviewPage() {
         {/* Search */}
         <div className={styles.searchContainer}>
           <div className={styles.searchBox}>
-            <Search className={styles.searchIcon} size={20} />
+            <Search className={styles.searchIcon} size={16} />
             <input
               type="text"
               className={styles.searchInput}
@@ -317,7 +317,7 @@ export function DesignSystemPreviewPage() {
           {features.map((feature, index) => (
             <div key={index} className={styles.featureCard}>
               <div className={styles.featureIcon}>
-                <feature.icon size={24} />
+                <feature.icon size={16} />
               </div>
               <h3 className={styles.featureTitle}>{feature.title}</h3>
               <p className={styles.featureDescription}>{feature.description}</p>
@@ -329,14 +329,14 @@ export function DesignSystemPreviewPage() {
         <div className={styles.ctaSection}>
           <div className={styles.ctaButtons}>
             <button type="button" className={`${styles.ctaButton} ${styles.ctaButtonPrimary}`}>
-              <Layout size={18} />
+              <Layout size={14} />
               Explore Components
-              <ArrowRight size={16} />
+              <ArrowRight size={12} />
             </button>
             <button type="button" className={`${styles.ctaButton} ${styles.ctaButtonSecondary}`}>
-              <Code2 size={18} />
+              <Code2 size={14} />
               View Documentation
-              <ExternalLink size={14} />
+              <ExternalLink size={12} />
             </button>
           </div>
         </div>
@@ -2981,21 +2981,21 @@ export function DesignSystemPreviewPage() {
                     className={`${styles.themeToggleBtn} ${previewTheme === 'light' ? styles.active : ''}`}
                     onClick={() => setPreviewTheme('light')}
                   >
-                    <Sun size={16} />
+                    <Sun size={14} />
                     Light
                   </button>
                   <button 
                     className={`${styles.themeToggleBtn} ${previewTheme === 'dark' ? styles.active : ''}`}
                     onClick={() => setPreviewTheme('dark')}
                   >
-                    <Moon size={16} />
+                    <Moon size={14} />
                     Dark
                   </button>
                   <button 
                     className={`${styles.themeToggleBtn} ${previewTheme === 'system' ? styles.active : ''}`}
                     onClick={() => setPreviewTheme('system')}
                   >
-                    <Monitor size={16} />
+                    <Monitor size={14} />
                     System
                   </button>
                 </div>
