@@ -83,6 +83,9 @@ import {
   DollarSign,
   Hash,
   Wifi,
+  Copy,
+  Share2,
+  LogOut,
 } from 'lucide-react';
 
 import styles from './DesignSystemPreviewPage.module.css';
@@ -2524,6 +2527,404 @@ export function DesignSystemPreviewPage() {
               <div className={styles.loadingEmptyState}>
                 <div className={styles.loadingSpinner} />
                 <p style={{ fontSize: 13, color: 'var(--hero-text-secondary)', marginTop: 16 }}>Loading content...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* ENTERPRISE NAVIGATION SHOWCASE */}
+        {/* ============================================ */}
+        <div className={styles.navShowcaseSection}>
+          <div className={styles.navShowcaseHeader}>
+            <h2 className={styles.navShowcaseTitle}>Enterprise Navigation</h2>
+            <p className={styles.navShowcaseSub}>Premium navigation components for enterprise applications</p>
+          </div>
+
+          {/* Navigation Components Grid */}
+          <div className={styles.navComponentsGrid}>
+            {/* Top Navigation */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Top Navigation</h4>
+              <div className={styles.topNav}>
+                <div className={styles.topNavLeft}>
+                  <div className={styles.topNavLogo}>
+                    <Layers size={20} />
+                    <span>Saven</span>
+                  </div>
+                  <div className={styles.topNavLinks}>
+                    <button className={`${styles.topNavLink} ${styles.active}`}>Dashboard</button>
+                    <button className={styles.topNavLink}>Projects</button>
+                    <button className={styles.topNavLink}>Reports</button>
+                    <button className={styles.topNavLink}>Settings</button>
+                  </div>
+                </div>
+                <div className={styles.topNavRight}>
+                  <button className={styles.topNavIconBtn}>
+                    <Search size={18} />
+                  </button>
+                  <button className={styles.topNavIconBtn}>
+                    <Bell size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Breadcrumbs */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Breadcrumbs</h4>
+              <div className={styles.breadcrumbs}>
+                <button className={styles.breadcrumbItem}>Home</button>
+                <span className={styles.breadcrumbSep}>/</span>
+                <button className={styles.breadcrumbItem}>Projects</button>
+                <span className={styles.breadcrumbSep}>/</span>
+                <button className={styles.breadcrumbItem}>Service Requests</button>
+                <span className={styles.breadcrumbSep}>/</span>
+                <span className={`${styles.breadcrumbItem} ${styles.current}`}>SR-1234</span>
+              </div>
+            </div>
+
+            {/* Sidebar Navigation */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Sidebar Navigation</h4>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div className={styles.sidebarNav}>
+                  <div className={styles.sidebarNavSection}>
+                    <div className={styles.sidebarNavSectionTitle}>Main</div>
+                    <button className={`${styles.sidebarNavItem} ${styles.active}`}>
+                      <Layout size={18} />
+                      Dashboard
+                    </button>
+                    <button className={styles.sidebarNavItem}>
+                      <FileText size={18} />
+                      Requests
+                    </button>
+                    <button className={styles.sidebarNavItem}>
+                      <Users size={18} />
+                      Users
+                    </button>
+                    <button className={styles.sidebarNavItem}>
+                      <Briefcase size={18} />
+                      Projects
+                    </button>
+                  </div>
+                  <div className={styles.sidebarNavSection}>
+                    <div className={styles.sidebarNavSectionTitle}>Settings</div>
+                    <button className={styles.sidebarNavItem}>
+                      <Settings size={18} />
+                      Settings
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.miniSidebarNav}>
+                  <button className={`${styles.miniSidebarItem} ${styles.active}`}>
+                    <Layout size={20} />
+                  </button>
+                  <button className={styles.miniSidebarItem}>
+                    <FileText size={20} />
+                  </button>
+                  <button className={styles.miniSidebarItem}>
+                    <Users size={20} />
+                  </button>
+                  <button className={styles.miniSidebarItem}>
+                    <Briefcase size={20} />
+                  </button>
+                  <button className={styles.miniSidebarItem}>
+                    <Settings size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Tabs</h4>
+              <div className={styles.tabs}>
+                <button className={`${styles.tab} ${styles.active}`}>Overview</button>
+                <button className={styles.tab}>Activity</button>
+                <button className={styles.tab}>Members</button>
+                <button className={styles.tab}>
+                  Settings
+                  <span className={styles.tabBadge}>3</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Secondary Tabs */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Secondary Tabs (Pill Style)</h4>
+              <div className={styles.secondaryTabs}>
+                <button className={`${styles.secondaryTab} ${styles.active}`}>All Items</button>
+                <button className={styles.secondaryTab}>Active</button>
+                <button className={styles.secondaryTab}>Pending</button>
+                <button className={styles.secondaryTab}>Archived</button>
+              </div>
+            </div>
+
+            {/* Context Menu */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Context Menu</h4>
+              <div className={styles.contextMenu}>
+                <div className={styles.contextMenuTrigger}>Right-click me</div>
+                <div className={styles.contextMenuDropdown}>
+                  <button className={styles.contextMenuItem}>
+                    <Edit2 size={16} />
+                    Edit
+                    <span className={styles.contextMenuShortcut}>
+                      <span className={styles.commandPaletteKey}>⌘</span>
+                      <span className={styles.commandPaletteKey}>E</span>
+                    </span>
+                  </button>
+                  <button className={styles.contextMenuItem}>
+                    <Copy size={16} />
+                    Duplicate
+                    <span className={styles.contextMenuShortcut}>
+                      <span className={styles.commandPaletteKey}>⌘</span>
+                      <span className={styles.commandPaletteKey}>D</span>
+                    </span>
+                  </button>
+                  <button className={styles.contextMenuItem}>
+                    <Share2 size={16} />
+                    Share
+                  </button>
+                  <div className={styles.contextMenuSep} />
+                  <button className={`${styles.contextMenuItem} ${styles.danger}`}>
+                    <Trash2 size={16} />
+                    Delete
+                    <span className={styles.contextMenuShortcut}>
+                      <span className={styles.commandPaletteKey}>⌘</span>
+                      <span className={styles.commandPaletteKey}>⌫</span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Dropdown Menu */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Dropdown Menu</h4>
+              <div className={styles.dropdownMenu}>
+                <button className={styles.dropdownMenuTrigger}>
+                  Actions
+                  <ChevronDown size={16} />
+                </button>
+                <div className={styles.dropdownMenuContent}>
+                  <button className={styles.dropdownMenuItem}>
+                    <Plus size={16} />
+                    New Request
+                  </button>
+                  <button className={styles.dropdownMenuItem}>
+                    <Upload size={16} />
+                    Import Data
+                  </button>
+                  <button className={styles.dropdownMenuItem}>
+                    <Download size={16} />
+                    Export Data
+                  </button>
+                  <div className={styles.contextMenuSep} />
+                  <button className={styles.dropdownMenuItem}>
+                    <Settings size={16} />
+                    Preferences
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* User Menu */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>User Menu</h4>
+              <div className={styles.userMenu}>
+                <div className={styles.userAvatar}>JD</div>
+                <div className={styles.userInfo}>
+                  <div className={styles.userName}>John Doe</div>
+                  <div className={styles.userRole}>Administrator</div>
+                </div>
+                <ChevronDown size={16} style={{ color: '#9ca3af' }} />
+              </div>
+              <div className={styles.userMenuDropdown} style={{ position: 'relative', marginTop: 8 }}>
+                <div className={styles.userMenuHeader}>
+                  <div className={styles.userMenuAvatar}>JD</div>
+                  <div>
+                    <div className={styles.userName}>John Doe</div>
+                    <div className={styles.userRole}>john.doe@company.com</div>
+                  </div>
+                </div>
+                <button className={styles.dropdownMenuItem}>
+                  <User size={16} />
+                  Profile
+                </button>
+                <button className={styles.dropdownMenuItem}>
+                  <Settings size={16} />
+                  Settings
+                </button>
+                <div className={styles.contextMenuSep} />
+                <button className={`${styles.dropdownMenuItem} ${styles.danger}`}>
+                  <LogOut size={16} />
+                  Sign Out
+                </button>
+              </div>
+            </div>
+
+            {/* Pagination */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Pagination</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className={styles.pagination}>
+                  <button className={styles.paginationBtn} disabled>
+                    <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
+                  </button>
+                  <button className={styles.paginationBtn}>1</button>
+                  <button className={`${styles.paginationBtn} ${styles.active}`}>2</button>
+                  <button className={styles.paginationBtn}>3</button>
+                  <span className={styles.paginationEllipsis}>...</span>
+                  <button className={styles.paginationBtn}>10</button>
+                  <button className={styles.paginationBtn}>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+                <div className={styles.pageSizeSelector}>
+                  <span className={styles.pageSizeLabel}>Rows per page:</span>
+                  <select className={styles.pageSizeSelect} defaultValue="25">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Chips */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Navigation Chips</h4>
+              <div className={styles.navChips}>
+                <button className={`${styles.navChip} ${styles.active}`}>
+                  <Tag size={14} />
+                  Active
+                </button>
+                <button className={styles.navChip}>
+                  <Tag size={14} />
+                  In Progress
+                </button>
+                <button className={styles.navChip}>
+                  <Tag size={14} />
+                  Pending
+                </button>
+                <button className={styles.navChip}>
+                  Completed
+                  <button className={styles.navChipClose}>
+                    <X size={12} />
+                  </button>
+                </button>
+              </div>
+            </div>
+
+            {/* Command Palette Preview */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Command Palette</h4>
+              <div style={{ position: 'relative' }}>
+                <div className={styles.commandPalette} style={{ position: 'relative' }}>
+                  <div className={styles.commandPaletteSearch}>
+                    <Search size={18} className={styles.commandPaletteSearchIcon} />
+                    <input type="text" className={styles.commandPaletteInput} placeholder="Type a command or search..." readOnly />
+                  </div>
+                  <div className={styles.commandPaletteResults}>
+                    <div className={styles.commandPaletteGroup}>
+                      <div className={styles.commandPaletteGroupTitle}>Quick Actions</div>
+                      <button className={`${styles.commandPaletteItem} ${styles.selected}`}>
+                        <div className={styles.commandPaletteItemIcon}>
+                          <Plus size={16} />
+                        </div>
+                        <div className={styles.commandPaletteItemContent}>
+                          <div className={styles.commandPaletteItemTitle}>Create New Request</div>
+                          <div className={styles.commandPaletteItemDesc}>Open the request creation form</div>
+                        </div>
+                        <div className={styles.commandPaletteShortcut}>
+                          <span className={styles.commandPaletteKey}>⌘</span>
+                          <span className={styles.commandPaletteKey}>N</span>
+                        </div>
+                      </button>
+                      <button className={styles.commandPaletteItem}>
+                        <div className={styles.commandPaletteItemIcon}>
+                          <Search size={16} />
+                        </div>
+                        <div className={styles.commandPaletteItemContent}>
+                          <div className={styles.commandPaletteItemTitle}>Search Everything</div>
+                          <div className={styles.commandPaletteItemDesc}>Search across all content</div>
+                        </div>
+                        <div className={styles.commandPaletteShortcut}>
+                          <span className={styles.commandPaletteKey}>⌘</span>
+                          <span className={styles.commandPaletteKey}>K</span>
+                        </div>
+                      </button>
+                    </div>
+                    <div className={styles.commandPaletteGroup}>
+                      <div className={styles.commandPaletteGroupTitle}>Navigation</div>
+                      <button className={styles.commandPaletteItem}>
+                        <div className={styles.commandPaletteItemIcon}>
+                          <Layout size={16} />
+                        </div>
+                        <div className={styles.commandPaletteItemContent}>
+                          <div className={styles.commandPaletteItemTitle}>Go to Dashboard</div>
+                          <div className={styles.commandPaletteItemDesc}>View your dashboard</div>
+                        </div>
+                      </button>
+                      <button className={styles.commandPaletteItem}>
+                        <div className={styles.commandPaletteItemIcon}>
+                          <FileText size={16} />
+                        </div>
+                        <div className={styles.commandPaletteItemContent}>
+                          <div className={styles.commandPaletteItemTitle}>View All Requests</div>
+                          <div className={styles.commandPaletteItemDesc}>Browse service requests</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search Overlay Preview */}
+            <div className={styles.navComponentCard}>
+              <h4 className={styles.navComponentTitle}>Search Overlay</h4>
+              <div style={{ position: 'relative' }}>
+                <div className={styles.searchModal} style={{ position: 'relative' }}>
+                  <div className={styles.searchModalHeader}>
+                    <Search size={18} style={{ color: '#9ca3af' }} />
+                    <input type="text" className={styles.searchModalInput} placeholder="Search requests, users, projects..." readOnly />
+                    <button className={styles.searchModalClose}>ESC</button>
+                  </div>
+                  <div className={styles.searchModalBody}>
+                    <div className={styles.searchRecentTitle}>Recent Searches</div>
+                    <div className={styles.searchResultItem}>
+                      <div className={styles.searchResultIcon}>
+                        <Clock size={16} />
+                      </div>
+                      <div className={styles.searchResultContent}>
+                        <div className={styles.searchResultTitle}>Password reset request</div>
+                        <div className={styles.searchResultMeta}>Service Request · SR-1234</div>
+                      </div>
+                    </div>
+                    <div className={styles.searchResultItem}>
+                      <div className={styles.searchResultIcon}>
+                        <User size={16} />
+                      </div>
+                      <div className={styles.searchResultContent}>
+                        <div className={styles.searchResultTitle}>John Doe</div>
+                        <div className={styles.searchResultMeta}>User · Engineering</div>
+                      </div>
+                    </div>
+                    <div className={styles.searchResultItem}>
+                      <div className={styles.searchResultIcon}>
+                        <Briefcase size={16} />
+                      </div>
+                      <div className={styles.searchResultContent}>
+                        <div className={styles.searchResultTitle}>Cloud Migration Project</div>
+                        <div className={styles.searchResultMeta}>Project · Active</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
