@@ -751,16 +751,21 @@ export function DesignSystemPreviewPage() {
           {/* Total - Blue */}
           <div className={styles.summaryCard} data-type="total">
             <div className={styles.summaryCardContent}>
-              <div className={styles.summaryIconWrap}>
-                <Ticket size={24} />
+              <div className={styles.summaryCardHeader}>
+                <div className={styles.summaryIconWrap}>
+                  <Ticket size={16} />
+                </div>
+                <div className={styles.summaryHeaderRight}>
+                  <span className={styles.summaryLabel}>Total</span>
+                  <span className={styles.summaryTrend}>
+                    <TrendingUp size={12} />
+                    +12%
+                  </span>
+                </div>
               </div>
               <div className={styles.summaryContent}>
-                <span className={styles.summaryLabel}>Total</span>
                 <span className={styles.summaryValue}>156</span>
-                <span className={styles.summaryTrend}>
-                  <TrendingUp size={14} />
-                  +12%
-                </span>
+                <span className={styles.summaryHelper}>Updated 5 mins ago</span>
               </div>
             </div>
           </div>
@@ -768,16 +773,21 @@ export function DesignSystemPreviewPage() {
           {/* Open - Orange */}
           <div className={styles.summaryCard} data-type="open">
             <div className={styles.summaryCardContent}>
-              <div className={styles.summaryIconWrap}>
-                <AlertCircle size={24} />
+              <div className={styles.summaryCardHeader}>
+                <div className={styles.summaryIconWrap}>
+                  <AlertCircle size={16} />
+                </div>
+                <div className={styles.summaryHeaderRight}>
+                  <span className={styles.summaryLabel}>Open</span>
+                  <span className={styles.summaryTrend}>
+                    <TrendingDown size={12} />
+                    -4%
+                  </span>
+                </div>
               </div>
               <div className={styles.summaryContent}>
-                <span className={styles.summaryLabel}>Open</span>
                 <span className={styles.summaryValue}>45</span>
-                <span className={styles.summaryTrend}>
-                  <TrendingDown size={14} />
-                  -4%
-                </span>
+                <span className={styles.summaryHelper}>Active this week</span>
               </div>
             </div>
           </div>
@@ -785,16 +795,21 @@ export function DesignSystemPreviewPage() {
           {/* Pending - Purple */}
           <div className={styles.summaryCard} data-type="pending">
             <div className={styles.summaryCardContent}>
-              <div className={styles.summaryIconWrap}>
-                <Clock size={24} />
+              <div className={styles.summaryCardHeader}>
+                <div className={styles.summaryIconWrap}>
+                  <Clock size={16} />
+                </div>
+                <div className={styles.summaryHeaderRight}>
+                  <span className={styles.summaryLabel}>Pending</span>
+                  <span className={styles.summaryTrend}>
+                    <Minus size={12} />
+                    0%
+                  </span>
+                </div>
               </div>
               <div className={styles.summaryContent}>
-                <span className={styles.summaryLabel}>Pending</span>
                 <span className={styles.summaryValue}>23</span>
-                <span className={styles.summaryTrend}>
-                  <Minus size={14} />
-                  0%
-                </span>
+                <span className={styles.summaryHelper}>Awaiting review</span>
               </div>
             </div>
           </div>
@@ -802,16 +817,21 @@ export function DesignSystemPreviewPage() {
           {/* Resolved - Green */}
           <div className={styles.summaryCard} data-type="resolved">
             <div className={styles.summaryCardContent}>
-              <div className={styles.summaryIconWrap}>
-                <CheckCircle2 size={24} />
+              <div className={styles.summaryCardHeader}>
+                <div className={styles.summaryIconWrap}>
+                  <CheckCircle2 size={16} />
+                </div>
+                <div className={styles.summaryHeaderRight}>
+                  <span className={styles.summaryLabel}>Resolved</span>
+                  <span className={styles.summaryTrend}>
+                    <TrendingUp size={12} />
+                    +8%
+                  </span>
+                </div>
               </div>
               <div className={styles.summaryContent}>
-                <span className={styles.summaryLabel}>Resolved</span>
                 <span className={styles.summaryValue}>88</span>
-                <span className={styles.summaryTrend}>
-                  <TrendingUp size={14} />
-                  +8%
-                </span>
+                <span className={styles.summaryHelper}>Compared to yesterday</span>
               </div>
             </div>
           </div>

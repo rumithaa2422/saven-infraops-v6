@@ -1871,17 +1871,17 @@
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
-/* Premium KPI Card */
+/* Premium KPI Card - Compact Enterprise Layout */
 .summaryCard {
   display: flex;
   flex-direction: column;
   padding: 0;
   background: var(--list-surface);
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 
     0 1px 3px rgba(15, 23, 42, 0.04),
     0 4px 12px rgba(15, 23, 42, 0.06);
@@ -1889,6 +1889,7 @@
   position: relative;
   overflow: hidden;
   border: 1px solid transparent;
+  min-height: auto;
 }
 
 /* Glass-like top gradient overlay */
@@ -1900,26 +1901,26 @@
   right: 0;
   height: 100%;
   background: var(--kpi-gradient-bg, linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%));
-  opacity: 0.6;
+  opacity: 0.5;
   transition: opacity 0.3s ease;
   pointer-events: none;
 }
 
-/* Colored top accent border */
+/* Colored left accent border */
 .summaryCard::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--kpi-accent), var(--kpi-accent-light));
-  transition: height 0.3s ease;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--kpi-accent), var(--kpi-accent-light));
+  transition: width 0.3s ease;
 }
 
 /* Card hover state */
 .summaryCard:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: 
     0 4px 8px rgba(15, 23, 42, 0.06),
     0 12px 32px rgba(15, 23, 42, 0.1),
@@ -1928,67 +1929,100 @@
 }
 
 .summaryCard:hover::before {
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .summaryCard:hover::after {
-  height: 4px;
+  width: 5px;
 }
 
-/* Card Content Container */
+/* Card Content Container - Compact */
 .summaryCardContent {
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 14px 16px;
   position: relative;
   z-index: 1;
 }
 
-/* Icon Container - Circular with glow */
+/* Card Header - Horizontal Layout */
+.summaryCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* Icon Container - Smaller, inline */
 .summaryIconWrap {
-  width: 52px;
-  height: 52px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--kpi-accent) 0%, var(--kpi-accent-dark) 100%);
-  border-radius: 14px;
+  border-radius: 8px;
   flex-shrink: 0;
-  margin-bottom: 16px;
   box-shadow: 
-    0 4px 12px var(--kpi-glow),
+    0 2px 8px var(--kpi-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
   position: relative;
 }
 
-/* Soft glow behind icon */
-.summaryIconWrap::before {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  background: radial-gradient(circle, var(--kpi-glow) 0%, transparent 70%);
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
 .summaryIconWrap svg {
   color: white;
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .summaryCard:hover .summaryIconWrap {
   transform: scale(1.05);
   box-shadow: 
-    0 6px 16px var(--kpi-glow),
+    0 4px 12px var(--kpi-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-.summaryCard:hover .summaryIconWrap::before {
-  opacity: 0.8;
+/* Header Right - Label + Trend inline */
+.summaryHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Label - Small and Muted */
+.summaryLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kpi-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.9;
+}
+
+/* Trend Container - Compact pill */
+.summaryTrend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kpi-trend-color, #64748b);
+  padding: 3px 8px;
+  background: var(--kpi-trend-bg, rgba(100, 116, 139, 0.08));
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.summaryTrend svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.summaryCard:hover .summaryTrend {
+  background: var(--kpi-trend-bg-hover, rgba(100, 116, 139, 0.12));
 }
 
 /* Content Layout */
@@ -1999,51 +2033,22 @@
   min-width: 0;
 }
 
-/* Label - Small and Muted */
-.summaryLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--kpi-accent);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 6px;
-  opacity: 0.9;
-}
-
 /* KPI Value - Large and Bold */
 .summaryValue {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
   color: var(--hero-text-primary);
   line-height: 1;
   letter-spacing: -0.03em;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   text-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-/* Trend Container */
-.summaryTrend {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--kpi-trend-color, #64748b);
-  padding: 4px 10px;
-  background: var(--kpi-trend-bg, rgba(100, 116, 139, 0.08));
-  border-radius: 8px;
-  align-self: flex-start;
-  transition: all 0.2s ease;
-}
-
-.summaryTrend svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.summaryCard:hover .summaryTrend {
-  background: var(--kpi-trend-bg-hover, rgba(100, 116, 139, 0.12));
+/* Helper Text - Small info at bottom */
+.summaryHelper {
+  font-size: 11px;
+  color: var(--hero-text-muted);
+  line-height: 1.3;
 }
 
 /* ========== KPI Card Color Variants ========== */
