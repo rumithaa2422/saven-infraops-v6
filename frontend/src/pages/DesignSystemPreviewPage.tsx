@@ -96,6 +96,7 @@ export function DesignSystemPreviewPage() {
   const [density, setDensity] = useState<'compact' | 'default' | 'comfortable'>('default');
   const [borderRadius, setBorderRadius] = useState<'none' | 'sm' | 'md' | 'lg'>('md');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showPremiumForm, setShowPremiumForm] = useState(false);
 
   const features = [
     {
@@ -2030,16 +2031,28 @@ export function DesignSystemPreviewPage() {
           <h4 className={styles.dialogCardTitle}>Premium Form Dialog</h4>
           <p className={styles.dialogCardDesc}>Standard Create/Edit dialog - full viewport modal</p>
           
-          {/* Full Viewport Premium Modal Overlay */}
-          <div className={styles.premiumModalOverlay}>
-            <div className={styles.premiumFormDialog}>
+          <div className={styles.dialogPreview} style={{ minHeight: 120 }}>
+            <button 
+              className={styles.premiumFormBtnPrimary} 
+              onClick={() => setShowPremiumForm(true)}
+            >
+              <Plus size={16} />
+              Open Create Form
+            </button>
+          </div>
+        </div>
+
+        {/* Premium Form Modal - Rendered at end of page when active */}
+        {showPremiumForm && (
+          <div className={styles.premiumModalOverlay} onClick={() => setShowPremiumForm(false)}>
+            <div className={styles.premiumFormDialog} onClick={(e) => e.stopPropagation()}>
               {/* Sticky Header */}
               <div className={styles.premiumFormDialogHeader}>
                 <div className={styles.premiumFormDialogHeaderContent}>
                   <h3 className={styles.premiumFormDialogTitle}>Create New Request</h3>
                   <p className={styles.premiumFormDialogSubtitle}>Fill in the required information to create a new service request</p>
                 </div>
-                <button className={styles.premiumFormDialogClose}>
+                <button className={styles.premiumFormDialogClose} onClick={() => setShowPremiumForm(false)}>
                   <X size={18} />
                 </button>
               </div>
@@ -2139,13 +2152,13 @@ export function DesignSystemPreviewPage() {
               
               {/* Sticky Footer */}
               <div className={styles.premiumFormDialogFooter}>
-                <button className={styles.premiumFormBtnSecondary}>Cancel</button>
+                <button className={styles.premiumFormBtnSecondary} onClick={() => setShowPremiumForm(false)}>Cancel</button>
                 <button className={styles.premiumFormBtnDraft}>Save Draft</button>
                 <button className={styles.premiumFormBtnPrimary}>Create Request</button>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Bottom Sheet & Slide Panel */}
         <div className={styles.drawerSection}>
