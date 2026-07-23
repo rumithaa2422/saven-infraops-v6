@@ -82,6 +82,7 @@ import {
   Briefcase,
   DollarSign,
   Hash,
+  Wifi,
 } from 'lucide-react';
 
 import styles from './DesignSystemPreviewPage.module.css';
@@ -2206,6 +2207,300 @@ export function DesignSystemPreviewPage() {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* ENTERPRISE EMPTY STATES */}
+        {/* ============================================ */}
+        <div className={styles.emptyStatesSection}>
+          <div className={styles.emptyStatesSectionHeader}>
+            <h2 className={styles.emptyStatesSectionTitle}>Enterprise Empty States</h2>
+            <p className={styles.emptyStatesSectionSub}>Modern empty state illustrations using icons only</p>
+          </div>
+
+          {/* Empty States Grid */}
+          <div className={styles.emptyStatesGrid}>
+            {/* No Data */}
+            <div className={styles.emptyStateCard} data-variant="default">
+              <div className={styles.emptyStateIconWrap}>
+                <Database size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Data</h4>
+              <p className={styles.emptyStateDesc}>No data available yet</p>
+            </div>
+
+            {/* No Search Results */}
+            <div className={styles.emptyStateCard} data-variant="search">
+              <div className={styles.emptyStateIconWrap}>
+                <Search size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Results</h4>
+              <p className={styles.emptyStateDesc}>Try adjusting your search</p>
+            </div>
+
+            {/* No Permissions */}
+            <div className={styles.emptyStateCard} data-variant="permission">
+              <div className={styles.emptyStateIconWrap}>
+                <Shield size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Access</h4>
+              <p className={styles.emptyStateDesc}>You lack required permissions</p>
+            </div>
+
+            {/* No Notifications */}
+            <div className={styles.emptyStateCard} data-variant="muted">
+              <div className={styles.emptyStateIconWrap}>
+                <Bell size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>All Caught Up</h4>
+              <p className={styles.emptyStateDesc}>No new notifications</p>
+            </div>
+
+            {/* No Projects */}
+            <div className={styles.emptyStateCard} data-variant="default">
+              <div className={styles.emptyStateIconWrap}>
+                <FolderOpen size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Projects</h4>
+              <p className={styles.emptyStateDesc}>Create your first project</p>
+            </div>
+
+            {/* No Incidents */}
+            <div className={styles.emptyStateCard} data-variant="success">
+              <div className={styles.emptyStateIconWrap}>
+                <CheckCircle2 size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Incidents</h4>
+              <p className={styles.emptyStateDesc}>All systems operational</p>
+            </div>
+
+            {/* No Requests */}
+            <div className={styles.emptyStateCard} data-variant="default">
+              <div className={styles.emptyStateIconWrap}>
+                <Ticket size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Requests</h4>
+              <p className={styles.emptyStateDesc}>No requests to display</p>
+            </div>
+
+            {/* No Vendors */}
+            <div className={styles.emptyStateCard} data-variant="default">
+              <div className={styles.emptyStateIconWrap}>
+                <Building size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Vendors</h4>
+              <p className={styles.emptyStateDesc}>Add your first vendor</p>
+            </div>
+
+            {/* No Assets */}
+            <div className={styles.emptyStateCard} data-variant="default">
+              <div className={styles.emptyStateIconWrap}>
+                <Monitor size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Assets</h4>
+              <p className={styles.emptyStateDesc}>Start tracking assets</p>
+            </div>
+
+            {/* No Internet */}
+            <div className={styles.emptyStateCard} data-variant="danger">
+              <div className={styles.emptyStateIconWrap}>
+                <Wifi size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>No Connection</h4>
+              <p className={styles.emptyStateDesc}>Check your internet</p>
+            </div>
+
+            {/* Server Error */}
+            <div className={styles.emptyStateCard} data-variant="danger">
+              <div className={styles.emptyStateIconWrap}>
+                <AlertOctagon size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>Server Error</h4>
+              <p className={styles.emptyStateDesc}>Please try again later</p>
+            </div>
+
+            {/* 404 */}
+            <div className={styles.emptyStateCard} data-variant="muted">
+              <div className={styles.emptyStateIconWrap}>
+                <File size={24} />
+              </div>
+              <h4 className={styles.emptyStateTitle}>404 - Not Found</h4>
+              <p className={styles.emptyStateDesc}>Page doesn't exist</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* ENTERPRISE LOADING STATES */}
+        {/* ============================================ */}
+        <div className={styles.loadingStatesSection}>
+          <div className={styles.loadingStatesSectionHeader}>
+            <h2 className={styles.loadingStatesSectionTitle}>Enterprise Loading States</h2>
+            <p className={styles.loadingStatesSectionSub}>Skeleton screens and progress indicators</p>
+          </div>
+
+          {/* Loading States Grid */}
+          <div className={styles.loadingStatesGrid}>
+            {/* Skeleton Cards */}
+            <div className={styles.loadingStateCard}>
+              <h4 className={styles.loadingStateTitle}>Skeleton Cards</h4>
+              <div className={styles.skeletonCard}>
+                <div className={styles.skeletonCardHeader}>
+                  <div className={styles.skeletonAvatar} />
+                  <div className={styles.skeletonCardLines}>
+                    <div className={styles.skeletonLine} style={{ width: '60%', height: 14 }} />
+                    <div className={styles.skeletonLine} />
+                  </div>
+                </div>
+                <div className={styles.skeletonCardBody}>
+                  <div className={styles.skeletonLine} />
+                  <div className={styles.skeletonLine} />
+                  <div className={styles.skeletonLine} style={{ width: '50%' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Skeleton Table */}
+            <div className={styles.loadingStateCard}>
+              <h4 className={styles.loadingStateTitle}>Skeleton Table</h4>
+              <div className={styles.skeletonTable}>
+                <div className={styles.skeletonTableHeader}>
+                  <div className={styles.skeletonTableHeaderCell} style={{ flex: 0.5 }} />
+                  <div className={styles.skeletonTableHeaderCell} />
+                  <div className={styles.skeletonTableHeaderCell} />
+                </div>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={styles.skeletonTableRow}>
+                    <div className={styles.skeletonTableCell} />
+                    <div className={styles.skeletonTableCell} />
+                    <div className={styles.skeletonTableCell} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Skeleton Form */}
+            <div className={styles.loadingStateCard}>
+              <h4 className={styles.loadingStateTitle}>Skeleton Form</h4>
+              <div className={styles.skeletonForm}>
+                <div className={styles.skeletonFormField}>
+                  <div className={styles.skeletonFormLabel} />
+                  <div className={styles.skeletonFormInput} />
+                </div>
+                <div className={styles.skeletonFormField}>
+                  <div className={styles.skeletonFormLabel} />
+                  <div className={styles.skeletonFormInput} />
+                </div>
+                <div className={styles.skeletonFormField}>
+                  <div className={styles.skeletonFormLabel} />
+                  <div className={styles.skeletonFormInput} />
+                </div>
+              </div>
+            </div>
+
+            {/* Linear Progress */}
+            <div className={styles.loadingStateCard}>
+              <h4 className={styles.loadingStateTitle}>Linear Progress</h4>
+              <div className={styles.progressContainer}>
+                <div className={styles.progressWithLabel}>
+                  <div className={styles.progressLabel}>
+                    <span>Processing</span>
+                    <span className={styles.progressValue}>75%</span>
+                  </div>
+                  <div className={styles.linearProgress}>
+                    <div className={styles.linearProgressBar} style={{ width: '75%' }} />
+                  </div>
+                </div>
+                <div className={styles.progressWithLabel}>
+                  <div className={styles.progressLabel}>
+                    <span>Completed</span>
+                    <span className={styles.progressValue}>100%</span>
+                  </div>
+                  <div className={styles.linearProgress}>
+                    <div className={styles.linearProgressBar} data-state="success" style={{ width: '100%' }} />
+                  </div>
+                </div>
+                <div className={styles.progressWithLabel}>
+                  <div className={styles.progressLabel}>
+                    <span>Warning</span>
+                    <span className={styles.progressValue}>45%</span>
+                  </div>
+                  <div className={styles.linearProgress}>
+                    <div className={styles.linearProgressBar} data-state="warning" style={{ width: '45%' }} />
+                  </div>
+                </div>
+                <div className={styles.progressWithLabel}>
+                  <div className={styles.progressLabel}>
+                    <span>Error</span>
+                    <span className={styles.progressValue}>25%</span>
+                  </div>
+                  <div className={styles.linearProgress}>
+                    <div className={styles.linearProgressBar} data-state="danger" style={{ width: '25%' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Circular Progress */}
+            <div className={styles.loadingStateCard}>
+              <h4 className={styles.loadingStateTitle}>Circular Progress</h4>
+              <div className={styles.progressGrid}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <div className={styles.circularProgress} style={{ position: 'relative', width: 64, height: 64 }}>
+                    <svg className={styles.circularProgressSvg} width="64" height="64" viewBox="0 0 64 64">
+                      <circle className={styles.circularProgressTrack} cx="32" cy="32" r="28" strokeWidth="6" />
+                      <circle className={styles.circularProgressFill} cx="32" cy="32" r="28" strokeWidth="6" 
+                        strokeDasharray="175.9" strokeDashoffset="44" />
+                    </svg>
+                    <span style={{ position: 'absolute', fontSize: 14, fontWeight: 600, color: 'var(--hero-text-primary)' }}>75%</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--hero-text-secondary)' }}>Default</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <div className={styles.circularProgress} style={{ position: 'relative', width: 64, height: 64 }}>
+                    <svg className={styles.circularProgressSvg} width="64" height="64" viewBox="0 0 64 64">
+                      <circle className={styles.circularProgressTrack} cx="32" cy="32" r="28" strokeWidth="6" />
+                      <circle className={styles.circularProgressFill} data-state="success" cx="32" cy="32" r="28" strokeWidth="6" 
+                        strokeDasharray="175.9" strokeDashoffset="0" />
+                    </svg>
+                    <span style={{ position: 'absolute', fontSize: 14, fontWeight: 600, color: 'var(--hero-text-primary)' }}>100%</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--hero-text-secondary)' }}>Success</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <div className={styles.circularProgress} style={{ position: 'relative', width: 64, height: 64 }}>
+                    <svg className={styles.circularProgressSvg} width="64" height="64" viewBox="0 0 64 64">
+                      <circle className={styles.circularProgressTrack} cx="32" cy="32" r="28" strokeWidth="6" />
+                      <circle className={styles.circularProgressFill} data-state="warning" cx="32" cy="32" r="28" strokeWidth="6" 
+                        strokeDasharray="175.9" strokeDashoffset="96" />
+                    </svg>
+                    <span style={{ position: 'absolute', fontSize: 14, fontWeight: 600, color: 'var(--hero-text-primary)' }}>45%</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--hero-text-secondary)' }}>Warning</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <div className={styles.circularProgress} style={{ position: 'relative', width: 64, height: 64 }}>
+                    <svg className={styles.circularProgressSvg} width="64" height="64" viewBox="0 0 64 64">
+                      <circle className={styles.circularProgressTrack} cx="32" cy="32" r="28" strokeWidth="6" />
+                      <circle className={styles.circularProgressFill} data-state="danger" cx="32" cy="32" r="28" strokeWidth="6" 
+                        strokeDasharray="175.9" strokeDashoffset="132" />
+                    </svg>
+                    <span style={{ position: 'absolute', fontSize: 14, fontWeight: 600, color: 'var(--hero-text-primary)' }}>25%</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--hero-text-secondary)' }}>Error</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Loading Spinner */}
+            <div className={styles.loadingStateCard}>
+              <h4 className={styles.loadingStateTitle}>Loading Spinner</h4>
+              <div className={styles.loadingEmptyState}>
+                <div className={styles.loadingSpinner} />
+                <p style={{ fontSize: 13, color: 'var(--hero-text-secondary)', marginTop: 16 }}>Loading content...</p>
               </div>
             </div>
           </div>
