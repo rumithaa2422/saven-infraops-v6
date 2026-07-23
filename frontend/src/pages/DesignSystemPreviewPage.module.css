@@ -5215,6 +5215,377 @@
 }
 
 /* ============================================
+   PREMIUM MODAL OVERLAY (Full Viewport)
+   ============================================ */
+.premiumModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: premiumOverlayFadeIn 0.2s ease-out;
+}
+
+@keyframes premiumOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   PREMIUM FORM DIALOG (Full Viewport Modal)
+   ============================================ */
+.premiumFormDialog {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  max-height: calc(100vh - 48px);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 
+    0 0 0 1px rgba(0, 0, 0, 0.05),
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 20px -3px rgba(0, 0, 0, 0.08),
+    0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: premiumDialogSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes premiumDialogSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Premium Form Dialog Header */
+.premiumFormDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  background: #ffffff;
+}
+
+.premiumFormDialogHeaderContent {
+  flex: 1;
+  padding-right: 16px;
+}
+
+.premiumFormDialogTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.premiumFormDialogSubtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.premiumFormDialogClose {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin: -4px -4px 0 0;
+}
+
+.premiumFormDialogClose:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Premium Form Dialog Body */
+.premiumFormDialogBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  background: #f9fafb;
+}
+
+/* Premium Form Two-Column Grid */
+.premiumFormDialogGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Premium Full Width */
+.premiumFullWidth {
+  grid-column: 1 / -1;
+}
+
+/* Premium Form Section */
+.premiumFormSection {
+  margin-bottom: 28px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.premiumFormSection:last-child {
+  margin-bottom: 0;
+}
+
+.premiumFormSectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Premium Form Field */
+.premiumFormField {
+  margin-bottom: 16px;
+}
+
+.premiumFormField:last-child {
+  margin-bottom: 0;
+}
+
+.premiumFormLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.premiumFormRequired {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.premiumFormInput,
+.premiumFormTextarea,
+.premiumFormSelect {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111827;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  outline: none;
+  line-height: 1.5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.premiumFormInput:hover,
+.premiumFormTextarea:hover,
+.premiumFormSelect:hover {
+  border-color: #9ca3af;
+}
+
+.premiumFormInput:focus,
+.premiumFormTextarea:focus,
+.premiumFormSelect:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.premiumFormInput::placeholder,
+.premiumFormTextarea::placeholder {
+  color: #9ca3af;
+}
+
+.premiumFormTextarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.premiumFormSelect {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+}
+
+.premiumFormHelper {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* Premium Form Footer */
+.premiumFormDialogFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 28px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.premiumFormBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.premiumFormBtnSecondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.premiumFormBtnDraft {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.premiumFormBtnDraft:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.premiumFormBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #3b82f6;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+}
+
+.premiumFormBtnPrimary:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+/* Premium Modal Responsive */
+@media (max-width: 1024px) {
+  .premiumFormDialog {
+    max-width: 90%;
+  }
+  
+  .premiumFormDialogGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .premiumModalOverlay {
+    padding: 16px;
+    align-items: flex-end;
+  }
+  
+  .premiumFormDialog {
+    max-width: 100%;
+    max-height: calc(100vh - 32px);
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .premiumFormDialogHeader {
+    padding: 20px 20px 16px;
+  }
+  
+  .premiumFormDialogBody {
+    padding: 20px;
+  }
+  
+  .premiumFormDialogGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .premiumFormSection {
+    padding: 16px;
+  }
+  
+  .premiumFormDialogFooter {
+    padding: 16px 20px;
+    flex-wrap: wrap;
+  }
+  
+  .premiumFormBtnSecondary,
+  .premiumFormBtnDraft,
+  .premiumFormBtnPrimary {
+    flex: 1;
+    justify-content: center;
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .premiumFormDialogTitle {
+    font-size: 18px;
+  }
+  
+  .premiumFormDialogSubtitle {
+    font-size: 13px;
+  }
+}
+
+/* ============================================
    COMPACT CONFIRMATION DIALOG
    ============================================ */
 .confirmDialog {

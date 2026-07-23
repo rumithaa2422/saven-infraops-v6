@@ -2025,113 +2025,123 @@ export function DesignSystemPreviewPage() {
           </div>
         </div>
 
-        {/* Premium Form Dialog */}
+        {/* Premium Form Dialog - Full Viewport Modal */}
         <div className={styles.dialogCard} style={{ marginBottom: 24 }}>
           <h4 className={styles.dialogCardTitle}>Premium Form Dialog</h4>
-          <p className={styles.dialogCardDesc}>Standard Create/Edit dialog for the entire application</p>
-          <div className={styles.dialogPreview} style={{ minHeight: 400 }}>
-            <div className={styles.dialogOverlay} />
-            <div className={styles.formDialog}>
-              <div className={styles.formDialogHeader}>
-                <div className={styles.formDialogHeaderContent}>
-                  <h3 className={styles.formDialogTitle}>Create New Request</h3>
-                  <p className={styles.formDialogSubtitle}>Fill in the required information below</p>
+          <p className={styles.dialogCardDesc}>Standard Create/Edit dialog - full viewport modal</p>
+          
+          {/* Full Viewport Premium Modal Overlay */}
+          <div className={styles.premiumModalOverlay}>
+            <div className={styles.premiumFormDialog}>
+              {/* Sticky Header */}
+              <div className={styles.premiumFormDialogHeader}>
+                <div className={styles.premiumFormDialogHeaderContent}>
+                  <h3 className={styles.premiumFormDialogTitle}>Create New Request</h3>
+                  <p className={styles.premiumFormDialogSubtitle}>Fill in the required information to create a new service request</p>
                 </div>
-                <button className={styles.formDialogClose}>
+                <button className={styles.premiumFormDialogClose}>
                   <X size={18} />
                 </button>
               </div>
-              <div className={styles.formDialogBody}>
+              
+              {/* Scrollable Body */}
+              <div className={styles.premiumFormDialogBody}>
                 {/* Section 1: General Information */}
-                <div className={styles.formDialogSection}>
-                  <h4 className={styles.formDialogSectionTitle}>General Information</h4>
-                  <div className={styles.formDialogGrid}>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Title <span className={styles.formDialogRequired}>*</span></label>
-                      <input type="text" className={styles.formDialogInput} placeholder="Enter request title" />
+                <div className={styles.premiumFormSection}>
+                  <h4 className={styles.premiumFormSectionTitle}>General Information</h4>
+                  <div className={styles.premiumFormDialogGrid}>
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Title <span className={styles.premiumFormRequired}>*</span></label>
+                      <input type="text" className={styles.premiumFormInput} placeholder="Enter request title" />
                     </div>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Category <span className={styles.formDialogRequired}>*</span></label>
-                      <select className={styles.formDialogSelect}>
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Category <span className={styles.premiumFormRequired}>*</span></label>
+                      <select className={styles.premiumFormSelect}>
                         <option>Select category...</option>
                         <option>Hardware Request</option>
                         <option>Software Installation</option>
                         <option>Access Request</option>
                         <option>Network Issue</option>
+                        <option>System Access</option>
+                        <option>Equipment Request</option>
                       </select>
                     </div>
-                    <div className={`${styles.formDialogField} ${styles.fullWidth}`}>
-                      <label className={styles.formDialogLabel}>Description</label>
-                      <textarea className={styles.formDialogTextarea} rows={3} placeholder="Describe your request in detail..." />
-                      <span className={styles.formDialogHelper}>Provide as much detail as possible for faster resolution.</span>
+                    <div className={`${styles.premiumFormField} ${styles.premiumFullWidth}`}>
+                      <label className={styles.premiumFormLabel}>Description</label>
+                      <textarea className={styles.premiumFormTextarea} rows={3} placeholder="Describe your request in detail..." />
+                      <span className={styles.premiumFormHelper}>Provide as much detail as possible for faster resolution.</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Section 2: Assignment */}
-                <div className={styles.formDialogSection}>
-                  <h4 className={styles.formDialogSectionTitle}>Assignment</h4>
-                  <div className={styles.formDialogGrid}>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Priority</label>
-                      <select className={styles.formDialogSelect}>
+                <div className={styles.premiumFormSection}>
+                  <h4 className={styles.premiumFormSectionTitle}>Assignment</h4>
+                  <div className={styles.premiumFormDialogGrid}>
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Priority</label>
+                      <select className={styles.premiumFormSelect}>
                         <option>Low</option>
                         <option>Medium</option>
                         <option>High</option>
                         <option>Critical</option>
                       </select>
                     </div>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Assignee</label>
-                      <select className={styles.formDialogSelect}>
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Assignee</label>
+                      <select className={styles.premiumFormSelect}>
                         <option>Select assignee...</option>
                         <option>John Doe</option>
                         <option>Mary Kim</option>
                         <option>Robert Smith</option>
                         <option>Sarah Wilson</option>
+                        <option>Michael Chen</option>
                       </select>
                     </div>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Due Date</label>
-                      <input type="date" className={styles.formDialogInput} />
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Due Date</label>
+                      <input type="date" className={styles.premiumFormInput} />
                     </div>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Tags</label>
-                      <input type="text" className={styles.formDialogInput} placeholder="Add tags separated by comma" />
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Tags</label>
+                      <input type="text" className={styles.premiumFormInput} placeholder="Add tags separated by comma" />
                     </div>
                   </div>
                 </div>
 
                 {/* Section 3: Additional Details */}
-                <div className={styles.formDialogSection}>
-                  <h4 className={styles.formDialogSectionTitle}>Additional Details</h4>
-                  <div className={styles.formDialogGrid}>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Department</label>
-                      <select className={styles.formDialogSelect}>
+                <div className={styles.premiumFormSection}>
+                  <h4 className={styles.premiumFormSectionTitle}>Additional Details</h4>
+                  <div className={styles.premiumFormDialogGrid}>
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Department</label>
+                      <select className={styles.premiumFormSelect}>
                         <option>Select department...</option>
                         <option>Engineering</option>
                         <option>Sales</option>
                         <option>Marketing</option>
                         <option>Human Resources</option>
+                        <option>Finance</option>
                       </select>
                     </div>
-                    <div className={styles.formDialogField}>
-                      <label className={styles.formDialogLabel}>Location</label>
-                      <input type="text" className={styles.formDialogInput} placeholder="Office location or room" />
+                    <div className={styles.premiumFormField}>
+                      <label className={styles.premiumFormLabel}>Location</label>
+                      <input type="text" className={styles.premiumFormInput} placeholder="Office location or room" />
                     </div>
-                    <div className={`${styles.formDialogField} ${styles.fullWidth}`}>
-                      <label className={styles.formDialogLabel}>Attachments</label>
-                      <input type="text" className={styles.formDialogInput} placeholder="Drop files here or click to upload" readOnly />
-                      <span className={styles.formDialogHelper}>Supported formats: PDF, DOC, JPG, PNG (max 10MB)</span>
+                    <div className={`${styles.premiumFormField} ${styles.premiumFullWidth}`}>
+                      <label className={styles.premiumFormLabel}>Attachments</label>
+                      <input type="text" className={styles.premiumFormInput} placeholder="Drop files here or click to upload" readOnly />
+                      <span className={styles.premiumFormHelper}>Supported formats: PDF, DOC, JPG, PNG (max 10MB)</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className={styles.formDialogFooter}>
-                <button className={styles.formDialogBtnSecondary}>Cancel</button>
-                <button className={styles.formDialogBtnDraft}>Save Draft</button>
-                <button className={styles.formDialogBtnPrimary}>Create Request</button>
+              
+              {/* Sticky Footer */}
+              <div className={styles.premiumFormDialogFooter}>
+                <button className={styles.premiumFormBtnSecondary}>Cancel</button>
+                <button className={styles.premiumFormBtnDraft}>Save Draft</button>
+                <button className={styles.premiumFormBtnPrimary}>Create Request</button>
               </div>
             </div>
           </div>
