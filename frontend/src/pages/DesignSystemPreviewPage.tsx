@@ -3158,8 +3158,735 @@ export function DesignSystemPreviewPage() {
           </div>
         </div>
       </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE BADGES & LABELS SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.badgesSection}>
+        <div className={styles.badgesSectionHeader}>
+          <h2 className={styles.badgesSectionTitle}>Badges & Labels</h2>
+          <p className={styles.badgesSectionSub}>Status indicators, priority markers, and category labels</p>
+        </div>
+
+        {/* Status Badges */}
+        <div className={styles.badgesGrid}>
+          <div className={styles.badgeGroup}>
+            <h4 className={styles.badgeGroupTitle}>Status Badges</h4>
+            <div className={styles.badgeRow}>
+              <span className={styles.statusBadgeNew}>New</span>
+              <span className={styles.statusBadgeOpen}>Open</span>
+              <span className={styles.statusBadgeInProgress}>In Progress</span>
+              <span className={styles.statusBadgePending}>Pending</span>
+              <span className={styles.statusBadgeResolved}>Resolved</span>
+              <span className={styles.statusBadgeClosed}>Closed</span>
+            </div>
+          </div>
+
+          <div className={styles.badgeGroup}>
+            <h4 className={styles.badgeGroupTitle}>Priority Badges</h4>
+            <div className={styles.badgeRow}>
+              <span className={styles.priorityBadgeNew}>Critical</span>
+              <span className={styles.priorityBadgeHigh}>High</span>
+              <span className={styles.priorityBadgeMedium}>Medium</span>
+              <span className={styles.priorityBadgeLow}>Low</span>
+            </div>
+          </div>
+
+          <div className={styles.badgeGroup}>
+            <h4 className={styles.badgeGroupTitle}>Severity Badges</h4>
+            <div className={styles.badgeRow}>
+              <span className={styles.severityBadgeCritical}>SEV-1 Critical</span>
+              <span className={styles.severityBadgeHigh}>SEV-2 High</span>
+              <span className={styles.severityBadgeMedium}>SEV-3 Medium</span>
+              <span className={styles.severityBadgeLow}>SEV-4 Low</span>
+            </div>
+          </div>
+
+          <div className={styles.badgeGroup}>
+            <h4 className={styles.badgeGroupTitle}>Category Badges</h4>
+            <div className={styles.badgeRow}>
+              <span className={styles.categoryBadgeHardware}><Database size={12} /> Hardware</span>
+              <span className={styles.categoryBadgeSoftware}><Code2 size={12} /> Software</span>
+              <span className={styles.categoryBadgeNetwork}><Wifi size={12} /> Network</span>
+              <span className={styles.categoryBadgeSecurity}><Shield size={12} /> Security</span>
+              <span className={styles.categoryBadgeGeneral}><FileText size={12} /> General</span>
+            </div>
+          </div>
+
+          <div className={styles.badgeGroup}>
+            <h4 className={styles.badgeGroupTitle}>Tags</h4>
+            <div className={styles.tagRow}>
+              <span className={styles.tag}><Tag size={10} /> urgent</span>
+              <span className={styles.tag}><Tag size={10} /> cloud-migration</span>
+              <span className={styles.tag}><Tag size={10} /> production</span>
+              <span className={styles.tag}><Tag size={10} /> database</span>
+              <span className={styles.tagAdd}><Plus size={10} /> Add Tag</span>
+            </div>
+          </div>
+
+          <div className={styles.badgeGroup}>
+            <h4 className={styles.badgeGroupTitle}>Count Badges</h4>
+            <div className={styles.countBadgeRow}>
+              <button type="button" className={styles.iconButton}>
+                <Bell size={16} />
+                <span className={styles.countBadge}>3</span>
+              </button>
+              <span className={styles.countBadgeOutline}>12</span>
+              <span className={styles.countBadgeSolid}>99+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE SELECT & PICKERS SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.pickersSection}>
+        <div className={styles.pickersSectionHeader}>
+          <h2 className={styles.pickersSectionTitle}>Select & Pickers</h2>
+          <p className={styles.pickersSectionSub}>Dropdowns, date pickers, and multi-select inputs</p>
+        </div>
+
+        <div className={styles.pickersGrid}>
+          {/* Standard Select */}
+          <div className={styles.pickerCard}>
+            <h4 className={styles.pickerCardTitle}>Standard Select</h4>
+            <div className={styles.pickerWrapper}>
+              <select className={styles.pickerSelect}>
+                <option value="">Select priority...</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              <ChevronDown size={14} className={styles.pickerArrow} />
+            </div>
+          </div>
+
+          {/* Multi-Select */}
+          <div className={styles.pickerCard}>
+            <h4 className={styles.pickerCardTitle}>Multi-Select</h4>
+            <div className={styles.multiSelectDemo}>
+              <div className={styles.multiSelectSelected}>
+                <span className={styles.selectedTag}><Tag size={10} /> Hardware <X size={10} /></span>
+                <span className={styles.selectedTag}><Tag size={10} /> Software <X size={10} /></span>
+              </div>
+              <input type="text" className={styles.multiSelectInput} placeholder="Add item..." />
+            </div>
+          </div>
+
+          {/* Date Picker */}
+          <div className={styles.pickerCard}>
+            <h4 className={styles.pickerCardTitle}>Date Picker</h4>
+            <div className={styles.pickerWrapper}>
+              <Calendar size={14} className={styles.pickerIcon} />
+              <input type="date" className={styles.pickerInput} defaultValue="2026-07-23" />
+            </div>
+          </div>
+
+          {/* Date Range */}
+          <div className={styles.pickerCard}>
+            <h4 className={styles.pickerCardTitle}>Date Range</h4>
+            <div className={styles.dateRangeWrapper}>
+              <div className={styles.pickerWrapper}>
+                <Calendar size={14} className={styles.pickerIcon} />
+                <input type="date" className={styles.pickerInput} defaultValue="2026-07-01" />
+              </div>
+              <span className={styles.dateRangeSep}>to</span>
+              <div className={styles.pickerWrapper}>
+                <Calendar size={14} className={styles.pickerIcon} />
+                <input type="date" className={styles.pickerInput} defaultValue="2026-07-23" />
+              </div>
+            </div>
+          </div>
+
+          {/* Time Picker */}
+          <div className={styles.pickerCard}>
+            <h4 className={styles.pickerCardTitle}>Time Picker</h4>
+            <div className={styles.pickerWrapper}>
+              <Clock size={14} className={styles.pickerIcon} />
+              <input type="time" className={styles.pickerInput} defaultValue="09:30" />
+            </div>
+          </div>
+
+          {/* Dropdown Menu */}
+          <div className={styles.pickerCard}>
+            <h4 className={styles.pickerCardTitle}>Dropdown Menu</h4>
+            <div className={styles.dropdownDemo}>
+              <button type="button" className={styles.dropdownTrigger}>
+                <span>Actions</span>
+                <ChevronDown size={14} />
+              </button>
+              <div className={styles.dropdownMenuShow}>
+                <button type="button" className={styles.dropdownMenuItem}><Edit2 size={14} /> Edit</button>
+                <button type="button" className={styles.dropdownMenuItem}><Copy size={14} /> Duplicate</button>
+                <button type="button" className={styles.dropdownMenuItem}><Share2 size={14} /> Share</button>
+                <div className={styles.dropdownMenuDivider} />
+                <button type="button" className={styles.dropdownMenuItemDanger}><Trash2 size={14} /> Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE TABLE FILTERS SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.filtersSection}>
+        <div className={styles.filtersSectionHeader}>
+          <h2 className={styles.filtersSectionTitle}>Table Filters</h2>
+          <p className={styles.filtersSectionSub}>Filter chips, active filters, and table controls</p>
+        </div>
+
+        {/* Filter Chips */}
+        <div className={styles.filterSection}>
+          <h4 className={styles.filterSectionTitle}>Filter Chips</h4>
+          <div className={styles.filterChips}>
+            <button type="button" className={styles.filterChip}>
+              <span>Status: Open</span>
+              <X size={12} />
+            </button>
+            <button type="button" className={styles.filterChip}>
+              <span>Priority: High</span>
+              <X size={12} />
+            </button>
+            <button type="button" className={styles.filterChipAdd}>
+              <Plus size={12} />
+              <span>Add filter</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Active Filters Bar */}
+        <div className={styles.filterSection}>
+          <h4 className={styles.filterSectionTitle}>Active Filters Bar</h4>
+          <div className={styles.activeFiltersBar}>
+            <span className={styles.activeFiltersLabel}>Active filters:</span>
+            <div className={styles.activeFiltersList}>
+              <span className={styles.activeFilter}>
+                <span>Status</span>
+                <span className={styles.activeFilterValue}>Open</span>
+                <button type="button" className={styles.activeFilterRemove}><X size={10} /></button>
+              </span>
+              <span className={styles.activeFilter}>
+                <span>Priority</span>
+                <span className={styles.activeFilterValue}>High</span>
+                <button type="button" className={styles.activeFilterRemove}><X size={10} /></button>
+              </span>
+              <span className={styles.activeFilter}>
+                <span>Assigned to</span>
+                <span className={styles.activeFilterValue}>Me</span>
+                <button type="button" className={styles.activeFilterRemove}><X size={10} /></button>
+              </span>
+            </div>
+            <button type="button" className={styles.clearFilters}>Clear all</button>
+          </div>
+        </div>
+
+        {/* Column Toggle */}
+        <div className={styles.filterSection}>
+          <h4 className={styles.filterSectionTitle}>Column Visibility</h4>
+          <div className={styles.columnToggle}>
+            <button type="button" className={styles.columnToggleBtn}>
+              <Eye size={14} />
+              <span>Columns</span>
+              <ChevronDown size={12} />
+            </button>
+            <div className={styles.columnToggleMenu}>
+              <label className={styles.columnToggleItem}>
+                <input type="checkbox" defaultChecked /> ID
+              </label>
+              <label className={styles.columnToggleItem}>
+                <input type="checkbox" defaultChecked /> Title
+              </label>
+              <label className={styles.columnToggleItem}>
+                <input type="checkbox" defaultChecked /> Status
+              </label>
+              <label className={styles.columnToggleItem}>
+                <input type="checkbox" defaultChecked /> Priority
+              </label>
+              <label className={styles.columnToggleItem}>
+                <input type="checkbox" /> Assignee
+              </label>
+              <label className={styles.columnToggleItem}>
+                <input type="checkbox" defaultChecked /> Created
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE DIALOG VARIANTS SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.dialogVariantsSection}>
+        <div className={styles.dialogVariantsSectionHeader}>
+          <h2 className={styles.dialogVariantsSectionTitle}>Dialog Variants</h2>
+          <p className={styles.dialogVariantsSectionSub}>Confirmation, alert, and action dialogs</p>
+        </div>
+
+        <div className={styles.dialogVariantsGrid}>
+          {/* Delete Confirmation */}
+          <div className={styles.dialogVariantCard}>
+            <h4 className={styles.dialogVariantTitle}>Delete Confirmation</h4>
+            <div className={styles.dialogPreview}>
+              <div className={styles.confirmDialog}>
+                <div className={styles.confirmIconWrap} data-type="danger">
+                  <Trash2 size={20} />
+                </div>
+                <h3 className={styles.confirmTitle}>Delete Item?</h3>
+                <p className={styles.confirmText}>This action cannot be undone. The item and all associated data will be permanently removed.</p>
+                <div className={styles.confirmFooter}>
+                  <button type="button" className={styles.confirmBtnSecondary}>Cancel</button>
+                  <button type="button" className={styles.confirmBtnDanger}>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Success Confirmation */}
+          <div className={styles.dialogVariantCard}>
+            <h4 className={styles.dialogVariantTitle}>Success Alert</h4>
+            <div className={styles.dialogPreview}>
+              <div className={styles.confirmDialog}>
+                <div className={styles.confirmIconWrap} data-type="success">
+                  <CheckCircle size={20} />
+                </div>
+                <h3 className={styles.confirmTitle}>Request Created</h3>
+                <p className={styles.confirmText}>Your service request has been submitted successfully. Ticket #SR-2024-001.</p>
+                <div className={styles.confirmFooter}>
+                  <button type="button" className={styles.confirmBtnPrimary}>View Request</button>
+                  <button type="button" className={styles.confirmBtnSecondary}>Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Warning Confirmation */}
+          <div className={styles.dialogVariantCard}>
+            <h4 className={styles.dialogVariantTitle}>Warning Alert</h4>
+            <div className={styles.dialogPreview}>
+              <div className={styles.confirmDialog}>
+                <div className={styles.confirmIconWrap} data-type="warning">
+                  <AlertTriangle size={20} />
+                </div>
+                <h3 className={styles.confirmTitle}>Unsaved Changes</h3>
+                <p className={styles.confirmText}>You have unsaved changes that will be lost. Are you sure you want to leave?</p>
+                <div className={styles.confirmFooter}>
+                  <button type="button" className={styles.confirmBtnSecondary}>Stay</button>
+                  <button type="button" className={styles.confirmBtnDanger}>Leave</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Dialog */}
+          <div className={styles.dialogVariantCard}>
+            <h4 className={styles.dialogVariantTitle}>Form Dialog</h4>
+            <div className={styles.dialogPreview}>
+              <div className={styles.formDialog}>
+                <div className={styles.formDialogHeader}>
+                  <h3 className={styles.formDialogTitle}>Quick Add</h3>
+                  <button type="button" className={styles.formDialogClose}><X size={16} /></button>
+                </div>
+                <div className={styles.formDialogBody}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Name</label>
+                    <input type="text" className={styles.formInput} placeholder="Enter name" />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Category</label>
+                    <select className={styles.formSelect}>
+                      <option>Select category</option>
+                    </select>
+                  </div>
+                </div>
+                <div className={styles.formDialogFooter}>
+                  <button type="button" className={styles.confirmBtnSecondary}>Cancel</button>
+                  <button type="button" className={styles.confirmBtnPrimary}>Create</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE PROPERTY LIST SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.propertySection}>
+        <div className={styles.propertySectionHeader}>
+          <h2 className={styles.propertySectionTitle}>Property Lists</h2>
+          <p className={styles.propertySectionSub}>Detail view property displays</p>
+        </div>
+
+        <div className={styles.propertyGrid}>
+          {/* Info Grid */}
+          <div className={styles.propertyCard}>
+            <h4 className={styles.propertyCardTitle}>Info Grid</h4>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoGridItem}>
+                <span className={styles.infoGridLabel}>Status</span>
+                <span className={styles.statusBadgeOpen}>Open</span>
+              </div>
+              <div className={styles.infoGridItem}>
+                <span className={styles.infoGridLabel}>Priority</span>
+                <span className={styles.priorityBadgeHigh}>High</span>
+              </div>
+              <div className={styles.infoGridItem}>
+                <span className={styles.infoGridLabel}>Category</span>
+                <span className={styles.infoGridValue}>Hardware</span>
+              </div>
+              <div className={styles.infoGridItem}>
+                <span className={styles.infoGridLabel}>Assignee</span>
+                <span className={styles.infoGridValue}>John Smith</span>
+              </div>
+              <div className={styles.infoGridItem}>
+                <span className={styles.infoGridLabel}>Created</span>
+                <span className={styles.infoGridValue}>Jul 15, 2026</span>
+              </div>
+              <div className={styles.infoGridItem}>
+                <span className={styles.infoGridLabel}>Updated</span>
+                <span className={styles.infoGridValue}>Jul 22, 2026</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Property List */}
+          <div className={styles.propertyCard}>
+            <h4 className={styles.propertyCardTitle}>Property List</h4>
+            <div className={styles.propertyList}>
+              <div className={styles.propertyItem}>
+                <span className={styles.propertyIcon}><User size={14} /></span>
+                <span className={styles.propertyLabel}>Requester</span>
+                <span className={styles.propertyValue}>Sarah Johnson</span>
+              </div>
+              <div className={styles.propertyItem}>
+                <span className={styles.propertyIcon}><Mail size={14} /></span>
+                <span className={styles.propertyLabel}>Email</span>
+                <span className={styles.propertyValue}>sarah@company.com</span>
+              </div>
+              <div className={styles.propertyItem}>
+                <span className={styles.propertyIcon}><Phone size={14} /></span>
+                <span className={styles.propertyLabel}>Phone</span>
+                <span className={styles.propertyValue}>+1 555-0123</span>
+              </div>
+              <div className={styles.propertyItem}>
+                <span className={styles.propertyIcon}><Building size={14} /></span>
+                <span className={styles.propertyLabel}>Department</span>
+                <span className={styles.propertyValue}>Engineering</span>
+              </div>
+              <div className={styles.propertyItem}>
+                <span className={styles.propertyIcon}><MapPin size={14} /></span>
+                <span className={styles.propertyLabel}>Location</span>
+                <span className={styles.propertyValue}>Building A, Floor 3</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className={styles.propertyCard}>
+            <h4 className={styles.propertyCardTitle}>Metadata</h4>
+            <div className={styles.metaList}>
+              <div className={styles.metaItem}>
+                <Clock size={12} />
+                <span>Created 3 days ago</span>
+              </div>
+              <div className={styles.metaItem}>
+                <Clock size={12} />
+                <span>Updated 2 hours ago</span>
+              </div>
+              <div className={styles.metaItem}>
+                <User size={12} />
+                <span>By Sarah Johnson</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE COMMENTS & ACTIVITY SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.commentsSection}>
+        <div className={styles.commentsSectionHeader}>
+          <h2 className={styles.commentsSectionTitle}>Comments & Activity</h2>
+          <p className={styles.commentsSectionSub}>Discussion threads and activity feeds</p>
+        </div>
+
+        <div className={styles.commentsGrid}>
+          {/* Comment Thread */}
+          <div className={styles.commentCard}>
+            <h4 className={styles.commentCardTitle}>Comment Thread</h4>
+            <div className={styles.commentThread}>
+              <div className={styles.comment}>
+                <div className={styles.commentAvatar}>
+                  <User size={16} />
+                </div>
+                <div className={styles.commentContent}>
+                  <div className={styles.commentHeader}>
+                    <span className={styles.commentAuthor}>Sarah Johnson</span>
+                    <span className={styles.commentTime}>2 hours ago</span>
+                  </div>
+                  <p className={styles.commentText}>I've reviewed the request and it looks good to proceed. Assigning to the infrastructure team for implementation.</p>
+                  <div className={styles.commentActions}>
+                    <button type="button" className={styles.commentAction}>Reply</button>
+                    <button type="button" className={styles.commentAction}>Edit</button>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.commentReply}>
+                <div className={styles.commentAvatar}>
+                  <User size={16} />
+                </div>
+                <div className={styles.commentContent}>
+                  <div className={styles.commentHeader}>
+                    <span className={styles.commentAuthor}>Mike Chen</span>
+                    <span className={styles.commentTime}>1 hour ago</span>
+                  </div>
+                  <p className={styles.commentText}>Thanks! Starting implementation today. Will update by end of week.</p>
+                </div>
+              </div>
+              <div className={styles.commentInput}>
+                <input type="text" className={styles.commentInputField} placeholder="Add a comment..." />
+                <button type="button" className={styles.commentSendBtn}><Send size={14} /></button>
+              </div>
+            </div>
+          </div>
+
+          {/* Attachments */}
+          <div className={styles.attachmentCard}>
+            <h4 className={styles.attachmentCardTitle}>Attachments</h4>
+            <div className={styles.attachmentList}>
+              <div className={styles.attachmentItem}>
+                <File size={16} className={styles.attachmentIcon} />
+                <div className={styles.attachmentInfo}>
+                  <span className={styles.attachmentName}>requirements.pdf</span>
+                  <span className={styles.attachmentMeta}>2.4 MB • Uploaded by Sarah</span>
+                </div>
+                <button type="button" className={styles.attachmentAction}><Download size={14} /></button>
+              </div>
+              <div className={styles.attachmentItem}>
+                <Image size={16} className={styles.attachmentIcon} />
+                <div className={styles.attachmentInfo}>
+                  <span className={styles.attachmentName}>screenshot.png</span>
+                  <span className={styles.attachmentMeta}>1.1 MB • Uploaded by Mike</span>
+                </div>
+                <button type="button" className={styles.attachmentAction}><Download size={14} /></button>
+              </div>
+            </div>
+            <button type="button" className={styles.addAttachmentBtn}>
+              <Upload size={14} />
+              <span>Add attachment</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE PERMISSION COMPONENTS SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.permissionSection}>
+        <div className={styles.permissionSectionHeader}>
+          <h2 className={styles.permissionSectionTitle}>Permission Components</h2>
+          <p className={styles.permissionSectionSub}>Access control and role-based visibility</p>
+        </div>
+
+        <div className={styles.permissionGrid}>
+          {/* Permission Gate */}
+          <div className={styles.permissionCard}>
+            <h4 className={styles.permissionCardTitle}>Permission Gate</h4>
+            <div className={styles.permissionDemo}>
+              <div className={styles.permissionGate}>
+                <div className={styles.permissionGateAllowed}>
+                  <Shield size={16} />
+                  <span>Admin Access</span>
+                  <span className={styles.permissionStatus}>Visible</span>
+                </div>
+              </div>
+              <div className={styles.permissionGate}>
+                <div className={styles.permissionGateDenied}>
+                  <Shield size={16} />
+                  <span>Restricted Action</span>
+                  <span className={styles.permissionStatusDenied}>Hidden</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Role Badge */}
+          <div className={styles.permissionCard}>
+            <h4 className={styles.permissionCardTitle}>Role Badges</h4>
+            <div className={styles.roleBadgeList}>
+              <span className={styles.roleBadgeAdmin}>Admin</span>
+              <span className={styles.roleBadgeManager}>Manager</span>
+              <span className={styles.roleBadgeUser}>User</span>
+              <span className={styles.roleBadgeViewer}>Viewer</span>
+            </div>
+          </div>
+
+          {/* Access Level Indicator */}
+          <div className={styles.permissionCard}>
+            <h4 className={styles.permissionCardTitle}>Access Levels</h4>
+            <div className={styles.accessLevelList}>
+              <div className={styles.accessLevelItem}>
+                <span className={styles.accessLevelLabel}>Full Access</span>
+                <div className={styles.accessLevelBar} data-level="full" />
+              </div>
+              <div className={styles.accessLevelItem}>
+                <span className={styles.accessLevelLabel}>Read/Write</span>
+                <div className={styles.accessLevelBar} data-level="write" />
+              </div>
+              <div className={styles.accessLevelItem}>
+                <span className={styles.accessLevelLabel}>Read Only</span>
+                <div className={styles.accessLevelBar} data-level="read" />
+              </div>
+              <div className={styles.accessLevelItem}>
+                <span className={styles.accessLevelLabel}>No Access</span>
+                <div className={styles.accessLevelBar} data-level="none" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE ALERTS & BANNERS SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.alertsBannerSection}>
+        <div className={styles.alertsBannerSectionHeader}>
+          <h2 className={styles.alertsBannerSectionTitle}>Alerts & Banners</h2>
+          <p className={styles.alertsBannerSectionSub}>Inline notifications and system messages</p>
+        </div>
+
+        <div className={styles.alertsBannerGrid}>
+          {/* Page Banner */}
+          <div className={styles.alertBannerCard}>
+            <h4 className={styles.alertBannerTitle}>Page Banner</h4>
+            <div className={styles.alertBanner}>
+              <AlertTriangle size={16} />
+              <span className={styles.alertBannerText}>Maintenance scheduled for July 25, 2026 from 2:00 AM to 4:00 AM UTC</span>
+              <button type="button" className={styles.alertBannerAction}>Learn more</button>
+              <button type="button" className={styles.alertBannerClose}><X size={14} /></button>
+            </div>
+          </div>
+
+          {/* Info Alert */}
+          <div className={styles.alertCard}>
+            <h4 className={styles.alertCardTitle}>Info Alert</h4>
+            <div className={styles.alertItem}>
+              <Info size={16} className={styles.alertIconInfo} />
+              <div className={styles.alertContent}>
+                <strong>Information</strong>
+                <p>Your session will expire in 15 minutes. Save your work to prevent data loss.</p>
+              </div>
+              <button type="button" className={styles.alertClose}><X size={14} /></button>
+            </div>
+          </div>
+
+          {/* Success Alert */}
+          <div className={styles.alertCard}>
+            <h4 className={styles.alertCardTitle}>Success Alert</h4>
+            <div className={styles.alertItem}>
+              <CheckCircle size={16} className={styles.alertIconSuccess} />
+              <div className={styles.alertContent}>
+                <strong>Success</strong>
+                <p>Your changes have been saved successfully.</p>
+              </div>
+              <button type="button" className={styles.alertClose}><X size={14} /></button>
+            </div>
+          </div>
+
+          {/* Warning Alert */}
+          <div className={styles.alertCard}>
+            <h4 className={styles.alertCardTitle}>Warning Alert</h4>
+            <div className={styles.alertItem}>
+              <AlertTriangle size={16} className={styles.alertIconWarning} />
+              <div className={styles.alertContent}>
+                <strong>Warning</strong>
+                <p>This action may affect other users in your organization.</p>
+              </div>
+              <button type="button" className={styles.alertClose}><X size={14} /></button>
+            </div>
+          </div>
+
+          {/* Error Alert */}
+          <div className={styles.alertCard}>
+            <h4 className={styles.alertCardTitle}>Error Alert</h4>
+            <div className={styles.alertItem}>
+              <AlertOctagon size={16} className={styles.alertIconError} />
+              <div className={styles.alertContent}>
+                <strong>Error</strong>
+                <p>Failed to connect to server. Please try again later.</p>
+              </div>
+              <button type="button" className={styles.alertClose}><X size={14} /></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* ENTERPRISE TABS SHOWCASE */}
+      {/* ============================================ */}
+      <div className={styles.tabsShowcaseSection}>
+        <div className={styles.tabsShowcaseSectionHeader}>
+          <h2 className={styles.tabsShowcaseSectionTitle}>Tabs</h2>
+          <p className={styles.tabsShowcaseSectionSub}>Tab navigation for detail views</p>
+        </div>
+
+        <div className={styles.tabsShowcaseGrid}>
+          {/* Primary Tabs */}
+          <div className={styles.tabsCard}>
+            <h4 className={styles.tabsCardTitle}>Primary Tabs</h4>
+            <div className={styles.tabBar}>
+              <button type="button" className={styles.tab} data-active="true">Details</button>
+              <button type="button" className={styles.tab}>Activity</button>
+              <button type="button" className={styles.tab}>Comments <span className={styles.tabBadge}>3</span></button>
+              <button type="button" className={styles.tab}>Attachments</button>
+            </div>
+          </div>
+
+          {/* Secondary Tabs */}
+          <div className={styles.tabsCard}>
+            <h4 className={styles.tabsCardTitle}>Secondary Tabs</h4>
+            <div className={styles.secondaryTabBar}>
+              <button type="button" className={styles.secondaryTab} data-active="true">Overview</button>
+              <button type="button" className={styles.secondaryTab}>Settings</button>
+              <button type="button" className={styles.secondaryTab}>History</button>
+            </div>
+          </div>
+
+          {/* Pill Tabs */}
+          <div className={styles.tabsCard}>
+            <h4 className={styles.tabsCardTitle}>Pill Tabs</h4>
+            <div className={styles.pillTabBar}>
+              <button type="button" className={styles.pillTab} data-active="true">All</button>
+              <button type="button" className={styles.pillTab}>Open</button>
+              <button type="button" className={styles.pillTab}>Pending</button>
+              <button type="button" className={styles.pillTab}>Resolved</button>
+            </div>
+          </div>
+
+          {/* Vertical Tabs */}
+          <div className={styles.tabsCard}>
+            <h4 className={styles.tabsCardTitle}>Vertical Tabs</h4>
+            <div className={styles.verticalTabLayout}>
+              <div className={styles.verticalTabNav}>
+                <button type="button" className={styles.verticalTab} data-active="true">General</button>
+                <button type="button" className={styles.verticalTab}>Security</button>
+                <button type="button" className={styles.verticalTab}>Notifications</button>
+                <button type="button" className={styles.verticalTab}>Integrations</button>
+              </div>
+              <div className={styles.verticalTabContent}>
+                <h5>General Settings</h5>
+                <p>Configure your general preferences and settings.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+    </div>
   );
 }
 
