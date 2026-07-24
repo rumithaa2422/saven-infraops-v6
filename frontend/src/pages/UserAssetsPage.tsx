@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { Eye } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 type InventoryItem = {
   id: string;
@@ -53,6 +60,19 @@ export function UserAssetsPage() {
 
   const [search, setSearch] = useState('');
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'purchaseDate',
+    direction: 'desc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
 
   useEffect(() => {
     if (userId) {
@@ -336,49 +356,72 @@ export function UserAssetsPage() {
               <p>This user has no assets assigned to them.</p>
             </div>
           ) : (
-            <table className="user-assets-table">
-              <thead>
-                <tr>
-                  <th>Inventory ID</th>
-                  <th>Item</th>
-                  <th>Category</th>
-                  <th>Brand</th>
-                  <th>Model</th>
-                  <th>Project</th>
-                  <th>Assigned Date</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAssets.map(item => (
-                  <tr key={item.id}>
-                    <td>
-                      <span className="asset-item-id">{item.itemNo}</span>
-                    </td>
-                    <td>{item.itemName}</td>
-                    <td>{item.category?.name || '-'}</td>
-                    <td>{item.brand || '-'}</td>
-                    <td>{item.model || '-'}</td>
-                    <td>{item.projectName || '-'}</td>
-                    <td>{formatDate(item.purchaseDate)}</td>
-                    <td>
-                      <span className={`status-badge status-${item.status.toLowerCase()}`}>
-                        {item.status.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className="asset-action-btn"
-                        onClick={() => navigate(`/access-management/${item.id}`)}
-                      >
-                        Open
-                      </button>
-                    </td>
+            <TableContainer loading={false} empty={filteredAssets.length === 0} emptyTitle="No assets found" emptyDescription="This user has no assets assigned to them.">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Item" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Brand" sortKey="brand" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Model" sortKey="model" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Assigned Date" sortKey="purchaseDate" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                    <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredAssets.map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                          {item.itemNo}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium text-slate-900">{item.itemName}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{item.category?.name || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{item.brand || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{item.model || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-500">{formatDate(item.purchaseDate)}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                          item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                          item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {item.status.replace(/_/g, ' ')}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <button 
+                          className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                          onClick={() => navigate(`/access-management/${item.id}`)}
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </tbody>
+              </table>
+            </TableContainer>
           )}
         </div>
       </div>

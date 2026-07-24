@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
+import { Eye, Edit2, Trash2 } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 type ModulePageProps = {
   moduleKey: string;
@@ -532,6 +539,19 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [roles, setRoles] = useState<{id: string; name: string}[]>([]);
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'createdAt',
+    direction: 'desc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
   
   // Get status actions based on current item's status
   const statusActions = getStatusActions(moduleKey, selected?.status as string | undefined);
@@ -2203,129 +2223,131 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               <h3>{title}</h3>
               <span className="table-count">{items.length} record{items.length !== 1 ? 's' : ''}</span>
             </div>
-            <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  {config.columns.map((column) => {
-                    // Add sorting for document repository columns
-                    if (config.isDocumentRepository && ['fileName', 'createdAt', 'fileSize'].includes(column.key)) {
-                      const isActive = docSortBy === column.key;
-                      const nextSortOrder = isActive && docSortOrder === 'asc' ? 'desc' : 'asc';
-                      return (
-                        <th 
-                          key={column.key} 
-                          className="sortable-header"
-                          onClick={() => {
-                            setDocSortBy(column.key as 'fileName' | 'createdAt' | 'fileSize');
-                            setDocSortOrder(nextSortOrder);
-                            loadComplianceDocuments();
-                          }}
-                        >
-                          {column.label}
-                          {isActive && <span className="sort-indicator">{docSortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
-                    </th>
-                  );
-                }
-                return <th key={column.key}>{column.label}</th>;
-              })}
-              {/* RBAC: Only show Actions column header if there are visible actions */}
-              {config.isDocumentRepository && hasAnyPermission([config.permissions.export || "", config.permissions.delete || ""].filter(Boolean)) && <th>Actions</th>}
-              {!config.isDocumentRepository && hasAnyPermission([config.permissions.view || "", config.permissions.write || "", config.permissions.create || "", config.permissions.delete || ""].filter(Boolean)) && <th>Action</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={String(item.id || index)} onClick={() => {
-                // For incidents, inventory, and projects-environments, navigate to detail page instead of opening sidebar
-                if (moduleKey === 'incidents' && item.id) {
-                  navigate(`/incidents/${item.id}`);
-                } else if (moduleKey === 'projects-environments' && item.id) {
-                  navigate(`/projects-environments/${item.id}`);
-                } else if (!config.isDocumentRepository) {
-                  setSelected(item);
-                }
-              }}>
-                {config.columns.map((column) => {
-                  // Special handling for role column in users-teams
-                  if (moduleKey === 'users-teams' && column.key === 'role') {
-                    return <td key={column.key}>{formatUserRoles((item as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles)}</td>;
-                  }
-                  // Special handling for fileSize in document repository
-                  if (config.isDocumentRepository && column.key === 'fileSize') {
-                    return <td key={column.key}>{formatFileSize(item[column.key] as number)}</td>;
-                  }
-                  return <td key={column.key}>{formatValue(item[column.key])}</td>;
-                })}
-                {/* RBAC: Only show action cells if there are visible actions */}
-                {config.isDocumentRepository ? (
-                  hasAnyPermission([config.permissions.export || "", config.permissions.delete || ""].filter(Boolean)) && (
-                  /* Document Repository Actions */
-                  <td>
-                    <div className="action-buttons">
-                      {hasPermission(config.permissions.export || '') && (
-                        <button 
-                          className="link-button" 
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            exportDocument(item.id as string);
-                          }}
-                        >
-                          Export
-                        </button>
+            <TableContainer loading={loading} empty={items.length === 0} emptyTitle="No records" emptyDescription={config.isDocumentRepository ? 'No documents uploaded yet. Click Upload to add your first document.' : 'No records found.'}>
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    {config.columns.map((column) => {
+                      // Add sorting for document repository columns
+                      if (config.isDocumentRepository && ['fileName', 'createdAt', 'fileSize'].includes(column.key)) {
+                        return (
+                          <SortHeader 
+                            key={column.key} 
+                            label={column.label} 
+                            sortKey={column.key} 
+                            currentSort={sortConfig} 
+                            onSort={handleSort} 
+                          />
+                        );
+                      }
+                      return <th key={column.key} className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{column.label}</th>;
+                    })}
+                    {/* RBAC: Only show Actions column header if there are visible actions */}
+                    {config.isDocumentRepository && hasAnyPermission([config.permissions.export || "", config.permissions.delete || ""].filter(Boolean)) && (
+                      <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    )}
+                    {!config.isDocumentRepository && hasAnyPermission([config.permissions.view || "", config.permissions.write || "", config.permissions.create || "", config.permissions.delete || ""].filter(Boolean)) && (
+                      <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {items.map((item, index) => (
+                    <TableRow key={String(item.id || index)} onClick={() => {
+                      if (moduleKey === 'incidents' && item.id) {
+                        navigate(`/incidents/${item.id}`);
+                      } else if (moduleKey === 'projects-environments' && item.id) {
+                        navigate(`/projects-environments/${item.id}`);
+                      } else if (!config.isDocumentRepository) {
+                        setSelected(item);
+                      }
+                    }}>
+                      {config.columns.map((column) => {
+                        if (moduleKey === 'users-teams' && column.key === 'role') {
+                          return <TableCell key={column.key}>{formatUserRoles((item as RecordItem & { roles?: Array<{ role: { name: string } }> }).roles)}</TableCell>;
+                        }
+                        if (config.isDocumentRepository && column.key === 'fileSize') {
+                          return <TableCell key={column.key}>{formatFileSize(item[column.key] as number)}</TableCell>;
+                        }
+                        return <TableCell key={column.key}>{formatValue(item[column.key])}</TableCell>;
+                      })}
+                      {/* RBAC: Only show action cells if there are visible actions */}
+                      {config.isDocumentRepository ? (
+                        hasAnyPermission([config.permissions.export || "", config.permissions.delete || ""].filter(Boolean)) && (
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-2">
+                              {hasPermission(config.permissions.export || '') && (
+                                <button 
+                                  className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    exportDocument(item.id as string);
+                                  }}
+                                  title="Export"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              )}
+                              {hasPermission(config.permissions.delete || '') && (
+                                <button 
+                                  className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                  onClick={(event) => openDeleteDocumentDialog(item, event)}
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )
+                      ) : (
+                        hasAnyPermission([
+                          config.permissions.view || "",
+                          config.permissions.write || "",
+                          config.permissions.create || "",
+                          config.permissions.delete || ""
+                        ].filter(Boolean)) && (
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-2">
+                              {hasPermission((config.permissions.view || config.permissions.create) || '') && (
+                                <button 
+                                  className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                  onClick={(event) => { 
+                                    event.stopPropagation(); 
+                                    if (moduleKey === 'incidents') {
+                                      navigate(`/incidents/${item.id}`);
+                                    } else if (moduleKey === 'projects-environments') {
+                                      navigate(`/projects-environments/${item.id}`);
+                                    } else {
+                                      setSelected(item);
+                                    }
+                                  }}
+                                  title="Open"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              )}
+                              {hasPermission(config.permissions.delete || '') && (
+                                <button 
+                                  className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                  onClick={(event) => openDeleteDialog(item, event)}
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )
                       )}
-                      {hasPermission(config.permissions.delete || '') && (
-                        <button 
-                          className="btn-delete" 
-                          onClick={(event) => openDeleteDocumentDialog(item, event)}
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                  )
-                ) : (
-                  hasAnyPermission([
-                    config.permissions.view || "",
-                    config.permissions.write || "",
-                    config.permissions.create || "",
-                    config.permissions.delete || ""
-                  ].filter(Boolean)) && (
-                  /* Regular Module Actions */
-                  <td>
-                    <div className="action-buttons">
-                      {hasPermission((config.permissions.view || config.permissions.create) || '') && (
-                        <button className="link-button" onClick={(event) => { 
-                          event.stopPropagation(); 
-                          // For incidents, inventory, and projects-environments, navigate to detail page instead of opening panel
-                          if (moduleKey === 'incidents') {
-                            navigate(`/incidents/${item.id}`);
-                          } else if (moduleKey === 'projects-environments') {
-                            navigate(`/projects-environments/${item.id}`);
-                          } else {
-                            setSelected(item);
-                          }
-                        }} title="Open">Open</button>
-                      )}
-                      {hasPermission(config.permissions.delete || '') && (
-                        <button className="btn-delete" onClick={(event) => openDeleteDialog(item, event)} title="Delete">Delete</button>
-                      )}
-                    </div>
-                  </td>
-                  )
-                )}
-              </tr>
-            ))}
-            {!items.length && (
-              <tr><td colSpan={config.columns.length + 1}>{loading ? 'Loading records...' : config.isDocumentRepository ? 'No documents uploaded yet. Click Upload to add your first document.' : 'No records found.'}</td></tr>
-            )}
-          </tbody>
-        </table>
+                    </TableRow>
+                  ))}
+                </tbody>
+              </table>
+            </TableContainer>
           </div>
-      </div>
-      </>
-      )}
+          </>
+          )}
 
       {/* Create/Upload Modal - Different for document repository */}
       {createOpen && (

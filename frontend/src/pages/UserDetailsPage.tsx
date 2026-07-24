@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { Eye } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 type InventoryAssignment = {
   id: string;
@@ -74,6 +81,19 @@ export function UserDetailsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'assignedDate',
+    direction: 'desc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
 
   useEffect(() => {
     loadUser();
@@ -453,54 +473,76 @@ export function UserDetailsPage() {
                   
                   {/* Inventory Table */}
                   <div className="inventory-table-container">
-                    <table className="inventory-table">
-                      <thead>
-                        <tr>
-                          <th>Inventory ID</th>
-                          <th>Category</th>
-                          <th>Sub Category</th>
-                          <th>Name</th>
-                          <th>Status</th>
-                          <th>Assigned Date</th>
-                          <th>Project</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Deduplicate by assignment ID */}
-                        {Array.from(
-                          new Map(user.assignedInventory.slice(0, 10).map(a => [a.id, a])).values()
-                        ).map((assignment) => (
-                          <tr key={assignment.id}>
-                            <td className="item-no">{assignment.inventory.itemNo}</td>
-                            <td>{assignment.inventory.category?.name || '-'}</td>
-                            <td>{assignment.inventory.subcategory?.name || '-'}</td>
-                            <td className="item-name">{assignment.inventory.itemName}</td>
-                            <td>
-                              <span className={`status-badge ${getInventoryStatusBadge(assignment.status === 'ACTIVE' ? 'ASSIGNED' : assignment.inventory.status)}`}>
-                                {getInventoryStatusLabel(assignment.status === 'ACTIVE' ? 'ASSIGNED' : assignment.inventory.status)}
-                              </span>
-                            </td>
-                            <td>{formatDate(assignment.assignedDate)}</td>
-                            <td>{assignment.project?.projectName || '-'}</td>
-                            <td>
-                              <button 
-                                className="btn-open-inventory"
-                                onClick={() => navigate(`/inventory/master/${assignment.inventoryId}`)}
-                              >
-                                Open
-                              </button>
-                            </td>
+                    <TableContainer loading={false} empty={user.assignedInventory.length === 0} emptyTitle="No inventory" emptyDescription="No inventory assigned to this user">
+                      <table className="w-full">
+                        <thead className="bg-slate-50 border-b border-slate-100">
+                          <tr>
+                            <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
+                            <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
+                            <SortHeader label="Sub Category" sortKey="subcategory" currentSort={sortConfig} onSort={handleSort} />
+                            <SortHeader label="Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
+                            <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                            <SortHeader label="Assigned Date" sortKey="assignedDate" currentSort={sortConfig} onSort={handleSort} />
+                            <SortHeader label="Project" sortKey="project" currentSort={sortConfig} onSort={handleSort} />
+                            <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                              Actions
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {Array.from(
+                            new Map(user.assignedInventory.slice(0, 10).map(a => [a.id, a])).values()
+                          ).map((assignment) => (
+                            <TableRow key={assignment.id}>
+                              <TableCell>
+                                <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                                  {assignment.inventory.itemNo}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{assignment.inventory.category?.name || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{assignment.inventory.subcategory?.name || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm font-medium text-slate-900">{assignment.inventory.itemName}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                                  assignment.inventory.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                                  assignment.inventory.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {getInventoryStatusLabel(assignment.status === 'ACTIVE' ? 'ASSIGNED' : assignment.inventory.status)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-500">{formatDate(assignment.assignedDate)}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{assignment.project?.projectName || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <button 
+                                  className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                  onClick={() => navigate(`/inventory/master/${assignment.inventoryId}`)}
+                                  title="View"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </tbody>
+                      </table>
+                      {user.assignedInventory.length > 10 && (
+                        <div className="px-4 py-3 border-t border-slate-100 text-sm text-slate-500">
+                          Showing 10 of {user.assignedInventory.length} items
+                        </div>
+                      )}
+                    </TableContainer>
                   </div>
-                  {user.assignedInventory.length > 10 && (
-                    <p className="inventory-table-note">
-                      Showing 10 of {user.assignedInventory.length} items
-                    </p>
-                  )}
                 </>
               ) : (
                 <div className="detail-placeholder">

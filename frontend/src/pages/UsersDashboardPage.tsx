@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
+import { Eye, Edit2, Trash2 } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 const DEPARTMENTS = ['Engineering', 'Support', 'QA', 'DevOps', 'HR', 'Finance', 'Operations', 'Security', 'InfraOps'];
 const EMPLOYMENT_TYPES = ['Full Time', 'Contract', 'Intern', 'Consultant'];
@@ -71,6 +78,12 @@ export function UsersDashboardPage() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'createdAt',
+    direction: 'desc'
+  });
 
   // Delete confirmation dialog state
   const [deleteDialog, setDeleteDialog] = useState<{ show: boolean; user: User | null }>({ show: false, user: null });
@@ -872,81 +885,101 @@ export function UsersDashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table>
-                <thead>
+            <TableContainer loading={false} empty={filteredUsers.length === 0} emptyTitle="No users found" emptyDescription="Try adjusting your filters or add new users">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    <th>User</th>
-                    <th>Employee ID</th>
-                    <th>Department</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th onClick={() => handleSort('createdAt')} className="sortable">
-                      Created {sortBy === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    <SortHeader label="User" sortKey="name" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Employee ID" sortKey="employeeId" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Created" sortKey="createdAt" currentSort={sortConfig} onSort={handleSort} />
+                    <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Actions
                     </th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {filteredUsers.map((u) => {
                     const primaryRole = u.roles?.[0]?.role?.name || 'Employee';
                     const isOwnAccount = u.id === user?.id;
                     return (
-                      <tr key={u.id}>
-                        <td className="user-cell" onClick={() => navigate(`/users-teams/${u.id}`)}>
-                          <div className="user-avatar">
-                            {u.name.charAt(0).toUpperCase()}
+                      <TableRow key={u.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white font-semibold text-sm">
+                              {u.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-slate-900">{u.name}</span>
+                              <span className="text-xs text-slate-500">{u.email}</span>
+                            </div>
                           </div>
-                          <div className="user-info">
-                            <span className="user-name">{u.name}</span>
-                            <span className="user-email">{u.email}</span>
-                          </div>
-                        </td>
-                        <td className="mono muted">{u.employeeId || '-'}</td>
-                        <td onClick={() => navigate(`/users-teams/${u.id}`)}>{u.department || '-'}</td>
-                        <td onClick={() => navigate(`/users-teams/${u.id}`)}>
-                          <span className={`role-badge ${getRoleBadgeClass(primaryRole)}`}>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-slate-600 font-mono">{u.employeeId || '-'}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-slate-600">{u.department || '-'}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                            primaryRole === 'Super Admin' ? 'bg-purple-100 text-purple-700' :
+                            primaryRole === 'Admin' ? 'bg-blue-100 text-blue-700' :
+                            primaryRole === 'Manager' ? 'bg-amber-100 text-amber-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
                             {primaryRole}
                           </span>
-                        </td>
-                        <td onClick={() => navigate(`/users-teams/${u.id}`)}>
-                          <span className={`status-badge status-${u.status.toLowerCase()}`}>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                            u.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
                             {u.status}
                           </span>
-                        </td>
-                        <td className="muted" onClick={() => navigate(`/users-teams/${u.id}`)}>{formatDate(u.createdAt)}</td>
-                        <td className="actions-cell">
-                          <button
-                            className="btn-open"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/users-teams/${u.id}`); }}
-                          >
-                            Open
-                          </button>
-                          {(isSuperAdmin || isAdmin) && (
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-slate-500">{formatDate(u.createdAt)}</span>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
                             <button
-                              className="btn-edit"
-                              onClick={(e) => { e.stopPropagation(); navigate(`/users-teams/${u.id}/edit`); }}
+                              className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                              onClick={() => navigate(`/users-teams/${u.id}`)}
+                              title="View"
                             >
-                              Edit
+                              <Eye className="w-4 h-4" />
                             </button>
-                          )}
-                          {isSuperAdmin && (
-                            <button
-                              className="btn-delete"
-                              onClick={(e) => { e.stopPropagation(); setDeleteDialog({ show: true, user: u }); }}
-                              disabled={isOwnAccount}
-                              title={isOwnAccount ? 'You cannot delete your own account' : 'Delete user'}
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </td>
-                      </tr>
+                            {(isSuperAdmin || isAdmin) && (
+                              <button
+                                className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                onClick={() => navigate(`/users-teams/${u.id}/edit`)}
+                                title="Edit"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {isSuperAdmin && (
+                              <button
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                onClick={() => setDeleteDialog({ show: true, user: u })}
+                                disabled={isOwnAccount}
+                                title={isOwnAccount ? 'You cannot delete your own account' : 'Delete'}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
                 </tbody>
               </table>
-            </div>
+            </TableContainer>
           )}
         </div>
 

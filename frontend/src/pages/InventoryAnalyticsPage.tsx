@@ -1,3 +1,10 @@
+import { Eye } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
@@ -80,6 +87,19 @@ export function InventoryAnalyticsPage() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [showInsights, setShowInsights] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'itemName',
+    direction: 'asc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
 
   useEffect(() => {
     loadAnalytics();
@@ -656,50 +676,71 @@ export function InventoryAnalyticsPage() {
             </span>
           </div>
           {searchResults.length > 0 ? (
-            <div className="results-table-container">
-              <table className="results-table">
-                <thead>
+            <TableContainer loading={searching} empty={searchResults.length === 0} emptyTitle="No items found" emptyDescription="Try adjusting your search criteria">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    <th>Item No</th>
-                    <th>Item Name</th>
-                    <th>Category</th>
-                    <th>Location</th>
-                    <th>Vendor</th>
-                    <th>Qty</th>
-                    <th>Status</th>
-                    <th>Warranty</th>
-                    <th></th>
+                    <SortHeader label="Item No" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Item Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Location" sortKey="location" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Vendor" sortKey="vendor" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Qty" sortKey="currentQty" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Warranty" sortKey="warrantyExpiry" currentSort={sortConfig} onSort={handleSort} />
+                    <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {searchResults.slice(0, 20).map(item => (
-                    <tr key={item.id} onClick={() => navigate(`/inventory/master/${item.id}`)}>
-                      <td className="item-no">{item.itemNo}</td>
-                      <td className="item-name">{item.itemName}</td>
-                      <td>{item.category.name}</td>
-                      <td>{item.location || '-'}</td>
-                      <td>{item.vendor || '-'}</td>
-                      <td className={item.minStock && item.currentQty < item.minStock ? 'qty-low' : ''}>
-                        {item.currentQty}
-                      </td>
-                      <td>
-                        <span className={`status-badge status-${item.status.toLowerCase()}`}>
+                    <TableRow key={item.id} onClick={() => navigate(`/inventory/master/${item.id}`)}>
+                      <TableCell>
+                        <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                          {item.itemNo}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium text-slate-900">{item.itemName}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{item.category.name}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{item.location || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{item.vendor || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-sm ${item.minStock && item.currentQty < item.minStock ? 'text-red-600 font-semibold' : 'text-slate-700'}`}>
+                          {item.currentQty}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                          item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                          item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
                           {item.status}
                         </span>
-                      </td>
-                      <td>{formatDate(item.warrantyExpiry)}</td>
-                      <td>
-                        <button className="btn-icon-sm" onClick={(e) => { e.stopPropagation(); navigate(`/inventory/master/${item.id}`); }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-500">{formatDate(item.warrantyExpiry)}</span>
+                      </TableCell>
+                      <TableCell>
+                        <button 
+                          className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors" 
+                          onClick={(e) => { e.stopPropagation(); navigate(`/inventory/master/${item.id}`); }}
+                        >
+                          <Eye className="w-4 h-4" />
                         </button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableContainer>
           ) : (
             <div className="results-empty">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

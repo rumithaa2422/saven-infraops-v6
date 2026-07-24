@@ -3,6 +3,13 @@ import { api, knowledgeAttachmentApi } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { Eye, Edit2, Trash2 } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 // Types
 interface KnowledgeCategory {
@@ -132,6 +139,12 @@ export function KnowledgeCategoryPage() {
   const [searchInput, setSearchInput] = useState(''); // Raw input for immediate display
   const [sortBy, setSortBy] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'createdAt',
+    direction: 'desc'
+  });
 
   // Debounced search value (300ms delay)
   const debouncedSearch = useMemo(() => {
@@ -594,6 +607,11 @@ export function KnowledgeCategoryPage() {
       setSortBy(field);
       setSortOrder('asc');
     }
+  };
+
+  // Wrapper for SortHeader component
+  const handleSortByKey = (key: string) => {
+    handleSort(key as SortField);
   };
 
   // Format date
@@ -1092,107 +1110,76 @@ export function KnowledgeCategoryPage() {
               </div>
             </div>
           ) : (
-            <div className="kb-table-card">
-              <table>
-                <thead>
+            <TableContainer loading={false} empty={articles.length === 0} emptyTitle="No articles" emptyDescription="This category has no articles yet">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    <th 
-                      className="kb-sortable" 
-                      onClick={() => handleSort('title')}
-                    >
-                      <span>Title</span>
-                      <span className="kb-sort-indicator">{getSortIndicator('title')}</span>
-                    </th>
-                    <th>Description</th>
-                    <th 
-                      className="kb-sortable"
-                      onClick={() => handleSort('authorName')}
-                    >
-                      <span>Author</span>
-                      <span className="kb-sort-indicator">{getSortIndicator('authorName')}</span>
-                    </th>
-                    <th 
-                      className="kb-sortable"
-                      onClick={() => handleSort('createdAt')}
-                    >
-                      <span>Created</span>
-                      <span className="kb-sort-indicator">{getSortIndicator('createdAt')}</span>
-                    </th>
-                    <th 
-                      className="kb-sortable"
-                      onClick={() => handleSort('updatedAt')}
-                    >
-                      <span>Updated</span>
-                      <span className="kb-sort-indicator">{getSortIndicator('updatedAt')}</span>
-                    </th>
-                    {canManageKB && <th className="kb-actions-header">Actions</th>}
+                    <SortHeader label="Title" sortKey="title" currentSort={sortConfig} onSort={handleSortByKey} />
+                    <SortHeader label="Description" sortKey="summary" currentSort={sortConfig} onSort={handleSortByKey} />
+                    <SortHeader label="Author" sortKey="authorName" currentSort={sortConfig} onSort={handleSortByKey} />
+                    <SortHeader label="Created" sortKey="createdAt" currentSort={sortConfig} onSort={handleSortByKey} />
+                    <SortHeader label="Updated" sortKey="updatedAt" currentSort={sortConfig} onSort={handleSortByKey} />
+                    {canManageKB && (
+                      <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {articles.map((article) => (
-                    <tr 
-                      key={article.id} 
-                      className="kb-table-row"
-                      onClick={() => viewArticle(article)}
-                    >
-                      <td>
-                        <div className="kb-article-title">
-                          <span className="kb-article-name">{article.title}</span>
-                        </div>
-                      </td>
-                      <td className="kb-description-cell">{article.summary || '-'}</td>
-                      <td>
-                        <span className="kb-author-badge">{article.authorName || '-'}</span>
-                      </td>
-                      <td>
-                        <span className="kb-date">{formatDate(article.createdAt)}</span>
-                      </td>
-                      <td>
-                        <span className="kb-date">{formatDate(article.updatedAt)}</span>
-                      </td>
+                    <TableRow key={article.id} onClick={() => viewArticle(article)}>
+                      <TableCell>
+                        <span className="font-medium text-slate-900">{article.title}</span>
+                      </TableCell>
+                      <TableCell truncate>
+                        <span className="text-sm text-slate-600">{article.summary || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{article.authorName || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-500">{formatDate(article.createdAt)}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-500">{formatDate(article.updatedAt)}</span>
+                      </TableCell>
                       {canManageKB && (
-                        <td className="kb-actions-cell" onClick={(e) => e.stopPropagation()}>
-                          <div className="kb-action-buttons">
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
                             <button 
-                              className="kb-action-btn view"
+                              className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
                               onClick={() => viewArticle(article)}
                               title="View"
                             >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                              </svg>
+                              <Eye className="w-4 h-4" />
                             </button>
                             {canUpdateArticles && (
                               <>
                                 <button 
-                                  className="kb-action-btn edit"
+                                  className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
                                   onClick={() => openEditArticleModal(article)}
                                   title="Edit"
                                 >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                  </svg>
+                                  <Edit2 className="w-4 h-4" />
                                 </button>
                                 <button 
-                                  className="kb-action-btn delete"
+                                  className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                                   onClick={() => openDeleteArticleConfirm(article)}
                                   title="Delete"
                                 >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                                  </svg>
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </>
                             )}
                           </div>
-                        </td>
+                        </TableCell>
                       )}
-                    </tr>
+                    </TableRow>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableContainer>
           )}
         </>
       )}

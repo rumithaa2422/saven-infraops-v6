@@ -9,6 +9,14 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
+import { Building2, Plus, Search, Download, Filter, X, Edit2, Trash2, Eye, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell,
+  Pagination
+} from '../components/serviceRequests';
 
 type Vendor = {
   id: string;
@@ -114,8 +122,10 @@ export function VendorDirectoryPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Sort
-  const [sortBy, setSortBy] = useState('vendorName');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'vendorName',
+    direction: 'asc'
+  });
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -164,8 +174,8 @@ export function VendorDirectoryPage() {
       if (dateFrom) params.append('contractExpiryFrom', dateFrom);
       if (dateTo) params.append('contractExpiryTo', dateTo);
       if (yearFilter) params.append('year', yearFilter);
-      params.append('sortBy', sortBy);
-      params.append('sortOrder', sortOrder);
+      params.append('sortBy', sortConfig.key);
+      params.append('sortOrder', sortConfig.direction);
       params.append('page', page.toString());
       params.append('limit', '20');
 
@@ -179,7 +189,7 @@ export function VendorDirectoryPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [search, categoryFilter, statusFilter, countryFilter, contractStatusFilter, dateFrom, dateTo, yearFilter, sortBy, sortOrder, page]);
+  }, [search, categoryFilter, statusFilter, countryFilter, contractStatusFilter, dateFrom, dateTo, yearFilter, sortConfig, page]);
 
   // Load summary
   const loadSummary = useCallback(async () => {
@@ -209,7 +219,7 @@ export function VendorDirectoryPage() {
 
   useEffect(() => {
     loadVendors();
-  }, [loadVendors]);
+  }, [loadVendors, sortConfig]);
 
   useEffect(() => {
     loadSummary();
@@ -229,16 +239,13 @@ export function VendorDirectoryPage() {
     loadVendors();
   };
 
-  // Sort handler
+  // Sort handler - reloads data when sort changes
   const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
+    setSortConfig(prev => ({
+      key: field,
+      direction: prev.key === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
     setPage(1);
-    loadVendors();
   };
 
   // Clear filters
@@ -756,20 +763,20 @@ export function VendorDirectoryPage() {
                 Sort
               </button>
               <div className="absolute right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-lg py-2 min-w-[140px] z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'vendorName' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('vendorName')}>
-                  Vendor Name {sortBy === 'vendorName' && (sortOrder === 'asc' ? '↑' : '↓')}
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortConfig.key === 'vendorName' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('vendorName')}>
+                  Vendor Name {sortConfig.key === 'vendorName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </button>
-                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'newest' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('newest')}>
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortConfig.key === 'newest' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('newest')}>
                   Newest First
                 </button>
-                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'oldest' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('oldest')}>
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortConfig.key === 'oldest' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('oldest')}>
                   Oldest First
                 </button>
-                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'contractExpiry' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('contractExpiry')}>
-                  Contract Expiry {sortBy === 'contractExpiry' && (sortOrder === 'asc' ? '↑' : '↓')}
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortConfig.key === 'contractExpiry' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('contractExpiry')}>
+                  Contract Expiry {sortConfig.key === 'contractExpiry' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </button>
-                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortBy === 'status' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('status')}>
-                  Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
+                <button className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 ${sortConfig.key === 'status' ? 'text-purple-600 font-semibold' : 'text-slate-600'}`} onClick={() => handleSort('status')}>
+                  Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </button>
               </div>
             </div>
@@ -918,105 +925,103 @@ export function VendorDirectoryPage() {
         )}
 
         {/* Table Section - Modern Card */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">{totalVendors} vendor{totalVendors !== 1 ? 's' : ''}</span>
-          </div>
-
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-              <p className="mt-4 text-slate-500">Loading...</p>
-            </div>
-          ) : vendors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2"/></svg>
-              </div>
-              <p className="text-lg font-medium text-slate-700 mb-2">{hasActiveFilters || search ? 'No vendors match your filters' : 'No vendors yet'}</p>
-              <span className="text-sm text-slate-500 mb-4">{search || hasActiveFilters ? 'Try adjusting your search or filters' : 'Add your first vendor to get started'}</span>
-              {isAdmin && !search && !hasActiveFilters && (
-                <button type="button" className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors" onClick={() => setShowCreateDialog(true)}>Add Vendor</button>
-              )}
-            </div>
-          ) : (
-            <>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => handleSort('vendorName')} className="sortable">
-                      Vendor {sortBy === 'vendorName' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                    </th>
-                    <th>Category</th>
-                    <th>Primary Contact</th>
-                    <th onClick={() => handleSort('status')} className="sortable">
-                      Status {sortBy === 'status' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                    </th>
-                    <th>Country</th>
-                    <th onClick={() => handleSort('contractExpiry')} className="sortable">
-                      Contract Expiry {sortBy === 'contractExpiry' && <span className="sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
-                    </th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vendors.map(vendor => (
-                    <tr key={vendor.id} onClick={() => handleViewDetails(vendor)} style={{ cursor: 'pointer' }}>
-                      <td>
-                        <div className="vendor-name-cell">
-                          <strong>{vendor.vendorName}</strong>
-                          <small>{vendor.vendorCode}</small>
-                        </div>
-                      </td>
-                      <td>{vendor.category}</td>
-                      <td>
-                        <div className="contact-cell">
-                          <span>{vendor.primaryContactName}</span>
-                          <small>{vendor.email}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${vendor.status.toLowerCase()}`}>{vendor.status}</span>
-                      </td>
-                      <td>{vendor.country || '-'}</td>
-                      <td>{vendor.contractExpiryDate ? formatDate(vendor.contractExpiryDate) : '-'}</td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className="actions-cell">
-                          {isAdmin && (
-                            <>
-                              <button type="button" className="icon-btn" onClick={() => { setEditingVendor(vendor); setShowEditDialog(true); }} title="Edit">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2"/><path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2"/></svg>
-                              </button>
-                              <button type="button" className="icon-btn danger" onClick={() => { setEditingVendor(vendor); setShowDeleteDialog(true); }} title="Delete">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6H5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2"/></svg>
-                              </button>
-                            </>
-                          )}
-                          <button type="button" className="icon-btn" onClick={() => handleViewDetails(vendor)} title="View Details">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12S4 4 12 4S23 12 23 12S20 20 12 20S1 12 1 12Z" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/></svg>
+        <TableContainer loading={loading} empty={!loading && vendors.length === 0} emptyTitle={hasActiveFilters || search ? 'No vendors match your filters' : 'No vendors yet'} emptyDescription={search || hasActiveFilters ? 'Try adjusting your search or filters' : 'Add your first vendor to get started'}>
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <SortHeader label="Vendor" sortKey="vendorName" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Primary Contact" sortKey="primaryContactName" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Country" sortKey="country" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Contract Expiry" sortKey="contractExpiry" currentSort={sortConfig} onSort={handleSort} />
+                <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {vendors.map(vendor => (
+                <TableRow key={vendor.id} onClick={() => handleViewDetails(vendor)}>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-900">{vendor.vendorName}</span>
+                      <span className="text-xs text-slate-500 font-mono">{vendor.vendorCode}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-lg">
+                      {vendor.category}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-slate-700">{vendor.primaryContactName}</span>
+                      <span className="text-xs text-slate-500">{vendor.email}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                      vendor.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                      vendor.status === 'INACTIVE' ? 'bg-slate-100 text-slate-600' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {vendor.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-slate-700">{vendor.country || '-'}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-slate-700">
+                      {vendor.contractExpiryDate ? formatDate(vendor.contractExpiryDate) : '-'}
+                    </span>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => { setEditingVendor(vendor); setShowEditDialog(true); }}
+                            className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          <button
+                            onClick={() => { setEditingVendor(vendor); setShowDeleteDialog(true); }}
+                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleViewDetails(vendor)}
+                        className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </tbody>
+          </table>
+        </TableContainer>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="pagination">
-                  <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-                    Previous
-                  </button>
-                  <span>Page {page} of {totalPages}</span>
-                  <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={totalVendors}
+            pageSize={20}
+            onPageChange={setPage}
+          />
+        )}
       </main>
       {/* Create Vendor Dialog */}
       {showCreateDialog && (

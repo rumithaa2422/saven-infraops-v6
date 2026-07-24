@@ -9,6 +9,13 @@ import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { FileCheck, Plus, Download, ChevronDown, ExternalLink, Edit2, Trash2, Paperclip } from 'lucide-react';
 import { AddFrameworkDialog, AddControlDialog, EditControlDialog, EvidenceModal } from '../components/compliance';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell,
+  Pagination
+} from '../components/serviceRequests';
 
 // Types
 interface Framework {
@@ -82,6 +89,19 @@ export function CompliancePage() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+
+  // Sort state
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'updatedAt',
+    direction: 'desc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
 
   // Dialog states
   const [showAddFramework, setShowAddFramework] = useState(false);
@@ -411,112 +431,104 @@ export function CompliancePage() {
         </div>
 
         {/* Main Table */}
-        <div className="table-card">
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ width: '40px' }}>
+        <TableContainer loading={loading} empty={!loading && controls.length === 0} emptyTitle="No controls found" emptyDescription="Add a framework and controls to get started" emptyIcon={FileCheck}>
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="px-4 py-3.5" style={{ width: '40px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={selectAll}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  />
+                </th>
+                <SortHeader label="Control Name" sortKey="name" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Framework" sortKey="framework" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Evidence" sortKey="evidence" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader label="Last Updated" sortKey="updatedAt" currentSort={sortConfig} onSort={handleSort} />
+                <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {controls.map((control) => (
+                <TableRow 
+                  key={control.id}
+                  onClick={() => setSelectedControl(control)}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
-                      checked={selectAll}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      checked={selectedIds.has(control.id)}
+                      onChange={(e) => handleRowSelect(control.id, e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                     />
-                  </th>
-                  <th>Control List Name</th>
-                  <th>Description</th>
-                  <th style={{ width: '100px' }}>Evidence</th>
-                  <th style={{ width: '130px' }}>Last Updated</th>
-                  <th style={{ width: '100px' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="table-loading">
-                      <div className="loading-spinner"></div>
-                      <p>Loading...</p>
-                    </td>
-                  </tr>
-                ) : controls.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="table-empty">
-                      <FileCheck size={48} strokeWidth={1} />
-                      <p>No controls found</p>
-                      <span>Add a framework and controls to get started</span>
-                    </td>
-                  </tr>
-                ) : (
-                  controls.map((control) => (
-                    <tr 
-                      key={control.id}
-                      onClick={() => setSelectedControl(control)}
-                      style={{ cursor: 'pointer' }}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-slate-900">{control.name}</span>
+                      <span className="text-xs text-slate-500">{control.framework.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell truncate>
+                    <span className="text-sm text-slate-600">
+                      {control.description || '-'}
+                    </span>
+                  </TableCell>
+                  <TableCell onClick={(e) => openEvidenceModal(control, e)}>
+                    <button 
+                      type="button" 
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors"
+                      title="View Evidence"
                     >
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="checkbox" 
-                          checked={selectedIds.has(control.id)}
-                          onChange={(e) => handleRowSelect(control.id, e.target.checked)}
-                        />
-                      </td>
-                      <td>
-                        <div className="control-name-cell">
-                          <span className="control-name">{control.name}</span>
-                          <span className="control-framework">{control.framework.name}</span>
-                        </div>
-                      </td>
-                      <td className="description-cell">
-                        {control.description || '-'}
-                      </td>
-                      <td className="evidence-cell" onClick={(e) => openEvidenceModal(control, e)}>
-                        <button type="button" className="evidence-btn" title="View Evidence">
-                          <Paperclip size={14} />
-                          <span>{control._count.evidence}</span>
-                        </button>
-                      </td>
-                      <td className="date-cell">
-                        {formatDate(control.updatedAt)}
-                      </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className="action-buttons">
+                      <Paperclip className="w-3.5 h-3.5" />
+                      <span>{control._count.evidence}</span>
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-slate-600">
+                      {formatDate(control.updatedAt)}
+                    </span>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        type="button" 
+                        className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                        title="View Details"
+                        onClick={() => setSelectedControl(control)}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                      {(isSuperAdmin || isAdmin) && (
+                        <>
                           <button 
                             type="button" 
-                            className="action-btn"
-                            title="View Details"
-                            onClick={() => setSelectedControl(control)}
+                            className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                            title="Edit"
+                            onClick={() => openEditControl(control)}
                           >
-                            <ExternalLink size={14} />
+                            <Edit2 className="w-4 h-4" />
                           </button>
-                          {(isSuperAdmin || isAdmin) && (
-                            <>
-                              <button 
-                                type="button" 
-                                className="action-btn"
-                                title="Edit"
-                                onClick={() => openEditControl(control)}
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              <button 
-                                type="button" 
-                                className="action-btn danger"
-                                title="Delete"
-                                onClick={() => handleDeleteControl(control)}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                          <button 
+                            type="button" 
+                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete"
+                            onClick={() => handleDeleteControl(control)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </tbody>
+          </table>
+        </TableContainer>
 
         {/* Dialogs */}
         <AddFrameworkDialog

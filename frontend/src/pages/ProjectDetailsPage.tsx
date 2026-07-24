@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { Eye } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 type User = {
   id: string;
@@ -73,6 +80,19 @@ export function ProjectDetailsPage() {
   const [inventorySearch, setInventorySearch] = useState('');
   const [inventoryFilterStatus, setInventoryFilterStatus] = useState('');
   const [inventoryFilterUser, setInventoryFilterUser] = useState('');
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'assignedDate',
+    direction: 'desc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
 
   useEffect(() => {
     loadProject();
@@ -493,47 +513,68 @@ export function ProjectDetailsPage() {
                   <p>No inventory assigned to this project.</p>
                 </div>
               ) : (
-                <div className="inventory-table-wrapper">
-                  <table className="inventory-table">
-                    <thead>
+                <TableContainer loading={false} empty={filterAssignments().length === 0} emptyTitle="No inventory" emptyDescription="No inventory assigned to this project">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-100">
                       <tr>
-                        <th>Inventory ID</th>
-                        <th>Item Name</th>
-                        <th>Category</th>
-                        <th>Subcategory</th>
-                        <th>Assigned User</th>
-                        <th>Assigned Date</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                        <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
+                        <SortHeader label="Item Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
+                        <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
+                        <SortHeader label="Subcategory" sortKey="subcategory" currentSort={sortConfig} onSort={handleSort} />
+                        <SortHeader label="Assigned User" sortKey="user" currentSort={sortConfig} onSort={handleSort} />
+                        <SortHeader label="Assigned Date" sortKey="assignedDate" currentSort={sortConfig} onSort={handleSort} />
+                        <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                        <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
                       {filterAssignments().map((assignment) => (
-                        <tr key={assignment.id}>
-                          <td className="item-no">{assignment.inventory.itemNo}</td>
-                          <td className="item-name">{assignment.inventory.itemName}</td>
-                          <td>{assignment.inventory.category?.name || '-'}</td>
-                          <td>{assignment.inventory.subcategory?.name || '-'}</td>
-                          <td>{assignment.user?.name || '-'}</td>
-                          <td>{formatDate(assignment.assignedDate)}</td>
-                          <td>
-                            <span className={`status-badge status-${assignment.inventory.status.toLowerCase()}`}>
+                        <TableRow key={assignment.id}>
+                          <TableCell>
+                            <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                              {assignment.inventory.itemNo}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-medium text-slate-900">{assignment.inventory.itemName}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-slate-600">{assignment.inventory.category?.name || '-'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-slate-600">{assignment.inventory.subcategory?.name || '-'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-slate-600">{assignment.user?.name || '-'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-slate-500">{formatDate(assignment.assignedDate)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                              assignment.inventory.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                              assignment.inventory.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
                               {assignment.inventory.status.replace(/_/g, ' ')}
                             </span>
-                          </td>
-                          <td>
+                          </TableCell>
+                          <TableCell>
                             <button
-                              className="btn-open-inventory"
+                              className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
                               onClick={() => navigate(`/access-management/${assignment.inventory.id}`)}
+                              title="View"
                             >
-                              Open
+                              <Eye className="w-4 h-4" />
                             </button>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TableContainer>
               )}
             </div>
           </div>

@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
+import { Eye } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 const DEPARTMENTS = ['Engineering', 'Support', 'QA', 'DevOps', 'HR', 'Finance', 'Operations', 'Security', 'InfraOps'];
 const EMPLOYMENT_TYPES = ['Full Time', 'Contract', 'Intern', 'Consultant'];
@@ -55,6 +62,19 @@ export function UsersImportExportPage() {
 
   // Export state
   const [exporting, setExporting] = useState(false);
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'row',
+    direction: 'asc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
 
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -654,43 +674,53 @@ export function UsersImportExportPage() {
                   {importData.length > 0 && (
                     <div className="import-preview">
                       <h4>Preview</h4>
-                      <div className="import-preview-table-container">
-                        <table className="import-preview-table">
-                          <thead>
+                      <TableContainer loading={false} empty={importData.length === 0} emptyTitle="No data" emptyDescription="No data to preview">
+                        <table className="w-full">
+                          <thead className="bg-slate-50 border-b border-slate-100">
                             <tr>
-                              <th>Row</th>
-                              <th>Employee ID</th>
-                              <th>Name</th>
-                              <th>Email</th>
-                              <th>Department</th>
-                              <th>Valid</th>
+                              <SortHeader label="Row" sortKey="row" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Employee ID" sortKey="employeeId" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Name" sortKey="name" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Email" sortKey="email" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} />
+                              <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Valid</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-slate-100">
                             {importData.slice(0, 10).map((row, idx) => {
                               const hasError = importErrors[idx];
                               const firstName = row['First Name'] || row['FirstName'] || row['firstName'] || '';
                               const lastName = row['Last Name'] || row['LastName'] || row['lastName'] || '';
                               return (
-                                <tr key={idx} className={hasError ? 'invalid-row' : 'valid-row'}>
-                                  <td>{idx + 2}</td>
-                                  <td>{row['Employee ID'] || row['EmployeeID'] || '-'}</td>
-                                  <td>{firstName} {lastName}</td>
-                                  <td>{row['Email'] || '-'}</td>
-                                  <td>{row['Department'] || '-'}</td>
-                                  <td>
+                                <TableRow key={idx} className={hasError ? 'bg-red-50' : ''}>
+                                  <TableCell>
+                                    <span className="text-sm text-slate-600">{idx + 2}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-sm text-slate-600">{row['Employee ID'] || row['EmployeeID'] || '-'}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-sm font-medium text-slate-900">{firstName} {lastName}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-sm text-slate-600">{row['Email'] || '-'}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-sm text-slate-600">{row['Department'] || '-'}</span>
+                                  </TableCell>
+                                  <TableCell>
                                     {hasError ? (
-                                      <span className="badge badge-danger">Invalid</span>
+                                      <span className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-100 text-red-700">Invalid</span>
                                     ) : (
-                                      <span className="badge badge-success">Valid</span>
+                                      <span className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg bg-green-100 text-green-700">Valid</span>
                                     )}
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               );
                             })}
                           </tbody>
                         </table>
-                      </div>
+                      </TableContainer>
                       {importData.length > 10 && (
                         <p className="import-preview-note">Showing first 10 of {importData.length} rows</p>
                       )}

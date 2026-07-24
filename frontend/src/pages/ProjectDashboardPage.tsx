@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
+import { Eye, Edit2, Trash2 } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 type Project = {
   id: string;
@@ -108,6 +115,12 @@ export function ProjectDashboardPage() {
   const [managerFilter, setManagerFilter] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'createdAt',
+    direction: 'desc'
+  });
 
   // Filter panel visibility
   const [showFilters, setShowFilters] = useState(false);
@@ -912,35 +925,39 @@ export function ProjectDashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <TableContainer loading={false} empty={projects.length === 0} emptyTitle="No projects found" emptyDescription="Try adjusting your filters or create a new project">
               <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-100">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Code</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Client</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Manager</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Department</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Start Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Assets</th>
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <SortHeader label="Project Code" sortKey="projectCode" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Project Name" sortKey="projectName" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Client" sortKey="client" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Project Manager" sortKey="ownerName" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Priority" sortKey="priority" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Start Date" sortKey="startDate" currentSort={sortConfig} onSort={handleSort} />
+                    <SortHeader label="Assets" sortKey="assignedAssets" currentSort={sortConfig} onSort={handleSort} />
                   </tr>
                 </thead>
-                <tbody>
-                  {projects.map((project, index) => (
-                    <tr key={project.id} onClick={() => navigate(`/projects-environments/${project.id}`)} className={`border-b border-slate-100 hover:bg-purple-50/30 cursor-pointer transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                <tbody className="divide-y divide-slate-100">
+                  {projects.map((project) => (
+                    <TableRow key={project.id} onClick={() => navigate(`/projects-environments/${project.id}`)}>
+                      <TableCell>
                         <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-mono font-semibold rounded-lg">
                           {project.projectCode}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell>
                         <span className="font-medium text-slate-900">{project.projectName}</span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">{project.client || '-'}</td>
-                      <td className="px-6 py-4 text-slate-600">{project.ownerName || '-'}</td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{project.client || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{project.ownerName || '-'}</span>
+                      </TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
                           project.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
                           project.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
@@ -950,8 +967,8 @@ export function ProjectDashboardPage() {
                         }`}>
                           {project.status.replace(/_/g, ' ')}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
                           project.priority === 'CRITICAL' ? 'bg-red-100 text-red-700' :
                           project.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
@@ -960,19 +977,23 @@ export function ProjectDashboardPage() {
                         }`}>
                           {project.priority}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">{project.department || '-'}</td>
-                      <td className="px-6 py-4 text-slate-600">{formatDate(project.startDate)}</td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600">{project.department || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-500">{formatDate(project.startDate)}</span>
+                      </TableCell>
+                      <TableCell>
                         <span className="inline-flex items-center justify-center w-8 h-8 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg">
                           {project.assignedAssets || 0}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableContainer>
           )}
         </div>
 

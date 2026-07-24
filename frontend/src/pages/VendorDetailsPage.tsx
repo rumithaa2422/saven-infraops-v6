@@ -8,6 +8,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { Eye, Edit2 } from 'lucide-react';
+import {
+  TableContainer,
+  SortHeader,
+  TableRow,
+  TableCell
+} from '../components/serviceRequests';
 
 type InternalOwner = {
   id: string;
@@ -69,6 +76,19 @@ export function VendorDetailsPage() {
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Sort config for table headers
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
+    key: 'purchaseDate',
+    direction: 'desc'
+  });
+
+  function handleSort(key: string) {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }
 
   useEffect(() => {
     loadVendorDetails();
@@ -385,40 +405,68 @@ export function VendorDetailsPage() {
               </div>
               <div className="detail-card-body">
                 {vendorInventory.length > 0 ? (
-                  <div className="inventory-table">
-                    <table>
-                      <thead>
+                  <TableContainer loading={false} empty={vendorInventory.length === 0} emptyTitle="No inventory" emptyDescription="No inventory purchased from this vendor">
+                    <table className="w-full">
+                      <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
-                          <th>Item</th>
-                          <th>Brand/Model</th>
-                          <th>Status</th>
-                          <th>Purchase Date</th>
-                          <th>Cost</th>
+                          <SortHeader label="Item" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
+                          <SortHeader label="Brand/Model" sortKey="brand" currentSort={sortConfig} onSort={handleSort} />
+                          <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                          <SortHeader label="Purchase Date" sortKey="purchaseDate" currentSort={sortConfig} onSort={handleSort} />
+                          <SortHeader label="Cost" sortKey="purchaseCost" currentSort={sortConfig} onSort={handleSort} />
+                          <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {vendorInventory.slice(0, 10).map(item => (
-                          <tr key={item.id} onClick={() => navigate(`/inventory/master/${item.id}`)} style={{ cursor: 'pointer' }}>
-                            <td>
-                              <span className="item-name">{item.itemName}</span>
-                              <span className="item-no">{item.itemNo}</span>
-                            </td>
-                            <td className="text-muted">
-                              {[item.brand, item.model].filter(Boolean).join(' / ') || '-'}
-                            </td>
-                            <td><span className={`status-badge status-${item.status.toLowerCase()}`}>{item.status}</span></td>
-                            <td>{formatDate(item.purchaseDate)}</td>
-                            <td>{formatCurrency(item.purchaseCost)}</td>
-                          </tr>
+                          <TableRow key={item.id} onClick={() => navigate(`/inventory/master/${item.id}`)}>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-slate-900">{item.itemName}</span>
+                                <span className="text-xs text-slate-500 font-mono">{item.itemNo}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-slate-600">
+                                {[item.brand, item.model].filter(Boolean).join(' / ') || '-'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                                item.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                                item.status === 'INACTIVE' ? 'bg-slate-100 text-slate-600' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {item.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-slate-500">{formatDate(item.purchaseDate)}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-slate-700">{formatCurrency(item.purchaseCost)}</span>
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <button 
+                                className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                onClick={() => navigate(`/inventory/master/${item.id}`)}
+                                title="View"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </TableCell>
+                          </TableRow>
                         ))}
                       </tbody>
                     </table>
                     {vendorInventory.length > 10 && (
-                      <div className="table-footer">
-                        <span>Showing 10 of {vendorInventory.length} items</span>
+                      <div className="px-4 py-3 border-t border-slate-100 text-sm text-slate-500">
+                        Showing 10 of {vendorInventory.length} items
                       </div>
                     )}
-                  </div>
+                  </TableContainer>
                 ) : (
                   <div className="empty-state">No inventory purchased from this vendor</div>
                 )}

@@ -141,11 +141,15 @@ interface TableCellProps {
   children: React.ReactNode;
   className?: string;
   truncate?: boolean;
+  onClick?: (e: React.MouseEvent<HTMLTableCellElement>) => void;
 }
 
-export function TableCell({ children, className = '', truncate = false }: TableCellProps) {
+export function TableCell({ children, className = '', truncate = false, onClick }: TableCellProps) {
   return (
-    <td className={`px-4 py-4 text-sm text-slate-700 ${truncate ? 'max-w-xs truncate' : ''} ${className}`}>
+    <td 
+      className={`px-4 py-4 text-sm text-slate-700 ${truncate ? 'max-w-xs truncate' : ''} ${className}`}
+      onClick={onClick}
+    >
       {children}
     </td>
   );
