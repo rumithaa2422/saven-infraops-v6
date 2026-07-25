@@ -541,18 +541,16 @@ export function ServiceRequestDetailPage() {
 
   if (loading) {
     return (
-      <div className="page-loading">
-        <div className="bg-white border-b border-slate-200/60 px-6 py-4">
-          <div className="flex items-center gap-4">
-            <BackButton onClick={handleBack} />
-            <div className="flex-1 animate-pulse">
-              <div className="h-8 w-48 bg-slate-100 rounded-lg mb-2" />
-              <div className="h-4 w-32 bg-slate-50 rounded" />
+      <div className="workspace">
+        <div className="page-stack service-request-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <div>
+                <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
+                <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="content-section">
-          <LoadingCard lines={5} />
         </div>
       </div>
     );
@@ -560,23 +558,31 @@ export function ServiceRequestDetailPage() {
 
   if (error || !request) {
     return (
-      <div className="page-loading">
-        <div className="bg-white border-b border-slate-200/60 px-6 py-4">
-          <div className="flex items-center gap-4">
-            <BackButton onClick={handleBack} />
+      <div className="workspace">
+        <div className="page-stack service-request-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <button className="btn-secondary" onClick={handleBack}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div>
+                <h1 className="page-header-title">Error</h1>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="content-section">
-          <EmptyStateCard
-            icon={AlertTriangle}
-            title={error || 'Service request not found'}
-            description="Please check the URL or go back to the service requests list."
-            action={
-              <Button onClick={handleBack}>
-                Back to Service Requests
-              </Button>
-            }
-          />
+          <div className="detail-error">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <p>{error || 'Service request not found.'}</p>
+            <button className="btn-secondary" onClick={handleBack}>
+              Back to Service Requests
+            </button>
+          </div>
         </div>
       </div>
     );

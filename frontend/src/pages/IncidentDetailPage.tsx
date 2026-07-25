@@ -433,26 +433,14 @@ export function IncidentDetailPage() {
 
   if (loading) {
     return (
-      <div className="page-loading">
-        <div className="bg-white border-b border-slate-200/60 px-6 py-5">
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 w-24 bg-slate-100 rounded"></div>
-            <div className="h-8 w-48 bg-slate-100 rounded"></div>
-            <div className="flex gap-3">
-              <div className="h-6 w-20 bg-slate-100 rounded-full"></div>
-              <div className="h-6 w-20 bg-slate-100 rounded-full"></div>
-            </div>
-          </div>
-        </div>
-        <div className="content-section">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <LoadingCard />
-              <LoadingCard />
-            </div>
-            <div className="space-y-6">
-              <LoadingCard />
-              <LoadingCard />
+      <div className="workspace">
+        <div className="page-stack incident-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <div>
+                <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
+                <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
+              </div>
             </div>
           </div>
         </div>
@@ -462,16 +450,31 @@ export function IncidentDetailPage() {
 
   if (error || !incident) {
     return (
-      <div className="page-loading flex items-center justify-center">
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-8 text-center max-w-md shadow-sm">
-          <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-500" />
+      <div className="workspace">
+        <div className="page-stack incident-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <button className="btn-secondary" onClick={handleBack}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div>
+                <h1 className="page-header-title">Error</h1>
+              </div>
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Incident Not Found</h2>
-          <p className="text-slate-500 mb-6">{error || 'The incident you are looking for does not exist.'}</p>
-          <Button onClick={handleBack} icon={ArrowLeft}>
-            Back to Incidents
-          </Button>
+          <div className="detail-error">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <p>{error || 'Incident not found.'}</p>
+            <button className="btn-secondary" onClick={handleBack}>
+              Back to Incidents
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -167,10 +167,16 @@ export function UserDetailsPage() {
 
   if (loading) {
     return (
-      <div className="detail-page">
-        <div className="detail-loading">
-          <div className="spinner"></div>
-          <span>Loading user...</span>
+      <div className="workspace">
+        <div className="page-stack user-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <div>
+                <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
+                <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -178,19 +184,31 @@ export function UserDetailsPage() {
 
   if (error || !user) {
     return (
-      <div className="detail-page">
-        <div className="detail-error">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <p>{error || 'User not found'}</p>
-          <button className="btn-back" onClick={() => navigate('/users-teams')}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <div className="workspace">
+        <div className="page-stack user-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div>
+                <h1 className="page-header-title">Error</h1>
+              </div>
+            </div>
+          </div>
+          <div className="detail-error">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            Back to Users
-          </button>
+            <p>{error || 'User not found.'}</p>
+            <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
+              Back to Users
+            </button>
+          </div>
         </div>
       </div>
     );

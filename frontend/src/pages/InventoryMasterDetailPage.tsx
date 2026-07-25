@@ -164,28 +164,25 @@ export function InventoryMasterDetailPage() {
 
   if (loading) {
     return (
-      <div className="page-stack">
-        <div className="detail-header">
-          <div className="skeleton skeleton-title"></div>
-          <div className="detail-header-info">
-            <div className="detail-title-row">
-              <div className="skeleton skeleton-badge"></div>
-            </div>
-            <div className="detail-meta-row" style={{ marginTop: '12px' }}>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
-              <div className="skeleton" style={{ width: '150px', height: '16px' }}></div>
+      <div className="workspace">
+        <div className="page-stack inventory-master-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <div>
+                <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
+                <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="detail-content-grid">
-          <div className="detail-main">
-            <div className="detail-card">
-              <div className="detail-card-body">
-                <div className="skeleton skeleton-title"></div>
-                <div className="skeleton skeleton-text" style={{ marginTop: '16px' }}></div>
-                <div className="skeleton skeleton-text"></div>
-                <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
+          <div className="detail-content-grid">
+            <div className="detail-main">
+              <div className="detail-card">
+                <div className="detail-card-body">
+                  <div className="skeleton skeleton-title"></div>
+                  <div className="skeleton skeleton-text" style={{ marginTop: '16px' }}></div>
+                  <div className="skeleton skeleton-text"></div>
+                  <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
+                </div>
               </div>
             </div>
           </div>
@@ -196,16 +193,31 @@ export function InventoryMasterDetailPage() {
 
   if (error || !item) {
     return (
-      <div className="page-stack">
-        <div className="detail-error">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <p>{error || 'Inventory item not found.'}</p>
-          <button className="btn-back" onClick={handleBack}>
-            Back to Inventory Master
-          </button>
+      <div className="workspace">
+        <div className="page-stack inventory-master-detail">
+          <div className="page-header">
+            <div className="page-header-left">
+              <button className="btn-secondary" onClick={handleBack}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div>
+                <h1 className="page-header-title">Error</h1>
+              </div>
+            </div>
+          </div>
+          <div className="detail-error">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <p>{error || 'Inventory item not found.'}</p>
+            <button className="btn-secondary" onClick={handleBack}>
+              Back to Inventory Master
+            </button>
+          </div>
         </div>
       </div>
     );
