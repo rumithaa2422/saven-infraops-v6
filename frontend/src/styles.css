@@ -19629,12 +19629,8 @@ input:disabled {
   border-radius: var(--radius-sm);
   color: var(--muted);
   cursor: pointer;
-  opacity: 0;
-  transition: all 0.2s;
-}
-
-.role-option-wrapper:hover .role-delete-btn {
   opacity: 1;
+  transition: all 0.2s;
 }
 
 .role-delete-btn:hover {
@@ -20335,10 +20331,6 @@ input:disabled {
 
   .role-option-wrapper {
     width: 100%;
-  }
-
-  .role-option-wrapper .role-delete-btn {
-    opacity: 1;
   }
 }
 
