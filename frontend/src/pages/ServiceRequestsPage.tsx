@@ -487,7 +487,7 @@ export function ServiceRequestsPage() {
         {/* Header */}
         <PageHeader
           title="Service Requests"
-          subtitle="Submit and manage IT service requests for your organization"
+          subtitle="Centralized service request management"
           icon={Ticket}
           actions={
             canCreate && (

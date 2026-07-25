@@ -685,7 +685,7 @@ export function IncidentsPage() {
         {/* Page Header */}
         <PageHeader
           title="Incidents"
-          subtitle={`${summaryStats.total} total`}
+          subtitle="Centralized incident management"
           icon={AlertTriangle}
           actions={
             canCreate ? (
