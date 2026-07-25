@@ -190,55 +190,56 @@ export function NotificationsPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200/60 p-4">
-          <Filter className="w-4 h-4 text-slate-500" />
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                filter === 'all' 
-                  ? 'bg-white text-slate-900 shadow-sm' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter('unread')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
-                filter === 'unread' 
-                  ? 'bg-white text-slate-900 shadow-sm' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-              }`}
-            >
-              Unread
-              {unreadCount > 0 && (
-                <span className="w-5 h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setFilter('read')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                filter === 'read' 
-                  ? 'bg-white text-slate-900 shadow-sm' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-              }`}
-            >
-              Read
-            </button>
+        <div className="bg-white rounded-xl border border-slate-200/60 p-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500" />
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  filter === 'all' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('unread')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+                  filter === 'unread' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                Unread
+                {unreadCount > 0 && (
+                  <span className="w-5 h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setFilter('read')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  filter === 'read' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                Read
+              </button>
+            </div>
           </div>
         </div>
 
-      {/* Content */}
-      <div>
+        {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 bg-white rounded-xl border border-slate-200/60">
             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <Bell className="w-8 h-8 text-slate-400" />
             </div>
@@ -263,15 +264,15 @@ export function NotificationsPage() {
                 </div>
 
                 {/* Timeline Style Notifications */}
-                <div className="relative">
+                <div className="relative bg-white rounded-xl border border-slate-200/60 p-4">
                   {/* Timeline Line */}
-                  <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200"></div>
+                  <div className="absolute left-9 top-4 bottom-4 w-px bg-slate-200"></div>
 
                   <div className="space-y-3">
                     {groupedNotifications[group].map((notification, index) => (
                       <div
                         key={notification.id}
-                        className={`relative pl-12 transition-all ${
+                        className={`relative pl-10 transition-all ${
                           !notification.isRead ? 'opacity-100' : 'opacity-80'
                         }`}
                       >
@@ -283,10 +284,10 @@ export function NotificationsPage() {
                         }`}></div>
 
                         <div
-                          className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md ${
+                          className={`rounded-lg border p-3 cursor-pointer transition-all hover:shadow-md ${
                             notification.isRead 
-                              ? 'border-slate-200' 
-                              : 'border-purple-200 shadow-sm'
+                              ? 'bg-slate-50 border-slate-200' 
+                              : 'bg-white border-purple-200 shadow-sm'
                           }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
@@ -343,7 +344,6 @@ export function NotificationsPage() {
             ))}
           </div>
         )}
-      </div>
       </div>
     </div>
   );
