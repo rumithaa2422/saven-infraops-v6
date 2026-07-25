@@ -42,7 +42,7 @@ export function PageHeader({
   title,
   subtitle,
   icon: Icon,
-  iconColor = 'text-brand-600',
+  iconColor = '',
   actions,
   breadcrumbs,
   className = '',
@@ -56,7 +56,7 @@ export function PageHeader({
         {showBackButton && onBackClick && (
           <button
             onClick={onBackClick}
-            className="btn-secondary mr-2"
+            className="btn-back mr-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -66,7 +66,7 @@ export function PageHeader({
         {/* Icon */}
         {Icon && (
           <div className="page-header-icon">
-            <Icon className={`w-5 h-5 ${iconColor}`} />
+            <Icon className="w-5 h-5" />
           </div>
         )}
 

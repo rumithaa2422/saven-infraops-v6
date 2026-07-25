@@ -43,7 +43,7 @@ export function PageHeader({
   title,
   subtitle,
   icon: Icon,
-  iconColor = 'text-brand-600',
+  iconColor = '',
   actions,
   breadcrumbs,
   className = '',
@@ -67,7 +67,7 @@ export function PageHeader({
         {/* Icon */}
         {Icon && (
           <div className="page-header-icon">
-            <Icon className={`w-5 h-5 ${iconColor}`} />
+            <Icon className="w-5 h-5" />
           </div>
         )}
 
