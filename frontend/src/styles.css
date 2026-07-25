@@ -19600,11 +19600,13 @@ input:disabled {
 .role-option-wrapper {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: stretch;
 }
 
 .role-option-wrapper .role-option {
   flex: 1;
+  position: relative;
+  padding-right: 40px;
 }
 
 .role-option-wrapper.selected .role-option {
@@ -19612,14 +19614,16 @@ input:disabled {
   background: var(--brand-soft);
 }
 
-/* Role Delete Button */
-.role-delete-btn {
+/* Role Delete Button - Inside Card */
+.role-option-wrapper .role-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-left: 8px;
+  width: 28px;
+  height: 28px;
   background: transparent;
   border: none;
   border-radius: var(--radius-sm);
@@ -19627,7 +19631,6 @@ input:disabled {
   cursor: pointer;
   opacity: 0;
   transition: all 0.2s;
-  flex-shrink: 0;
 }
 
 .role-option-wrapper:hover .role-delete-btn {
@@ -20240,7 +20243,7 @@ input:disabled {
     width: 100%;
   }
 
-  .role-delete-btn {
+  .role-option-wrapper .role-delete-btn {
     opacity: 1;
   }
 }

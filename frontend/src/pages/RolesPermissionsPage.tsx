@@ -966,16 +966,16 @@ export function RolesPermissionsPage() {
                 <span className="role-meta">
                   {role.permissionCount} permissions · {role.userCount} users
                 </span>
+                {canDeleteRole && !role.isSystem && (
+                  <button
+                    className="role-delete-btn"
+                    onClick={(e) => openDeleteDialog(role, e)}
+                    title="Delete role"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </button>
-              {canDeleteRole && !role.isSystem && (
-                <button
-                  className="role-delete-btn"
-                  onClick={(e) => openDeleteDialog(role, e)}
-                  title="Delete role"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
             </div>
           ))}
         </div>
