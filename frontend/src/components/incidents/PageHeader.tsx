@@ -150,52 +150,32 @@ export function IncidentDetailHeader({
   };
 
   return (
-    <div className={`bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 ${className}`}>
-      <div className="px-6 py-5">
-        {/* Top Row - Back Button and Actions */}
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={onBackClick}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Incidents
-          </button>
-          {actions && (
-            <div className="flex items-center gap-2">
-              {actions}
-            </div>
-          )}
-        </div>
-
-        {/* Main Content */}
+    <div className={`bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden ${className}`}>
+      <div className="px-6 py-5 border-b border-slate-100">
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div className="flex-1 min-w-0">
-            {/* Incident Number */}
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-mono font-semibold text-white bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded">
+            {/* Incident Number and Badges */}
+            <div className="flex items-center gap-3 mb-3">
+              <span className="px-3 py-1.5 bg-brand-50 text-brand-700 font-mono font-semibold rounded-lg">
                 {incidentNo}
               </span>
-              <div className="flex items-center gap-2">
-                {statusBadge}
-                {severityBadge}
-                {priorityBadge}
-              </div>
+              {statusBadge}
+              {severityBadge}
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-3">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
               {title}
             </h1>
 
             {/* Meta Info */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/70">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
               {ownerName && (
                 <div className="flex items-center gap-1.5">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span>Assigned to <span className="font-medium text-white">{ownerName}</span></span>
+                  <span>{ownerName}</span>
                 </div>
               )}
               <div className="flex items-center gap-1.5">
@@ -208,6 +188,15 @@ export function IncidentDetailHeader({
           </div>
         </div>
       </div>
+
+      {/* Actions Row */}
+      {actions && (
+        <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            {actions}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

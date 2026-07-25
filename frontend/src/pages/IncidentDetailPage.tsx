@@ -25,6 +25,7 @@ import {
   X
 } from 'lucide-react';
 import {
+  PageHeader,
   IncidentDetailHeader,
   IncidentStatusBadge,
   SeverityBadge,
@@ -435,17 +436,11 @@ export function IncidentDetailPage() {
     return (
       <div className="workspace">
         <div className="page-stack incident-detail">
-          <div className="page-header">
-            <div className="page-header-left">
-              <div className="page-header-icon">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
-                <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
-              </div>
-            </div>
-          </div>
+          <PageHeader
+            title="Incident Details"
+            showBackButton
+            onBackClick={handleBack}
+          />
         </div>
       </div>
     );
@@ -455,22 +450,11 @@ export function IncidentDetailPage() {
     return (
       <div className="workspace">
         <div className="page-stack incident-detail">
-          <div className="page-header">
-            <div className="page-header-left">
-              <button className="btn-back" onClick={handleBack}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back
-              </button>
-              <div className="page-header-icon">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="page-header-title">Error</h1>
-              </div>
-            </div>
-          </div>
+          <PageHeader
+            title="Incident Details"
+            showBackButton
+            onBackClick={handleBack}
+          />
           <div className="detail-error">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
@@ -493,11 +477,18 @@ export function IncidentDetailPage() {
     <div className="workspace">
       <div className="page-stack incident-detail">
         {/* Header */}
+        <PageHeader
+          title="Incident Details"
+          showBackButton
+          onBackClick={handleBack}
+        />
+
+        {/* Incident Header Card */}
         <IncidentDetailHeader
           incidentNo={incident.incidentNo}
           title={incident.title}
-          statusBadge={<IncidentStatusBadge status={incident.status} size="lg" variant="light" />}
-          severityBadge={<SeverityBadge severity={incident.severity} size="lg" variant="light" />}
+          statusBadge={<IncidentStatusBadge status={incident.status} size="lg" />}
+          severityBadge={<SeverityBadge severity={incident.severity} size="lg" />}
           ownerName={incident.ownerName}
           createdAt={incident.createdAt || ''}
           onBackClick={handleBack}
