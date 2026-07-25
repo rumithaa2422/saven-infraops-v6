@@ -583,38 +583,39 @@ export function ServiceRequestDetailPage() {
   }
 
   return (
-    <>
-      {/* Header */}
-      <PageHeader
-        title="Service Request Details"
-        showBackButton
-        onBackClick={handleBack}
-        actions={
-          <div className="flex items-center gap-2">
-            {canPerformActions && (
-              <button
-                onClick={openEditDialog}
-                className="px-4 py-2 rounded-xl bg-white text-purple-600 font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </button>
-            )}
-            {canDelete && (
-              <button
-                onClick={openDeleteDialog}
-                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 shadow-lg shadow-red-500/30 flex items-center gap-2 text-sm"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            )}
-          </div>
-        }
-      />
+    <div className="workspace">
+      <div className="page-stack service-request-detail">
+        {/* Header */}
+        <PageHeader
+          title="Service Request Details"
+          showBackButton
+          onBackClick={handleBack}
+          actions={
+            <div className="flex items-center gap-2">
+              {canPerformActions && (
+                <button
+                  onClick={openEditDialog}
+                  className="btn-secondary"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={openDeleteDialog}
+                  className="btn-danger"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              )}
+            </div>
+          }
+        />
 
-      {/* Main Content */}
-      <div className="content-section">
+        {/* Main Content */}
+        <div className="content-section">
         
         {/* Request Header Card */}
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
@@ -1151,6 +1152,7 @@ export function ServiceRequestDetailPage() {
           </div>
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }

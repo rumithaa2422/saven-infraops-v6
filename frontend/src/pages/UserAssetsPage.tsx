@@ -226,37 +226,28 @@ export function UserAssetsPage() {
   }
 
   return (
-    <div className="page-stack">
-      <div className="user-assets-page">
+    <div className="workspace">
+      <div className="page-stack user-assets">
         {/* Page Header */}
-        <div className="detail-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            <button className="btn-back" onClick={handleBack}>
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={handleBack}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Back
             </button>
-          </div>
-          <div className="detail-header-info">
-            <div className="user-header">
-              <div className="user-avatar-large">
-                {userData.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="user-header-content">
-                <h1 className="user-name">{userData.name}</h1>
-                <div className="user-meta">
-                  <span className="user-department">{userData.department || 'No Department'}</span>
-                  <span className="user-role-badge">{userData.role || 'Employee'}</span>
-                  <span className={`status-badge status-${userData.status.toLowerCase()}`}>
-                    {userData.status}
-                  </span>
-                </div>
-                <div className="user-email">{userData.email}</div>
-              </div>
+            <div className="user-avatar-large">
+              {userData.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h1 className="page-header-title">{userData.name}</h1>
+              <p className="page-header-subtitle">{userData.department || 'Employee'} • {userData.email}</p>
             </div>
           </div>
         </div>
+
+        <div className="user-assets-page">
 
         {/* Summary Cards */}
         <div className="user-assets-summary">
@@ -423,6 +414,7 @@ export function UserAssetsPage() {
               </table>
             </TableContainer>
           )}
+        </div>
         </div>
       </div>
     </div>

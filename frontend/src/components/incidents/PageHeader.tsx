@@ -42,7 +42,7 @@ export function PageHeader({
   title,
   subtitle,
   icon: Icon,
-  iconColor = 'text-white',
+  iconColor = 'text-brand-600',
   actions,
   breadcrumbs,
   className = '',
@@ -50,69 +50,63 @@ export function PageHeader({
   onBackClick
 }: PageHeaderProps) {
   return (
-    <div className={`bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6 ${className}`}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          {/* Back Button */}
-          {showBackButton && onBackClick && (
-            <button
-              onClick={onBackClick}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 group"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Back
-            </button>
-          )}
+    <div className={`page-header ${className}`}>
+      <div className="page-header-left">
+        {/* Back Button */}
+        {showBackButton && onBackClick && (
+          <button
+            onClick={onBackClick}
+            className="btn-secondary mr-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        )}
 
-          {/* Icon */}
-          {Icon && (
-            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
-              <Icon className={`w-7 h-7 ${iconColor}`} />
-            </div>
-          )}
-
-          {/* Title and Breadcrumbs */}
-          <div className="flex-1 min-w-0">
-            {/* Breadcrumbs */}
-            {breadcrumbs && breadcrumbs.length > 0 && (
-              <nav className="flex items-center gap-2 text-sm mb-1">
-                {breadcrumbs.map((crumb, index) => (
-                  <React.Fragment key={index}>
-                    {index > 0 && <span className="text-white/40">/</span>}
-                    {crumb.onClick ? (
-                      <button
-                        onClick={crumb.onClick}
-                        className="text-white/70 hover:text-white transition-colors"
-                      >
-                        {crumb.label}
-                      </button>
-                    ) : (
-                      <span className="text-white/70">{crumb.label}</span>
-                    )}
-                  </React.Fragment>
-                ))}
-              </nav>
-            )}
-
-            {/* Title */}
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-white truncate">{title}</h1>
-              {subtitle && (
-                <span className="hidden md:inline-flex px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
-                  {subtitle}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        {actions && (
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {actions}
+        {/* Icon */}
+        {Icon && (
+          <div className="page-header-icon">
+            <Icon className={`w-5 h-5 ${iconColor}`} />
           </div>
         )}
+
+        {/* Title and Breadcrumbs */}
+        <div>
+          {/* Breadcrumbs */}
+          {breadcrumbs && breadcrumbs.length > 0 && (
+            <nav className="flex items-center gap-2 text-sm mb-1">
+              {breadcrumbs.map((crumb, index) => (
+                <React.Fragment key={index}>
+                  {index > 0 && <span className="text-slate-400">/</span>}
+                  {crumb.onClick ? (
+                    <button
+                      onClick={crumb.onClick}
+                      className="text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                      {crumb.label}
+                    </button>
+                  ) : (
+                    <span className="text-slate-500">{crumb.label}</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </nav>
+          )}
+
+          {/* Title */}
+          <h1 className="page-header-title">{title}</h1>
+          {subtitle && (
+            <p className="page-header-subtitle">{subtitle}</p>
+          )}
+        </div>
       </div>
+
+      {/* Actions */}
+      {actions && (
+        <div className="flex items-center gap-2">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

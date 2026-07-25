@@ -481,48 +481,45 @@ export function IncidentDetailPage() {
   const nextStatus = getNextStatus();
 
   return (
-    <>
-      {/* Header */}
-      <IncidentDetailHeader
-        incidentNo={incident.incidentNo}
-        title={incident.title}
-        statusBadge={<IncidentStatusBadge status={incident.status} size="lg" variant="light" />}
-        severityBadge={<SeverityBadge severity={incident.severity} size="lg" variant="light" />}
-        ownerName={incident.ownerName}
-        createdAt={incident.createdAt || ''}
-        onBackClick={handleBack}
-        actions={
-          <div className="flex items-center gap-2">
-            {canUpdate && (
-              <button className="px-4 py-2 rounded-xl bg-white text-purple-600 font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm">
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </button>
-            )}
-            {canChangeStatus && nextStatus && (
-              <button 
-                onClick={() => setResolveDialogOpen(true)}
-                className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center gap-2 text-sm text-white ${
-                  nextStatus === 'RESOLVED' 
-                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30' 
-                    : 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/30'
-                }`}
-              >
-                {nextStatus === 'RESOLVED' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                {getStatusButtonLabel()}
-              </button>
-            )}
-            {canDelete && (
-              <button onClick={() => setDeleteDialogOpen(true)} className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-all duration-200 shadow-lg shadow-red-500/30 flex items-center gap-2 text-sm">
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            )}
-          </div>
-        }
-      />
+    <div className="workspace">
+      <div className="page-stack incident-detail">
+        {/* Header */}
+        <IncidentDetailHeader
+          incidentNo={incident.incidentNo}
+          title={incident.title}
+          statusBadge={<IncidentStatusBadge status={incident.status} size="lg" variant="light" />}
+          severityBadge={<SeverityBadge severity={incident.severity} size="lg" variant="light" />}
+          ownerName={incident.ownerName}
+          createdAt={incident.createdAt || ''}
+          onBackClick={handleBack}
+          actions={
+            <div className="flex items-center gap-2">
+              {canUpdate && (
+                <button className="btn-secondary">
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </button>
+              )}
+              {canChangeStatus && nextStatus && (
+                <button 
+                  onClick={() => setResolveDialogOpen(true)}
+                  className={`btn ${nextStatus === 'RESOLVED' ? 'btn-success' : 'btn-primary'}`}
+                >
+                  {nextStatus === 'RESOLVED' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                  {getStatusButtonLabel()}
+                </button>
+              )}
+              {canDelete && (
+                <button onClick={() => setDeleteDialogOpen(true)} className="btn-danger">
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              )}
+            </div>
+          }
+        />
 
-      <div className="content-section">
+        <div className="content-section">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content Column */}
           <div className="lg:col-span-2 space-y-6">
@@ -830,6 +827,7 @@ export function IncidentDetailPage() {
           </div>
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }

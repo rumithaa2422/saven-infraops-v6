@@ -71,7 +71,9 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="settings-page-new">
+    <div className="workspace">
+      <div className="page-stack settings">
+        <div className="settings-page-new">
       {/* Left Navigation */}
       <div className="settings-nav">
         <div className="settings-nav-header">
@@ -120,6 +122,8 @@ export function SettingsPage() {
           onClose={() => setToast(null)} 
         />
       )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -307,15 +307,18 @@ export function CompliancePage() {
   };
 
   return (
-    <div className="compliance-page">
-      <div className="page-container">
-        {/* Header */}
-        <div className="page-header">
-          <div className="header-content">
-            <h1>Compliance</h1>
-            <p className="header-subtitle">Manage Compliance Frameworks and Controls</p>
+    <div className="workspace">
+      <div className="page-stack compliance">
+        <div className="page-container">
+          {/* Page Header */}
+          <div className="page-header">
+            <div className="page-header-left">
+              <div>
+                <h1 className="page-header-title">Compliance</h1>
+                <p className="page-header-subtitle">Manage compliance frameworks and controls</p>
+              </div>
+            </div>
           </div>
-        </div>
 
         {/* Summary Cards */}
         <div className="compliance-summary-grid">
@@ -564,6 +567,7 @@ export function CompliancePage() {
           }}
           onEvidenceChange={handleEvidenceChange}
         />
+        </div>
       </div>
     </div>
   );

@@ -810,39 +810,44 @@ export function RolesPermissionsPage() {
   
   if (!hasPermission('roles:view') && !hasPermission('users:read')) {
     return (
-      <div className="page-container">
-        <div className="alert alert-error">You do not have permission to view this page.</div>
+      <div className="workspace">
+        <div className="page-container">
+          <div className="alert alert-error">You do not have permission to view this page.</div>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="page-container roles-permissions-page">
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
-      <CreateRoleModal 
-        isOpen={createModalOpen} 
-        onClose={() => setCreateModalOpen(false)}
-        onSuccess={handleRoleCreated}
-      />
-      
-      {/* Header */}
-      <div className="page-header">
-        <div className="header-content">
-          <h1>Roles & Permissions</h1>
-          <p className="header-subtitle">Configure role-based access across every module</p>
+    <div className="workspace">
+      <div className="page-stack roles-permissions">
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        <CreateRoleModal 
+          isOpen={createModalOpen} 
+          onClose={() => setCreateModalOpen(false)}
+          onSuccess={handleRoleCreated}
+        />
+        
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <div>
+              <h1 className="page-header-title">Roles & Permissions</h1>
+              <p className="page-header-subtitle">Configure role-based access</p>
+            </div>
+          </div>
+          <div className="page-header-right">
+            {canCreateRole && (
+              <button 
+                className="btn-primary"
+                onClick={() => setCreateModalOpen(true)}
+              >
+                <span>+</span>
+                Add Role
+              </button>
+            )}
+          </div>
         </div>
-        <div className="header-actions">
-          {canCreateRole && (
-            <button 
-              className="btn btn-primary"
-              onClick={() => setCreateModalOpen(true)}
-            >
-              <span className="btn-icon">+</span>
-              Add Role
-            </button>
-          )}
-        </div>
-      </div>
       
       {/* Stats Cards */}
       {stats && (
@@ -1024,6 +1029,7 @@ export function RolesPermissionsPage() {
           <span>You have view-only access. Only Super Admin can modify permissions.</span>
         </div>
       )}
+      </div>
     </div>
   );
 }

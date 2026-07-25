@@ -153,17 +153,23 @@ export function CreateUserPage() {
   }
 
   return (
-    <div className="form-page">
-      {/* Header */}
-      <div className="form-header">
-        <button className="btn-back-top" onClick={() => navigate('/users-teams')}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back to Users
-        </button>
-        <h1>Create User</h1>
-      </div>
+    <div className="workspace">
+      <div className="page-stack create-user">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
+            </button>
+            <div>
+              <h1 className="page-header-title">Create User</h1>
+              <p className="page-header-subtitle">Add a new user to the system</p>
+            </div>
+          </div>
+        </div>
 
       <form className="form-content" onSubmit={handleSubmit}>
         {error && (
@@ -386,6 +392,7 @@ export function CreateUserPage() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 }

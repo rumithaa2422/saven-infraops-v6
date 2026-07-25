@@ -216,41 +216,35 @@ export function ProjectCreatePage() {
   const selectedTeamMembers = users.filter(u => formData.teamMemberIds.includes(u.id));
 
   return (
-    <>
-      {/* Page Header */}
-      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <button type="button" onClick={() => navigate('/projects-environments')} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 group">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:-translate-x-1 transition-transform">
-                <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <div className="workspace">
+      <div className="page-stack project-create">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={() => navigate('/projects-environments')}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Back
             </button>
-            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-white/70 mb-1">Projects & Environments</p>
-              <h1 className="text-2xl font-bold text-white">Create Project</h1>
+            <div>
+              <h1 className="page-header-title">Create Project</h1>
+              <p className="page-header-subtitle">Projects & Environments</p>
             </div>
           </div>
         </div>
-      </div>
 
-      {error && (
-        <div className="max-w-7xl mx-auto px-6 pt-6">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-              <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            {error}
+        {error && (
+          <div className="max-w-7xl mx-auto px-6 pt-6">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              {error}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Form */}
       <div className="content-section">
@@ -569,6 +563,7 @@ export function ProjectCreatePage() {
           </div>
         </form>
       </div>
-    </>
+      </div>
+    </div>
   );
 }

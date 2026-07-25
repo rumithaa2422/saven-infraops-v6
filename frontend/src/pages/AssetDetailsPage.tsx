@@ -645,16 +645,18 @@ export function AssetDetailsPage() {
 
   if (error || !item) {
     return (
-      <div className="page-stack">
-        <div className="detail-error">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <p>{error || 'Asset not found.'}</p>
-          <button className="btn-back" onClick={handleBack}>
-            Back to Asset Management
-          </button>
+      <div className="workspace">
+        <div className="page-stack">
+          <div className="detail-error">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <p>{error || 'Asset not found.'}</p>
+            <button className="btn-back" onClick={handleBack}>
+              Back to Asset Management
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -663,40 +665,44 @@ export function AssetDetailsPage() {
   const warrantyStatus = getWarrantyStatus(item.warrantyExpiry);
 
   return (
-    <div className="page-stack">
-      {/* Page Header */}
-      <div className="detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <button className="btn-back" onClick={handleBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
-          </button>
-        </div>
-        <div className="detail-header-info">
-          <div className="detail-title-row">
-            <span className="detail-ticket-no">{item.itemNo}</span>
-            <span className={`status-badge status-${item.status.toLowerCase()}`}>
-              {item.status}
-            </span>
-          </div>
-          <div className="detail-meta-row">
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Item</span>
-              <span className="detail-meta-value">{item.itemName}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Category</span>
-              <span className="detail-meta-value">{item.category?.name || '-'}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Subcategory</span>
-              <span className="detail-meta-value">{item.subcategory?.name || '-'}</span>
-            </span>
+    <div className="workspace">
+      <div className="page-stack asset-detail">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={handleBack}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
+            </button>
           </div>
         </div>
-      </div>
+
+        <div className="detail-header">
+          <div className="detail-header-info">
+            <div className="detail-title-row">
+              <span className="detail-ticket-no">{item.itemNo}</span>
+              <span className={`status-badge status-${item.status.toLowerCase()}`}>
+                {item.status}
+              </span>
+            </div>
+            <div className="detail-meta-row">
+              <span className="detail-meta-item">
+                <span className="detail-meta-label">Item</span>
+                <span className="detail-meta-value">{item.itemName}</span>
+              </span>
+              <span className="detail-meta-item">
+                <span className="detail-meta-label">Category</span>
+                <span className="detail-meta-value">{item.category?.name || '-'}</span>
+              </span>
+              <span className="detail-meta-item">
+                <span className="detail-meta-label">Subcategory</span>
+                <span className="detail-meta-value">{item.subcategory?.name || '-'}</span>
+              </span>
+            </div>
+          </div>
+        </div>
 
       {/* Main Content Grid */}
       <div className="detail-content-grid">
@@ -1632,6 +1638,7 @@ export function AssetDetailsPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -200,65 +200,33 @@ export function UserDetailsPage() {
   const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <div className="detail-page">
-      {/* Back Button */}
-      <button className="btn-back-top" onClick={() => navigate('/users-teams')}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        Back to Users
-      </button>
-
-      {/* Header */}
-      <div className="detail-header">
-        <div className="detail-title-row">
-          <div className="detail-avatar">
-            {userInitials}
-          </div>
-          <div className="detail-title-info">
-            <h1 className="detail-title">{user.name}</h1>
-            <div className="detail-meta-tags">
-              <span className={`role-badge ${getRoleBadgeClass(primaryRole)}`}>
-                {primaryRole}
-              </span>
-              <span className={`status-badge status-${user.status.toLowerCase()}`}>
-                {user.status}
-              </span>
-            </div>
-          </div>
-          {(isSuperAdmin || currentUser?.roles.includes('Admin')) && (
-            <button className="btn-primary" onClick={() => navigate(`/users-teams/${id}/edit`)}>
-              Edit
+    <div className="workspace">
+      <div className="page-stack user-detail">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
             </button>
-          )}
-        </div>
-        <div className="detail-meta-row">
-          {user.department && (
-            <div className="detail-meta-item">
-              <span className="detail-meta-label">Department</span>
-              <span className="detail-meta-value">{user.department}</span>
+            <div className="detail-avatar">
+              {userInitials}
             </div>
-          )}
-          {user.designation && (
-            <div className="detail-meta-item">
-              <span className="detail-meta-label">Designation</span>
-              <span className="detail-meta-value">{user.designation}</span>
+            <div>
+              <h1 className="page-header-title">{user.name}</h1>
+              <p className="page-header-subtitle">{user.department || 'Employee'} • {primaryRole}</p>
             </div>
-          )}
-          <div className="detail-meta-item">
-            <span className="detail-meta-label">Email</span>
-            <span className="detail-meta-value">{user.email}</span>
           </div>
-          {user.currentProject && (
-            <div className="detail-meta-item">
-              <span className="detail-meta-label">Current Project</span>
-              <span className="detail-meta-value project-link" onClick={() => navigate(`/projects-environments/${user.currentProject?.id}`)}>
-                {user.currentProject.projectName}
-              </span>
-            </div>
-          )}
+          <div className="page-header-right">
+            {(isSuperAdmin || currentUser?.roles.includes('Admin')) && (
+              <button className="btn-primary" onClick={() => navigate(`/users-teams/${id}/edit`)}>
+                Edit User
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
       <div className="detail-content-grid">
         {/* Main Column */}
@@ -604,6 +572,7 @@ export function UserDetailsPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

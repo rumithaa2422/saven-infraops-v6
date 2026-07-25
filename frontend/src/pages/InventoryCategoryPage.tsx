@@ -881,65 +881,66 @@ export function InventoryCategoryPage() {
   }
 
   return (
-    <>
-      {/* Header */}
-      <PageHeader
-        title={category?.name || 'Inventory'}
-        subtitle={category?.subcategories.length ? `${category.subcategories.length} subcategories` : undefined}
-        icon={Package}
-        iconColor="text-brand-600"
-        breadcrumbs={[
-          { label: 'Inventory', onClick: () => navigate('/inventory') },
-          ...(category?.name ? [{ label: category.name }] : [])
-        ]}
-        actions={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-            {canExport && (
+    <div className="workspace">
+      <div className="page-stack inventory-category">
+        {/* Header */}
+        <PageHeader
+          title={category?.name || 'Inventory'}
+          subtitle={category?.subcategories.length ? `${category.subcategories.length} subcategories` : undefined}
+          icon={Package}
+          iconColor="text-brand-600"
+          breadcrumbs={[
+            { label: 'Inventory', onClick: () => navigate('/inventory') },
+            ...(category?.name ? [{ label: category.name }] : [])
+          ]}
+          actions={
+            <div className="flex items-center gap-2">
               <button
-                onClick={handleExport}
-                disabled={filteredItems.length === 0}
-                className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-            )}
-            {isSuperAdmin && (
-              <button
-                onClick={handleImportClick}
+                onClick={handleRefresh}
+                disabled={refreshing}
                 className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
               >
-                <Upload className="w-4 h-4" />
-                Import
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
               </button>
-            )}
-            {isSuperAdmin && (
-              <button
-                onClick={handleCreateInventory}
-                className="px-5 py-2 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
-              >
-                <Plus className="w-5 h-5" />
-                Create Item
-              </button>
-            )}
-          </div>
-        }
-      />
-      <input
-        ref={importInputRef}
-        type="file"
-        accept=".xlsx,.xls,.csv"
-        onChange={handleImportFileChange}
-        className="hidden"
-      />
+              {canExport && (
+                <button
+                  onClick={handleExport}
+                  disabled={filteredItems.length === 0}
+                  className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                </button>
+              )}
+              {isSuperAdmin && (
+                <button
+                  onClick={handleImportClick}
+                  className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import
+                </button>
+              )}
+              {isSuperAdmin && (
+                <button
+                  onClick={handleCreateInventory}
+                  className="px-5 py-2 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Item
+                </button>
+              )}
+            </div>
+          }
+        />
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          onChange={handleImportFileChange}
+          className="hidden"
+        />
 
       {/* Main Content */}
       <div className="content-section">
@@ -1495,6 +1496,7 @@ export function InventoryCategoryPage() {
           )}
         </div>
       </ModalLayout>
-    </>
+      </div>
+    </div>
   );
 }

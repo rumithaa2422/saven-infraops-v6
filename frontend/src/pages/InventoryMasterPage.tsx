@@ -787,69 +787,70 @@ export function InventoryMasterPage() {
   }
 
   return (
-    <>
-      {/* Header */}
-      <PageHeader
-        title={isEditMode ? 'Edit Inventory Item' : 'Create Inventory Item'}
-        subtitle={isEditMode ? form.itemNo : 'New Item'}
-        icon={isEditMode ? Package : PackagePlus}
-        iconColor="text-brand-600"
-        breadcrumbs={[
-          { label: 'Inventory', onClick: () => navigate('/inventory') },
-          ...(isEditMode && form.itemNo ? [{ label: form.itemNo }] : [])
-        ]}
-        actions={
-          <div className="flex items-center gap-3">
-            <Button
-              variant="secondary"
-              onClick={handleCancel}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            {isSuperAdmin && (
+    <div className="workspace">
+      <div className="page-stack inventory-master">
+        {/* Header */}
+        <PageHeader
+          title={isEditMode ? 'Edit Inventory Item' : 'Create Inventory Item'}
+          subtitle={isEditMode ? form.itemNo : 'New Item'}
+          icon={isEditMode ? Package : PackagePlus}
+          iconColor="text-brand-600"
+          breadcrumbs={[
+            { label: 'Inventory', onClick: () => navigate('/inventory') },
+            ...(isEditMode && form.itemNo ? [{ label: form.itemNo }] : [])
+          ]}
+          actions={
+            <div className="flex items-center gap-3">
               <Button
-                variant="primary"
-                icon={Save}
-                onClick={handleSubmit}
-                loading={saving}
+                variant="secondary"
+                onClick={handleCancel}
+                disabled={saving}
               >
-                {isEditMode ? 'Update Item' : 'Save Item'}
+                Cancel
               </Button>
-            )}
-          </div>
-        }
-      />
+              {isSuperAdmin && (
+                <Button
+                  variant="primary"
+                  icon={Save}
+                  onClick={handleSubmit}
+                  loading={saving}
+                >
+                  {isEditMode ? 'Update Item' : 'Save Item'}
+                </Button>
+              )}
+            </div>
+          }
+        />
 
-      {/* Toast Messages */}
-      {message && (
-        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
-          <div className="bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="text-sm font-medium">{message}</span>
-            <button onClick={() => setMessage('')} className="text-white/80 hover:text-white transition-colors">
-              <X className="w-4 h-4" />
-            </button>
+        {/* Toast Messages */}
+        {message && (
+          <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+            <div className="bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-sm font-medium">{message}</span>
+              <button onClick={() => setMessage('')} className="text-white/80 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {error && (
-        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
-          <div className="bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
-            <AlertCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">{error}</span>
-            <button onClick={() => setError('')} className="text-white/80 hover:text-white transition-colors">
-              <X className="w-4 h-4" />
-            </button>
+        {error && (
+          <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+            <div className="bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+              <AlertCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">{error}</span>
+              <button onClick={() => setError('')} className="text-white/80 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Content */}
-      <form onSubmit={handleSubmit} className="content-section form-container">
+        {/* Main Content */}
+        <form onSubmit={handleSubmit} className="content-section form-container">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Form */}
           <div className="lg:col-span-2 space-y-6">
@@ -1261,6 +1262,7 @@ export function InventoryMasterPage() {
           </div>
         </div>
       </form>
-    </>
+      </div>
+    </div>
   );
 }

@@ -545,29 +545,30 @@ export function AssetManagementPage() {
   }, [selectedSubcategory, categories]);
 
   return (
-    <div className="asset-management-page">
-      {/* Page Header */}
-      <div className="asset-header">
-        <div className="asset-header-left">
-          <div className="asset-header-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+    <div className="workspace">
+      <div className="page-stack asset-management">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="page-header-title">Asset Management</h1>
+              <p className="page-header-subtitle">Manage inventory allocation across users and projects.</p>
+            </div>
           </div>
-          <div>
-            <h1>Asset Management</h1>
-            <p className="asset-subtitle">Manage inventory allocation across users and projects.</p>
-          </div>
+          {isSuperAdmin && (
+            <button className="btn-primary" onClick={openAssignmentModal}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Assign Inventory
+            </button>
+          )}
         </div>
-        {isSuperAdmin && (
-          <button className="btn-primary-asset" onClick={openAssignmentModal}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            Assign Inventory
-          </button>
-        )}
-      </div>
 
       {/* Summary Cards */}
       <div className="asset-summary-cards">
@@ -1163,6 +1164,7 @@ export function AssetManagementPage() {
           </div>
         </div>
       </ModalLayout>
+      </div>
     </div>
   );
 }

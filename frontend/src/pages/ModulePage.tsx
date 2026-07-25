@@ -1629,12 +1629,23 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
   }
 
   return (
-    <div 
-      className={`page-stack ${isDragging ? 'dragging' : ''}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="workspace">
+      <div 
+        className={`page-stack module-page ${isDragging ? 'dragging' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <div>
+              <h1 className="page-header-title">{title}</h1>
+              <p className="page-header-subtitle">Management</p>
+            </div>
+          </div>
+        </div>
+
       <div className="page-title-row">
         <div>
           <span className="eyebrow">Management</span>
@@ -2713,6 +2724,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

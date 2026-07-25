@@ -434,38 +434,39 @@ export function ServiceRequestsPage() {
   };
 
   return (
-    <>
-      {/* Header */}
-      <PageHeader
-        title="Service Requests"
-        subtitle={`${summaryStats.total} total`}
-        icon={Ticket}
-        actions={
-          <>
-            {canExport && (
-              <button
-                onClick={exportCsv}
-                className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-            )}
-            {canCreate && (
-              <button
-                onClick={() => setCreateOpen(true)}
-                className="px-5 py-2 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
-              >
-                <Plus className="w-5 h-5 text-purple-600" />
-                <span className="text-purple-600">Create Request</span>
-              </button>
-            )}
-          </>
-        }
-      />
+    <div className="workspace">
+      <div className="page-stack service-requests">
+        {/* Header */}
+        <PageHeader
+          title="Service Requests"
+          subtitle={`${summaryStats.total} total`}
+          icon={Ticket}
+          actions={
+            <>
+              {canExport && (
+                <button
+                  onClick={exportCsv}
+                  className="btn-secondary"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                </button>
+              )}
+              {canCreate && (
+                <button
+                  onClick={() => setCreateOpen(true)}
+                  className="btn-primary"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Request
+                </button>
+              )}
+            </>
+          }
+        />
 
-      {/* Main Content */}
-      <div className="content-section">
+        {/* Main Content */}
+        <div className="content-section">
         
         {/* Stats Cards */}
         <div className="stats-grid">
@@ -943,6 +944,7 @@ export function ServiceRequestsPage() {
           </div>
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }

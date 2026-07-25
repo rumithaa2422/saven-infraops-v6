@@ -647,28 +647,27 @@ export function VendorDirectoryPage() {
   const hasActiveFilters = categoryFilter || statusFilter || countryFilter || contractStatusFilter || dateFrom || dateTo || yearFilter;
 
   return (
-    <>
-      {/* Page Header */}
-      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="white" strokeWidth="2"/>
-                <circle cx="9" cy="7" r="4" stroke="white" strokeWidth="2"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="white" strokeWidth="2"/>
+    <div className="workspace">
+      <div className="page-stack vendor-directory">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2"/>
               </svg>
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-white truncate">Vendor Directory</h1>
-              <p className="text-sm text-white/80 mt-1">Manage vendor relationships and contracts</p>
+            <div>
+              <h1 className="page-header-title">Vendor Directory</h1>
+              <p className="page-header-subtitle">Manage vendor relationships and contracts</p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="content-section">
+        {/* Main Content */}
+        <div className="content-section">
         {/* Summary Cards */}
         <div className="stats-grid">
           <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-purple-200 transition-all duration-300 group cursor-pointer">
@@ -1248,7 +1247,8 @@ export function VendorDirectoryPage() {
           </div>
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }
 

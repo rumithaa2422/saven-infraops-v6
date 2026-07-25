@@ -215,24 +215,27 @@ export function InventoryMasterDetailPage() {
   const isLowStock = item.minStock && item.currentQty < item.minStock;
 
   return (
-    <div className="page-stack">
-      {message && (
-        <div className="notice notice-success">{message}</div>
-      )}
+    <div className="workspace">
+      <div className="page-stack inventory-master-detail">
+        {message && (
+          <div className="notice notice-success">{message}</div>
+        )}
 
-      {/* Header */}
-      <div className="detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-          <button className="btn-back" onClick={handleBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back
-          </button>
-        </div>
-        <div className="detail-header-info">
-          <div className="detail-title-row">
-            <span className="detail-ticket-no">{item.itemNo}</span>
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={handleBack}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
+            </button>
+            <div>
+              <h1 className="page-header-title">{item.itemName}</h1>
+              <p className="page-header-subtitle">{item.itemNo}</p>
+            </div>
+          </div>
+          <div className="page-header-right">
             <span className={`status-badge status-${item.status.toLowerCase()}`}>
               {item.status}
             </span>
@@ -242,22 +245,7 @@ export function InventoryMasterDetailPage() {
               </span>
             )}
           </div>
-          <div className="detail-meta-row">
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Item</span>
-              <span className="detail-meta-value">{item.itemName}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Location</span>
-              <span className="detail-meta-value">{item.location || '-'}</span>
-            </span>
-            <span className="detail-meta-item">
-              <span className="detail-meta-label">Available</span>
-              <span className="detail-meta-value">{availableQty}</span>
-            </span>
-          </div>
         </div>
-      </div>
 
       {/* Main Content Grid */}
       <div className="detail-content-grid">
@@ -492,6 +480,7 @@ export function InventoryMasterDetailPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -585,28 +585,26 @@ export function ProjectDashboardPage() {
   const hasActiveFilters = search || statusFilter || priorityFilter || departmentFilter || technologyFilter || managerFilter;
 
   return (
-    <>
-      {/* Page Header */}
-      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            {/* Icon */}
-            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M9 22V12H15V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <div className="workspace">
+      <div className="page-stack project-dashboard">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-white truncate">Project Dashboard</h1>
-              <p className="text-sm text-white/80 mt-1">Projects & Environments</p>
+            <div>
+              <h1 className="page-header-title">Project Dashboard</h1>
+              <p className="page-header-subtitle">Projects & Environments</p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="content-section">
+        {/* Main Content */}
+        <div className="content-section">
         {/* Summary Cards */}
         <div className="stats-grid">
           <div className="project-summary-card" onClick={() => { setStatusFilter(''); fetchProjects(); }}>
@@ -1181,6 +1179,7 @@ export function ProjectDashboardPage() {
           </div>
         )}
       </div>
-    </>
+      </div>
+    </div>
   );
 }

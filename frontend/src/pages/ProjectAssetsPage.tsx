@@ -191,41 +191,25 @@ export function ProjectAssetsPage() {
   }
 
   return (
-    <div className="page-stack">
-      <div className="project-assets-page">
+    <div className="workspace">
+      <div className="page-stack project-assets">
         {/* Page Header */}
-        <div className="detail-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            <button className="btn-back" onClick={handleBack}>
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={handleBack}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Back
             </button>
-          </div>
-          <div className="detail-header-info">
-            <div className="user-header">
-              <div className="project-icon-large">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <div className="user-header-content">
-                <h1 className="user-name">{projectData.projectName}</h1>
-                <div className="user-meta">
-                  <span className="user-department">{projectData.projectCode}</span>
-                  <span className={`status-badge status-${projectData.status.toLowerCase()}`}>
-                    {projectData.status}
-                  </span>
-                </div>
-                {projectData.manager && (
-                  <div className="user-email">Manager: {projectData.manager.name}</div>
-                )}
-              </div>
+            <div>
+              <h1 className="page-header-title">{projectData.projectName}</h1>
+              <p className="page-header-subtitle">{projectData.projectCode} • Assets</p>
             </div>
           </div>
         </div>
+
+        <div className="project-assets-page">
 
         {/* Summary Cards */}
         <div className="user-assets-summary">
@@ -397,6 +381,7 @@ export function ProjectAssetsPage() {
               </table>
             </TableContainer>
           )}
+        </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import {
-  DashboardHeader,
   QuickActions,
   MyWorkWidget,
   AlertWidget,
@@ -11,10 +10,8 @@ import {
   SummaryCards
 } from '../components/dashboard';
 import { PermissionGate } from '../components/permissions';
-import { useAuth } from '../auth/AuthContext';
 
 export function DashboardPage() {
-  const { hasPermission } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -27,15 +24,26 @@ export function DashboardPage() {
   }, []);
 
   return (
-    <>
-      {/* Header */}
-      <PermissionGate permission="dashboard:view">
-        <DashboardHeader onRefresh={handleRefresh} isRefreshing={isRefreshing} />
-      </PermissionGate>
+    <div className="workspace">
+      <div className="page-stack dashboard">
+        {/* Header */}
+        <div className="page-header">
+          <div>
+            <p className="eyebrow">Overview</p>
+            <h1 className="page-header-title">Dashboard</h1>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="btn-secondary"
+          >
+            <svg className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
 
-      {/* Main Content */}
-      <div className="content-section">
-        
         {/* Summary Cards Section */}
         <section key={`summary-${refreshKey}`}>
           <SummaryCards />
@@ -91,6 +99,6 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

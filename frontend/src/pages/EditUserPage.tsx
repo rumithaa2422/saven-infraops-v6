@@ -202,17 +202,23 @@ export function EditUserPage() {
   }
 
   return (
-    <div className="form-page">
-      {/* Header */}
-      <div className="form-header">
-        <button className="btn-back-top" onClick={() => navigate(`/users-teams/${id}`)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back to User
-        </button>
-        <h1>Edit User</h1>
-      </div>
+    <div className="workspace">
+      <div className="page-stack edit-user">
+        {/* Page Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={() => navigate(`/users-teams/${id}`)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
+            </button>
+            <div>
+              <h1 className="page-header-title">Edit User</h1>
+              <p className="page-header-subtitle">Update user information</p>
+            </div>
+          </div>
+        </div>
 
       <form className="form-content" onSubmit={handleSubmit}>
         {error && (
@@ -463,6 +469,7 @@ export function EditUserPage() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 }
