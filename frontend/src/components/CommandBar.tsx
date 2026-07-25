@@ -3,7 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 
-export function CommandBar() {
+const AI_PANEL_COLLAPSED_WIDTH = 56;
+const AI_PANEL_EXPANDED_WIDTH = 360;
+
+interface CommandBarProps {
+  rightOffset?: number;
+}
+
+export function CommandBar({ rightOffset = AI_PANEL_COLLAPSED_WIDTH }: CommandBarProps) {
   const { hasPermission } = useAuth();
   const [command, setCommand] = useState('');
   const [status, setStatus] = useState('');
@@ -35,7 +42,7 @@ export function CommandBar() {
   }
 
   return (
-    <form className="command-bar" onSubmit={submit}>
+    <form className="command-bar" onSubmit={submit} style={{ right: rightOffset }}>
       <input
         value={command}
         onChange={(e) => setCommand(e.target.value)}

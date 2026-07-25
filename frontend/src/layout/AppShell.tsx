@@ -12,7 +12,7 @@ export function AppShell() {
   const { user, logout } = useAuth();
   const [assistantCollapsed, setAssistantCollapsed] = useState(true); // AI panel starts closed by default
 
-  // Calculate right offset for the main content based on AI panel state
+  // Dynamic right offset for command bar based on AI panel state
   const rightOffset = assistantCollapsed ? AI_PANEL_COLLAPSED_WIDTH : AI_PANEL_EXPANDED_WIDTH;
 
   return (
@@ -23,8 +23,8 @@ export function AppShell() {
       </aside>
       
       {/* Main Content Area - Scrollable */}
-      <main className="main" style={{ marginRight: rightOffset }}>
-        <header className="topbar">
+      <main className="main" style={{ paddingTop: 64 }}>
+        <header className="topbar" style={{ right: rightOffset }}>
           <div className="topbar-left">
             <div>
               <div className="eyebrow">Saven InfraOps</div>
@@ -39,7 +39,7 @@ export function AppShell() {
         <section className="workspace">
           <Outlet />
         </section>
-        <CommandBar />
+        <CommandBar rightOffset={rightOffset} />
       </main>
       
       {/* Fixed Right Sidebar (AI Panel) */}
