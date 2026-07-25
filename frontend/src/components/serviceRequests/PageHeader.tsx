@@ -104,7 +104,7 @@ export function PageHeader({
 
       {/* Actions */}
       {actions && (
-        <div className="flex items-center gap-2">
+        <div className="page-header-actions">
           {actions}
         </div>
       )}
