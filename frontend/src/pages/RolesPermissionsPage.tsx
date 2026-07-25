@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { Trash2 } from 'lucide-react';
+import { ConfirmationDialog as StandardConfirmationDialog } from '../components/serviceRequests';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -535,10 +537,16 @@ export function RolesPermissionsPage() {
   // Dialogs
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   
   // Can user create roles?
   const canCreateRole = hasPermission('roles:create');
+  
+  // Can user delete roles?
+  const canDeleteRole = isSuperAdmin;
   
   // Can user edit?
   const canEdit = isSuperAdmin;
@@ -591,6 +599,57 @@ export function RolesPermissionsPage() {
     } catch (err) {
       console.error('Failed to load roles:', err);
     }
+  };
+
+  // Delete role handler
+  const handleDeleteRole = async () => {
+    if (!roleToDelete) return;
+    
+    // Prevent deleting system roles
+    if (roleToDelete.isSystem) {
+      addToast('error', 'System roles cannot be deleted');
+      setDeleteDialogOpen(false);
+      setRoleToDelete(null);
+      return;
+    }
+    
+    // Prevent deleting if role has users assigned
+    if (roleToDelete.userCount > 0) {
+      addToast('error', `Cannot delete role "${roleToDelete.name}" because it has ${roleToDelete.userCount} user(s) assigned. Please reassign or remove users first.`);
+      setDeleteDialogOpen(false);
+      setRoleToDelete(null);
+      return;
+    }
+    
+    setDeleting(true);
+    
+    try {
+      await api.delete(`/roles/${roleToDelete.id}`);
+      addToast('success', `Role "${roleToDelete.name}" deleted successfully`);
+      
+      // If the deleted role was selected, select another one
+      if (selectedRoleId === roleToDelete.id) {
+        const remainingRoles = roles.filter(r => r.id !== roleToDelete.id);
+        setSelectedRoleId(remainingRoles.length > 0 ? remainingRoles[0].id : null);
+      }
+      
+      // Reload roles and stats
+      await Promise.all([loadRoles(), loadStats()]);
+    } catch (err: any) {
+      console.error('Failed to delete role:', err);
+      addToast('error', err.response?.data?.message || 'Failed to delete role');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setRoleToDelete(null);
+    }
+  };
+
+  // Open delete confirmation dialog
+  const openDeleteDialog = (role: Role, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRoleToDelete(role);
+    setDeleteDialogOpen(true);
   };
   
   const loadRolePermissions = async (roleId: string) => {
@@ -891,20 +950,33 @@ export function RolesPermissionsPage() {
         <label className="role-selector-label">Select Role</label>
         <div className="role-selector">
           {roles.map(role => (
-            <button
+            <div
               key={role.id}
-              className={`role-option ${selectedRoleId === role.id ? 'selected' : ''} ${!role.isActive ? 'inactive' : ''}`}
-              onClick={() => handleRoleChange(role.id)}
+              className={`role-option-wrapper ${selectedRoleId === role.id ? 'selected' : ''}`}
             >
-              <div className="role-option-header">
-                <span className="role-name">{role.name}</span>
-                {role.isSystem && <span className="role-badge badge-system">System</span>}
-                {!role.isActive && <span className="role-badge badge-inactive">Inactive</span>}
-              </div>
-              <span className="role-meta">
-                {role.permissionCount} permissions · {role.userCount} users
-              </span>
-            </button>
+              <button
+                className={`role-option ${!role.isActive ? 'inactive' : ''}`}
+                onClick={() => handleRoleChange(role.id)}
+              >
+                <div className="role-option-header">
+                  <span className="role-name">{role.name}</span>
+                  {role.isSystem && <span className="role-badge badge-system">System</span>}
+                  {!role.isActive && <span className="role-badge badge-inactive">Inactive</span>}
+                </div>
+                <span className="role-meta">
+                  {role.permissionCount} permissions · {role.userCount} users
+                </span>
+              </button>
+              {canDeleteRole && !role.isSystem && (
+                <button
+                  className="role-delete-btn"
+                  onClick={(e) => openDeleteDialog(role, e)}
+                  title="Delete role"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -1023,6 +1095,21 @@ export function RolesPermissionsPage() {
         message={`This will update the permissions for the "${selectedRole?.name}" role and affect all ${selectedRole?.name} users.`}
         confirmText="Apply Changes"
         cancelText="Cancel"
+      />
+
+      {/* Delete Role Confirmation Dialog */}
+      <StandardConfirmationDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => { setDeleteDialogOpen(false); setRoleToDelete(null); }}
+        onConfirm={handleDeleteRole}
+        title="Delete Role"
+        message={roleToDelete?.userCount && roleToDelete.userCount > 0
+          ? `Cannot delete "${roleToDelete?.name}" because it has ${roleToDelete?.userCount} user(s) assigned. Please reassign or remove users first.`
+          : `Are you sure you want to delete the role "${roleToDelete?.name}"? This action cannot be undone.`
+        }
+        confirmText={deleting ? 'Deleting...' : 'Delete'}
+        variant="danger"
+        isLoading={deleting}
       />
       
       {/* View-only notice for non-Super Admin */}

@@ -19596,6 +19596,54 @@ input:disabled {
   margin-top: 4px;
 }
 
+/* Role Option Wrapper */
+.role-option-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.role-option-wrapper .role-option {
+  flex: 1;
+}
+
+.role-option-wrapper.selected .role-option {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
+/* Role Delete Button */
+.role-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.role-option-wrapper:hover .role-delete-btn {
+  opacity: 1;
+}
+
+.role-delete-btn:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.role-delete-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--danger-soft);
+}
+
 /* Permission Editor */
 .permission-editor {
   background: var(--panel);
@@ -20186,6 +20234,14 @@ input:disabled {
   
   .role-option {
     width: 100%;
+  }
+
+  .role-option-wrapper {
+    width: 100%;
+  }
+
+  .role-delete-btn {
+    opacity: 1;
   }
 }
 
