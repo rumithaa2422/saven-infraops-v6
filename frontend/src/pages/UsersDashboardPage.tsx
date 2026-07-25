@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
-import { Eye, Edit2, Trash2, Plus, Users, CircleCheck, XCircle, Shield, Monitor } from 'lucide-react';
+import { Edit2, Trash2, Plus, Users, CircleCheck, XCircle, Shield, Monitor } from 'lucide-react';
 import {
   PageHeader,
   TableContainer,
@@ -860,7 +860,7 @@ export function UsersDashboardPage() {
                     <SortHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} />
                     <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
                     <SortHeader label="Created" sortKey="createdAt" currentSort={sortConfig} onSort={handleSort} />
-                    <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -870,7 +870,7 @@ export function UsersDashboardPage() {
                     const primaryRole = u.roles?.[0]?.role?.name || 'Employee';
                     const isOwnAccount = u.id === user?.id;
                     return (
-                      <TableRow key={u.id}>
+                      <TableRow key={u.id} onClick={() => navigate(`/users-teams/${u.id}`)}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white font-semibold text-sm">
@@ -910,14 +910,7 @@ export function UsersDashboardPage() {
                           <span className="text-sm text-slate-500">{formatDate(u.createdAt)}</span>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                              onClick={() => navigate(`/users-teams/${u.id}`)}
-                              title="View"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+                          <div className="flex items-center justify-center gap-2">
                             {(isSuperAdmin || isAdmin) && (
                               <button
                                 className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
