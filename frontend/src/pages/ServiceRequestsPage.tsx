@@ -22,7 +22,11 @@ import {
   Edit2,
   Trash2,
   ArrowUpDown,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ListTodo,
+  Hourglass,
+  CircleDot,
+  Inbox
 } from 'lucide-react';
 import {
   PageHeader,
@@ -48,6 +52,7 @@ import {
   Select,
   ActionButtons
 } from '../components/serviceRequests';
+import { SummaryCards } from '../components/common/SummaryCards';
 
 /**
  * PART 2: Service Requests Permission Enforcement
@@ -71,8 +76,10 @@ type ServiceRequest = {
 
 type SummaryStats = {
   total: number;
+  new: number;
   open: number;
   inProgress: number;
+  resolved: number;
   closed: number;
 };
 
@@ -159,10 +166,51 @@ export function ServiceRequestsPage() {
   // Calculate summary statistics
   const summaryStats: SummaryStats = useMemo(() => ({
     total: items.length,
-    open: items.filter(item => item.status === 'OPEN' || item.status === 'NEW' || item.status === 'ASSIGNED').length,
+    new: items.filter(item => item.status === 'NEW').length,
+    open: items.filter(item => item.status === 'OPEN' || item.status === 'ASSIGNED').length,
     inProgress: items.filter(item => item.status === 'IN_PROGRESS' || item.status === 'WAITING_FOR_USER').length,
-    closed: items.filter(item => item.status === 'CLOSED' || item.status === 'RESOLVED' || item.status === 'COMPLETED').length
+    resolved: items.filter(item => item.status === 'RESOLVED').length,
+    closed: items.filter(item => item.status === 'CLOSED' || item.status === 'COMPLETED').length
   }), [items]);
+
+  // Summary cards data for Service Requests
+  const summaryCards = useMemo(() => [
+    {
+      icon: Inbox,
+      iconBgColor: 'bg-gradient-to-br from-slate-100 to-slate-50',
+      iconColor: 'text-slate-600',
+      value: summaryStats.total,
+      label: 'Total Requests'
+    },
+    {
+      icon: CircleDot,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: summaryStats.new,
+      label: 'New'
+    },
+    {
+      icon: AlertCircle,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: summaryStats.open,
+      label: 'Pending'
+    },
+    {
+      icon: Hourglass,
+      iconBgColor: 'bg-gradient-to-br from-purple-100 to-purple-50',
+      iconColor: 'text-purple-600',
+      value: summaryStats.inProgress,
+      label: 'In Progress'
+    },
+    {
+      icon: CheckCircle,
+      iconBgColor: 'bg-gradient-to-br from-emerald-100 to-emerald-50',
+      iconColor: 'text-emerald-600',
+      value: summaryStats.resolved,
+      label: 'Resolved'
+    }
+  ], [summaryStats]);
 
   // Permission checks
   const canView = hasPermission('tickets:view');
@@ -457,53 +505,8 @@ export function ServiceRequestsPage() {
         {/* Main Content */}
         <div className="content-section">
         
-        {/* Stats Cards */}
-        <div className="stats-grid">
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-7 h-7 text-slate-600" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-slate-900">{summaryStats.total}</p>
-                <p className="text-sm font-medium text-slate-500">Total</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 group">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <AlertCircle className="w-7 h-7 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-blue-600">{summaryStats.open}</p>
-                <p className="text-sm font-medium text-slate-500">Open</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-amber-200 transition-all duration-300 group">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Clock className="w-7 h-7 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-amber-600">{summaryStats.inProgress}</p>
-                <p className="text-sm font-medium text-slate-500">In Progress</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <CheckCircle className="w-7 h-7 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-emerald-600">{summaryStats.closed}</p>
-                <p className="text-sm font-medium text-slate-500">Closed</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Summary Cards */}
+        <SummaryCards cards={summaryCards} />
 
         {/* Search and Filters - Modern Design */}
         <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
