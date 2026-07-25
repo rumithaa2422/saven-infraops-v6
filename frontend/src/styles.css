@@ -431,13 +431,18 @@ nav { display: flex; flex-direction: column; gap: 6px; }
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: white;
+  border: 1px solid white;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  color: white;
+  color: #6366f1;
   cursor: pointer;
+}
+
+.btn-back:hover {
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-ghost {
