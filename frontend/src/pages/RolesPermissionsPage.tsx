@@ -666,11 +666,6 @@ export function RolesPermissionsPage() {
       setOriginalPermissions(new Set(data.assignedPermissions));
       setHasChanges(false);
       
-      // Expand first module by default
-      if (data.permissions.modules.length > 0) {
-        setExpandedModules(new Set([data.permissions.modules[0].key]));
-      }
-      
     } catch (err: any) {
       console.error('Failed to load role permissions:', err);
       setError(err.response?.data?.message || 'Failed to load permissions');
