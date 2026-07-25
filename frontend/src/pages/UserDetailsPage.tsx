@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { Eye } from 'lucide-react';
+import { User, Calendar, Eye } from 'lucide-react';
 import {
+  PageHeader,
   TableContainer,
   SortHeader,
   TableRow,
@@ -169,26 +170,11 @@ export function UserDetailsPage() {
     return (
       <div className="workspace">
         <div className="page-stack user-detail">
-          <div className="page-header">
-            <div className="page-header-left">
-              <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back
-              </button>
-              <div className="page-header-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <div>
-                <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
-                <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
-              </div>
-            </div>
-          </div>
+          <PageHeader
+            title="User Dashboard"
+            showBackButton
+            onBackClick={() => navigate('/users-teams')}
+          />
         </div>
       </div>
     );
@@ -198,25 +184,11 @@ export function UserDetailsPage() {
     return (
       <div className="workspace">
         <div className="page-stack user-detail">
-          <div className="page-header">
-            <div className="page-header-left">
-              <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back
-              </button>
-              <div className="page-header-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <div>
-                <h1 className="page-header-title">Error</h1>
-              </div>
-            </div>
-          </div>
+          <PageHeader
+            title="User Dashboard"
+            showBackButton
+            onBackClick={() => navigate('/users-teams')}
+          />
           <div className="detail-error">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
@@ -238,33 +210,65 @@ export function UserDetailsPage() {
   return (
     <div className="workspace">
       <div className="page-stack user-detail">
-        {/* Page Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Back
-            </button>
-            <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="page-header-title">{user.name}</h1>
-              <p className="page-header-subtitle">{user.department || 'Employee'} • {primaryRole}</p>
+        {/* Header */}
+        <PageHeader
+          title="User Dashboard"
+          showBackButton
+          onBackClick={() => navigate('/users-teams')}
+        />
+
+        {/* User Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                {/* User Avatar and Badges */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white font-bold text-lg">
+                    {userInitials}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-lg ${
+                      primaryRole === 'Super Admin' ? 'bg-purple-100 text-purple-700' :
+                      primaryRole === 'Admin' ? 'bg-blue-100 text-blue-700' :
+                      primaryRole === 'Manager' ? 'bg-amber-100 text-amber-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {primaryRole}
+                    </span>
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-lg ${
+                      user.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {user.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* User Name */}
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">{user.name}</h1>
+
+                {/* Meta Info */}
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  {user.department && (
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <span>{user.department}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Joined {formatDate(user.dateJoined)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="page-header-actions">
-            {(isSuperAdmin || currentUser?.roles.includes('Admin')) && (
-              <button className="btn-primary" onClick={() => navigate(`/users-teams/${id}/edit`)}>
-                Edit User
-              </button>
-            )}
-          </div>
+
         </div>
 
       <div className="detail-content-grid">
