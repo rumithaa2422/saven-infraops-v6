@@ -317,18 +317,26 @@ export function ProjectEditPage() {
 
   return (
     <div className="workspace">
-      <div className="page-stack">
-        {/* Header */}
+      <div className="page-stack project-edit">
+        {/* Page Header */}
         <div className="page-header">
-          <button type="button" className="back-btn" onClick={() => navigate(`/projects-environments/${id}`)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back to Details
-          </button>
-          <div>
-            <p className="eyebrow">Projects & Environments</p>
-            <h1>Edit Project</h1>
+          <div className="page-header-left">
+            <button className="btn-secondary" onClick={() => navigate(`/projects-environments/${id}`)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back
+            </button>
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="page-header-title">Edit Project</h1>
+              <p className="page-header-subtitle">Projects & Environments</p>
+            </div>
           </div>
         </div>
 

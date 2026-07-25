@@ -849,46 +849,55 @@ export function KnowledgeCategoryPage() {
 
   return (
     <div className="workspace">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast-notification ${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
+      <div className="page-stack knowledge-base">
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`toast-notification ${toast.type}`}>
+            {toast.message}
+          </div>
+        )}
 
-      {/* Header */}
-      <div className="kb-page-header">
-        <div className="kb-header-left">
-          <h1 className="kb-title">Knowledge Base</h1>
-          <p className="kb-subtitle">
-            {viewMode === 'browse' 
-              ? 'Browse categories and articles' 
-              : selectedCategory 
-                ? `Articles in ${selectedCategory.name}` 
-                : 'All articles'}
-          </p>
-        </div>
-        <div className="kb-header-right">
-          <button 
-            className="kb-refresh-btn" 
-            onClick={handleRefresh}
-            disabled={refreshing || articleLoading}
-            title="Refresh"
-          >
-            ↻
-          </button>
-          {viewMode === 'articles' && canManageArticles && (
-            <button className="kb-create-btn" onClick={openCreateArticleModal}>
-              <span>+</span> Create Article
+        {/* Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="page-header-title">Knowledge Base</h1>
+              <p className="page-header-subtitle">
+                {viewMode === 'browse' 
+                  ? 'Browse categories and articles' 
+                  : selectedCategory 
+                    ? `Articles in ${selectedCategory.name}` 
+                    : 'All articles'}
+              </p>
+            </div>
+          </div>
+          <div className="page-header-actions">
+            <button 
+              className="btn-secondary" 
+              onClick={handleRefresh}
+              disabled={refreshing || articleLoading}
+              title="Refresh"
+            >
+              ↻
             </button>
-          )}
-          {viewMode === 'browse' && canManageCategories && (
-            <button className="kb-create-btn" onClick={openCreateCategoryModal}>
-              <span>+</span> Create Category
-            </button>
-          )}
+            {viewMode === 'articles' && canManageArticles && (
+              <button className="btn-primary" onClick={openCreateArticleModal}>
+                + Create Article
+              </button>
+            )}
+            {viewMode === 'browse' && canManageCategories && (
+              <button className="btn-primary" onClick={openCreateCategoryModal}>
+                + Create Category
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Breadcrumb */}
       {(viewMode === 'articles' || viewMode === 'article-detail') && (
@@ -4848,6 +4857,7 @@ export function KnowledgeCategoryPage() {
           }
         }
       `}</style>
+      </div>
     </div>
   );
 }

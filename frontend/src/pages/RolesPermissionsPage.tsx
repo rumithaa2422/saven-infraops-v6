@@ -831,12 +831,17 @@ export function RolesPermissionsPage() {
         {/* Page Header */}
         <div className="page-header">
           <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
             <div>
               <h1 className="page-header-title">Roles & Permissions</h1>
               <p className="page-header-subtitle">Configure role-based access</p>
             </div>
           </div>
-          <div className="page-header-right">
+          <div className="page-header-actions">
             {canCreateRole && (
               <button 
                 className="btn-primary"

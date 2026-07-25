@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
-import { Eye, Edit2, Trash2 } from 'lucide-react';
+import { Eye, Edit2, Trash2, AlertTriangle, Wrench, Package, Users, Shield, FileText, HelpCircle } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -58,6 +58,7 @@ type ModuleConfig = {
   dateKey?: string;
   fields: Field[];
   columns: Field[];
+  icon?: React.ComponentType<{ size?: number }>;
   permissions: {
     view?: string;      // NEW: View/Drawer permission
     create?: string;   // Create button and modal
@@ -78,6 +79,7 @@ const configs: Record<string, ModuleConfig> = {
     ownerKey: 'ownerName',
     statusKey: 'status',
     dateKey: 'createdAt',
+    icon: AlertTriangle,
     fields: [
       { key: 'title', label: 'Title', required: true },
       { key: 'severity', label: 'Severity', type: 'select', options: ['SEV1', 'SEV2', 'SEV3', 'SEV4'] },
@@ -112,6 +114,7 @@ const configs: Record<string, ModuleConfig> = {
     ownerKey: 'ownerName',
     statusKey: 'status',
     dateKey: 'createdAt',
+    icon: HelpCircle,
     fields: [
       { key: 'title', label: 'Title', required: true },
       { key: 'ownerName', label: 'Owner' },
@@ -142,6 +145,7 @@ const configs: Record<string, ModuleConfig> = {
     ownerKey: 'ownerName',
     statusKey: 'status',
     dateKey: 'createdAt',
+    icon: Wrench,
     fields: [
       { key: 'title', label: 'Title', required: true },
       { key: 'riskLevel', label: 'Risk Level', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] },
@@ -172,6 +176,7 @@ const configs: Record<string, ModuleConfig> = {
     titleKey: 'name',
     statusKey: 'status',
     dateKey: 'createdAt',
+    icon: Package,
     fields: [],
     columns: [],
     permissions: { 
@@ -333,6 +338,7 @@ const configs: Record<string, ModuleConfig> = {
     ownerKey: 'department',
     statusKey: 'status',
     dateKey: 'createdAt',
+    icon: Users,
     fields: [
       { key: 'name', label: 'Name', required: true },
       { key: 'email', label: 'Email', required: true },
@@ -1639,19 +1645,15 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         {/* Page Header */}
         <div className="page-header">
           <div className="page-header-left">
+            <div className="page-header-icon">
+              {config.icon && <config.icon size={20} />}
+            </div>
             <div>
               <h1 className="page-header-title">{title}</h1>
               <p className="page-header-subtitle">Management</p>
             </div>
           </div>
-        </div>
-
-      <div className="page-title-row">
-        <div>
-          <span className="eyebrow">Management</span>
-          <h2>{title}</h2>
-        </div>
-        <div className="action-row">
+          <div className="page-header-actions">
           {moduleKey === 'users-teams' && (
             <input
               type="text"
@@ -1767,8 +1769,8 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               + Create Category
             </button>
           )}
+          </div>
         </div>
-      </div>
 
       {/* Show selected file name */}
       {importFile && (

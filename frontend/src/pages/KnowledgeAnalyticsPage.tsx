@@ -103,19 +103,29 @@ export function KnowledgeAnalyticsPage() {
 
   return (
     <div className="workspace">
-      <div className="page-header">
-        <div>
-          <h1>Knowledge Base Analytics</h1>
-          <p className="subtitle">Overview of your knowledge base performance</p>
+      <div className="page-stack knowledge-analytics">
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 6h16M4 10h16M4 14h16M4 18h16" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="page-header-title">Knowledge Base Analytics</h1>
+              <p className="page-header-subtitle">Overview of your knowledge base performance</p>
+            </div>
+          </div>
+          <div className="page-header-actions">
+            <button className="btn-secondary" onClick={loadAnalytics}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M23 4v6h-6M1 20v-6h6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Refresh
+            </button>
+          </div>
         </div>
-        <button className="btn-secondary" onClick={loadAnalytics}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Refresh
-        </button>
-      </div>
 
       {/* Summary Stats */}
       <div className="stats-grid analytics-stats">
@@ -847,6 +857,7 @@ export function KnowledgeAnalyticsPage() {
           }
         }
       `}</style>
+      </div>
     </div>
   );
 }

@@ -174,18 +174,19 @@ export function NotificationsPage() {
               </p>
             </div>
           </div>
-          
-          {unreadCount > 0 && (
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={markAllAsRead}
-              loading={markingAllRead}
-            >
-              <CheckCircle className="w-4 h-4 mr-1" />
-              Mark all read
-            </Button>
-          )}
+          <div className="page-header-actions">
+            {unreadCount > 0 && (
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={markAllAsRead}
+                loading={markingAllRead}
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filter Tabs */}

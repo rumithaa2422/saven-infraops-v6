@@ -448,11 +448,19 @@ export function UsersImportExportPage() {
   if (isAdmin) {
     return (
       <div className="workspace">
-        <div className="page-stack">
+        <div className="page-stack users-import-export">
           <div className="page-header">
-            <div>
-              <p className="eyebrow">Users & Teams</p>
-              <h1>Import / Export</h1>
+            <div className="page-header-left">
+              <div className="page-header-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"/>
+                  <circle cx="9" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div>
+                <h1 className="page-header-title">Import / Export</h1>
+                <p className="page-header-subtitle">Users & Teams</p>
+              </div>
             </div>
           </div>
           <div className="access-restricted">
@@ -471,19 +479,29 @@ export function UsersImportExportPage() {
 
   return (
     <div className="workspace">
-      <div className="page-stack">
+      <div className="page-stack users-import-export">
         {/* Header */}
         <div className="page-header">
-          <div>
-            <p className="eyebrow">Users & Teams</p>
-            <h1>Import / Export</h1>
+          <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"/>
+                <circle cx="9" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="page-header-title">Import / Export</h1>
+              <p className="page-header-subtitle">Users & Teams</p>
+            </div>
           </div>
-          <button className="btn-secondary" onClick={handleBack}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back to Users
-          </button>
+          <div className="page-header-actions">
+            <button className="btn-secondary" onClick={handleBack}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back to Users
+            </button>
+          </div>
         </div>
 
         {/* Import/Export Options */}

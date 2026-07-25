@@ -171,6 +171,18 @@ export function UserDetailsPage() {
         <div className="page-stack user-detail">
           <div className="page-header">
             <div className="page-header-left">
+              <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div className="page-header-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
               <div>
                 <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
                 <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
@@ -194,6 +206,12 @@ export function UserDetailsPage() {
                 </svg>
                 Back
               </button>
+              <div className="page-header-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
               <div>
                 <h1 className="page-header-title">Error</h1>
               </div>
@@ -229,15 +247,18 @@ export function UserDetailsPage() {
               </svg>
               Back
             </button>
-            <div className="detail-avatar">
-              {userInitials}
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
             </div>
             <div>
               <h1 className="page-header-title">{user.name}</h1>
               <p className="page-header-subtitle">{user.department || 'Employee'} • {primaryRole}</p>
             </div>
           </div>
-          <div className="page-header-right">
+          <div className="page-header-actions">
             {(isSuperAdmin || currentUser?.roles.includes('Admin')) && (
               <button className="btn-primary" onClick={() => navigate(`/users-teams/${id}/edit`)}>
                 Edit User

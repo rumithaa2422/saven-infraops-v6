@@ -629,6 +629,18 @@ export function AssetDetailsPage() {
         <div className="page-stack asset-detail">
           <div className="page-header">
             <div className="page-header-left">
+              <button className="btn-secondary" onClick={handleBack}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div className="page-header-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+                </svg>
+              </div>
               <div>
                 <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
                 <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
@@ -652,6 +664,12 @@ export function AssetDetailsPage() {
                 </svg>
                 Back
               </button>
+              <div className="page-header-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+                </svg>
+              </div>
               <div>
                 <h1 className="page-header-title">Error</h1>
               </div>
@@ -686,26 +704,21 @@ export function AssetDetailsPage() {
               </svg>
               Back
             </button>
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+              </svg>
+            </div>
             <div>
               <h1 className="page-header-title">{item.itemName}</h1>
               <p className="page-header-subtitle">{item.itemNo}</p>
             </div>
           </div>
-          <div className="page-header-right">
+          <div className="page-header-actions">
             <span className={`status-badge status-${item.status.toLowerCase()}`}>
               {item.status}
             </span>
-          </div>
-        </div>
-
-        <div className="detail-header" style={{ display: 'none' }}>
-          <div className="detail-header-info">
-            <div className="detail-title-row">
-              <span className="detail-ticket-no">{item.itemNo}</span>
-              <span className={`status-badge status-${item.status.toLowerCase()}`}>
-                {item.status}
-              </span>
-            </div>
           </div>
         </div>
 

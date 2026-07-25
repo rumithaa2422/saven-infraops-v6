@@ -4,7 +4,16 @@
  */
 
 .pageHeader {
-  margin-bottom: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .pageHeader__breadcrumbs {
@@ -45,28 +54,36 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0;
-  margin-bottom: var(--space-3);
-  background: none;
-  border: none;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   font-size: var(--text-sm);
-  color: var(--text-secondary);
+  color: #64748b;
   cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-out);
+  transition: all var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
 }
 
 .pageHeader__backButton:hover {
-  color: var(--color-primary-600);
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
 }
 
 .pageHeader__topRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
 }
 
 .pageHeader__titleSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   flex: 1;
   min-width: 0;
 }
@@ -74,35 +91,34 @@
 .pageHeader__titleRow {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
 }
 
 .pageHeader__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: var(--color-primary-600);
-  background-color: var(--color-primary-50);
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  border-radius: 10px;
+  color: white;
   flex-shrink: 0;
 }
 
 .pageHeader__title {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
-  color: var(--text-primary);
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
   margin: 0;
 }
 
 .pageHeader__subtitle {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  margin: var(--space-1) 0 0 0;
-  line-height: 1.5;
+  font-size: 13px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+  line-height: 1.3;
 }
 
 .pageHeader__tags {
@@ -126,7 +142,7 @@
 .pageHeader__actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 10px;
   flex-shrink: 0;
 }
 
@@ -134,7 +150,7 @@
   display: flex;
   gap: var(--space-1);
   margin-top: var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .pageHeader__tab {

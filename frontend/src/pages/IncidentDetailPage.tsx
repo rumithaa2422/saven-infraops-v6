@@ -437,6 +437,9 @@ export function IncidentDetailPage() {
         <div className="page-stack incident-detail">
           <div className="page-header">
             <div className="page-header-left">
+              <div className="page-header-icon">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
               <div>
                 <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
                 <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
@@ -460,6 +463,9 @@ export function IncidentDetailPage() {
                 </svg>
                 Back
               </button>
+              <div className="page-header-icon">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
               <div>
                 <h1 className="page-header-title">Error</h1>
               </div>

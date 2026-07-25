@@ -173,22 +173,33 @@ export function ReportsPage() {
 
   return (
     <div className="workspace">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1>Reports & Analytics</h1>
-          <p className="subtitle">Generate downloadable reports from every InfraOps module</p>
+      <div className="page-stack reports-analytics">
+        {/* Header */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="page-header-title">Reports & Analytics</h1>
+              <p className="page-header-subtitle">Generate downloadable reports from every InfraOps module</p>
+            </div>
+          </div>
+          <div className="page-header-actions">
+            <button className="btn-secondary" onClick={loadData} disabled={loading}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M23 4v6h-6M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+              </svg>
+              Refresh
+            </button>
+          </div>
         </div>
-        <div className="header-actions">
-          <button className="btn-secondary" onClick={loadData} disabled={loading}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M23 4v6h-6M1 20v-6h6"/>
-              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-            </svg>
-            Refresh
-          </button>
-        </div>
-      </div>
 
       {/* Summary Cards */}
       <div className="summary-grid">
@@ -855,6 +866,7 @@ export function ReportsPage() {
           }
         }
       `}</style>
+      </div>
     </div>
   );
 }

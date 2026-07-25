@@ -396,12 +396,15 @@ export function InventoryDetailPage() {
               </svg>
               Back
             </button>
+            <div className="page-header-icon">
+              <Package className="w-5 h-5" />
+            </div>
             <div>
               <h1 className="page-header-title">{item.itemName}</h1>
               <p className="page-header-subtitle">{item.itemNo}</p>
             </div>
           </div>
-          <div className="page-header-right">
+          <div className="page-header-actions">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setStockUpdateDialogOpen(true)}

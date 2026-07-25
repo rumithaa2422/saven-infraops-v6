@@ -545,6 +545,9 @@ export function ServiceRequestDetailPage() {
         <div className="page-stack service-request-detail">
           <div className="page-header">
             <div className="page-header-left">
+              <div className="page-header-icon">
+                <Ticket className="w-5 h-5" />
+              </div>
               <div>
                 <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
                 <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
@@ -568,6 +571,9 @@ export function ServiceRequestDetailPage() {
                 </svg>
                 Back
               </button>
+              <div className="page-header-icon">
+                <Ticket className="w-5 h-5" />
+              </div>
               <div>
                 <h1 className="page-header-title">Error</h1>
               </div>

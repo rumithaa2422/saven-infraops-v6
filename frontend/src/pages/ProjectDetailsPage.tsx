@@ -251,6 +251,18 @@ export function ProjectDetailsPage() {
         <div className="page-stack project-detail">
           <div className="page-header">
             <div className="page-header-left">
+              <button className="btn-secondary" onClick={handleBack}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <div className="page-header-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
               <div>
                 <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
                 <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
@@ -274,6 +286,12 @@ export function ProjectDetailsPage() {
                 </svg>
                 Back
               </button>
+              <div className="page-header-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
               <div>
                 <h1 className="page-header-title">Error</h1>
               </div>
@@ -308,12 +326,18 @@ export function ProjectDetailsPage() {
               </svg>
               Back
             </button>
+            <div className="page-header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
             <div>
               <h1 className="page-header-title">{project.projectName}</h1>
               <p className="page-header-subtitle">{project.projectCode} • {project.department || 'Project'}</p>
             </div>
           </div>
-          <div className="page-header-right">
+          <div className="page-header-actions">
             <span className={`status-badge status-${getStatusColor(project.status)}`}>{project.status.replace(/_/g, ' ')}</span>
             {(isSuperAdmin || isAdmin) && (
               <button className="btn-secondary" onClick={() => navigate(`/projects-environments/${id}/edit`)}>

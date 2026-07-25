@@ -560,17 +560,19 @@ export function AssetManagementPage() {
               <p className="page-header-subtitle">Manage inventory allocation across users and projects.</p>
             </div>
           </div>
-          {isSuperAdmin && (
-            <button className="btn-primary" onClick={openAssignmentModal}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Assign Inventory
-            </button>
-          )}
+          <div className="page-header-actions">
+            {isSuperAdmin && (
+              <button className="btn-primary" onClick={openAssignmentModal}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Assign Inventory
+              </button>
+            )}
+          </div>
         </div>
 
-      {/* Summary Cards */}
+        {/* Summary Cards */}
       <div className="asset-summary-cards">
         <div className="asset-summary-card">
           <div className="asset-summary-icon total">
