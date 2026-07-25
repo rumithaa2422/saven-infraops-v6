@@ -197,7 +197,7 @@ nav { display: flex; flex-direction: column; gap: 6px; }
 /* ============================================
    PAGE LAYOUT STYLES - Match DesignSystemPreviewPage
    ============================================ */
-.page-stack { display: flex; flex-direction: column; gap: 20px; }
+.page-stack { display: flex; flex-direction: column; gap: 16px; }
 .hero-panel { background: linear-gradient(135deg, #ffffff, #e8ebff); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
 .hero-panel p { color: var(--muted); }
 .grid { display: grid; gap: 16px; }
@@ -213,11 +213,11 @@ nav { display: flex; flex-direction: column; gap: 6px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 20px 24px;
+  gap: 16px;
+  padding: 16px 20px;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
   border-radius: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
@@ -297,7 +297,7 @@ nav { display: flex; flex-direction: column; gap: 6px; }
 .content-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 /* Page Loading State */
@@ -310,7 +310,7 @@ nav { display: flex; flex-direction: column; gap: 6px; }
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 /* Stats Grid (Compact) */
@@ -1240,8 +1240,8 @@ button.danger:disabled {
 .page-content {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 16px;
   box-shadow: 0 12px 40px rgba(16,24,44,0.06);
 }
 
@@ -8224,8 +8224,8 @@ input:disabled {
 .summary-cards-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 @media (max-width: 1200px) {
@@ -10411,8 +10411,8 @@ input:disabled {
 .detail-summary-cards {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .detail-summary-card {
@@ -10655,11 +10655,11 @@ input:disabled {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-  padding: 20px 24px;
+  padding: 16px 20px;
   border-radius: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .page-header h1 {
@@ -10679,8 +10679,8 @@ input:disabled {
 /* Users Dashboard Page Header - Gradient Style */
 .users-dashboard .page-header {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-  padding: 24px 32px;
-  border-radius: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
   margin-bottom: 0;
 }
 
@@ -10688,7 +10688,7 @@ input:disabled {
 .project-summary-cards {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .project-summary-card {
