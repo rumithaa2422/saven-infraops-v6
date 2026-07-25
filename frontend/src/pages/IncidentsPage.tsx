@@ -895,7 +895,7 @@ export function IncidentsPage() {
                                 <Edit2 className="w-4 h-4" />
                               </button>
                             </PermissionGate>
-                            <PermissionGate permission="incidents:delete">
+                            <PermissionGate permission="incidents:manage">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
