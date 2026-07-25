@@ -839,7 +839,7 @@ export function IncidentsPage() {
                       <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
                       <SortHeader label="Owner" sortKey="ownerName" currentSort={sortConfig} onSort={handleSort} />
                       <SortHeader label="Created" sortKey="createdAt" currentSort={sortConfig} onSort={handleSort} />
-                      <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -882,7 +882,7 @@ export function IncidentsPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-center gap-2">
                             <PermissionGate permission="incidents:update">
                               <button
                                 onClick={(e) => {
