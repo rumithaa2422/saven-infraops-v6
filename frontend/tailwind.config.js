@@ -4,6 +4,24 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: [
+    'btn-primary',
+    'btn-secondary',
+    'btn-back',
+    'btn-ghost',
+    'btn-outline',
+    'page-header',
+    'page-header-left',
+    'page-header-actions',
+    'page-header-title',
+    'page-header-subtitle',
+    'page-header-icon',
+    'page-header-wide',
+    'page-content',
+    'page-stack',
+    'content-section',
+    'form-container',
+  ],
   theme: {
     extend: {
       colors: {
