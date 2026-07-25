@@ -705,8 +705,8 @@ export function IncidentsPage() {
         <SummaryCards cards={summaryCards} />
 
         {/* Search and Filters */}
-        <SectionCard title="" noPadding className="!overflow-visible">
-          <div className="p-3 space-y-3">
+        <div className="bg-white rounded-xl border border-slate-200/60 p-3 shadow-sm">
+          <div className="space-y-3">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1">
                 <SearchInput
@@ -818,7 +818,7 @@ export function IncidentsPage() {
               </div>
             )}
           </div>
-        </SectionCard>
+        </div>
 
         {/* Incident Table */}
         <TableContainer
