@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
-import { Eye, Edit2, Trash2, Plus } from 'lucide-react';
+import { Eye, Edit2, Trash2, Plus, Users, CircleCheck, XCircle, Shield, Monitor } from 'lucide-react';
 import {
   PageHeader,
   TableContainer,
@@ -11,6 +11,7 @@ import {
   TableRow,
   TableCell
 } from '../components/serviceRequests';
+import { SummaryCards } from '../components/common/SummaryCards';
 
 const DEPARTMENTS = ['Engineering', 'Support', 'QA', 'DevOps', 'HR', 'Finance', 'Operations', 'Security', 'InfraOps'];
 const EMPLOYMENT_TYPES = ['Full Time', 'Contract', 'Intern', 'Consultant'];
@@ -126,6 +127,48 @@ export function UsersDashboardPage() {
     managers: 0,
     employees: 0
   });
+
+  // Summary cards data for Users Dashboard
+  const summaryCards = useMemo(() => [
+    {
+      icon: Users,
+      iconBgColor: 'bg-gradient-to-br from-slate-100 to-slate-50',
+      iconColor: 'text-slate-600',
+      value: loading ? '...' : summary.totalUsers,
+      label: 'Total Users',
+      onClick: () => { setStatusFilter(''); fetchUsers(); }
+    },
+    {
+      icon: CircleCheck,
+      iconBgColor: 'bg-gradient-to-br from-emerald-100 to-emerald-50',
+      iconColor: 'text-emerald-600',
+      value: loading ? '...' : summary.activeUsers,
+      label: 'Active Users',
+      onClick: () => { setStatusFilter('ACTIVE'); fetchUsers(); }
+    },
+    {
+      icon: XCircle,
+      iconBgColor: 'bg-gradient-to-br from-red-100 to-red-50',
+      iconColor: 'text-red-600',
+      value: loading ? '...' : summary.inactiveUsers,
+      label: 'Inactive Users',
+      onClick: () => { setStatusFilter('INACTIVE'); fetchUsers(); }
+    },
+    {
+      icon: Shield,
+      iconBgColor: 'bg-gradient-to-br from-purple-100 to-purple-50',
+      iconColor: 'text-purple-600',
+      value: loading ? '...' : summary.admins,
+      label: 'Administrators'
+    },
+    {
+      icon: Monitor,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: loading ? '...' : summary.managers,
+      label: 'Managers'
+    }
+  ], [summary, loading]);
 
   // Unique values
   const [departments, setDepartments] = useState<string[]>([]);
@@ -651,87 +694,7 @@ export function UsersDashboardPage() {
         />
 
         {/* Summary Cards */}
-        <div className="user-summary-cards">
-          <div className="user-summary-card" onClick={() => { setStatusFilter(''); fetchUsers(); }}>
-            <div className="user-summary-icon total">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="user-summary-content">
-              <span className="user-summary-label">Total Users</span>
-              <span className="user-summary-value">{loading ? '...' : summary.totalUsers}</span>
-            </div>
-          </div>
-
-          <div className="user-summary-card" onClick={() => { setStatusFilter('ACTIVE'); fetchUsers(); }}>
-            <div className="user-summary-icon active">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </div>
-            <div className="user-summary-content">
-              <span className="user-summary-label">Active Users</span>
-              <span className="user-summary-value">{loading ? '...' : summary.activeUsers}</span>
-            </div>
-          </div>
-
-          <div className="user-summary-card" onClick={() => { setStatusFilter('INACTIVE'); fetchUsers(); }}>
-            <div className="user-summary-icon inactive">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="user-summary-content">
-              <span className="user-summary-label">Inactive Users</span>
-              <span className="user-summary-value">{loading ? '...' : summary.inactiveUsers}</span>
-            </div>
-          </div>
-
-          <div className="user-summary-card">
-            <div className="user-summary-icon admin">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 15L15 18L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M3 12C3 12 6 9 12 9C18 9 21 12 21 12C21 12 18 15 12 15C6 15 3 18 3 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="user-summary-content">
-              <span className="user-summary-label">Administrators</span>
-              <span className="user-summary-value">{loading ? '...' : summary.admins}</span>
-            </div>
-          </div>
-
-          <div className="user-summary-card">
-            <div className="user-summary-icon manager">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="user-summary-content">
-              <span className="user-summary-label">Managers</span>
-              <span className="user-summary-value">{loading ? '...' : summary.managers}</span>
-            </div>
-          </div>
-
-          <div className="user-summary-card">
-            <div className="user-summary-icon employee">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
-                <path d="M6 21V19C6 17.9391 6.42143 16.9217 7.17157 16.1716C7.92172 15.4214 8.93913 15 10 15H14C15.0609 15 16.0783 15.4214 16.8284 16.1716C17.5786 16.9217 18 17.9391 18 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="user-summary-content">
-              <span className="user-summary-label">Employees</span>
-              <span className="user-summary-value">{loading ? '...' : summary.employees}</span>
-            </div>
-          </div>
-        </div>
+        <SummaryCards cards={summaryCards} />
 
         {/* Toolbar */}
         <div className="toolbar">
