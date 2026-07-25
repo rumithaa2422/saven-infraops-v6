@@ -15,7 +15,8 @@ import {
   SortHeader,
   TableRow,
   TableCell,
-  Pagination
+  Pagination,
+  ConfirmationDialog
 } from '../components/serviceRequests';
 
 type Vendor = {
@@ -1042,23 +1043,15 @@ export function VendorDirectoryPage() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      {showDeleteDialog && editingVendor && (
-        <div className="modal-overlay" onClick={() => { setShowDeleteDialog(false); setEditingVendor(null); }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3>Delete Vendor</h3>
-            <p>Are you sure you want to delete <strong>{editingVendor.vendorName}</strong>?</p>
-            <p className="warning">This action cannot be undone.</p>
-            <div className="modal-actions">
-              <button type="button" className="secondary" onClick={() => { setShowDeleteDialog(false); setEditingVendor(null); }}>
-                Cancel
-              </button>
-              <button type="button" className="danger" onClick={handleDeleteVendor}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationDialog
+        isOpen={showDeleteDialog}
+        onClose={() => { setShowDeleteDialog(false); setEditingVendor(null); }}
+        onConfirm={handleDeleteVendor}
+        title="Delete Vendor"
+        message={`Are you sure you want to delete ${editingVendor?.vendorName}? This action cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+      />
 
       {/* Hidden file input for import */}
       <input

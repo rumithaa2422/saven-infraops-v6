@@ -13,7 +13,8 @@ import {
   TableContainer,
   SortHeader,
   TableRow,
-  TableCell
+  TableCell,
+  ConfirmationDialog
 } from '../components/serviceRequests';
 
 type InternalOwner = {
@@ -614,33 +615,19 @@ export function VendorDetailsPage() {
         </div>
 
         {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>Delete Vendor</h3>
-              <p>
-                Are you sure you want to delete <strong>{vendor.vendorName}</strong>?
-                {vendor.inventoryCount > 0 && (
-                  <span className="text-danger">
-                    <br />This vendor has {vendor.inventoryCount} associated inventory item(s) and cannot be deleted.
-                  </span>
-                )}
-              </p>
-              <div className="modal-actions">
-                <button className="btn-secondary" onClick={() => setShowDeleteConfirm(false)}>
-                  Cancel
-                </button>
-                <button
-                  className="btn-danger"
-                  onClick={handleDelete}
-                  disabled={deleting || vendor.inventoryCount > 0}
-                >
-                  {deleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmationDialog
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDelete}
+          title="Delete Vendor"
+          message={vendor.inventoryCount > 0 
+            ? `This vendor has ${vendor.inventoryCount} associated inventory item(s) and cannot be deleted.`
+            : `Are you sure you want to delete ${vendor.vendorName}? This action cannot be undone.`
+          }
+          confirmText={deleting ? 'Deleting...' : 'Delete'}
+          variant="danger"
+          isLoading={deleting}
+        />
       </div>
     </div>
   );

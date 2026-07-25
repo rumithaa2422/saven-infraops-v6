@@ -9,7 +9,8 @@ import {
   TableContainer,
   SortHeader,
   TableRow,
-  TableCell
+  TableCell,
+  ConfirmationDialog
 } from '../components/serviceRequests';
 import { SummaryCards } from '../components/common/SummaryCards';
 
@@ -88,9 +89,8 @@ export function UsersDashboardPage() {
   });
 
   // Delete confirmation dialog state
-  const [deleteDialog, setDeleteDialog] = useState<{ show: boolean; user: User | null }>({ show: false, user: null });
+  const [deleteDialog, setDeleteDialog] = useState<{ show: boolean; user: User | null; confirmText: string }>({ show: false, user: null, confirmText: '' });
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
 
   // Import state
   const [showImportModal, setShowImportModal] = useState(false);
@@ -616,22 +616,21 @@ export function UsersDashboardPage() {
 
   const handleDeleteUser = async () => {
     if (!deleteDialog.user) return;
-    
+
     // Prevent self-deletion
     if (deleteDialog.user.id === user?.id) {
-      setDeleteError('You cannot delete your own account.');
       return;
     }
 
     setDeleting(true);
-    setDeleteError('');
 
     try {
       await api.delete(`/users-teams/${deleteDialog.user.id}`);
-      setDeleteDialog({ show: false, user: null });
+      setDeleteDialog({ show: false, user: null, confirmText: '' });
       fetchUsers();
     } catch (err: any) {
-      setDeleteError(err.response?.data?.message || 'Failed to delete user');
+      // Error will be handled by the ConfirmationDialog if needed
+      setDeleteDialog({ show: false, user: null, confirmText: '' });
     } finally {
       setDeleting(false);
     }
@@ -923,7 +922,7 @@ export function UsersDashboardPage() {
                             {isSuperAdmin && (
                               <button
                                 className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                onClick={() => setDeleteDialog({ show: true, user: u })}
+                                onClick={() => setDeleteDialog({ show: true, user: u, confirmText: '' })}
                                 disabled={isOwnAccount}
                                 title={isOwnAccount ? 'You cannot delete your own account' : 'Delete'}
                               >
@@ -942,24 +941,20 @@ export function UsersDashboardPage() {
         </div>
 
         {/* Delete Confirmation Dialog */}
-        {deleteDialog.show && (
-          <div className="modal-overlay" onClick={() => setDeleteDialog({ show: false, user: null })}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>Delete User</h3>
-              <p>Are you sure you want to delete <strong>{deleteDialog.user?.name}</strong>?</p>
-              <p className="warning-text">This action cannot be undone.</p>
-              {deleteError && <div className="alert alert-error">{deleteError}</div>}
-              <div className="modal-actions">
-                <button className="btn-secondary" onClick={() => setDeleteDialog({ show: false, user: null })}>
-                  Cancel
-                </button>
-                <button className="btn-delete" onClick={handleDeleteUser} disabled={deleting}>
-                  {deleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmationDialog
+          isOpen={deleteDialog.show}
+          onClose={() => setDeleteDialog({ show: false, user: null, confirmText: '' })}
+          onConfirm={handleDeleteUser}
+          title="Delete User"
+          message={`Are you sure you want to delete ${deleteDialog.user?.name}? This action cannot be undone.`}
+          confirmText={deleting ? 'Deleting...' : 'Delete'}
+          variant="danger"
+          isLoading={deleting}
+          confirmInput
+          confirmInputValue={deleteDialog.confirmText || ''}
+          onConfirmInputChange={(value) => setDeleteDialog(prev => ({ ...prev, confirmText: value }))}
+          confirmInputPlaceholder="Type DELETE to confirm"
+        />
 
         {/* Hidden file input for import */}
         <input
