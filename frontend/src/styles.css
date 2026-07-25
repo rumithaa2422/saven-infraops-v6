@@ -397,24 +397,31 @@ nav { display: flex; flex-direction: column; gap: 6px; }
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: white;
+  color: #6366f1;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .btn-secondary {
-  background: white;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-}
-
-.btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 /* Back Button - Prominent styling for better visibility */
@@ -423,25 +430,13 @@ nav { display: flex; flex-direction: column; gap: 6px; }
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
+  color: white;
   cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-back:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #0f172a;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.btn-back:active {
-  transform: translateY(0);
 }
 
 .btn-ghost {
