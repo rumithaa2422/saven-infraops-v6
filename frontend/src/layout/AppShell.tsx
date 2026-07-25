@@ -10,8 +10,13 @@ export function AppShell() {
   const [assistantCollapsed, setAssistantCollapsed] = useState(true); // AI panel starts closed by default
 
   return (
-    <div className={`shell ${assistantCollapsed ? 'assistant-collapsed' : ''}`}>
-      <Sidebar />
+    <div className="shell">
+      {/* Fixed Left Sidebar */}
+      <aside className="sidebar">
+        <Sidebar />
+      </aside>
+      
+      {/* Main Content Area - Scrollable */}
       <main className="main">
         <header className="topbar">
           <div className="topbar-left">
@@ -30,12 +35,16 @@ export function AppShell() {
         </section>
         <CommandBar />
       </main>
+      
+      {/* Fixed Right Sidebar (AI Panel) */}
       {assistantCollapsed ? (
         <button className="assistant-rail" onClick={() => setAssistantCollapsed(false)} title="Open AI Assistant">
           AI
         </button>
       ) : (
-        <AssistantPanel onCollapse={() => setAssistantCollapsed(true)} />
+        <aside className="assistant">
+          <AssistantPanel onCollapse={() => setAssistantCollapsed(true)} />
+        </aside>
       )}
     </div>
   );
