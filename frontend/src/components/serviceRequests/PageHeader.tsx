@@ -13,13 +13,14 @@ export function BackButton({ onClick, label = 'Back', className = '' }: BackButt
     <button
       onClick={onClick}
       className={`
-        inline-flex items-center gap-2 px-3 py-2 rounded-xl
-        text-sm font-medium text-slate-600 hover:text-slate-900
-        hover:bg-slate-100 transition-all duration-200
+        inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
+        text-sm font-semibold text-slate-700 bg-white border border-slate-200
+        hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300
+        hover:shadow-sm transition-all duration-200
         group ${className}
       `}
     >
-      <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+      <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
       {label}
     </button>
   );
@@ -56,7 +57,7 @@ export function PageHeader({
         {showBackButton && onBackClick && (
           <button
             onClick={onBackClick}
-            className="btn-secondary mr-2"
+            className="btn-back mr-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back

@@ -439,29 +439,18 @@ export function ServiceRequestsPage() {
         {/* Header */}
         <PageHeader
           title="Service Requests"
-          subtitle={`${summaryStats.total} total`}
+          subtitle="Submit and manage IT service requests for your organization"
           icon={Ticket}
           actions={
-            <>
-              {canExport && (
-                <button
-                  onClick={exportCsv}
-                  className="btn-secondary"
-                >
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
-              )}
-              {canCreate && (
-                <button
-                  onClick={() => setCreateOpen(true)}
-                  className="btn-primary"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Request
-                </button>
-              )}
-            </>
+            canCreate && (
+              <button
+                onClick={() => setCreateOpen(true)}
+                className="btn-primary"
+              >
+                <Plus className="w-4 h-4" />
+                Create Request
+              </button>
+            )
           }
         />
 
@@ -558,6 +547,17 @@ export function ServiceRequestsPage() {
                 </span>
               )}
             </button>
+
+            {/* Export Button */}
+            {canExport && (
+              <button
+                onClick={exportCsv}
+                className="px-5 py-3 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </button>
+            )}
           </div>
 
           {/* Filter Panel */}
