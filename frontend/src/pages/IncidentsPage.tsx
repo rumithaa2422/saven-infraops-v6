@@ -18,7 +18,11 @@ import {
   ChevronDown,
   MoreHorizontal,
   Eye,
-  AlertCircle
+  AlertCircle,
+  Inbox,
+  Hourglass,
+  CheckCircle,
+  ShieldAlert
 } from 'lucide-react';
 import {
   PageHeader,
@@ -43,9 +47,9 @@ import {
   Select,
   ActionButtons,
   FileUpload,
-  DeleteIncidentDialog,
-  IncidentSummaryCard
+  DeleteIncidentDialog
 } from '../components/incidents';
+import { SummaryCards } from '../components/common/SummaryCards';
 import * as XLSX from 'xlsx';
 
 type Incident = {
@@ -177,6 +181,45 @@ export function IncidentsPage() {
     resolved: items.filter(item => item.status === 'RESOLVED' || item.status === 'CLOSED').length,
     critical: items.filter(item => item.severity === 'SEV1' || item.severity === 'CRITICAL').length
   }), [items]);
+
+  // Summary cards data for Incidents
+  const summaryCards = useMemo(() => [
+    {
+      icon: Inbox,
+      iconBgColor: 'bg-gradient-to-br from-slate-100 to-slate-50',
+      iconColor: 'text-slate-600',
+      value: summaryStats.total,
+      label: 'Total Incidents'
+    },
+    {
+      icon: AlertCircle,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: summaryStats.open,
+      label: 'Open'
+    },
+    {
+      icon: Hourglass,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: summaryStats.inProgress,
+      label: 'In Progress'
+    },
+    {
+      icon: CheckCircle,
+      iconBgColor: 'bg-gradient-to-br from-emerald-100 to-emerald-50',
+      iconColor: 'text-emerald-600',
+      value: summaryStats.resolved,
+      label: 'Resolved'
+    },
+    {
+      icon: ShieldAlert,
+      iconBgColor: 'bg-gradient-to-br from-red-100 to-red-50',
+      iconColor: 'text-red-600',
+      value: summaryStats.critical,
+      label: 'Critical (SEV1)'
+    }
+  ], [summaryStats]);
 
   // Permission checks
   const canView = hasPermission('incidents:view');
@@ -658,39 +701,8 @@ export function IncidentsPage() {
         />
 
         <div className="content-section">
-        {/* Summary Stats */}
-        <div className="stats-grid">
-          <IncidentSummaryCard
-            title="Total Incidents"
-            count={summaryStats.total}
-            icon={AlertTriangle}
-            color="slate"
-          />
-          <IncidentSummaryCard
-            title="Open"
-            count={summaryStats.open}
-            icon={AlertCircle}
-            color="blue"
-          />
-          <IncidentSummaryCard
-            title="In Progress"
-            count={summaryStats.inProgress}
-            icon={Clock}
-            color="amber"
-          />
-          <IncidentSummaryCard
-            title="Resolved"
-            count={summaryStats.resolved}
-            icon={AlertTriangle}
-            color="emerald"
-          />
-          <IncidentSummaryCard
-            title="Critical (SEV1)"
-            count={summaryStats.critical}
-            icon={AlertTriangle}
-            color="red"
-          />
-        </div>
+        {/* Summary Cards */}
+        <SummaryCards cards={summaryCards} />
 
         {/* Search and Filters */}
         <SectionCard title="" noPadding className="!overflow-visible">
