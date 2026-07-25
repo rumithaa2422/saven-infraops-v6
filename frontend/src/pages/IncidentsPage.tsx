@@ -831,20 +831,20 @@ export function IncidentsPage() {
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                      <SortHeader label="Incident No" sortKey="incidentNo" currentSort={sortConfig} onSort={handleSort} className="w-32" />
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                      <SortHeader label="Incident No" sortKey="incidentNo" currentSort={sortConfig} onSort={handleSort} />
                       <SortHeader label="Title" sortKey="title" currentSort={sortConfig} onSort={handleSort} />
-                      <SortHeader label="Severity" sortKey="severity" currentSort={sortConfig} onSort={handleSort} className="w-28" />
-                      <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} className="w-32" />
-                      <SortHeader label="Owner" sortKey="ownerName" currentSort={sortConfig} onSort={handleSort} className="w-36" />
-                      <SortHeader label="Created" sortKey="createdAt" currentSort={sortConfig} onSort={handleSort} className="w-32" />
-                      <th className="px-4 py-3.5 text-right w-32">
+                      <SortHeader label="Severity" sortKey="severity" currentSort={sortConfig} onSort={handleSort} />
+                      <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                      <SortHeader label="Owner" sortKey="ownerName" currentSort={sortConfig} onSort={handleSort} />
+                      <SortHeader label="Created" sortKey="createdAt" currentSort={sortConfig} onSort={handleSort} />
+                      <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {paginatedItems.map((item) => (
                       <TableRow key={item.id} onClick={() => handleOpenIncident(item)}>
                         <TableCell>
@@ -881,8 +881,8 @@ export function IncidentsPage() {
                             {formatDate(item.createdAt || '')}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-2">
                             <PermissionGate permission="incidents:update">
                               <button
                                 onClick={(e) => {
