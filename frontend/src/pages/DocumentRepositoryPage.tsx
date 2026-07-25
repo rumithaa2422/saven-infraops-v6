@@ -623,7 +623,6 @@ export function DocumentRepositoryPage() {
   return (
     <div className="workspace">
       <div className="page-stack document-repository">
-        <div className="page-container">
         {/* Breadcrumbs */}
         {currentFolderId && breadcrumbs.length > 0 && (
           <div className="doc-repo-breadcrumbs">
@@ -1075,7 +1074,6 @@ export function DocumentRepositoryPage() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }

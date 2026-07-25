@@ -457,7 +457,7 @@ export function IncidentDetailPage() {
         <div className="page-stack incident-detail">
           <div className="page-header">
             <div className="page-header-left">
-              <button className="btn-secondary" onClick={handleBack}>
+              <button className="btn-back" onClick={handleBack}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -477,7 +477,7 @@ export function IncidentDetailPage() {
               <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             <p>{error || 'Incident not found.'}</p>
-            <button className="btn-secondary" onClick={handleBack}>
+            <button className="btn-back" onClick={handleBack}>
               Back to Incidents
             </button>
           </div>

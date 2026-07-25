@@ -811,9 +811,7 @@ export function RolesPermissionsPage() {
   if (!hasPermission('roles:view') && !hasPermission('users:read')) {
     return (
       <div className="workspace">
-        <div className="page-container">
-          <div className="alert alert-error">You do not have permission to view this page.</div>
-        </div>
+        <div className="alert alert-error">You do not have permission to view this page.</div>
       </div>
     );
   }
