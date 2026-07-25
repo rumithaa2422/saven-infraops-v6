@@ -49,6 +49,7 @@ import {
   DeleteIncidentDialog
 } from '../components/incidents';
 import { SummaryCards } from '../components/common/SummaryCards';
+import { PermissionGate } from '../components/permissions';
 import * as XLSX from 'xlsx';
 
 type Incident = {
@@ -838,8 +839,8 @@ export function IncidentsPage() {
                       <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} className="w-32" />
                       <SortHeader label="Owner" sortKey="ownerName" currentSort={sortConfig} onSort={handleSort} className="w-36" />
                       <SortHeader label="Created" sortKey="createdAt" currentSort={sortConfig} onSort={handleSort} className="w-32" />
-                      <th className="px-4 py-3.5 text-right w-20">
-                        <span className="sr-only">Actions</span>
+                      <th className="px-4 py-3.5 text-right w-32">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -882,7 +883,7 @@ export function IncidentsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {canEdit && (
+                            <PermissionGate permission="incidents:update">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -893,8 +894,8 @@ export function IncidentsPage() {
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
-                            )}
-                            {canDelete && (
+                            </PermissionGate>
+                            <PermissionGate permission="incidents:delete">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -905,7 +906,7 @@ export function IncidentsPage() {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
-                            )}
+                            </PermissionGate>
                           </div>
                         </TableCell>
                       </TableRow>
