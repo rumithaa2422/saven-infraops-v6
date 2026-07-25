@@ -706,8 +706,8 @@ export function IncidentsPage() {
 
         {/* Search and Filters */}
         <SectionCard title="" noPadding className="!overflow-visible">
-          <div className="p-4 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
+          <div className="p-3 space-y-3">
+            <div className="flex flex-col md:flex-row gap-3">
               <div className="flex-1">
                 <SearchInput
                   value={searchQuery}
@@ -743,14 +743,14 @@ export function IncidentsPage() {
 
             {/* Expanded Filters */}
             {showFilters && (
-              <div className="pt-4 border-t border-slate-100 space-y-4 animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="pt-3 border-t border-slate-100 space-y-3 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
                     >
                       {statusOptions.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -758,11 +758,11 @@ export function IncidentsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Severity</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Severity</label>
                     <select
                       value={severityFilter}
                       onChange={(e) => setSeverityFilter(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
                     >
                       {severityFilterOptions.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -770,11 +770,11 @@ export function IncidentsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Priority</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
                     <select
                       value={priorityFilter}
                       onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
                     >
                       {priorityFilterOptions.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
