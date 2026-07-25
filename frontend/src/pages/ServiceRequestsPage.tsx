@@ -434,8 +434,8 @@ export function ServiceRequestsPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Header - Modern Purple Gradient */}
+    <>
+      {/* Header */}
       <PageHeader
         title="Service Requests"
         subtitle={`${summaryStats.total} total`}
@@ -465,10 +465,10 @@ export function ServiceRequestsPage() {
       />
 
       {/* Main Content */}
-      <main className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="content-section">
         
-        {/* Stats Cards - Modern Design */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        {/* Stats Cards */}
+        <div className="stats-grid">
           <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -726,7 +726,7 @@ export function ServiceRequestsPage() {
             />
           )}
         </TableContainer>
-      </main>
+      </div>
 
       {/* Create Modal */}
       <ModalLayout
@@ -943,6 +943,6 @@ export function ServiceRequestsPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

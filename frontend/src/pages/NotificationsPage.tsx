@@ -159,8 +159,8 @@ export function NotificationsPage() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header - Purple Gradient like ServiceRequestsPage */}
+    <>
+      {/* Header */}
       <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
@@ -348,6 +348,6 @@ export function NotificationsPage() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

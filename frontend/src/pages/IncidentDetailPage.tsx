@@ -433,7 +433,7 @@ export function IncidentDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50/50">
+      <div className="page-loading">
         <div className="bg-white border-b border-slate-200/60 px-6 py-5">
           <div className="animate-pulse space-y-4">
             <div className="h-4 w-24 bg-slate-100 rounded"></div>
@@ -444,7 +444,7 @@ export function IncidentDetailPage() {
             </div>
           </div>
         </div>
-        <main className="p-6">
+        <div className="content-section">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <LoadingCard />
@@ -455,14 +455,14 @@ export function IncidentDetailPage() {
               <LoadingCard />
             </div>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   if (error || !incident) {
     return (
-      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+      <div className="page-loading flex items-center justify-center">
         <div className="bg-white rounded-2xl border border-slate-200/60 p-8 text-center max-w-md shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-500" />
@@ -481,7 +481,7 @@ export function IncidentDetailPage() {
   const nextStatus = getNextStatus();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       {/* Header */}
       <IncidentDetailHeader
         incidentNo={incident.incidentNo}
@@ -522,7 +522,7 @@ export function IncidentDetailPage() {
         }
       />
 
-      <main className="p-6">
+      <div className="content-section">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content Column */}
           <div className="lg:col-span-2 space-y-6">
@@ -791,7 +791,7 @@ export function IncidentDetailPage() {
             </SectionCard>
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Resolve/Close Dialog */}
       <ResolveIncidentDialog
@@ -830,6 +830,6 @@ export function IncidentDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

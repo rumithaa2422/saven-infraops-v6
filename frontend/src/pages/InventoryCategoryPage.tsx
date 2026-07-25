@@ -861,7 +861,7 @@ export function InventoryCategoryPage() {
 
   if (!canView) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="page-loading flex items-center justify-center">
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <AlertTriangle className="w-8 h-8 text-red-600" />
@@ -881,7 +881,7 @@ export function InventoryCategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       {/* Header */}
       <PageHeader
         title={category?.name || 'Inventory'}
@@ -942,7 +942,7 @@ export function InventoryCategoryPage() {
       />
 
       {/* Main Content */}
-      <div className="p-6 space-y-6">
+      <div className="content-section">
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <InventorySummaryCard
@@ -1495,6 +1495,6 @@ export function InventoryCategoryPage() {
           )}
         </div>
       </ModalLayout>
-    </div>
+    </>
   );
 }

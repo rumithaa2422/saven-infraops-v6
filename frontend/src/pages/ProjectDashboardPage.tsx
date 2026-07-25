@@ -585,8 +585,8 @@ export function ProjectDashboardPage() {
   const hasActiveFilters = search || statusFilter || priorityFilter || departmentFilter || technologyFilter || managerFilter;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Page Header - Modern Gradient */}
+    <>
+      {/* Page Header */}
       <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -606,9 +606,9 @@ export function ProjectDashboardPage() {
       </div>
 
       {/* Main Content */}
-      <main className="p-6 space-y-6">
+      <div className="content-section">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="stats-grid">
           <div className="project-summary-card" onClick={() => { setStatusFilter(''); fetchProjects(); }}>
             <div className="project-summary-icon total">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1180,7 +1180,7 @@ export function ProjectDashboardPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

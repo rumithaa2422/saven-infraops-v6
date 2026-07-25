@@ -637,7 +637,7 @@ export function IncidentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       {/* Page Header */}
       <PageHeader
         title="Incidents"
@@ -656,9 +656,9 @@ export function IncidentsPage() {
         }
       />
 
-      <main className="p-6 space-y-6">
+      <div className="content-section">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="stats-grid">
           <IncidentSummaryCard
             title="Total Incidents"
             count={summaryStats.total}
@@ -921,7 +921,7 @@ export function IncidentsPage() {
             </>
           )}
         </TableContainer>
-      </main>
+      </div>
 
       {/* Create Incident Modal */}
       <ModalLayout
@@ -1283,6 +1283,6 @@ export function IncidentsPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -541,9 +541,9 @@ export function ServiceRequestDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
+      <div className="page-loading">
         <div className="bg-white border-b border-slate-200/60 px-6 py-4">
-          <div className="max-w-[1600px] mx-auto flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <BackButton onClick={handleBack} />
             <div className="flex-1 animate-pulse">
               <div className="h-8 w-48 bg-slate-100 rounded-lg mb-2" />
@@ -551,22 +551,22 @@ export function ServiceRequestDetailPage() {
             </div>
           </div>
         </div>
-        <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+        <div className="content-section">
           <LoadingCard lines={5} />
-        </main>
+        </div>
       </div>
     );
   }
 
   if (error || !request) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50">
+      <div className="page-loading">
         <div className="bg-white border-b border-slate-200/60 px-6 py-4">
-          <div className="max-w-[1600px] mx-auto">
+          <div className="flex items-center gap-4">
             <BackButton onClick={handleBack} />
           </div>
         </div>
-        <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+        <div className="content-section">
           <EmptyStateCard
             icon={AlertTriangle}
             title={error || 'Service request not found'}
@@ -577,14 +577,14 @@ export function ServiceRequestDetailPage() {
               </Button>
             }
           />
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header - Modern Purple Gradient */}
+    <>
+      {/* Header */}
       <PageHeader
         title="Service Request Details"
         showBackButton
@@ -614,7 +614,7 @@ export function ServiceRequestDetailPage() {
       />
 
       {/* Main Content */}
-      <main className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="content-section">
         
         {/* Request Header Card */}
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
@@ -1054,7 +1054,7 @@ export function ServiceRequestDetailPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Edit Modal */}
       <ModalLayout
@@ -1151,6 +1151,6 @@ export function ServiceRequestDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

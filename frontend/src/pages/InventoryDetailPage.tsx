@@ -337,7 +337,7 @@ export function InventoryDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="page-loading">
         <div className="bg-white border-b border-slate-200 px-6 py-5">
           <div className="animate-pulse flex items-center gap-4">
             <div className="h-10 w-10 bg-slate-100 rounded-xl"></div>
@@ -347,7 +347,7 @@ export function InventoryDetailPage() {
             </div>
           </div>
         </div>
-        <div className="p-6">
+        <div className="content-section">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <LoadingCard />
@@ -365,7 +365,7 @@ export function InventoryDetailPage() {
 
   if (error || !item) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="page-loading flex items-center justify-center">
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-600" />
@@ -385,7 +385,7 @@ export function InventoryDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       {/* Header */}
       <InventoryDetailHeader
         itemNo={item.itemNo}
@@ -448,7 +448,7 @@ export function InventoryDetailPage() {
       )}
 
       {/* Main Content */}
-      <div className="p-6">
+      <div className="content-section">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -783,6 +783,6 @@ export function InventoryDetailPage() {
         currentQuantity={item.currentQty}
         itemName={item.itemName}
       />
-    </div>
+    </>
   );
 }

@@ -647,8 +647,8 @@ export function VendorDirectoryPage() {
   const hasActiveFilters = categoryFilter || statusFilter || countryFilter || contractStatusFilter || dateFrom || dateTo || yearFilter;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Page Header - Modern Gradient */}
+    <>
+      {/* Page Header */}
       <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -668,9 +668,9 @@ export function VendorDirectoryPage() {
       </div>
 
       {/* Main Content */}
-      <main className="p-6 space-y-6">
+      <div className="content-section">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="stats-grid">
           <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-purple-200 transition-all duration-300 group cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -1022,7 +1022,7 @@ export function VendorDirectoryPage() {
             onPageChange={setPage}
           />
         )}
-      </main>
+      </div>
       {/* Create Vendor Dialog */}
       {showCreateDialog && (
         <VendorFormDialog
@@ -1248,7 +1248,7 @@ export function VendorDirectoryPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

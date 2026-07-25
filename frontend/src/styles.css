@@ -267,6 +267,19 @@ nav { display: flex; flex-direction: column; gap: 6px; }
   gap: 20px;
 }
 
+/* Page Loading State */
+.page-loading {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* Form Container */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 /* Stats Grid (Compact) */
 .stats-grid {
   display: grid;

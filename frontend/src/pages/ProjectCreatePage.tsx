@@ -216,8 +216,8 @@ export function ProjectCreatePage() {
   const selectedTeamMembers = users.filter(u => formData.teamMemberIds.includes(u.id));
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Page Header - Modern Gradient */}
+    <>
+      {/* Page Header */}
       <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-purple-600 px-6 py-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -253,8 +253,8 @@ export function ProjectCreatePage() {
       )}
 
       {/* Form */}
-      <main className="max-w-7xl mx-auto p-6 space-y-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="content-section">
+        <form onSubmit={handleSubmit} className="form-container">
           {/* Project Information Card */}
           <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
@@ -568,7 +568,7 @@ export function ProjectCreatePage() {
             </button>
           </div>
         </form>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

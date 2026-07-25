@@ -27,14 +27,14 @@ export function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header - Purple Gradient like ServiceRequestsPage */}
+    <>
+      {/* Header */}
       <PermissionGate permission="dashboard:view">
         <DashboardHeader onRefresh={handleRefresh} isRefreshing={isRefreshing} />
       </PermissionGate>
 
-      {/* Main Content - Same styling as ServiceRequestsPage */}
-      <main className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-8">
+      {/* Main Content */}
+      <div className="content-section">
         
         {/* Summary Cards Section */}
         <section key={`summary-${refreshKey}`}>
@@ -90,7 +90,7 @@ export function DashboardPage() {
             </PermissionGate>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
