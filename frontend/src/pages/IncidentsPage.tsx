@@ -17,7 +17,6 @@ import {
   Trash2,
   ChevronDown,
   MoreHorizontal,
-  Eye,
   AlertCircle,
   Inbox,
   Hourglass,
@@ -883,24 +882,14 @@ export function IncidentsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenIncident(item);
-                              }}
-                              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                              title="View details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
                             {canEdit && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleEditIncident(item);
                                 }}
-                                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                                title="Edit incident"
+                                className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                title="Edit"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
@@ -912,7 +901,7 @@ export function IncidentsPage() {
                                   handleDeleteIncident(item);
                                 }}
                                 className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                title="Delete incident"
+                                title="Delete"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
