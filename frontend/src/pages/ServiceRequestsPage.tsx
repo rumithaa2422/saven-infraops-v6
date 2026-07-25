@@ -509,25 +509,25 @@ export function ServiceRequestsPage() {
         <SummaryCards cards={summaryCards} />
 
         {/* Search and Filters - Modern Design */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
+        <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-3 items-center">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by title, ticket number, requester..."
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
+                  className="w-full pl-11 pr-10 py-2.5 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-sm"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors flex items-center justify-center"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors flex items-center justify-center"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -536,9 +536,9 @@ export function ServiceRequestsPage() {
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-5 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm ${
                 showFilters
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/30'
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
@@ -555,7 +555,7 @@ export function ServiceRequestsPage() {
             {canExport && (
               <button
                 onClick={exportCsv}
-                className="px-5 py-3 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2"
+                className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm"
               >
                 <Download className="w-4 h-4" />
                 Export
@@ -565,7 +565,7 @@ export function ServiceRequestsPage() {
 
           {/* Filter Panel */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-slate-100 space-y-4">
+            <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-slate-500">Status:</span>
                 <div className="flex flex-wrap gap-2">
