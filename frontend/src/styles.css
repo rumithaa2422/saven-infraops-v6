@@ -399,7 +399,8 @@ nav { display: flex; flex-direction: column; gap: 6px; }
 
 /* Header Action Button - Used for all header action buttons (Create, Edit, Delete, etc.) */
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -418,24 +419,9 @@ nav { display: flex; flex-direction: column; gap: 6px; }
   font-weight: 600;
 }
 
-/* Back Button - Prominent styling for better visibility */
+/* Back button specific padding */
 .btn-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   padding: 8px 14px;
-  background: white;
-  border: 1px solid white;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #6366f1;
-  cursor: pointer;
-}
-
-.btn-back:hover {
-  background: #f8fafc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-ghost {
@@ -5425,17 +5411,13 @@ input:disabled {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: var(--panel-soft);
-  border: 1px solid var(--brand);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
   border-radius: 8px;
-  color: var(--brand);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-}
-
-.btn-back:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .btn-back svg {
@@ -11831,17 +11813,13 @@ input:disabled {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: var(--panel-soft);
-  border: 1px solid var(--brand);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--brand);
   cursor: pointer;
-}
-
-.btn-back:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Skeleton Loading */
@@ -15086,17 +15064,13 @@ input:disabled {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--muted);
-  border-radius: 8px;
   cursor: pointer;
-}
-
-.btn-back:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Error State */
