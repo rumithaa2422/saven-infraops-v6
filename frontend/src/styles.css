@@ -10672,14 +10672,16 @@ input:disabled {
    ============================================ */
 
 /* Page Header - Modern Gradient Style */
-.page-header {
+.project-dashboard .page-header {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-  padding: 24px 32px;
-  border-radius: 16px;
-  margin-bottom: 0;
+  padding: 20px 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
 }
 
 .page-header h1 {
