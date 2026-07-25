@@ -494,12 +494,6 @@ export function IncidentDetailPage() {
           onBackClick={handleBack}
           actions={
             <div className="flex items-center gap-2">
-              {canUpdate && (
-                <button className="btn-secondary">
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-              )}
               {canChangeStatus && nextStatus && (
                 <button 
                   onClick={() => setResolveDialogOpen(true)}
