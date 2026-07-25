@@ -235,8 +235,10 @@ export function NotificationsPage() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div className="bg-white rounded-xl border border-slate-200/60 p-12">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            </div>
           </div>
         ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border border-slate-200/60">
@@ -253,9 +255,9 @@ export function NotificationsPage() {
         ) : (
           <div className="space-y-6">
             {sortedGroups.map(group => (
-              <div key={group}>
+              <div key={group} className="bg-white rounded-xl border border-slate-200/60 overflow-hidden">
                 {/* Group Header */}
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200/60">
                   <h3 className="text-sm font-semibold text-slate-700">{group}</h3>
                   <div className="flex-1 h-px bg-slate-200"></div>
                   <span className="text-xs text-slate-400">
@@ -263,82 +265,66 @@ export function NotificationsPage() {
                   </span>
                 </div>
 
-                {/* Timeline Style Notifications */}
-                <div className="relative bg-white rounded-xl border border-slate-200/60 p-4">
-                  {/* Timeline Line */}
-                  <div className="absolute left-9 top-4 bottom-4 w-px bg-slate-200"></div>
+                {/* Notifications List */}
+                <div className="divide-y divide-slate-100">
+                  {groupedNotifications[group].map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`flex items-start gap-4 px-4 py-4 cursor-pointer transition-all hover:bg-slate-50 ${
+                        !notification.isRead ? '' : 'opacity-80'
+                      }`}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      {/* Icon */}
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                        !notification.isRead ? 'bg-purple-100' : 'bg-slate-100'
+                      }`}>
+                        <span className={!notification.isRead ? 'text-purple-600' : 'text-slate-400'}>
+                          {getIcon(notification.referenceModule)}
+                        </span>
+                      </div>
 
-                  <div className="space-y-3">
-                    {groupedNotifications[group].map((notification, index) => (
-                      <div
-                        key={notification.id}
-                        className={`relative pl-10 transition-all ${
-                          !notification.isRead ? 'opacity-100' : 'opacity-80'
-                        }`}
-                      >
-                        {/* Timeline Dot */}
-                        <div className={`absolute left-3 top-4 w-5 h-5 rounded-full border-2 border-white ${
-                          !notification.isRead 
-                            ? 'bg-purple-500' 
-                            : 'bg-slate-300'
-                        }`}></div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${
+                              notification.isRead ? 'text-slate-600' : 'text-slate-900'
+                            }`}>
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-slate-500 mt-0.5">
+                              {notification.message}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              <span className="text-xs text-slate-400">
+                                {formatTime(notification.createdAt)}
+                              </span>
+                            </div>
+                          </div>
 
-                        <div
-                          className={`rounded-lg border p-3 cursor-pointer transition-all hover:shadow-md ${
-                            notification.isRead 
-                              ? 'bg-slate-50 border-slate-200' 
-                              : 'bg-white border-purple-200 shadow-sm'
-                          }`}
-                          onClick={() => handleNotificationClick(notification)}
-                        >
-                          <div className="flex gap-3">
-                            <div className="flex-shrink-0 mt-0.5">
-                              {getIcon(notification.referenceModule)}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  <p className={`text-sm font-medium ${
-                                    notification.isRead ? 'text-slate-600' : 'text-slate-900'
-                                  }`}>
-                                    {notification.title}
-                                  </p>
-                                  <p className="text-sm text-slate-500 mt-0.5">
-                                    {notification.message}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <Clock className="w-3 h-3 text-slate-400" />
-                                    <span className="text-xs text-slate-400">
-                                      {formatTime(notification.createdAt)}
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  {!notification.isRead && (
-                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
-                                      New
-                                    </span>
-                                  )}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteNotification(notification.id);
-                                    }}
-                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                                    title="Delete notification"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {!notification.isRead && (
+                              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                                New
+                              </span>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(notification.id);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                              title="Delete notification"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
