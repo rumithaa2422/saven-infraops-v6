@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { BackButton } from '../components/serviceRequests';
 
 type Role = {
   id: string;
@@ -144,9 +145,7 @@ export function CreateUserPage() {
             <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
           <p>You do not have permission to create users.</p>
-          <button className="btn-back" onClick={() => navigate('/users-teams')}>
-            Back to Users
-          </button>
+          <BackButton onClick={() => navigate('/users-teams')} label="Back to Users" />
         </div>
       </div>
     );
@@ -158,12 +157,7 @@ export function CreateUserPage() {
         {/* Page Header */}
         <div className="page-header">
           <div className="page-header-left">
-            <button className="btn-secondary" onClick={() => navigate('/users-teams')}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Back
-            </button>
+            <BackButton onClick={() => navigate('/users-teams')} label="Back" />
             <div className="page-header-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
