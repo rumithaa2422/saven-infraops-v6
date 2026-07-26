@@ -40,12 +40,12 @@ export interface DashboardKPICardProps {
   className?: string;
 }
 
-// Status color mappings
+// Status color mappings with subtle colors
 const statusColors: Record<KPIStatus, { bg: string; text: string; badge: string }> = {
   default: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-600',
-    badge: 'bg-purple-100 text-purple-600'
+    bg: 'bg-slate-100',
+    text: 'text-slate-600',
+    badge: 'bg-slate-200 text-slate-600'
   },
   blue: {
     bg: 'bg-blue-50',
@@ -93,9 +93,9 @@ export function DashboardKPICard({
   
   // Trend icon based on direction
   const TrendIcon = () => {
-    if (trendDirection === 'up') return <TrendingUp className="w-3.5 h-3.5" />;
-    if (trendDirection === 'down') return <TrendingDown className="w-3.5 h-3.5" />;
-    return <Minus className="w-3.5 h-3.5" />;
+    if (trendDirection === 'up') return <TrendingUp className="w-3 h-3" />;
+    if (trendDirection === 'down') return <TrendingDown className="w-3 h-3" />;
+    return <Minus className="w-3 h-3" />;
   };
   
   // Determine if trend should be shown (only if trend prop is provided)
@@ -104,42 +104,43 @@ export function DashboardKPICard({
   return (
     <div
       className={`
-        group bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm
-        hover:shadow-lg hover:-translate-y-1 transition-all duration-300
+        group bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm
+        hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
+        flex flex-col h-full
         ${onClick ? 'cursor-pointer hover:border-slate-300' : ''}
         ${className}
       `}
       onClick={onClick}
     >
       {/* Top Row: Icon and Trend */}
-      <div className="flex items-start justify-between mb-4">
-        {/* Icon Container */}
-        <div className={`p-3 rounded-xl ${colors.bg} group-hover:scale-110 transition-transform duration-300`}>
-          <Icon className={`w-5 h-5 ${colors.text}`} />
+      <div className="flex items-center justify-between mb-3">
+        {/* Icon Container - smaller and more subtle */}
+        <div className={`p-2.5 rounded-lg ${colors.bg} group-hover:scale-105 transition-transform duration-200`}>
+          <Icon className={`w-4 h-4 ${colors.text}`} />
         </div>
         
         {/* Trend Indicator (optional) */}
         {showTrend && (
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${colors.badge}`}>
+          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${colors.badge}`}>
             <TrendIcon />
             <span>{trend}</span>
           </div>
         )}
       </div>
       
-      {/* Value, Title, and Description */}
-      <div className="space-y-1">
-        {/* Large KPI Value */}
-        <h3 className="text-3xl font-bold text-slate-900 tracking-tight">
+      {/* Value, Title, and Description - flexible grow area */}
+      <div className="flex flex-col flex-1 mt-1">
+        {/* Large KPI Value - primary focus */}
+        <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
           {typeof value === 'number' ? value.toLocaleString() : value}
         </h3>
         
         {/* Title */}
-        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <p className="text-sm font-semibold text-slate-700 mt-2">{title}</p>
         
         {/* Description (optional) */}
         {description && (
-          <p className="text-xs text-slate-400 mt-1">{description}</p>
+          <p className="text-xs text-slate-400 mt-1 leading-relaxed">{description}</p>
         )}
       </div>
     </div>
@@ -151,14 +152,15 @@ export function DashboardKPICard({
  */
 export function DashboardKPICardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/60 p-5 animate-pulse">
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 rounded-xl bg-slate-100" />
-        <div className="w-16 h-5 rounded-full bg-slate-100" />
+    <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm animate-pulse flex flex-col h-full">
+      <div className="flex items-center justify-between mb-3">
+        <div className="w-9 h-9 rounded-lg bg-slate-100" />
+        <div className="w-14 h-5 rounded-full bg-slate-100" />
       </div>
-      <div className="space-y-2">
-        <div className="h-8 w-20 bg-slate-100 rounded-lg" />
-        <div className="h-4 w-24 bg-slate-50 rounded" />
+      <div className="flex flex-col flex-1">
+        <div className="h-7 w-16 bg-slate-100 rounded-lg" />
+        <div className="h-4 w-20 bg-slate-50 rounded mt-3" />
+        <div className="h-3 w-28 bg-slate-50 rounded mt-2" />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../../services/api';
-import { Ticket, AlertTriangle, Package, Users, Clock } from 'lucide-react';
+import { Ticket, AlertOctagon, HardDrive, UserCheck, FileClock, CalendarClock } from 'lucide-react';
 import { DashboardKPICard, DashboardKPICardSkeleton, DashboardKPIGrid } from '../common/DashboardKPICard';
 import type { KPIStatus } from '../common/DashboardKPICard';
 
@@ -23,7 +23,7 @@ interface StatItem {
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   status: KPIStatus;
-  description?: string;
+  description: string;
 }
 
 export function SummaryCards() {
@@ -84,54 +84,60 @@ export function SummaryCards() {
       label: 'Open Tickets',
       value: data.openTickets,
       icon: Ticket,
-      trend: data.openTickets > 10 ? 'up' : 'neutral',
+      trend: 'up',
       trendValue: '+12%',
-      status: 'purple'
+      status: 'purple',
+      description: 'Tickets awaiting action'
     },
     {
       id: 'criticalIncidents',
       label: 'Critical Incidents',
       value: data.criticalIncidents,
-      icon: AlertTriangle,
-      trend: data.criticalIncidents > 0 ? 'up' : 'neutral',
-      trendValue: data.criticalIncidents > 0 ? 'Active' : 'Clear',
-      status: data.criticalIncidents > 0 ? 'red' : 'green'
+      icon: AlertOctagon,
+      trend: data.criticalIncidents > 0 ? 'up' : 'down',
+      trendValue: data.criticalIncidents > 0 ? `${data.criticalIncidents}` : 'Clear',
+      status: data.criticalIncidents > 0 ? 'red' : 'green',
+      description: data.criticalIncidents > 0 ? 'Immediate attention required' : 'No critical incidents'
     },
     {
       id: 'totalAssets',
       label: 'Total Assets',
       value: data.totalAssets,
-      icon: Package,
+      icon: HardDrive,
       trend: 'up',
       trendValue: '+5%',
-      status: 'blue'
+      status: 'blue',
+      description: 'Assets currently managed'
     },
     {
       id: 'totalUsers',
       label: 'Active Users',
       value: data.totalUsers,
-      icon: Users,
+      icon: UserCheck,
       trend: 'up',
       trendValue: '+3%',
-      status: 'purple'
+      status: 'purple',
+      description: 'Users with system access'
     },
     {
       id: 'pendingChanges',
       label: 'Pending Changes',
       value: data.pendingChanges,
-      icon: Clock,
-      trend: data.pendingChanges > 5 ? 'up' : 'neutral',
+      icon: FileClock,
+      trend: data.pendingChanges > 5 ? 'up' : 'down',
       trendValue: data.pendingChanges > 5 ? 'High' : 'Normal',
-      status: data.pendingChanges > 5 ? 'orange' : 'default'
+      status: data.pendingChanges > 5 ? 'orange' : 'default',
+      description: 'Awaiting approval'
     },
     {
       id: 'expiringLicenses',
       label: 'Expiring Licenses',
       value: data.expiringLicenses,
-      icon: Package,
-      trend: data.expiringLicenses > 3 ? 'up' : 'neutral',
-      trendValue: data.expiringLicenses > 0 ? `${data.expiringLicenses} soon` : 'All good',
-      status: data.expiringLicenses > 3 ? 'orange' : 'default'
+      icon: CalendarClock,
+      trend: data.expiringLicenses > 3 ? 'up' : 'down',
+      trendValue: data.expiringLicenses > 0 ? `${data.expiringLicenses}` : '0',
+      status: data.expiringLicenses > 3 ? 'orange' : 'default',
+      description: 'Renewal required soon'
     }
   ] : [];
 
@@ -158,7 +164,7 @@ export function SummaryCards() {
 
   return (
     <DashboardKPIGrid>
-      {statItems.map((stat, index) => {
+      {statItems.map((stat) => {
         const displayValue = animatedValues[stat.id] ?? stat.value;
         
         return (
@@ -167,6 +173,7 @@ export function SummaryCards() {
             icon={stat.icon}
             title={stat.label}
             value={displayValue}
+            description={stat.description}
             trend={stat.trendValue}
             trendDirection={stat.trend}
             status={stat.status}
