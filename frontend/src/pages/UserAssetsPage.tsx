@@ -2,12 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { Eye, Package, FolderOpen, AlertTriangle, Wrench } from 'lucide-react';
+import { Package, FolderOpen, AlertTriangle, Wrench } from 'lucide-react';
 import {
   TableContainer,
-  SortHeader,
-  TableRow,
-  TableCell
+  SortHeader
 } from '../components/serviceRequests';
 import { SummaryCards } from '../components/common/SummaryCards';
 
@@ -270,86 +268,65 @@ export function UserAssetsPage() {
         <SummaryCards cards={summaryCards} />
 
         {/* Assets Table */}
-        <div className="user-assets-table-container">
-          {loadingAssets ? (
-            <div className="user-assets-loading">Loading assets...</div>
-          ) : assignedAssets.length === 0 ? (
-            <div className="user-assets-empty">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M8 21h8M12 17v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <h3>No Assets Assigned</h3>
-              <p>This user has no assets assigned to them.</p>
-            </div>
-          ) : (
-            <TableContainer loading={false} empty={assignedAssets.length === 0} emptyTitle="No assets found" emptyDescription="This user has no assets assigned to them.">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-100">
-                  <tr>
-                    <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
-                    <SortHeader label="Item" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
-                    <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
-                    <SortHeader label="Brand" sortKey="brand" currentSort={sortConfig} onSort={handleSort} />
-                    <SortHeader label="Model" sortKey="model" currentSort={sortConfig} onSort={handleSort} />
-                    <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSort} />
-                    <SortHeader label="Assigned Date" sortKey="purchaseDate" currentSort={sortConfig} onSort={handleSort} />
-                    <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
-                    <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+        <div className="mt-6">
+          <TableContainer loading={loadingAssets} empty={assignedAssets.length === 0} emptyTitle="No assets found" emptyDescription="This user has no assets assigned to them.">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
+                  <SortHeader label="Item" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
+                  <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
+                  <SortHeader label="Brand" sortKey="brand" currentSort={sortConfig} onSort={handleSort} />
+                  <SortHeader label="Model" sortKey="model" currentSort={sortConfig} onSort={handleSort} />
+                  <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSort} />
+                  <SortHeader label="Assigned Date" sortKey="purchaseDate" currentSort={sortConfig} onSort={handleSort} />
+                  <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {assignedAssets.map(item => (
+                  <tr 
+                    key={item.id} 
+                    className="hover:bg-slate-50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/access-management/${item.id}`)}
+                  >
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                        {item.itemNo}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm font-medium text-slate-900">{item.itemName}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm text-slate-600">{item.category?.name || '-'}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm text-slate-600">{item.brand || '-'}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm text-slate-600">{item.model || '-'}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="text-sm text-slate-500">{formatDate(item.purchaseDate)}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                        item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                        item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {item.status.replace(/_/g, ' ')}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {assignedAssets.map(item => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
-                          {item.itemNo}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm font-medium text-slate-900">{item.itemName}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{item.category?.name || '-'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{item.brand || '-'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{item.model || '-'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-500">{formatDate(item.purchaseDate)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
-                          item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
-                          item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                          {item.status.replace(/_/g, ' ')}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <button 
-                          className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                          onClick={() => navigate(`/access-management/${item.id}`)}
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </tbody>
-              </table>
-            </TableContainer>
-          )}
+                ))}
+              </tbody>
+            </table>
+          </TableContainer>
         </div>
         </div>
       </div>
