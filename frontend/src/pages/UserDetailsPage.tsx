@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { User, Calendar, Eye } from 'lucide-react';
+import { User, Calendar, Eye, Mail, Phone, Briefcase, Shield, MapPin, Package } from 'lucide-react';
 import {
   PageHeader,
   TableContainer,
   SortHeader,
   TableRow,
-  TableCell
+  TableCell,
+  SectionCard,
+  InfoCard,
+  InfoGrid
 } from '../components/serviceRequests';
 
 type InventoryAssignment = {
@@ -210,412 +213,440 @@ export function UserDetailsPage() {
   return (
     <div className="workspace">
       <div className="page-stack user-detail">
-        {/* Header */}
+        {/* Page Header */}
         <PageHeader
-          title="User Dashboard"
+          title="User Details"
           showBackButton
           onBackClick={() => navigate('/users-teams')}
         />
 
         {/* User Header Card */}
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="px-6 py-5">
-            <div className="flex items-start justify-between gap-4">
-              {/* Left Section - Avatar, Name, and Meta Info */}
-              <div className="flex items-start gap-4">
-                {/* User Avatar */}
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                  {userInitials}
-                </div>
-
-                {/* User Info */}
-                <div className="min-w-0">
-                  <h1 className="text-2xl font-bold text-slate-900 mb-2">{user.name}</h1>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                    {user.department && (
-                      <div className="flex items-center gap-1.5">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        <span>{user.department}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1.5">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span>Joined {formatDate(user.dateJoined)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Section - Badges */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
-                  primaryRole === 'Super Admin' ? 'bg-purple-100 text-purple-700' :
-                  primaryRole === 'Admin' ? 'bg-blue-100 text-blue-700' :
-                  primaryRole === 'Manager' ? 'bg-amber-100 text-amber-700' :
-                  'bg-slate-100 text-slate-700'
-                }`}>
-                  {primaryRole}
-                </span>
-                <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
-                  user.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-                  'bg-slate-100 text-slate-700'
-                }`}>
-                  {user.status}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      <div className="detail-content-grid">
-        {/* Main Column */}
-        <div className="detail-main">
-          {/* Personal Information Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M6 21V19C6 17.9391 6.42143 16.9217 7.17157 16.1716C7.92172 15.4214 8.93913 15 10 15H14C15.0609 15 16.0783 15.4214 16.8284 16.1716C17.5786 16.9217 18 17.9391 18 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Personal Information
-              </h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-info-grid">
-                <div className="detail-info-item">
-                  <label>Employee ID</label>
-                  <span>{user.employeeId || '-'}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Full Name</label>
-                  <span>{user.name || '-'}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Email</label>
-                  <span>{user.email || '-'}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Phone Number</label>
-                  <span>{user.phoneNumber || '-'}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Department</label>
-                  <span>{user.department || '-'}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Designation</label>
-                  <span>{user.designation || '-'}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Role</label>
-                  <span>
-                    <span className={`role-badge ${getRoleBadgeClass(primaryRole)}`}>
-                      {primaryRole}
-                    </span>
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1.5 bg-brand-50 text-brand-700 font-mono font-semibold rounded-lg">
+                    {user.employeeId || user.id.slice(0, 8)}
                   </span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Status</label>
-                  <span>
-                    <span className={`status-badge status-${user.status.toLowerCase()}`}>
-                      {user.status}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Employment Information Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M8 21H16M12 17V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Employment Information
-              </h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-info-grid">
-                <div className="detail-info-item">
-                  <label>Date Joined</label>
-                  <span>{formatDate(user.dateJoined)}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Employment Type</label>
-                  <span>{user.employmentType || '-'}</span>
-                </div>
-                <div className="detail-info-item">
-                  <label>Team</label>
-                  <span>{user.team || '-'}</span>
-                </div>
-                <div className="detail-info-item full-width">
-                  <label>Address</label>
-                  <span>{user.address || '-'}</span>
-                </div>
-                <div className="detail-info-item full-width">
-                  <label>Remarks</label>
-                  <span>{user.remarks || '-'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Project Information Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-                  <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Project Information
-              </h3>
-            </div>
-            <div className="detail-card-body">
-              {user.currentProject ? (
-                <div className="project-info">
-                  <div className="project-header">
-                    <div className="project-title">
-                      <h4>{user.currentProject.projectName}</h4>
-                      <span className="project-code">{user.currentProject.projectCode}</span>
-                    </div>
-                    <span className={`status-badge status-${user.currentProject.status.toLowerCase()}`}>
-                      {user.currentProject.status}
-                    </span>
-                  </div>
-                  <div className="project-details">
-                    <div className="project-detail-row">
-                      <span className="detail-label">Client</span>
-                      <span className="detail-value">{user.currentProject.client || '-'}</span>
-                    </div>
-                    <div className="project-detail-row">
-                      <span className="detail-label">Project Manager</span>
-                      <span className="detail-value">{user.currentProject.manager?.name || user.currentProject.managerName || '-'}</span>
-                    </div>
-                    <div className="project-detail-row">
-                      <span className="detail-label">User's Role</span>
-                      <span className="detail-value">
-                        <span className={`role-badge ${user.currentProject.userProjectRole === 'Project Manager' ? 'role-admin' : 'role-employee'}`}>
-                          {user.currentProject.userProjectRole}
-                        </span>
-                      </span>
-                    </div>
-                    <div className="project-detail-row">
-                      <span className="detail-label">Department</span>
-                      <span className="detail-value">{user.currentProject.department || '-'}</span>
-                    </div>
-                    <div className="project-detail-row">
-                      <span className="detail-label">Start Date</span>
-                      <span className="detail-value">{formatDate(user.currentProject.startDate)}</span>
-                    </div>
-                    <div className="project-detail-row">
-                      <span className="detail-label">Expected End</span>
-                      <span className="detail-value">{formatDate(user.currentProject.expectedEndDate)}</span>
-                    </div>
-                  </div>
-                  <button 
-                    className="btn-view-project"
-                    onClick={() => navigate(`/projects-environments/${user.currentProject?.id}`)}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-                      <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    View Project
-                  </button>
-                </div>
-              ) : (
-                <div className="detail-placeholder">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 3H22V21H2V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-                    <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  <p>No project assigned.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Assigned Inventory Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                  <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                  <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                  <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                Assigned Inventory
-              </h3>
-            </div>
-            <div className="detail-card-body">
-              {user.assignedInventory && user.assignedInventory.length > 0 ? (
-                <>
-                  {/* Summary Stats */}
-                  {user.inventorySummary && (
-                    <div className="inventory-summary">
-                      <div className="inventory-summary-card">
-                        <span className="inventory-summary-value">{user.inventorySummary.totalAssigned}</span>
-                        <span className="inventory-summary-label">Assigned</span>
-                      </div>
-                      <div className="inventory-summary-card available">
-                        <span className="inventory-summary-value">{user.inventorySummary.available}</span>
-                        <span className="inventory-summary-label">Available</span>
-                      </div>
-                      <div className="inventory-summary-card repair">
-                        <span className="inventory-summary-value">{user.inventorySummary.underRepair}</span>
-                        <span className="inventory-summary-label">Repair</span>
-                      </div>
-                      <div className="inventory-summary-card returned">
-                        <span className="inventory-summary-value">{user.inventorySummary.returned}</span>
-                        <span className="inventory-summary-label">Returned</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Inventory Table */}
-                  <div className="inventory-table-container">
-                    <TableContainer loading={false} empty={user.assignedInventory.length === 0} emptyTitle="No inventory" emptyDescription="No inventory assigned to this user">
-                      <table className="w-full">
-                        <thead className="bg-slate-50 border-b border-slate-100">
-                          <tr>
-                            <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
-                            <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
-                            <SortHeader label="Sub Category" sortKey="subcategory" currentSort={sortConfig} onSort={handleSort} />
-                            <SortHeader label="Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
-                            <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
-                            <SortHeader label="Assigned Date" sortKey="assignedDate" currentSort={sortConfig} onSort={handleSort} />
-                            <SortHeader label="Project" sortKey="project" currentSort={sortConfig} onSort={handleSort} />
-                            <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {Array.from(
-                            new Map(user.assignedInventory.slice(0, 10).map(a => [a.id, a])).values()
-                          ).map((assignment) => (
-                            <TableRow key={assignment.id}>
-                              <TableCell>
-                                <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
-                                  {assignment.inventory.itemNo}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{assignment.inventory.category?.name || '-'}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{assignment.inventory.subcategory?.name || '-'}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm font-medium text-slate-900">{assignment.inventory.itemName}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
-                                  assignment.inventory.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
-                                  assignment.inventory.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-slate-100 text-slate-600'
-                                }`}>
-                                  {getInventoryStatusLabel(assignment.status === 'ACTIVE' ? 'ASSIGNED' : assignment.inventory.status)}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-500">{formatDate(assignment.assignedDate)}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{assignment.project?.projectName || '-'}</span>
-                              </TableCell>
-                              <TableCell>
-                                <button 
-                                  className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                                  onClick={() => navigate(`/inventory/master/${assignment.inventoryId}`)}
-                                  title="View"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </tbody>
-                      </table>
-                      {user.assignedInventory.length > 10 && (
-                        <div className="px-4 py-3 border-t border-slate-100 text-sm text-slate-500">
-                          Showing 10 of {user.assignedInventory.length} items
-                        </div>
-                      )}
-                    </TableContainer>
-                  </div>
-                </>
-              ) : (
-                <div className="detail-placeholder">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                    <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                    <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                    <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  <p>No inventory assigned.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="detail-sidebar">
-          {/* Quick Information Card */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Quick Information
-              </h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="info-row">
-                <span className="info-label">Created</span>
-                <span className="info-value">{formatDateTime(user.createdAt)}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Last Updated</span>
-                <span className="info-value">{formatDateTime(user.updatedAt)}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Role</span>
-                <span className="info-value">
-                  <span className={`role-badge ${getRoleBadgeClass(primaryRole)}`}>
+                  <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                    primaryRole === 'Super Admin' ? 'bg-purple-100 text-purple-700' :
+                    primaryRole === 'Admin' ? 'bg-blue-100 text-blue-700' :
+                    primaryRole === 'Manager' ? 'bg-amber-100 text-amber-700' :
+                    'bg-slate-100 text-slate-700'
+                  }`}>
                     {primaryRole}
                   </span>
-                </span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Department</span>
-                <span className="info-value">{user.department || '-'}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Status</span>
-                <span className="info-value">
-                  <span className={`status-badge status-${user.status.toLowerCase()}`}>
+                  <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                    user.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                    'bg-slate-100 text-slate-700'
+                  }`}>
                     {user.status}
                   </span>
-                </span>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">{user.name}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  {user.department && (
+                    <div className="flex items-center gap-1.5">
+                      <Briefcase className="w-4 h-4" />
+                      <span>{user.department}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4" />
+                    <span>Joined {formatDate(user.dateJoined)}</span>
+                  </div>
+                  {user.designation && (
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-4 h-4" />
+                      <span>{user.designation}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* User Avatar */}
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                {userInitials}
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Info */}
+          <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Email</p>
+                <p className="text-sm font-semibold text-slate-900">{user.email || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Phone</p>
+                <p className="text-sm font-semibold text-slate-900">{user.phoneNumber || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Team</p>
+                <p className="text-sm font-semibold text-slate-900">{user.team || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Employment Type</p>
+                <p className="text-sm font-semibold text-slate-900">{user.employmentType || '-'}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Main Content Grid */}
+      <div className="mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <User className="w-5 h-5 text-slate-400" />
+                  Personal Information
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Employee ID</label>
+                    <p className="mt-1 text-sm font-medium text-slate-700">{user.employeeId || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Full Name</label>
+                    <p className="mt-1 text-sm font-medium text-slate-900">{user.name || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Email</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.email || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Phone Number</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.phoneNumber || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Department</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.department || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Designation</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.designation || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Role</label>
+                    <p className="mt-1">
+                      <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                        primaryRole === 'Super Admin' ? 'bg-purple-100 text-purple-700' :
+                        primaryRole === 'Admin' ? 'bg-blue-100 text-blue-700' :
+                        primaryRole === 'Manager' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {primaryRole}
+                      </span>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</label>
+                    <p className="mt-1">
+                      <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                        user.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {user.status}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Employment Information */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-slate-400" />
+                  Employment Information
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Date Joined</label>
+                    <p className="mt-1 text-sm text-slate-700">{formatDate(user.dateJoined)}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Employment Type</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.employmentType || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Team</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.team || '-'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Address</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.address || '-'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Remarks</label>
+                    <p className="mt-1 text-sm text-slate-700">{user.remarks || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Information */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-slate-400" />
+                  Project Information
+                </h3>
+              </div>
+              <div className="p-6">
+                {user.currentProject ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="px-3 py-1.5 bg-brand-50 text-brand-700 font-mono font-semibold rounded-lg">
+                          {user.currentProject.projectCode}
+                        </span>
+                        <h4 className="text-lg font-semibold text-slate-900">{user.currentProject.projectName}</h4>
+                      </div>
+                      <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                        user.currentProject.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                        user.currentProject.status === 'COMPLETED' ? 'bg-slate-100 text-slate-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {user.currentProject.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pt-4 border-t border-slate-100">
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Client</label>
+                        <p className="mt-1 text-sm text-slate-700">{user.currentProject.client || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Project Manager</label>
+                        <p className="mt-1 text-sm text-slate-700">{user.currentProject.manager?.name || user.currentProject.managerName || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">User's Role</label>
+                        <p className="mt-1">
+                          <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                            user.currentProject.userProjectRole === 'Project Manager' ? 'bg-blue-100 text-blue-700' :
+                            'bg-slate-100 text-slate-700'
+                          }`}>
+                            {user.currentProject.userProjectRole}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Department</label>
+                        <p className="mt-1 text-sm text-slate-700">{user.currentProject.department || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Start Date</label>
+                        <p className="mt-1 text-sm text-slate-700">{formatDate(user.currentProject.startDate)}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Expected End</label>
+                        <p className="mt-1 text-sm text-slate-700">{formatDate(user.currentProject.expectedEndDate)}</p>
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t border-slate-100">
+                      <button 
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-medium hover:bg-indigo-100 transition-colors"
+                        onClick={() => navigate(`/projects-environments/${user.currentProject?.id}`)}
+                      >
+                        <Briefcase className="w-4 h-4" />
+                        View Project
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                      <Briefcase className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-sm text-slate-500">No project assigned</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Assigned Inventory */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-slate-400" />
+                  Assigned Inventory
+                  {user.assignedInventory && user.assignedInventory.length > 0 && (
+                    <span className="ml-2 px-2.5 py-1 bg-brand-100 text-brand-700 text-xs font-semibold rounded-full">
+                      {user.assignedInventory.length}
+                    </span>
+                  )}
+                </h3>
+              </div>
+              <div className="p-6">
+                {user.assignedInventory && user.assignedInventory.length > 0 ? (
+                  <>
+                    {/* Summary Stats */}
+                    {user.inventorySummary && (
+                      <div className="grid grid-cols-4 gap-4 mb-6">
+                        <div className="bg-slate-50 rounded-xl p-4 text-center">
+                          <p className="text-2xl font-bold text-slate-900">{user.inventorySummary.totalAssigned}</p>
+                          <p className="text-xs font-medium text-slate-500">Assigned</p>
+                        </div>
+                        <div className="bg-green-50 rounded-xl p-4 text-center">
+                          <p className="text-2xl font-bold text-green-700">{user.inventorySummary.available}</p>
+                          <p className="text-xs font-medium text-green-600">Available</p>
+                        </div>
+                        <div className="bg-amber-50 rounded-xl p-4 text-center">
+                          <p className="text-2xl font-bold text-amber-700">{user.inventorySummary.underRepair}</p>
+                          <p className="text-xs font-medium text-amber-600">Repair</p>
+                        </div>
+                        <div className="bg-slate-50 rounded-xl p-4 text-center">
+                          <p className="text-2xl font-bold text-slate-700">{user.inventorySummary.returned}</p>
+                          <p className="text-xs font-medium text-slate-500">Returned</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Inventory Table */}
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <TableContainer loading={false} empty={user.assignedInventory.length === 0} emptyTitle="No inventory" emptyDescription="No inventory assigned to this user">
+                        <table className="w-full">
+                          <thead className="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                              <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Category" sortKey="category" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Sub Category" sortKey="subcategory" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Assigned Date" sortKey="assignedDate" currentSort={sortConfig} onSort={handleSort} />
+                              <SortHeader label="Project" sortKey="project" currentSort={sortConfig} onSort={handleSort} />
+                              <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {Array.from(
+                              new Map(user.assignedInventory.slice(0, 10).map(a => [a.id, a])).values()
+                            ).map((assignment) => (
+                              <TableRow key={assignment.id}>
+                                <TableCell>
+                                  <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                                    {assignment.inventory.itemNo}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-slate-600">{assignment.inventory.category?.name || '-'}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-slate-600">{assignment.inventory.subcategory?.name || '-'}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm font-medium text-slate-900">{assignment.inventory.itemName}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                                    assignment.inventory.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                                    assignment.inventory.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-slate-100 text-slate-600'
+                                  }`}>
+                                    {getInventoryStatusLabel(assignment.status === 'ACTIVE' ? 'ASSIGNED' : assignment.inventory.status)}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-slate-500">{formatDate(assignment.assignedDate)}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-sm text-slate-600">{assignment.project?.projectName || '-'}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <button 
+                                    className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                    onClick={() => navigate(`/inventory/master/${assignment.inventoryId}`)}
+                                    title="View"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </tbody>
+                        </table>
+                        {user.assignedInventory.length > 10 && (
+                          <div className="px-4 py-3 border-t border-slate-100 text-sm text-slate-500">
+                            Showing 10 of {user.assignedInventory.length} items
+                          </div>
+                        )}
+                      </TableContainer>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                      <Package className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-sm text-slate-500">No inventory assigned</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Information Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900">Quick Information</h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Created</p>
+                  <p className="mt-1 text-sm text-slate-700">{formatDateTime(user.createdAt)}</p>
+                </div>
+                <div className="pt-3 border-t border-slate-100">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Last Updated</p>
+                  <p className="mt-1 text-sm text-slate-700">{formatDateTime(user.updatedAt)}</p>
+                </div>
+                <div className="pt-3 border-t border-slate-100">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Role</p>
+                  <p className="mt-1">
+                    <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                      primaryRole === 'Super Admin' ? 'bg-purple-100 text-purple-700' :
+                      primaryRole === 'Admin' ? 'bg-blue-100 text-blue-700' :
+                      primaryRole === 'Manager' ? 'bg-amber-100 text-amber-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {primaryRole}
+                    </span>
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-100">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Department</p>
+                  <p className="mt-1 text-sm text-slate-700">{user.department || '-'}</p>
+                </div>
+                <div className="pt-3 border-t border-slate-100">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</p>
+                  <p className="mt-1">
+                    <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                      user.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {user.status}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
