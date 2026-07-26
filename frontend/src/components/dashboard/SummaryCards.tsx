@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../../services/api';
-import { LucideIcon, Ticket, AlertTriangle, Package, Users, Clock, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Ticket, AlertTriangle, Package, Users, Clock } from 'lucide-react';
+import { DashboardKPICard, DashboardKPICardSkeleton, DashboardKPIGrid } from '../common/DashboardKPICard';
+import type { KPIStatus } from '../common/DashboardKPICard';
 
 interface SummaryData {
   openTickets: number;
@@ -17,12 +19,11 @@ interface StatItem {
   id: string;
   label: string;
   value: number;
-  icon: LucideIcon;
+  icon: typeof Ticket;
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
-  variant: 'default' | 'warning' | 'danger' | 'success';
-  color: string;
-  bgColor: string;
+  status: KPIStatus;
+  description?: string;
 }
 
 export function SummaryCards() {
@@ -85,9 +86,7 @@ export function SummaryCards() {
       icon: Ticket,
       trend: data.openTickets > 10 ? 'up' : 'neutral',
       trendValue: '+12%',
-      variant: 'default',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
+      status: 'purple'
     },
     {
       id: 'criticalIncidents',
@@ -96,9 +95,7 @@ export function SummaryCards() {
       icon: AlertTriangle,
       trend: data.criticalIncidents > 0 ? 'up' : 'neutral',
       trendValue: data.criticalIncidents > 0 ? 'Active' : 'Clear',
-      variant: data.criticalIncidents > 0 ? 'danger' : 'success',
-      color: data.criticalIncidents > 0 ? 'text-red-600' : 'text-emerald-600',
-      bgColor: data.criticalIncidents > 0 ? 'bg-red-50' : 'bg-emerald-50'
+      status: data.criticalIncidents > 0 ? 'red' : 'green'
     },
     {
       id: 'totalAssets',
@@ -107,9 +104,7 @@ export function SummaryCards() {
       icon: Package,
       trend: 'up',
       trendValue: '+5%',
-      variant: 'success',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50'
+      status: 'blue'
     },
     {
       id: 'totalUsers',
@@ -118,9 +113,7 @@ export function SummaryCards() {
       icon: Users,
       trend: 'up',
       trendValue: '+3%',
-      variant: 'success',
-      color: 'text-violet-600',
-      bgColor: 'bg-violet-50'
+      status: 'purple'
     },
     {
       id: 'pendingChanges',
@@ -129,9 +122,7 @@ export function SummaryCards() {
       icon: Clock,
       trend: data.pendingChanges > 5 ? 'up' : 'neutral',
       trendValue: data.pendingChanges > 5 ? 'High' : 'Normal',
-      variant: data.pendingChanges > 5 ? 'warning' : 'default',
-      color: data.pendingChanges > 5 ? 'text-amber-600' : 'text-slate-600',
-      bgColor: data.pendingChanges > 5 ? 'bg-amber-50' : 'bg-slate-50'
+      status: data.pendingChanges > 5 ? 'orange' : 'default'
     },
     {
       id: 'expiringLicenses',
@@ -140,32 +131,17 @@ export function SummaryCards() {
       icon: Package,
       trend: data.expiringLicenses > 3 ? 'up' : 'neutral',
       trendValue: data.expiringLicenses > 0 ? `${data.expiringLicenses} soon` : 'All good',
-      variant: data.expiringLicenses > 3 ? 'warning' : 'default',
-      color: data.expiringLicenses > 3 ? 'text-amber-600' : 'text-slate-600',
-      bgColor: data.expiringLicenses > 3 ? 'bg-amber-50' : 'bg-slate-50'
+      status: data.expiringLicenses > 3 ? 'orange' : 'default'
     }
   ] : [];
 
-  const TrendIcon = ({ trend }: { trend?: 'up' | 'down' | 'neutral' }) => {
-    if (trend === 'up') return <TrendingUp className="w-3.5 h-3.5" />;
-    if (trend === 'down') return <TrendingDown className="w-3.5 h-3.5" />;
-    return <Minus className="w-3.5 h-3.5" />;
-  };
-
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <DashboardKPIGrid>
         {[1, 2, 3, 4, 5, 6].map(i => (
-          <div key={i} className="bg-white rounded-2xl border border-slate-200/60 p-5 animate-pulse">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-100" />
-              <div className="w-16 h-5 rounded-full bg-purple-100" />
-            </div>
-            <div className="h-8 w-20 bg-purple-100 rounded-lg mb-2" />
-            <div className="h-4 w-24 bg-purple-50 rounded" />
-          </div>
+          <DashboardKPICardSkeleton key={i} />
         ))}
-      </div>
+      </DashboardKPIGrid>
     );
   }
 
@@ -181,61 +157,34 @@ export function SummaryCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <DashboardKPIGrid>
       {statItems.map((stat, index) => {
-        const Icon = stat.icon;
         const displayValue = animatedValues[stat.id] ?? stat.value;
         
         return (
-          <div
+          <DashboardKPICard
             key={stat.id}
-            className="group bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:shadow-purple-200/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className={`p-3 rounded-xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
-                <Icon className={`w-5 h-5 ${stat.color}`} />
-              </div>
-              {stat.trendValue && (
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                  stat.variant === 'danger' ? 'bg-red-50 text-red-600' :
-                  stat.variant === 'warning' ? 'bg-amber-50 text-amber-600' :
-                  stat.variant === 'success' ? 'bg-emerald-50 text-emerald-600' :
-                  'bg-purple-100 text-purple-600'
-                }`}>
-                  <TrendIcon trend={stat.trend} />
-                  <span>{stat.trendValue}</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="space-y-1">
-              <h3 className="text-3xl font-bold text-slate-900 tracking-tight">
-                {displayValue.toLocaleString()}
-              </h3>
-              <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
-            </div>
-          </div>
+            icon={stat.icon}
+            title={stat.label}
+            value={displayValue}
+            trend={stat.trendValue}
+            trendDirection={stat.trend}
+            status={stat.status}
+            className="hover:shadow-purple-200/50"
+          />
         );
       })}
-    </div>
+    </DashboardKPIGrid>
   );
 }
 
 // Skeleton loader
 export function SummaryCardsSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <DashboardKPIGrid>
       {[1, 2, 3, 4, 5, 6].map(i => (
-        <div key={i} className="bg-white rounded-2xl border border-slate-200/60 p-5 animate-pulse">
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-slate-100" />
-            <div className="w-16 h-5 rounded-full bg-slate-100" />
-          </div>
-          <div className="h-8 w-20 bg-slate-100 rounded-lg mb-2" />
-          <div className="h-4 w-24 bg-slate-50 rounded" />
-        </div>
+        <DashboardKPICardSkeleton key={i} />
       ))}
-    </div>
+    </DashboardKPIGrid>
   );
 }
