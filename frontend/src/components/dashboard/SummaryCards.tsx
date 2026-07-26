@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '../../services/api';
+import { useAuth } from '../../auth/AuthContext';
 import { Ticket, AlertOctagon, HardDrive, UserCheck, FileClock, CalendarClock } from 'lucide-react';
 import { DashboardKPICard, DashboardKPICardSkeleton, DashboardKPIGrid } from '../common/DashboardKPICard';
 import type { KPIStatus } from '../common/DashboardKPICard';
@@ -26,6 +27,7 @@ interface StatItem {
   label: string;
   value: number | null;
   icon: typeof Ticket;
+  permission?: string;
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   status: KPIStatus;
@@ -54,11 +56,82 @@ const getTrendValue = (data: SummaryData, key: keyof SummaryData): string | unde
   return undefined;
 };
 
+// All KPI card definitions with permissions
+const allStatItems: StatItem[] = [
+  {
+    id: 'openTickets',
+    label: 'Open Tickets',
+    value: null,
+    icon: Ticket,
+    permission: 'tickets:view',
+    trend: 'up',
+    trendValue: '+12%',
+    status: 'purple',
+    description: 'Tickets awaiting action'
+  },
+  {
+    id: 'criticalIncidents',
+    label: 'Critical Incidents',
+    value: null,
+    icon: AlertOctagon,
+    permission: 'incidents:view',
+    trend: 'down',
+    trendValue: 'Clear',
+    status: 'green',
+    description: 'No critical incidents'
+  },
+  {
+    id: 'totalAssets',
+    label: 'Total Assets',
+    value: null,
+    icon: HardDrive,
+    permission: 'access:view',
+    trend: 'up',
+    trendValue: '+5%',
+    status: 'blue',
+    description: 'Assets currently managed'
+  },
+  {
+    id: 'totalUsers',
+    label: 'Active Users',
+    value: null,
+    icon: UserCheck,
+    permission: 'users:view',
+    trend: 'up',
+    trendValue: '+3%',
+    status: 'purple',
+    description: 'Users with system access'
+  },
+  {
+    id: 'pendingChanges',
+    label: 'Pending Changes',
+    value: null,
+    icon: FileClock,
+    permission: 'changes:view',
+    trend: 'down',
+    trendValue: 'Normal',
+    status: 'default',
+    description: 'Awaiting approval'
+  },
+  {
+    id: 'expiringLicenses',
+    label: 'Expiring Licenses',
+    value: null,
+    icon: CalendarClock,
+    permission: 'vendors:view',
+    trend: 'down',
+    trendValue: '0',
+    status: 'default',
+    description: 'Renewal required soon'
+  }
+];
+
 export function SummaryCards() {
   const [data, setData] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [animatedValues, setAnimatedValues] = useState<Record<string, number | null>>({});
+  const { hasPermission } = useAuth();
 
   const fetchSummary = useCallback(async () => {
     setLoading(true);
@@ -77,6 +150,16 @@ export function SummaryCards() {
   useEffect(() => {
     fetchSummary();
   }, [fetchSummary]);
+
+  // Filter cards based on permissions
+  const visibleCards = useMemo(() => {
+    return allStatItems.filter(card => {
+      // If no permission required, always show
+      if (!card.permission) return true;
+      // Check if user has the required permission
+      return hasPermission(card.permission);
+    });
+  }, [hasPermission]);
 
   // Animate numbers on data change
   useEffect(() => {
@@ -101,80 +184,44 @@ export function SummaryCards() {
       }, interval);
     };
 
-    statItems.forEach(item => {
+    visibleCards.forEach(item => {
       const value = getValue(data, item.id as keyof SummaryData);
       animateValue(item.id, value);
     });
-  }, [data]);
+  }, [data, visibleCards]);
 
-  const statItems: StatItem[] = data ? [
-    {
-      id: 'openTickets',
-      label: 'Open Tickets',
-      value: getValue(data, 'openTickets'),
-      icon: Ticket,
-      trend: 'up',
-      trendValue: getTrendValue(data, 'openTickets') || '+12%',
-      status: 'purple',
-      description: 'Tickets awaiting action'
-    },
-    {
-      id: 'criticalIncidents',
-      label: 'Critical Incidents',
-      value: getValue(data, 'criticalIncidents'),
-      icon: AlertOctagon,
-      trend: (getValue(data, 'criticalIncidents') ?? 0) > 0 ? 'up' : 'down',
-      trendValue: (getValue(data, 'criticalIncidents') ?? 0) > 0 
-        ? `${getValue(data, 'criticalIncidents')}` 
-        : 'Clear',
-      status: (getValue(data, 'criticalIncidents') ?? 0) > 0 ? 'red' : 'green',
-      description: (getValue(data, 'criticalIncidents') ?? 0) > 0 
-        ? 'Immediate attention required' 
-        : 'No critical incidents'
-    },
-    {
-      id: 'totalAssets',
-      label: 'Total Assets',
-      value: getValue(data, 'totalAssets'),
-      icon: HardDrive,
-      trend: 'up',
-      trendValue: getTrendValue(data, 'totalAssets') || '+5%',
-      status: 'blue',
-      description: 'Assets currently managed'
-    },
-    {
-      id: 'totalUsers',
-      label: 'Active Users',
-      value: getValue(data, 'totalUsers'),
-      icon: UserCheck,
-      trend: 'up',
-      trendValue: getTrendValue(data, 'totalUsers') || '+3%',
-      status: 'purple',
-      description: 'Users with system access'
-    },
-    {
-      id: 'pendingChanges',
-      label: 'Pending Changes',
-      value: getValue(data, 'pendingChanges'),
-      icon: FileClock,
-      trend: (getValue(data, 'pendingChanges') ?? 0) > 5 ? 'up' : 'down',
-      trendValue: (getValue(data, 'pendingChanges') ?? 0) > 5 ? 'High' : 'Normal',
-      status: (getValue(data, 'pendingChanges') ?? 0) > 5 ? 'orange' : 'default',
-      description: 'Awaiting approval'
-    },
-    {
-      id: 'expiringLicenses',
-      label: 'Expiring Licenses',
-      value: getValue(data, 'expiringLicenses'),
-      icon: CalendarClock,
-      trend: (getValue(data, 'expiringLicenses') ?? 0) > 3 ? 'up' : 'down',
-      trendValue: (getValue(data, 'expiringLicenses') ?? 0) > 0 
-        ? `${getValue(data, 'expiringLicenses')}` 
-        : '0',
-      status: (getValue(data, 'expiringLicenses') ?? 0) > 3 ? 'orange' : 'default',
-      description: 'Renewal required soon'
-    }
-  ] : [];
+  // Build stat items with live data
+  const statItems: StatItem[] = data ? visibleCards.map(stat => {
+    const liveValue = getValue(data, stat.id as keyof SummaryData);
+    return {
+      ...stat,
+      value: liveValue,
+      trend: stat.id === 'criticalIncidents' 
+        ? ((liveValue ?? 0) > 0 ? 'up' : 'down')
+        : stat.id === 'pendingChanges'
+          ? ((liveValue ?? 0) > 5 ? 'up' : 'down')
+          : stat.id === 'expiringLicenses'
+            ? ((liveValue ?? 0) > 3 ? 'up' : 'down')
+            : stat.trend,
+      trendValue: stat.id === 'criticalIncidents'
+        ? ((liveValue ?? 0) > 0 ? `${liveValue}` : 'Clear')
+        : stat.id === 'pendingChanges'
+          ? ((liveValue ?? 0) > 5 ? 'High' : 'Normal')
+          : stat.id === 'expiringLicenses'
+            ? ((liveValue ?? 0) > 0 ? `${liveValue}` : '0')
+            : getTrendValue(data, stat.id as keyof SummaryData) || stat.trendValue,
+      status: stat.id === 'criticalIncidents'
+        ? ((liveValue ?? 0) > 0 ? 'red' : 'green')
+        : stat.id === 'pendingChanges'
+          ? ((liveValue ?? 0) > 5 ? 'orange' : 'default')
+          : stat.id === 'expiringLicenses'
+            ? ((liveValue ?? 0) > 3 ? 'orange' : 'default')
+            : stat.status,
+      description: stat.id === 'criticalIncidents'
+        ? ((liveValue ?? 0) > 0 ? 'Immediate attention required' : 'No critical incidents')
+        : stat.description
+    };
+  }) : [];
 
   if (loading) {
     return (
