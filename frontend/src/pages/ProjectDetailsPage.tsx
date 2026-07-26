@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { Eye, Folder, Plus, Edit2, Trash2, Users, User, Calendar, FileText } from 'lucide-react';
+import { Eye, Folder, Plus, Trash2, Users, User, Calendar, FileText } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -338,17 +338,6 @@ export function ProjectDetailsPage() {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {(isSuperAdmin || isAdmin) && (
-                  <button 
-                    className="btn-secondary"
-                    onClick={() => navigate(`/projects-environments/${id}/edit`)}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                  </button>
-                )}
               </div>
             </div>
           </div>

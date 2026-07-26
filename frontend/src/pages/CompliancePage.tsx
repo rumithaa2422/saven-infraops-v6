@@ -14,7 +14,8 @@ import {
   SortHeader,
   TableRow,
   TableCell,
-  Pagination
+  Pagination,
+  PageHeader
 } from '../components/serviceRequests';
 
 // Types
@@ -309,21 +310,12 @@ export function CompliancePage() {
   return (
     <div className="workspace">
       <div className="page-stack compliance">
-        {/* Page Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 11l3 3L22 4"/>
-                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="page-header-title">Compliance</h1>
-              <p className="page-header-subtitle">Manage compliance frameworks and controls</p>
-            </div>
-          </div>
-        </div>
+        {/* Header */}
+        <PageHeader
+          title="Compliance"
+          subtitle="Manage compliance frameworks and controls"
+          icon={FileCheck}
+        />
 
         {/* Summary Cards */}
         <div className="compliance-summary-grid">
