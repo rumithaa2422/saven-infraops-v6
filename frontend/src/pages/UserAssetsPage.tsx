@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { Eye } from 'lucide-react';
+import { Eye, Package, FolderOpen, AlertTriangle, Wrench } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
   TableCell
 } from '../components/serviceRequests';
+import { SummaryCards } from '../components/common/SummaryCards';
 
 type InventoryItem = {
   id: string;
@@ -172,6 +173,38 @@ export function UserAssetsPage() {
     (item.model?.toLowerCase().includes(search.toLowerCase()) ?? false)
   );
 
+  // Summary cards data
+  const summaryCards = useMemo(() => [
+    {
+      icon: Package,
+      iconBgColor: 'bg-gradient-to-br from-slate-100 to-slate-50',
+      iconColor: 'text-slate-600',
+      value: loadingAssets ? '...' : assignedAssets.length,
+      label: 'Total Assets'
+    },
+    {
+      icon: FolderOpen,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: loadingAssets ? '...' : userProjects.length,
+      label: 'Projects'
+    },
+    {
+      icon: AlertTriangle,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: loadingAssets ? '...' : warrantyExpiring,
+      label: 'Warranty Expiring'
+    },
+    {
+      icon: Wrench,
+      iconBgColor: 'bg-gradient-to-br from-orange-100 to-orange-50',
+      iconColor: 'text-orange-600',
+      value: loadingAssets ? '...' : underRepair,
+      label: 'Under Repair'
+    }
+  ], [assignedAssets.length, userProjects.length, warrantyExpiring, underRepair, loadingAssets]);
+
   function formatDate(dateStr?: string): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -253,58 +286,7 @@ export function UserAssetsPage() {
         <div className="user-assets-page">
 
         {/* Summary Cards */}
-        <div className="user-assets-summary">
-          <div className="user-asset-summary-card">
-            <div className="user-asset-summary-icon assigned">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M8 21h8M12 17v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="user-asset-summary-content">
-              <span className="user-asset-summary-label">Assigned Assets</span>
-              <span className="user-asset-summary-value">{assignedAssets.length}</span>
-            </div>
-          </div>
-
-          <div className="user-asset-summary-card">
-            <div className="user-asset-summary-icon project">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke="currentColor" strokeWidth="2"/>
-                <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="user-asset-summary-content">
-              <span className="user-asset-summary-label">Projects</span>
-              <span className="user-asset-summary-value">{userProjects.length}</span>
-            </div>
-          </div>
-
-          <div className="user-asset-summary-card">
-            <div className="user-asset-summary-icon warranty">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="user-asset-summary-content">
-              <span className="user-asset-summary-label">Warranty Expiring</span>
-              <span className="user-asset-summary-value">{warrantyExpiring}</span>
-            </div>
-          </div>
-
-          <div className="user-asset-summary-card">
-            <div className="user-asset-summary-icon repair">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6.006 6.006 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6.006 6.006 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="user-asset-summary-content">
-              <span className="user-asset-summary-label">Under Repair</span>
-              <span className="user-asset-summary-value">{underRepair}</span>
-            </div>
-          </div>
-        </div>
+        <SummaryCards cards={summaryCards} />
 
         {/* Toolbar */}
         <div className="asset-toolbar">
