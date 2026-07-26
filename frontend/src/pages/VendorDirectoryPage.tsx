@@ -9,14 +9,15 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
-import { Building2, Plus, Search, Download, Filter, X, Edit2, Trash2, Eye, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Building2, Plus, Search, Download, Filter, X, Edit2, Trash2, Eye, ChevronUp, ChevronDown, ChevronsUpDown, RefreshCw } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
   TableCell,
   Pagination,
-  ConfirmationDialog
+  ConfirmationDialog,
+  PageHeader
 } from '../components/serviceRequests';
 
 type Vendor = {
@@ -650,22 +651,22 @@ export function VendorDirectoryPage() {
   return (
     <div className="workspace">
       <div className="page-stack vendor-directory">
-        {/* Page Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2"/>
-                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="page-header-title">Vendor Directory</h1>
-              <p className="page-header-subtitle">Manage vendor relationships and contracts</p>
-            </div>
-          </div>
-        </div>
+        {/* Header */}
+        <PageHeader
+          title="Vendor Directory"
+          subtitle="Manage vendor relationships and contracts"
+          icon={Building2}
+          actions={
+            <button 
+              className="btn-secondary" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          }
+        />
 
         {/* Main Content */}
         <div className="content-section">
