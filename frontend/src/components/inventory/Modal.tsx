@@ -439,148 +439,130 @@ export function StockUpdateDialog({
     });
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
-
-      {/* Dialog */}
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl animate-modal-in">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Update Stock</h3>
-              <p className="text-sm text-slate-500 mt-1">{itemName}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Current Quantity */}
-          <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Current Quantity</span>
-              <span className="text-2xl font-bold text-slate-900">{currentQuantity}</span>
-            </div>
-          </div>
-
-          {/* Adjustment Type */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Adjustment Type
-            </label>
-            <select
-              value={adjustmentType}
-              onChange={(e) => handleAdjustmentChange(e.target.value, adjustmentAmount)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 transition-all"
-            >
-              {adjustmentTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Adjustment Amount (for ADD, REMOVE, RETURN, DAMAGED) */}
-          {(adjustmentType === 'ADD' || adjustmentType === 'REMOVE' || adjustmentType === 'RETURN' || adjustmentType === 'DAMAGED') && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                {adjustmentType === 'ADD' || adjustmentType === 'RETURN' ? 'Quantity to Add' : 'Quantity to Remove'}
-              </label>
-              <input
-                type="number"
-                value={adjustmentAmount}
-                onChange={(e) => handleAdjustmentChange(adjustmentType, parseInt(e.target.value) || 0)}
-                min="1"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 transition-all"
-              />
-            </div>
-          )}
-
-          {/* New Quantity Preview */}
-          <div className="mb-4 p-4 rounded-xl bg-brand-50 border border-brand-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-brand-700 font-medium">New Quantity</span>
-              <span className="text-2xl font-bold text-brand-700">{newQuantity}</span>
-            </div>
-            {newQuantity !== currentQuantity && (
-              <div className="mt-2 text-xs text-brand-600">
-                {newQuantity > currentQuantity ? '+' : ''}{newQuantity - currentQuantity} change
-              </div>
-            )}
-          </div>
-
-          {/* Reason */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Reason
-            </label>
-            <select
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 transition-all"
-            >
-              {commonReasons.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Notes */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional notes..."
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 transition-all"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={isLoading}
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={isLoading}
-              className="flex-1 px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Updating...
-                </span>
-              ) : 'Update Stock'}
-            </button>
+    <ModalLayout
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Update Stock"
+      subtitle={itemName}
+      size="lg"
+      icon="📦"
+      footer={
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={isLoading}
+            className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-sm shadow-brand-600/25 hover:shadow-brand-600/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Updating...
+              </span>
+            ) : 'Update Stock'}
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-5">
+        {/* Current Quantity */}
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-600">Current Quantity</span>
+            <span className="text-2xl font-bold text-slate-900">{currentQuantity}</span>
           </div>
         </div>
+
+        {/* Adjustment Type */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            Adjustment Type
+          </label>
+          <select
+            value={adjustmentType}
+            onChange={(e) => handleAdjustmentChange(e.target.value, adjustmentAmount)}
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white transition-all duration-200 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+          >
+            {adjustmentTypes.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Adjustment Amount (for ADD, REMOVE, RETURN, DAMAGED) */}
+        {(adjustmentType === 'ADD' || adjustmentType === 'REMOVE' || adjustmentType === 'RETURN' || adjustmentType === 'DAMAGED') && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {adjustmentType === 'ADD' || adjustmentType === 'RETURN' ? 'Quantity to Add' : 'Quantity to Remove'}
+            </label>
+            <input
+              type="number"
+              value={adjustmentAmount}
+              onChange={(e) => handleAdjustmentChange(adjustmentType, parseInt(e.target.value) || 0)}
+              min="1"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-400 transition-all duration-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+            />
+          </div>
+        )}
+
+        {/* New Quantity Preview */}
+        <div className="p-4 rounded-xl bg-brand-50 border border-brand-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-brand-700 font-medium">New Quantity</span>
+            <span className="text-2xl font-bold text-brand-700">{newQuantity}</span>
+          </div>
+          {newQuantity !== currentQuantity && (
+            <div className="mt-2 text-xs text-brand-600">
+              {newQuantity > currentQuantity ? '+' : ''}{newQuantity - currentQuantity} change
+            </div>
+          )}
+        </div>
+
+        {/* Reason */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            Reason
+          </label>
+          <select
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white transition-all duration-200 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+          >
+            {commonReasons.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            Notes (Optional)
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add any additional notes..."
+            rows={3}
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm placeholder:text-slate-400 resize-none transition-all duration-200 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+          />
+        </div>
       </div>
-    </div>
+    </ModalLayout>
   );
 }
 
