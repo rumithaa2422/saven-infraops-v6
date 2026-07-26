@@ -3,7 +3,7 @@ import { api, knowledgeAttachmentApi } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Eye, Edit2, Trash2, BookOpen, RefreshCw } from 'lucide-react';
+import { Eye, Edit2, Trash2, BookOpen, RefreshCw, Plus } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -870,7 +870,7 @@ export function KnowledgeCategoryPage() {
           }
           icon={BookOpen}
           actions={
-            <div className="flex items-center gap-2">
+            <>
               <button 
                 className="btn-secondary" 
                 onClick={handleRefresh}
@@ -881,17 +881,17 @@ export function KnowledgeCategoryPage() {
               </button>
               {viewMode === 'articles' && canManageArticles && (
                 <button className="btn-primary" onClick={openCreateArticleModal}>
-                  <span>+</span>
+                  <Plus className="w-4 h-4" />
                   Create Article
                 </button>
               )}
               {viewMode === 'browse' && canManageCategories && (
                 <button className="btn-primary" onClick={openCreateCategoryModal}>
-                  <span>+</span>
+                  <Plus className="w-4 h-4" />
                   Create Category
                 </button>
               )}
-            </div>
+            </>
           }
         />
 
