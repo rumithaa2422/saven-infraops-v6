@@ -9,7 +9,9 @@ import {
   SortHeader,
   TableRow,
   TableCell,
-  PageHeader
+  PageHeader,
+  ModalLayout,
+  Button
 } from '../components/serviceRequests';
 import { SummaryCards } from '../components/common/SummaryCards';
 
@@ -1459,118 +1461,105 @@ export function KnowledgeCategoryPage() {
       )}
 
       {/* Category Form Modal - Modern Design */}
-      {showCategoryForm && (
-        <div className="kb-modal-backdrop" onClick={closeCategoryForm}>
-          <div className="kb-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
-            <div className="kb-modal-header">
-              <div className="kb-modal-icon">
-                {editingCategory ? '📝' : '📁'}
-              </div>
-              <div className="kb-modal-title-area">
-                <h2>{editingCategory ? 'Edit Category' : 'Create Category'}</h2>
-                <p>{editingCategory ? 'Update category details' : 'Add a new knowledge category'}</p>
-              </div>
-              <button type="button" className="kb-modal-close" onClick={closeCategoryForm}>
-                ✕
-              </button>
-            </div>
+      <ModalLayout
+        isOpen={showCategoryForm}
+        onClose={closeCategoryForm}
+        title={editingCategory ? 'Edit Category' : 'Create Category'}
+        subtitle={editingCategory ? 'Update category details' : 'Add a new knowledge category'}
+        icon={editingCategory ? '📝' : '📁'}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={closeCategoryForm}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={handleSaveCategory}
+              loading={savingCategory}
+              disabled={!categoryFormData.name.trim()}
+            >
+              {editingCategory ? 'Update Category' : 'Create Category'}
+            </Button>
+          </div>
+        }
+      >
+        {categoryFormError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            {categoryFormError}
+          </div>
+        )}
 
-            {/* Modal Body */}
-            <div className="kb-modal-body">
-              {categoryFormError && (
-                <div className="kb-modal-error">{categoryFormError}</div>
-              )}
+        <div className="space-y-6">
+          {/* Category Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Category Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
+              value={categoryFormData.name}
+              onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+              placeholder="Enter category name..."
+              maxLength={100}
+              autoFocus
+            />
+            <p className="text-xs text-slate-400 mt-1">Max 100 characters</p>
+          </div>
 
-              <div className="kb-form-group">
-                <label>
-                  <span className="kb-label-icon">🏷️</span>
-                  Category Name <span className="kb-required">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="kb-input"
-                  value={categoryFormData.name}
-                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                  placeholder="Enter category name..."
-                  maxLength={100}
-                  autoFocus
-                />
-                <span className="kb-input-hint">Max 100 characters</span>
-              </div>
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Description
+            </label>
+            <textarea
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none resize-none"
+              value={categoryFormData.description}
+              onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+              placeholder="Add a brief description for this category..."
+              rows={3}
+            />
+          </div>
 
-              <div className="kb-form-group">
-                <label>
-                  <span className="kb-label-icon">📝</span>
-                  Description
-                </label>
-                <textarea
-                  className="kb-textarea"
-                  value={categoryFormData.description}
-                  onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                  placeholder="Add a brief description for this category..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="kb-form-group">
-                <label>
-                  <span className="kb-label-icon">📊</span>
-                  Status
-                </label>
-                <div className="kb-toggle-group">
-                  <button
-                    type="button"
-                    className={`kb-toggle-btn ${categoryFormData.isActive ? 'active' : ''}`}
-                    onClick={() => setCategoryFormData({ ...categoryFormData, isActive: true })}
-                  >
-                    <span className="kb-toggle-dot green"></span>
-                    Active
-                  </button>
-                  <button
-                    type="button"
-                    className={`kb-toggle-btn ${!categoryFormData.isActive ? 'active' : ''}`}
-                    onClick={() => setCategoryFormData({ ...categoryFormData, isActive: false })}
-                  >
-                    <span className="kb-toggle-dot gray"></span>
-                    Inactive
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="kb-modal-footer">
-              <button type="button" className="kb-btn-secondary" onClick={closeCategoryForm}>
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                className="kb-btn-primary" 
-                onClick={handleSaveCategory}
-                disabled={savingCategory || !categoryFormData.name.trim()}
+          {/* Status Toggle */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Status
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className={`flex-1 px-4 py-3 rounded-xl border-2 font-medium transition-all ${
+                  categoryFormData.isActive
+                    ? 'border-green-400 bg-green-50 text-green-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                }`}
+                onClick={() => setCategoryFormData({ ...categoryFormData, isActive: true })}
               >
-                {savingCategory ? (
-                  <>
-                    <span className="kb-btn-spinner"></span>
-                    Saving...
-                  </>
-                ) : editingCategory ? (
-                  <>
-                    <span>✓</span>
-                    Update Category
-                  </>
-                ) : (
-                  <>
-                    <span>+</span>
-                    Create Category
-                  </>
-                )}
+                <span className="flex items-center justify-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${categoryFormData.isActive ? 'bg-green-500' : 'bg-slate-300'}`}></span>
+                  Active
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`flex-1 px-4 py-3 rounded-xl border-2 font-medium transition-all ${
+                  !categoryFormData.isActive
+                    ? 'border-slate-400 bg-slate-100 text-slate-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                }`}
+                onClick={() => setCategoryFormData({ ...categoryFormData, isActive: false })}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${!categoryFormData.isActive ? 'bg-slate-500' : 'bg-slate-300'}`}></span>
+                  Inactive
+                </span>
               </button>
             </div>
           </div>
         </div>
-      )}
+      </ModalLayout>
 
       {/* Category Delete Confirmation Modal */}
       {showCategoryDelete && deletingCategory && (
