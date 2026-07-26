@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../auth/AuthContext';
 import { Ticket, AlertOctagon, HardDrive, UserCheck, FileClock, CalendarClock } from 'lucide-react';
@@ -32,6 +33,7 @@ interface StatItem {
   trendValue?: string;
   status: KPIStatus;
   description: string;
+  viewPath?: string;
 }
 
 // Safe number formatter - returns "—" for null/undefined
@@ -67,7 +69,8 @@ const allStatItems: StatItem[] = [
     trend: 'up',
     trendValue: '+12%',
     status: 'purple',
-    description: 'Tickets awaiting action'
+    description: 'Tickets awaiting action',
+    viewPath: '/service-requests'
   },
   {
     id: 'criticalIncidents',
@@ -78,7 +81,8 @@ const allStatItems: StatItem[] = [
     trend: 'down',
     trendValue: 'Clear',
     status: 'green',
-    description: 'No critical incidents'
+    description: 'No critical incidents',
+    viewPath: '/incidents'
   },
   {
     id: 'totalAssets',
@@ -89,7 +93,8 @@ const allStatItems: StatItem[] = [
     trend: 'up',
     trendValue: '+5%',
     status: 'blue',
-    description: 'Assets currently managed'
+    description: 'Assets currently managed',
+    viewPath: '/access-management'
   },
   {
     id: 'totalUsers',
@@ -100,7 +105,8 @@ const allStatItems: StatItem[] = [
     trend: 'up',
     trendValue: '+3%',
     status: 'purple',
-    description: 'Users with system access'
+    description: 'Users with system access',
+    viewPath: '/users-teams'
   },
   {
     id: 'pendingChanges',
@@ -111,7 +117,8 @@ const allStatItems: StatItem[] = [
     trend: 'down',
     trendValue: 'Normal',
     status: 'default',
-    description: 'Awaiting approval'
+    description: 'Awaiting approval',
+    viewPath: '/changes'
   },
   {
     id: 'expiringLicenses',
@@ -122,11 +129,13 @@ const allStatItems: StatItem[] = [
     trend: 'down',
     trendValue: '0',
     status: 'default',
-    description: 'Renewal required soon'
+    description: 'Renewal required soon',
+    viewPath: '/vendors-licenses'
   }
 ];
 
 export function SummaryCards() {
+  const navigate = useNavigate();
   const [data, setData] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -259,6 +268,8 @@ export function SummaryCards() {
             trend={stat.trendValue}
             trendDirection={stat.trend}
             status={stat.status}
+            viewPath={stat.viewPath}
+            onClick={() => stat.viewPath && navigate(stat.viewPath)}
             className="hover:shadow-purple-200/50"
           />
         );
