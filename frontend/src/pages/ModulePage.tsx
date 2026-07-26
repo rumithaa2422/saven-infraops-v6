@@ -1645,8 +1645,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       >
         {/* Page Header */}
         <PageHeader
-          title={title}
-          subtitle="Management"
+          title="Inventory Management"
           icon={config.icon}
           actions={
             <>
@@ -1703,7 +1702,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 </div>
               )}
               {/* Disable all buttons during any import operation */}
-              <button className="secondary" onClick={() => config.isDocumentRepository ? loadComplianceDocuments() : load(searchQuery)} disabled={loading || isImporting || isValidating || isExecuting}>
+              <button className="btn-secondary" onClick={() => config.isDocumentRepository ? loadComplianceDocuments() : load(searchQuery)} disabled={loading || isImporting || isValidating || isExecuting}>
                 {loading ? 'Refreshing...' : 'Refresh'}
               </button>
               {/* Import button - shown only for modules with import permission */}
@@ -1711,7 +1710,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 <>
                   {/* Disable import button during any import operation */}
                   <button 
-                    className="secondary" 
+                    className="btn-secondary" 
                     onClick={handleImportClick}
                     disabled={isImporting || isValidating || isExecuting}
                   >
@@ -1729,7 +1728,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 </>
               )}
               {config.permissions.export && hasPermission(config.permissions.export) && !config.isCategoryManagement && (
-                <button className="secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
+                <button className="btn-secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
                   {config.isDocumentRepository ? '📥 Export All' : 'Export CSV'}
                 </button>
               )}
@@ -1737,7 +1736,7 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
               {config.isDocumentRepository && config.permissions.create && hasPermission(config.permissions.create) && (
                 <>
                   <button 
-                    className="secondary" 
+                    className="btn-secondary" 
                     onClick={handleDocImportClick}
                     disabled={isImportingDocs || isUploadingPdf}
                   >
@@ -1755,13 +1754,13 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
                 </>
               )}
               {config.permissions.create && hasPermission(config.permissions.create) && !config.isCategoryManagement && (
-                <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
+                <button className="btn-primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
                   {config.isDocumentRepository ? '📤 Upload' : 'Create'}
                 </button>
               )}
               {/* Category Management: Create Category button for inventory */}
               {config.isCategoryManagement && isSuperAdmin && (
-                <button className="primary" onClick={() => openCategoryForm()}>
+                <button className="btn-primary" onClick={() => openCategoryForm()}>
                   + Create Category
                 </button>
               )}
