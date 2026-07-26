@@ -1,13 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  QuickActions,
-  MyWorkWidget,
   AlertWidget,
-  ModuleOverview,
   RecentActivity,
   KnowledgeHub,
-  ReportsWidget,
   SummaryCards,
   AnalyticsCharts
 } from '../components/dashboard';
@@ -287,32 +283,7 @@ export function DashboardPage() {
         {/* Analytics Section */}
         <AnalyticsCharts />
 
-        {/* Quick Actions Section */}
-        <section key={`quick-${refreshKey}`}>
-          <QuickActions />
-        </section>
-
-        {/* Two Column Layout: My Work + Alerts */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* My Work Widget - Takes 2 columns */}
-          <PermissionGate permission="dashboard:view_my_tasks">
-            <div className="xl:col-span-2" key={`my-work-${refreshKey}`}>
-              <MyWorkWidget />
-            </div>
-          </PermissionGate>
-
-          {/* Alerts Widget */}
-          <div key={`alerts-${refreshKey}`}>
-            <AlertWidget />
-          </div>
-        </div>
-
-        {/* Module Overview Section */}
-        <section key={`modules-${refreshKey}`}>
-          <ModuleOverview />
-        </section>
-
-        {/* Bottom Section: Activity + Knowledge Hub + Reports */}
+        {/* Two Column Layout: Activity + Knowledge Hub */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Recent Activity */}
           <PermissionGate permission="dashboard:view_activity">
@@ -321,7 +292,7 @@ export function DashboardPage() {
             </div>
           </PermissionGate>
 
-          {/* Right Column: Knowledge Hub + Reports */}
+          {/* Right Column: Knowledge Hub */}
           <div className="space-y-6">
             <PermissionGate permission="kb:view">
               <div key={`knowledge-${refreshKey}`}>
@@ -329,11 +300,10 @@ export function DashboardPage() {
               </div>
             </PermissionGate>
 
-            <PermissionGate permission="reports:view">
-              <div key={`reports-${refreshKey}`}>
-                <ReportsWidget />
-              </div>
-            </PermissionGate>
+            {/* Alerts Widget */}
+            <div key={`alerts-${refreshKey}`}>
+              <AlertWidget />
+            </div>
           </div>
         </div>
       </div>
