@@ -720,7 +720,11 @@ export function InventoryMasterPage() {
   }
 
   function handleCancel() {
-    handleBack();
+    if (form.categoryId) {
+      navigate(`/inventory/${form.categoryId}`);
+    } else {
+      navigate('/inventory');
+    }
   }
 
   function updateField(field: keyof InventoryItem, value: any) {
@@ -792,35 +796,68 @@ export function InventoryMasterPage() {
         {/* Header */}
         <PageHeader
           title={isEditMode ? 'Edit Inventory Item' : 'Create Inventory Item'}
-          subtitle={isEditMode ? form.itemNo : 'New Item'}
-          icon={isEditMode ? Package : PackagePlus}
-          iconColor="text-brand-600"
-          breadcrumbs={[
-            { label: 'Inventory', onClick: () => navigate('/inventory') },
-            ...(isEditMode && form.itemNo ? [{ label: form.itemNo }] : [])
-          ]}
-          actions={
-            <div className="flex items-center gap-3">
-              <Button
-                variant="secondary"
-                onClick={handleCancel}
-                disabled={saving}
-              >
-                Cancel
-              </Button>
-              {isSuperAdmin && (
-                <Button
-                  variant="primary"
-                  icon={Save}
-                  onClick={handleSubmit}
-                  loading={saving}
-                >
-                  {isEditMode ? 'Update Item' : 'Save Item'}
-                </Button>
-              )}
-            </div>
-          }
+          showBackButton
+          onBackClick={handleBack}
         />
+
+        {/* Main Content */}
+        <div className="content-section">
+        
+        {/* Inventory Item Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1.5 bg-brand-50 text-brand-700 font-semibold rounded-lg flex items-center gap-2">
+                    {isEditMode ? <Package className="w-4 h-4" /> : <PackagePlus className="w-4 h-4" />}
+                    {isEditMode ? (form.itemNo || 'Item') : 'New Item'}
+                  </span>
+                  <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                    form.status === 'ACTIVE' 
+                      ? 'bg-emerald-50 text-emerald-700' 
+                      : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {form.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                  </span>
+                  {categoryName && (
+                    <span className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-semibold">
+                      {categoryName}
+                    </span>
+                  )}
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">
+                  {isEditMode ? 'Edit Inventory Item' : 'Create Inventory Item'}
+                </h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" />
+                    <span>{isEditMode ? `Editing ${form.itemName || 'item'}` : 'Adding new inventory item'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={handleCancel}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                {isSuperAdmin && (
+                  <Button
+                    variant="primary"
+                    icon={Save}
+                    onClick={handleSubmit}
+                    loading={saving}
+                  >
+                    {isEditMode ? 'Update Item' : 'Save Item'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Toast Messages */}
         {message && (
@@ -848,8 +885,9 @@ export function InventoryMasterPage() {
             </div>
           </div>
         )}
+        </div>
 
-        {/* Main Content */}
+        {/* Form Content */}
         <form onSubmit={handleSubmit} className="content-section form-container">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Form */}
