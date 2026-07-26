@@ -829,94 +829,139 @@ export function AssetManagementPage() {
 
               {/* Categories View */}
               {currentView === 'categories' && (
-                <div className="asset-categories-grid">
-                  {(loading || loadingAllItems) ? (
-                    <div className="asset-loading">
-                      <div className="spinner"></div>
-                      <span>Loading categories...</span>
+                <div>
+                  {/* Section Header */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 font-bold text-sm">
+                      1
                     </div>
-                  ) : categories.length === 0 ? (
-                    <div className="asset-empty">
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <p>No categories found</p>
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Categories</h2>
+                      <p className="text-sm text-slate-500">Select a category to view subcategories</p>
                     </div>
-                  ) : (
-                    categories.map(category => (
-                      <div 
-                        key={category.id} 
-                        className="asset-category-card"
-                        onClick={() => handleCategoryClick(category.id)}
-                      >
-                        <div className="asset-category-icon">
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                        <div className="asset-category-info">
-                          <h3>{category.name}</h3>
-                          <span>{category.inventoryCount} inventory</span>
-                        </div>
-                        <svg className="asset-category-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {(loading || loadingAllItems) ? (
+                      <div className="col-span-full flex items-center justify-center py-12">
+                        <div className="spinner"></div>
+                        <span className="ml-3 text-slate-500">Loading categories...</span>
                       </div>
-                    ))
-                  )}
+                    ) : categories.length === 0 ? (
+                      <div className="col-span-full asset-empty">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <p>No categories found</p>
+                      </div>
+                    ) : (
+                      categories.map((category, index) => (
+                        <div 
+                          key={category.id} 
+                          className="group relative bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-indigo-300 hover:shadow-lg transition-all duration-200"
+                          onClick={() => handleCategoryClick(category.id)}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">{category.name}</h3>
+                              <p className="text-sm text-slate-500 mt-0.5">{category.inventoryCount} inventory items</p>
+                            </div>
+                            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-all">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* Subcategories View */}
               {currentView === 'subcategories' && (
-                <div className="asset-subcategories-grid">
-                  {loading ? (
-                    <div className="asset-loading">
-                      <div className="spinner"></div>
-                      <span>Loading subcategories...</span>
+                <div>
+                  {/* Section Header */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 text-purple-600 font-bold text-sm">
+                      2
                     </div>
-                  ) : currentSubcategories.length === 0 ? (
-                    <div className="asset-empty">
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <p>No subcategories found</p>
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Subcategories</h2>
+                      <p className="text-sm text-slate-500">Select a subcategory to view inventory items</p>
                     </div>
-                  ) : (
-                    currentSubcategories.map(sub => (
-                      <div 
-                        key={sub.id} 
-                        className="asset-subcategory-card"
-                        onClick={() => handleSubcategoryClick(sub.id)}
-                      >
-                        <div className="asset-subcategory-icon">
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M9 9H15M9 13H15M9 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          </svg>
-                        </div>
-                        <div className="asset-subcategory-info">
-                          <h3>{sub.name}</h3>
-                          <span>{sub.inventoryCount} inventory</span>
-                        </div>
-                        <svg className="asset-subcategory-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {loading ? (
+                      <div className="col-span-full flex items-center justify-center py-12">
+                        <div className="spinner"></div>
+                        <span className="ml-3 text-slate-500">Loading subcategories...</span>
                       </div>
-                    ))
-                  )}
+                    ) : currentSubcategories.length === 0 ? (
+                      <div className="col-span-full asset-empty">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <p>No subcategories found</p>
+                      </div>
+                    ) : (
+                      currentSubcategories.map(sub => (
+                        <div 
+                          key={sub.id} 
+                          className="group relative bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-purple-300 hover:shadow-lg transition-all duration-200"
+                          onClick={() => handleSubcategoryClick(sub.id)}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
+                                <path d="M9 9H15M9 13H15M9 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-slate-900 group-hover:text-purple-600 transition-colors">{sub.name}</h3>
+                              <p className="text-sm text-slate-500 mt-0.5">{sub.inventoryCount} inventory items</p>
+                            </div>
+                            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-purple-100 group-hover:text-purple-600 transition-all">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* Items Table View */}
               {currentView === 'items' && (
-                <div className="asset-items-section">
+                <div>
+                  {/* Section Header */}
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 font-bold text-sm">
+                      3
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Inventory Items</h2>
+                      <p className="text-sm text-slate-500">{items.length} items found in this subcategory</p>
+                    </div>
+                  </div>
+                  
                   {loadingItems ? (
-                    <div className="asset-loading">
+                    <div className="flex items-center justify-center py-12">
                       <div className="spinner"></div>
-                      <span>Loading items...</span>
+                      <span className="ml-3 text-slate-500">Loading items...</span>
                     </div>
                   ) : items.length === 0 ? (
                     <div className="asset-empty">
@@ -926,84 +971,86 @@ export function AssetManagementPage() {
                       <p>{search || filters.status || filters.location || filters.vendor ? 'No matching items found' : 'No items in this subcategory'}</p>
                     </div>
                   ) : (
-                    <TableContainer loading={false} empty={items.length === 0} emptyTitle="No items found" emptyDescription="Try adjusting your filters or add new inventory items">
-                      <table className="w-full">
-                        <thead className="bg-slate-50 border-b border-slate-100">
-                          <tr>
-                            <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Item Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Brand" sortKey="brand" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Model" sortKey="model" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Qty" sortKey="currentQty" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Warranty" sortKey="warrantyExpiry" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Location" sortKey="location" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Assigned User" sortKey="assignedTo" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSortByKey} />
-                            <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {items.map(item => (
-                            <TableRow key={item.id}>
-                              <TableCell>
-                                <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
-                                  {item.itemNo}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-medium text-slate-900">{item.itemName}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{item.brand || '-'}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{item.model || '-'}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-700">{item.currentQty}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${
-                                  item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
-                                  item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
-                                  item.status === 'UNDER_REPAIR' ? 'bg-amber-100 text-amber-700' :
-                                  item.status === 'RETIRED' ? 'bg-slate-100 text-slate-600' :
-                                  'bg-slate-100 text-slate-600'
-                                }`}>
-                                  {item.status.replace(/_/g, ' ')}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{formatDate(item.warrantyExpiry)}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{item.location || '-'}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{item.assignedTo?.name || '-'}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
-                              </TableCell>
-                              <TableCell onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center justify-end gap-2">
-                                  <button 
-                                    className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                                    onClick={() => navigate(`/access-management/${item.id}`)}
-                                    title="View"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </tbody>
-                      </table>
-                    </TableContainer>
+                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                              <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Item Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Brand" sortKey="brand" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Model" sortKey="model" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Qty" sortKey="currentQty" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Warranty" sortKey="warrantyExpiry" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Location" sortKey="location" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Assigned User" sortKey="assignedTo" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSortByKey} />
+                              <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {items.map(item => (
+                              <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-4 py-3.5">
+                                  <span className="font-mono text-sm text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                                    {item.itemNo}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="font-medium text-slate-900">{item.itemName}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-sm text-slate-600">{item.brand || '-'}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-sm text-slate-600">{item.model || '-'}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-sm text-slate-700">{item.currentQty}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                                    item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                                    item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                                    item.status === 'UNDER_REPAIR' ? 'bg-amber-100 text-amber-700' :
+                                    item.status === 'RETIRED' ? 'bg-slate-100 text-slate-600' :
+                                    'bg-slate-100 text-slate-600'
+                                  }`}>
+                                    {item.status.replace(/_/g, ' ')}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-sm text-slate-600">{formatDate(item.warrantyExpiry)}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-sm text-slate-600">{item.location || '-'}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-sm text-slate-600">{item.assignedTo?.name || '-'}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button 
+                                      className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                      onClick={() => navigate(`/access-management/${item.id}`)}
+                                      title="View"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
