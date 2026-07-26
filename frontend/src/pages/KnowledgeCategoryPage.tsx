@@ -3,14 +3,13 @@ import { api, knowledgeAttachmentApi } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Eye, Edit2, Trash2, BookOpen, RefreshCw, Plus, Folder, FileText, Clock, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react';
+import { Eye, Edit2, Trash2, BookOpen, RefreshCw, Plus, Folder, FileText, Clock, X } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
   TableCell,
-  PageHeader,
-  FilterChip
+  PageHeader
 } from '../components/serviceRequests';
 import { SummaryCards } from '../components/common/SummaryCards';
 
@@ -173,84 +172,6 @@ export function KnowledgeCategoryPage() {
     key: 'createdAt',
     direction: 'desc'
   });
-
-  // Filter state
-  const [showFilters, setShowFilters] = useState(false);
-  const [authorFilter, setAuthorFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-
-  // Filtered and sorted articles
-  const filteredArticles = useMemo(() => {
-    let result = [...articles];
-
-    // Apply search filter
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(article =>
-        article.title.toLowerCase().includes(searchLower) ||
-        (article.summary && article.summary.toLowerCase().includes(searchLower)) ||
-        (article.authorName && article.authorName.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // Apply author filter
-    if (authorFilter) {
-      result = result.filter(article =>
-        article.authorName && article.authorName.toLowerCase().includes(authorFilter.toLowerCase())
-      );
-    }
-
-    // Apply date filter
-    if (dateFilter) {
-      const now = new Date();
-      let cutoffDate: Date;
-      
-      switch (dateFilter) {
-        case '7days':
-          cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30days':
-          cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90days':
-          cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          cutoffDate = new Date(0);
-      }
-      
-      result = result.filter(article => new Date(article.createdAt) >= cutoffDate);
-    }
-
-    // Apply sorting
-    result.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortConfig.key) {
-        case 'title':
-          comparison = a.title.localeCompare(b.title);
-          break;
-        case 'summary':
-          comparison = (a.summary || '').localeCompare(b.summary || '');
-          break;
-        case 'authorName':
-          comparison = (a.authorName || '').localeCompare(b.authorName || '');
-          break;
-        case 'createdAt':
-          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-        case 'updatedAt':
-          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-          break;
-        default:
-          comparison = 0;
-      }
-      
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-
-    return result;
-  }, [articles, search, authorFilter, dateFilter, sortConfig]);
 
   // Debounced search value (300ms delay)
   const debouncedSearch = useMemo(() => {
@@ -720,17 +641,6 @@ export function KnowledgeCategoryPage() {
     handleSort(key as SortField);
   };
 
-  // Reset all filters
-  const resetFilters = () => {
-    setAuthorFilter('');
-    setDateFilter('');
-    setSearch('');
-    setSearchInput('');
-  };
-
-  // Check if any filters are active
-  const hasActiveFilters = authorFilter !== '' || dateFilter !== '' || search !== '';
-
   // Format date
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -1139,92 +1049,11 @@ export function KnowledgeCategoryPage() {
                 </div>
               </div>
 
-              {/* Filter Toggle */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm ${
-                  showFilters
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                Filters
-                {hasActiveFilters && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-white/30 text-white text-xs rounded-md">
-                    {[authorFilter, dateFilter].filter(Boolean).length + (search ? 1 : 0)}
-                  </span>
-                )}
-              </button>
-
-              {/* Sort Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm"
-                >
-                  <ArrowUpDown className="w-4 h-4" />
-                  Sort
-                </button>
-              </div>
-
               {/* Results Count */}
               <span className="text-sm text-slate-500 whitespace-nowrap">
-                {articleLoading ? 'Searching...' : `${filteredArticles.length} of ${articles.length} article${articles.length !== 1 ? 's' : ''}`}
+                {articleLoading ? 'Searching...' : `${articles.length} article${articles.length !== 1 ? 's' : ''}`}
               </span>
             </div>
-
-            {/* Filter Panel */}
-            {showFilters && (
-              <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-medium text-slate-500">Author:</span>
-                  <div className="flex flex-wrap gap-2">
-                    {['Admin', 'User'].map(option => (
-                      <FilterChip
-                        key={option}
-                        label={option}
-                        onClick={() => setAuthorFilter(authorFilter === option ? '' : option)}
-                        active={authorFilter === option}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-medium text-slate-500">Date:</span>
-                  <div className="flex flex-wrap gap-2">
-                    <FilterChip
-                      label="Last 7 days"
-                      onClick={() => setDateFilter(dateFilter === '7days' ? '' : '7days')}
-                      active={dateFilter === '7days'}
-                    />
-                    <FilterChip
-                      label="Last 30 days"
-                      onClick={() => setDateFilter(dateFilter === '30days' ? '' : '30days')}
-                      active={dateFilter === '30days'}
-                    />
-                    <FilterChip
-                      label="Last 90 days"
-                      onClick={() => setDateFilter(dateFilter === '90days' ? '' : '90days')}
-                      active={dateFilter === '90days'}
-                    />
-                  </div>
-                </div>
-
-                {hasActiveFilters && (
-                  <div className="flex justify-end">
-                    <button
-                      onClick={resetFilters}
-                      className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-1"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      Clear All Filters
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Article Table */}
@@ -1242,20 +1071,18 @@ export function KnowledgeCategoryPage() {
                 <button className="kb-btn-primary-sm" onClick={handleRefresh}>Retry</button>
               </div>
             </div>
-          ) : filteredArticles.length === 0 ? (
+          ) : articles.length === 0 ? (
             <div className="kb-empty-state">
               <div className="kb-empty-card">
                 <span className="kb-empty-icon">📄</span>
                 <h3>
-                  {hasActiveFilters
-                    ? 'No articles match your filters' 
-                    : search 
-                      ? 'No articles match your search' 
-                      : selectedCategory 
-                        ? `No articles found in ${selectedCategory.name}` 
-                        : 'No articles found'}
+                  {search 
+                    ? 'No articles match your search' 
+                    : selectedCategory 
+                      ? `No articles found in ${selectedCategory.name}` 
+                      : 'No articles found'}
                 </h3>
-                {canManageArticles && !search && !hasActiveFilters && (
+                {canManageArticles && !search && (
                   <button className="kb-btn-primary-sm" onClick={openCreateArticleModal}>
                     Create First Article
                   </button>
@@ -1263,7 +1090,7 @@ export function KnowledgeCategoryPage() {
               </div>
             </div>
           ) : (
-            <TableContainer loading={false} empty={filteredArticles.length === 0} emptyTitle="No articles" emptyDescription="This category has no articles yet">
+            <TableContainer loading={false} empty={articles.length === 0} emptyTitle="No articles" emptyDescription="This category has no articles yet">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
@@ -1280,7 +1107,7 @@ export function KnowledgeCategoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredArticles.map((article) => (
+                  {articles.map((article) => (
                     <TableRow key={article.id} onClick={() => viewArticle(article)}>
                       <TableCell>
                         <span className="font-medium text-slate-900">{article.title}</span>
