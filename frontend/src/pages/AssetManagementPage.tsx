@@ -219,6 +219,23 @@ export function AssetManagementPage() {
 
   // Restore navigation state from sessionStorage when returning from Asset Details
   useEffect(() => {
+    // Handle restore from User Assets page (By User tab)
+    if (location.state?.restoreUserState) {
+      window.history.replaceState({}, document.title);
+      setActiveTab('user');
+      sessionStorage.removeItem('userAssetsState');
+      return;
+    }
+    
+    // Handle restore from Project Assets page (By Project tab)
+    if (location.state?.restoreProjectState) {
+      window.history.replaceState({}, document.title);
+      setActiveTab('project');
+      sessionStorage.removeItem('projectAssetsState');
+      return;
+    }
+    
+    // Handle restore from Asset Details page (within inventory view)
     if (location.state?.restoreAssetState) {
       // Clear the location state to prevent re-restoration on subsequent renders
       window.history.replaceState({}, document.title);

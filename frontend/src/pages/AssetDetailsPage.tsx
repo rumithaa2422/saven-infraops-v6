@@ -321,7 +321,25 @@ export function AssetDetailsPage() {
         // Fallback: navigate to access-management
         navigate('/access-management');
       }
-    } else {
+    } 
+    // Check if we came from ProjectAssetsPage
+    else if (location.state?.fromProjectAssets) {
+      // Get saved project assets state
+      const savedState = sessionStorage.getItem('projectAssetsState');
+      sessionStorage.removeItem('projectAssetsState');
+      
+      // Navigate back to ProjectAssetsPage with state to restore
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        navigate(`/access-management/project/${state.projectId}`, {
+          state: { restoreProjectAssetsState: true }
+        });
+      } else {
+        // Fallback: navigate to access-management
+        navigate('/access-management');
+      }
+    }
+    else {
       // Get saved navigation state before clearing it
       const savedState = sessionStorage.getItem('assetManagementState');
       sessionStorage.removeItem('assetManagementState');

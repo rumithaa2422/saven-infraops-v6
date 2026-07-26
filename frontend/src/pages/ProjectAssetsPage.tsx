@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
-import { Eye, Package, Users, AlertTriangle, Wrench } from 'lucide-react';
+import { Package, Users, AlertTriangle, Wrench } from 'lucide-react';
 import {
   PageHeader,
   TableContainer,
@@ -48,6 +48,7 @@ type AssignmentWithUser = {
 export function ProjectAssetsPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [projectData, setProjectData] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,25 @@ export function ProjectAssetsPage() {
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   }
+
+  // Restore navigation state from sessionStorage when returning from Asset Details
+  useEffect(() => {
+    // Check if we're returning from Asset Details page
+    if (location.state?.restoreProjectAssetsState) {
+      const savedState = sessionStorage.getItem('projectAssetsState');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          // Restore sort config
+          if (state.sortConfig) setSortConfig(state.sortConfig);
+          // Clear location state to prevent re-restoration
+          navigate(location.pathname, { replace: true });
+        } catch (e) {
+          console.error('Failed to restore project assets state:', e);
+        }
+      }
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (projectId) {
@@ -137,7 +157,27 @@ export function ProjectAssetsPage() {
   }
 
   function handleBack() {
-    navigate('/access-management');
+    // Save current state before navigating
+    sessionStorage.setItem('projectAssetsState', JSON.stringify({
+      sortConfig,
+      projectId
+    }));
+    
+    navigate('/access-management', { 
+      state: { restoreProjectState: true }
+    });
+  }
+
+  function handleRowClick(inventoryId: string) {
+    // Save current state before navigating to asset details
+    sessionStorage.setItem('projectAssetsState', JSON.stringify({
+      sortConfig,
+      projectId
+    }));
+    
+    navigate(`/access-management/${inventoryId}`, {
+      state: { fromProjectAssets: true }
+    });
   }
 
   function formatDate(dateStr?: string): string {
@@ -332,7 +372,7 @@ export function ProjectAssetsPage() {
                   <tr 
                     key={assignment.id}
                     className="hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/access-management/${assignment.inventory.id}`)}
+                    onClick={() => handleRowClick(assignment.inventory.id)}
                   >
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2">
