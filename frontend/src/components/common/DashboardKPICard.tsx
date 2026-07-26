@@ -132,7 +132,7 @@ export function DashboardKPICard({
         p-5 shadow-sm
         hover:shadow-xl ${colors.glow}
         hover:-translate-y-1 transition-all duration-300 ease-out
-        flex flex-col h-full
+        flex flex-col h-full min-w-[200px]
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
       `}
@@ -238,6 +238,7 @@ export function DashboardKPICardSkeleton() {
 
 /**
  * Grid container for DashboardKPICard components
+ * Automatically adjusts card sizes based on number of visible cards
  */
 export interface DashboardKPIGridProps {
   children: React.ReactNode;
@@ -245,8 +246,22 @@ export interface DashboardKPIGridProps {
 }
 
 export function DashboardKPIGrid({ children, className = '' }: DashboardKPIGridProps) {
+  // Count the number of children (KPI cards)
+  const childCount = Array.isArray(children) ? children.length : 1;
+  
+  // Determine grid columns based on number of cards
+  // This ensures cards expand to fill available space
+  const getGridClass = () => {
+    if (childCount === 1) return 'grid-cols-1';
+    if (childCount === 2) return 'grid-cols-1 sm:grid-cols-2';
+    if (childCount === 3) return 'grid-cols-1 sm:grid-cols-3';
+    if (childCount === 4) return 'grid-cols-2 sm:grid-cols-4';
+    if (childCount === 5) return 'grid-cols-2 sm:grid-cols-5';
+    return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6';
+  };
+
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 ${className}`}>
+    <div className={`grid ${getGridClass()} gap-5 ${className}`}>
       {children}
     </div>
   );
