@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   QuickActions,
   MyWorkWidget,
@@ -11,16 +11,70 @@ import {
 } from '../components/dashboard';
 import { PermissionGate } from '../components/permissions';
 import { useAuth } from '../auth/AuthContext';
-import { Bell } from 'lucide-react';
+import { 
+  Bell, 
+  BarChart3, 
+  AlertCircle, 
+  CheckCircle, 
+  Info, 
+  X,
+  ChevronRight
+} from 'lucide-react';
+
+// Notification types
+interface Notification {
+  id: string;
+  icon: 'alert' | 'success' | 'info' | 'warning';
+  title: string;
+  description: string;
+  time: string;
+  isRead: boolean;
+}
 
 export function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: '1',
+      icon: 'alert',
+      title: 'Low Stock Alert',
+      description: 'Dell Laptop XPS 15 has only 2 units remaining',
+      time: '5 min ago',
+      isRead: false
+    },
+    {
+      id: '2',
+      icon: 'success',
+      title: 'Service Request Resolved',
+      description: 'Ticket #SR-2024-156 has been completed',
+      time: '1 hour ago',
+      isRead: false
+    },
+    {
+      id: '3',
+      icon: 'info',
+      title: 'New Assignment',
+      description: 'You have been assigned to Project Alpha',
+      time: '2 hours ago',
+      isRead: true
+    },
+    {
+      id: '4',
+      icon: 'warning',
+      title: 'Warranty Expiring',
+      description: '3 assets warranty expiring within 30 days',
+      time: '3 hours ago',
+      isRead: true
+    }
+  ]);
+  const notificationRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
-  
-  // Mock notification count - UI placeholder
-  const notificationCount = 0;
+
+  // Get unread notification count
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -36,6 +90,17 @@ export function DashboardPage() {
       setCurrentTime(new Date());
     }, 60000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Get greeting based on time of day
@@ -57,64 +122,155 @@ export function DashboardPage() {
     return user?.email?.split('@')[0] || 'User';
   };
 
+  // Mark all notifications as read
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+  };
+
+  // Get notification icon
+  const getNotificationIcon = (icon: Notification['icon']) => {
+    switch (icon) {
+      case 'alert':
+        return <AlertCircle className="w-5 h-5 text-red-500" />;
+      case 'success':
+        return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+      case 'info':
+        return <Info className="w-5 h-5 text-blue-500" />;
+      case 'warning':
+        return <AlertCircle className="w-5 h-5 text-amber-500" />;
+    }
+  };
+
   return (
     <div className="workspace">
       <div className="page-stack dashboard">
         {/* Dashboard Header */}
         <div className="page-header">
           <div className="page-header-left">
-            {/* Dashboard Icon */}
+            {/* Analytics Icon */}
             <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7"/>
-                <rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/>
-              </svg>
+              <BarChart3 size={20} />
             </div>
             
-            {/* Title Section */}
-            <div>
+            {/* Welcome Section */}
+            <div className="flex flex-col">
               {/* Greeting */}
-              <p className="text-sm text-slate-500 mb-0.5">
-                {getGreeting()}, <span className="font-medium text-slate-700">{getUserDisplayName()}</span>
+              <p className="text-base font-semibold text-slate-800">
+                {getGreeting()}, <span className="text-brand-600">{getUserDisplayName()}</span>
               </p>
-              {/* Dashboard Title */}
-              <h1 className="page-header-title">Dashboard</h1>
-              {/* Subtitle */}
-              <p className="page-header-subtitle">Monitor your organization's operations and stay informed with real-time insights</p>
+              {/* Description */}
+              <p className="text-sm text-slate-500 mt-0.5">
+                Monitor your organization's operations with real-time insights
+              </p>
             </div>
           </div>
           
           {/* Right Section - Actions */}
           <div className="page-header-actions">
-            {/* Notification Button */}
-            <button
-              className="relative p-2.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-              title="Notifications"
-            >
-              <Bell size={18} />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
-                  {notificationCount > 99 ? '99+' : notificationCount}
-                </span>
-              )}
-            </button>
+            {/* Notification Dropdown */}
+            <div className="relative" ref={notificationRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 transition-all duration-200"
+                title="Notifications"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-sm">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
 
-            {/* Current Date */}
-            <div className="hidden sm:flex flex-col items-end justify-center px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              {/* Notification Dropdown Panel */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-lg z-50 overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                    <h3 className="font-semibold text-slate-800 text-sm">Notifications</h3>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={markAllAsRead}
+                          className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => setShowNotifications(false)}
+                        className="p-1 rounded hover:bg-slate-200 transition-colors"
+                      >
+                        <X size={14} className="text-slate-400" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Notification List */}
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <Bell className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                        <p className="text-sm text-slate-500">No notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div 
+                          key={notification.id}
+                          className={`px-4 py-3 border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer ${
+                            !notification.isRead ? 'bg-brand-50/30' : ''
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                              {getNotificationIcon(notification.icon)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className={`text-sm font-medium ${notification.isRead ? 'text-slate-600' : 'text-slate-800'}`}>
+                                  {notification.title}
+                                </p>
+                                {!notification.isRead && (
+                                  <span className="w-2 h-2 rounded-full bg-brand-500 flex-shrink-0 mt-1.5"></span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notification.description}</p>
+                              <p className="text-xs text-slate-400 mt-1">{notification.time}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/50">
+                    <button className="w-full flex items-center justify-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium py-1 rounded-lg hover:bg-brand-50 transition-colors">
+                      View all notifications
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Current Date Card */}
+            <div className="hidden sm:flex flex-col items-center justify-center px-4 py-2 rounded-lg bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-sm min-w-[90px]">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'short' })}
               </span>
-              <span className="text-sm font-semibold text-slate-700">
-                {currentTime.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+              <span className="text-sm font-bold text-slate-700 leading-tight">
+                {currentTime.toLocaleDateString('en-US', { day: 'numeric' })}
+              </span>
+              <span className="text-[10px] text-slate-500">
+                {currentTime.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
               </span>
             </div>
 
-            {/* Current Time */}
-            <div className="hidden md:flex flex-col items-end justify-center px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Time</span>
-              <span className="text-sm font-semibold text-slate-700 font-mono">
+            {/* Current Time Card */}
+            <div className="hidden md:flex flex-col items-center justify-center px-4 py-2 rounded-lg bg-gradient-to-br from-brand-50 to-white border border-brand-200 shadow-sm min-w-[90px]">
+              <span className="text-[10px] font-semibold text-brand-400 uppercase tracking-wider">Time</span>
+              <span className="text-base font-bold text-brand-700 font-mono leading-tight">
                 {formatTime(currentTime)}
               </span>
             </div>
