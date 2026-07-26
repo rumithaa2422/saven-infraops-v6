@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { ModalLayout } from '../components/inventory/Modal';
@@ -84,6 +84,7 @@ type CategoryWithCount = {
 
 export function AssetManagementPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
@@ -215,6 +216,37 @@ export function AssetManagementPage() {
   useEffect(() => {
     loadStatsAndItems();
   }, []);
+
+  // Restore navigation state from sessionStorage when returning from Asset Details
+  useEffect(() => {
+    if (location.state?.restoreAssetState) {
+      // Clear the location state to prevent re-restoration on subsequent renders
+      window.history.replaceState({}, document.title);
+      
+      const savedState = sessionStorage.getItem('assetManagementState');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          
+          // Restore navigation state
+          if (state.currentView) setCurrentView(state.currentView);
+          if (state.selectedCategory) setSelectedCategory(state.selectedCategory);
+          if (state.selectedSubcategory) setSelectedSubcategory(state.selectedSubcategory);
+          if (state.search !== undefined) setSearch(state.search);
+          if (state.filters) setFilters(state.filters);
+          if (state.items) setItems(state.items);
+          if (state.categories) setCategories(state.categories);
+          if (state.allItems) setAllItems(state.allItems);
+          if (state.sortConfig) setSortConfig(state.sortConfig);
+          
+          // Clear the saved state
+          sessionStorage.removeItem('assetManagementState');
+        } catch (e) {
+          console.error('Failed to restore navigation state:', e);
+        }
+      }
+    }
+  }, [location.state]);
 
   // Load categories after allItems is available (for subcategory counts)
   useEffect(() => {
@@ -406,6 +438,22 @@ export function AssetManagementPage() {
     }
     setSearch('');
     setFilters({ category: '', subcategory: '', status: '', location: '', vendor: '' });
+  }
+
+  // Save navigation state before navigating to asset details
+  function saveNavigationState() {
+    const state = {
+      currentView,
+      selectedCategory,
+      selectedSubcategory,
+      search,
+      filters,
+      items,
+      categories,
+      allItems,
+      sortConfig
+    };
+    sessionStorage.setItem('assetManagementState', JSON.stringify(state));
   }
 
   function handleRefresh() {
@@ -993,7 +1041,10 @@ export function AssetManagementPage() {
                               <tr 
                                 key={item.id} 
                                 className="hover:bg-slate-50 cursor-pointer transition-colors"
-                                onClick={() => navigate(`/access-management/${item.id}`)}
+                                onClick={() => {
+                                  saveNavigationState();
+                                  navigate(`/access-management/${item.id}`);
+                                }}
                               >
                                 <td className="px-4 py-3.5">
                                   <span className="font-mono text-sm text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">

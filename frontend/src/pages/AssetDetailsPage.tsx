@@ -304,7 +304,20 @@ export function AssetDetailsPage() {
   }
 
   function handleBack() {
-    navigate('/access-management');
+    // Get saved navigation state before clearing it
+    const savedState = sessionStorage.getItem('assetManagementState');
+    sessionStorage.removeItem('assetManagementState');
+    
+    // Navigate to access-management
+    if (savedState) {
+      // Navigate with state marker - the AssetManagementPage will restore it on mount
+      const state = JSON.parse(savedState);
+      navigate('/access-management', { 
+        state: { restoreAssetState: true }
+      });
+    } else {
+      navigate('/access-management');
+    }
   }
 
   function openAssignModal() {
