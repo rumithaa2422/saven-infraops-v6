@@ -17,7 +17,9 @@ import {
   TableCell,
   Pagination,
   ConfirmationDialog,
-  PageHeader
+  PageHeader,
+  ModalLayout,
+  Button
 } from '../components/serviceRequests';
 import { SummaryCards } from '../components/common/SummaryCards';
 import { Building2 as VendorIcon, CheckCircle, Clock, FileText } from 'lucide-react';
@@ -1301,131 +1303,187 @@ function VendorFormDialog({ vendor, onClose, onSubmit, title }: VendorFormDialog
     }
   };
 
+  const inputClass = "w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none";
+  const labelClass = "block text-sm font-medium text-slate-700 mb-2";
+  const sectionTitleClass = "text-base font-semibold text-slate-800 mb-4 mt-6 flex items-center gap-2";
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content form-modal" onClick={e => e.stopPropagation()}>
-        <h3>{title}</h3>
-        {error && <div className="alert alert-error">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Vendor Name *</label>
-              <input type="text" value={form.vendorName || ''} onChange={e => setForm({ ...form, vendorName: e.target.value })} required />
+    <ModalLayout
+      isOpen={true}
+      onClose={onClose}
+      title={title}
+      subtitle={vendor ? 'Update vendor information' : 'Add a new vendor to your directory'}
+      icon={vendor ? '📝' : '🏢'}
+      size="xl"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            icon={Plus}
+            onClick={handleSubmit}
+            loading={saving}
+          >
+            {saving ? 'Saving...' : (vendor ? 'Update Vendor' : 'Add Vendor')}
+          </Button>
+        </div>
+      }
+    >
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Information */}
+        <div>
+          <h3 className={sectionTitleClass}>
+            <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Basic Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Vendor Name <span className="text-red-500">*</span></label>
+              <input type="text" className={inputClass} value={form.vendorName || ''} onChange={e => setForm({ ...form, vendorName: e.target.value })} required />
             </div>
-            <div className="form-group">
-              <label>Vendor Code *</label>
-              <input type="text" value={form.vendorCode || ''} onChange={e => setForm({ ...form, vendorCode: e.target.value })} required />
+            <div>
+              <label className={labelClass}>Vendor Code <span className="text-red-500">*</span></label>
+              <input type="text" className={inputClass} value={form.vendorCode || ''} onChange={e => setForm({ ...form, vendorCode: e.target.value })} required />
             </div>
-            <div className="form-group">
-              <label>Category *</label>
-              <select value={form.category || ''} onChange={e => setForm({ ...form, category: e.target.value })} required>
+            <div>
+              <label className={labelClass}>Category <span className="text-red-500">*</span></label>
+              <select className={`${inputClass} bg-white`} value={form.category || ''} onChange={e => setForm({ ...form, category: e.target.value })} required>
                 <option value="">Select Category</option>
                 {VENDOR_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
             </div>
-            <div className="form-group">
-              <label>Status</label>
-              <select value={form.status || 'ACTIVE'} onChange={e => setForm({ ...form, status: e.target.value })}>
+            <div>
+              <label className={labelClass}>Status</label>
+              <select className={`${inputClass} bg-white`} value={form.status || 'ACTIVE'} onChange={e => setForm({ ...form, status: e.target.value })}>
                 {STATUS_OPTIONS.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </div>
-            <div className="form-group">
-              <label>Website</label>
-              <input type="url" value={form.website || ''} onChange={e => setForm({ ...form, website: e.target.value })} placeholder="https://" />
+            <div>
+              <label className={labelClass}>Website</label>
+              <input type="url" className={inputClass} value={form.website || ''} onChange={e => setForm({ ...form, website: e.target.value })} placeholder="https://" />
             </div>
-            <div className="form-group">
-              <label>Country</label>
-              <input type="text" value={form.country || ''} onChange={e => setForm({ ...form, country: e.target.value })} />
+            <div>
+              <label className={labelClass}>Country</label>
+              <input type="text" className={inputClass} value={form.country || ''} onChange={e => setForm({ ...form, country: e.target.value })} />
             </div>
-            <div className="form-group">
-              <label>GST Number</label>
-              <input type="text" value={form.gstNumber || ''} onChange={e => setForm({ ...form, gstNumber: e.target.value })} />
+            <div>
+              <label className={labelClass}>GST Number</label>
+              <input type="text" className={inputClass} value={form.gstNumber || ''} onChange={e => setForm({ ...form, gstNumber: e.target.value })} />
             </div>
-            <div className="form-group">
-              <label>Registration Number</label>
-              <input type="text" value={form.registrationNumber || ''} onChange={e => setForm({ ...form, registrationNumber: e.target.value })} />
+            <div>
+              <label className={labelClass}>Registration Number</label>
+              <input type="text" className={inputClass} value={form.registrationNumber || ''} onChange={e => setForm({ ...form, registrationNumber: e.target.value })} />
             </div>
           </div>
+        </div>
 
-          <h4>Contact Information</h4>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Primary Contact Name *</label>
-              <input type="text" value={form.primaryContactName || ''} onChange={e => setForm({ ...form, primaryContactName: e.target.value })} required />
+        {/* Contact Information */}
+        <div>
+          <h3 className={sectionTitleClass}>
+            <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Contact Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Primary Contact Name <span className="text-red-500">*</span></label>
+              <input type="text" className={inputClass} value={form.primaryContactName || ''} onChange={e => setForm({ ...form, primaryContactName: e.target.value })} required />
             </div>
-            <div className="form-group">
-              <label>Designation</label>
-              <input type="text" value={form.designation || ''} onChange={e => setForm({ ...form, designation: e.target.value })} />
+            <div>
+              <label className={labelClass}>Designation</label>
+              <input type="text" className={inputClass} value={form.designation || ''} onChange={e => setForm({ ...form, designation: e.target.value })} />
             </div>
-            <div className="form-group">
-              <label>Email *</label>
-              <input type="email" value={form.email || ''} onChange={e => setForm({ ...form, email: e.target.value })} required />
+            <div>
+              <label className={labelClass}>Email <span className="text-red-500">*</span></label>
+              <input type="email" className={inputClass} value={form.email || ''} onChange={e => setForm({ ...form, email: e.target.value })} required />
             </div>
-            <div className="form-group">
-              <label>Phone *</label>
-              <input type="tel" value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} required />
+            <div>
+              <label className={labelClass}>Phone <span className="text-red-500">*</span></label>
+              <input type="tel" className={inputClass} value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} required />
             </div>
-            <div className="form-group full-width">
-              <label>Address</label>
-              <textarea value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} rows={2} />
+            <div className="md:col-span-2">
+              <label className={labelClass}>Address</label>
+              <textarea className={`${inputClass} resize-none`} value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} rows={2} />
             </div>
           </div>
+        </div>
 
-          <h4>Internal Owner</h4>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Owner</label>
-              <select 
-                value={form.internalOwnerId || ''} 
-                onChange={e => setForm({ ...form, internalOwnerId: e.target.value || undefined })}
-                disabled={usersLoading}
-              >
-                <option value="">Select Owner</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} ({user.email})
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Internal Owner */}
+        <div>
+          <h3 className={sectionTitleClass}>
+            <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Internal Owner
+          </h3>
+          <div>
+            <label className={labelClass}>Owner</label>
+            <select 
+              className={`${inputClass} bg-white`}
+              value={form.internalOwnerId || ''} 
+              onChange={e => setForm({ ...form, internalOwnerId: e.target.value || undefined })}
+              disabled={usersLoading}
+            >
+              <option value="">Select Owner</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.email})
+                </option>
+              ))}
+            </select>
           </div>
+        </div>
 
-          <h4>Contract Information</h4>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Contract Start Date</label>
-              <input type="date" value={form.contractStartDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, contractStartDate: e.target.value })} />
+        {/* Contract Information */}
+        <div>
+          <h3 className={sectionTitleClass}>
+            <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Contract Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Contract Start Date</label>
+              <input type="date" className={inputClass} value={form.contractStartDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, contractStartDate: e.target.value })} />
             </div>
-            <div className="form-group">
-              <label>Contract Expiry Date</label>
-              <input type="date" value={form.contractExpiryDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, contractExpiryDate: e.target.value })} />
+            <div>
+              <label className={labelClass}>Contract Expiry Date</label>
+              <input type="date" className={inputClass} value={form.contractExpiryDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, contractExpiryDate: e.target.value })} />
             </div>
-            <div className="form-group">
-              <label>Renewal Date</label>
-              <input type="date" value={form.renewalDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, renewalDate: e.target.value })} />
+            <div>
+              <label className={labelClass}>Renewal Date</label>
+              <input type="date" className={inputClass} value={form.renewalDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, renewalDate: e.target.value })} />
             </div>
-            <div className="form-group">
-              <label>Payment Terms</label>
-              <input type="text" value={form.paymentTerms || ''} onChange={e => setForm({ ...form, paymentTerms: e.target.value })} placeholder="e.g., Net 30" />
+            <div>
+              <label className={labelClass}>Payment Terms</label>
+              <input type="text" className={inputClass} value={form.paymentTerms || ''} onChange={e => setForm({ ...form, paymentTerms: e.target.value })} placeholder="e.g., Net 30" />
             </div>
           </div>
+        </div>
 
-          <div className="form-group full-width">
-            <label>Remarks</label>
-            <textarea value={form.remarks || ''} onChange={e => setForm({ ...form, remarks: e.target.value })} rows={2} />
-          </div>
-
-          <div className="modal-actions">
-            <button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancel</button>
-            <button type="submit" className="primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Remarks */}
+        <div>
+          <label className={labelClass}>Remarks</label>
+          <textarea className={`${inputClass} resize-none`} value={form.remarks || ''} onChange={e => setForm({ ...form, remarks: e.target.value })} rows={2} />
+        </div>
+      </form>
+    </ModalLayout>
   );
 }
 
