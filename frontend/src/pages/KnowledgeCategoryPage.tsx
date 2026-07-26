@@ -3,12 +3,13 @@ import { api, knowledgeAttachmentApi } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Eye, Edit2, Trash2 } from 'lucide-react';
+import { Eye, Edit2, Trash2, BookOpen, RefreshCw } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
-  TableCell
+  TableCell,
+  PageHeader
 } from '../components/serviceRequests';
 
 // Types
@@ -858,46 +859,41 @@ export function KnowledgeCategoryPage() {
         )}
 
         {/* Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="page-header-title">Knowledge Base</h1>
-              <p className="page-header-subtitle">
-                {viewMode === 'browse' 
-                  ? 'Browse categories and articles' 
-                  : selectedCategory 
-                    ? `Articles in ${selectedCategory.name}` 
-                    : 'All articles'}
-              </p>
-            </div>
-          </div>
-          <div className="page-header-actions">
-            <button 
-              className="btn-secondary" 
-              onClick={handleRefresh}
-              disabled={refreshing || articleLoading}
-              title="Refresh"
-            >
-              ↻
-            </button>
-            {viewMode === 'articles' && canManageArticles && (
-              <button className="btn-primary" onClick={openCreateArticleModal}>
-                + Create Article
+        <PageHeader
+          title="Knowledge Base"
+          subtitle={
+            viewMode === 'browse' 
+              ? 'Browse categories and articles' 
+              : selectedCategory 
+                ? `Articles in ${selectedCategory.name}` 
+                : 'All articles'
+          }
+          icon={BookOpen}
+          actions={
+            <div className="flex items-center gap-2">
+              <button 
+                className="btn-secondary" 
+                onClick={handleRefresh}
+                disabled={refreshing || articleLoading}
+                title="Refresh"
+              >
+                <RefreshCw className="w-4 h-4" />
               </button>
-            )}
-            {viewMode === 'browse' && canManageCategories && (
-              <button className="btn-primary" onClick={openCreateCategoryModal}>
-                + Create Category
-              </button>
-            )}
-          </div>
-        </div>
+              {viewMode === 'articles' && canManageArticles && (
+                <button className="btn-primary" onClick={openCreateArticleModal}>
+                  <span>+</span>
+                  Create Article
+                </button>
+              )}
+              {viewMode === 'browse' && canManageCategories && (
+                <button className="btn-primary" onClick={openCreateCategoryModal}>
+                  <span>+</span>
+                  Create Category
+                </button>
+              )}
+            </div>
+          }
+        />
 
       {/* Breadcrumb */}
       {(viewMode === 'articles' || viewMode === 'article-detail') && (
