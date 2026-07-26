@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   QuickActions,
   MyWorkWidget,
@@ -71,6 +72,7 @@ export function DashboardPage() {
     }
   ]);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Get unread notification count
@@ -155,11 +157,11 @@ export function DashboardPage() {
             {/* Welcome Section */}
             <div className="flex flex-col">
               {/* Greeting */}
-              <p className="text-base font-semibold text-slate-800">
-                {getGreeting()}, <span className="text-brand-600">{getUserDisplayName()}</span>
+              <p className="text-base font-bold text-white">
+                {getGreeting()}, {getUserDisplayName()}
               </p>
               {/* Description */}
-              <p className="text-sm text-slate-500 mt-0.5">
+              <p className="text-sm font-medium text-white/80 mt-0.5">
                 Monitor your organization's operations with real-time insights
               </p>
             </div>
@@ -245,7 +247,13 @@ export function DashboardPage() {
 
                   {/* Footer */}
                   <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/50">
-                    <button className="w-full flex items-center justify-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium py-1 rounded-lg hover:bg-brand-50 transition-colors">
+                    <button 
+                      onClick={() => {
+                        setShowNotifications(false);
+                        navigate('/notifications');
+                      }}
+                      className="w-full flex items-center justify-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium py-1 rounded-lg hover:bg-brand-50 transition-colors"
+                    >
                       View all notifications
                       <ChevronRight size={16} />
                     </button>
@@ -255,37 +263,25 @@ export function DashboardPage() {
             </div>
 
             {/* Current Date Card */}
-            <div className="hidden sm:flex flex-col items-center justify-center px-4 py-2 rounded-lg bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-sm min-w-[90px]">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="flex flex-col items-center justify-center px-4 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[100px]">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'short' })}
               </span>
-              <span className="text-sm font-bold text-slate-700 leading-tight">
+              <span className="text-lg font-bold text-slate-800 leading-tight">
                 {currentTime.toLocaleDateString('en-US', { day: 'numeric' })}
               </span>
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] font-medium text-slate-500">
                 {currentTime.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
               </span>
             </div>
 
             {/* Current Time Card */}
-            <div className="hidden md:flex flex-col items-center justify-center px-4 py-2 rounded-lg bg-gradient-to-br from-brand-50 to-white border border-brand-200 shadow-sm min-w-[90px]">
-              <span className="text-[10px] font-semibold text-brand-400 uppercase tracking-wider">Time</span>
-              <span className="text-base font-bold text-brand-700 font-mono leading-tight">
+            <div className="flex flex-col items-center justify-center px-4 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[100px]">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Time</span>
+              <span className="text-lg font-bold text-slate-800 font-mono leading-tight">
                 {formatTime(currentTime)}
               </span>
             </div>
-
-            {/* Refresh Button */}
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="btn-secondary"
-            >
-              <svg className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </button>
           </div>
         </div>
 
