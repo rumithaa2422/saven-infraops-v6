@@ -4,10 +4,10 @@
  * Enterprise compliance framework and control management interface.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { FileCheck, Plus, Download, ChevronDown, ExternalLink, Edit2, Trash2, Paperclip } from 'lucide-react';
+import { FileCheck, Plus, Download, ChevronDown, ExternalLink, Edit2, Trash2, Paperclip, Shield, ListChecks, FileText, AlertTriangle } from 'lucide-react';
 import { AddFrameworkDialog, AddControlDialog, EditControlDialog, EvidenceModal } from '../components/compliance';
 import {
   TableContainer,
@@ -17,6 +17,7 @@ import {
   Pagination,
   PageHeader
 } from '../components/serviceRequests';
+import { SummaryCards } from '../components/common/SummaryCards';
 
 // Types
 interface Framework {
@@ -73,6 +74,38 @@ export function CompliancePage() {
     evidenceDocuments: 0,
     missingEvidence: 0
   });
+
+  // Summary cards data
+  const summaryCards = useMemo(() => [
+    {
+      icon: Shield,
+      iconBgColor: 'bg-gradient-to-br from-purple-100 to-purple-50',
+      iconColor: 'text-purple-600',
+      value: summary.frameworks,
+      label: 'Frameworks'
+    },
+    {
+      icon: ListChecks,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: summary.controls,
+      label: 'Controls'
+    },
+    {
+      icon: FileText,
+      iconBgColor: 'bg-gradient-to-br from-emerald-100 to-emerald-50',
+      iconColor: 'text-emerald-600',
+      value: summary.evidenceDocuments,
+      label: 'Evidence Documents'
+    },
+    {
+      icon: AlertTriangle,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: summary.missingEvidence,
+      label: 'Missing Evidence'
+    }
+  ], [summary]);
 
   // Controls state
   const [controls, setControls] = useState<Control[]>([]);
@@ -318,47 +351,7 @@ export function CompliancePage() {
         />
 
         {/* Summary Cards */}
-        <div className="compliance-summary-grid">
-          <div className="summary-card">
-            <div className="summary-icon frameworks">
-              <FileCheck size={20} />
-            </div>
-            <div className="summary-content">
-              <span className="summary-value">{summary.frameworks}</span>
-              <span className="summary-label">Frameworks</span>
-            </div>
-          </div>
-
-          <div className="summary-card">
-            <div className="summary-icon controls">
-              <FileCheck size={20} />
-            </div>
-            <div className="summary-content">
-              <span className="summary-value">{summary.controls}</span>
-              <span className="summary-label">Controls</span>
-            </div>
-          </div>
-
-          <div className="summary-card">
-            <div className="summary-icon evidence">
-              <FileCheck size={20} />
-            </div>
-            <div className="summary-content">
-              <span className="summary-value">{summary.evidenceDocuments}</span>
-              <span className="summary-label">Evidence Documents</span>
-            </div>
-          </div>
-
-          <div className="summary-card">
-            <div className="summary-icon missing">
-              <FileCheck size={20} />
-            </div>
-            <div className="summary-content">
-              <span className="summary-value">{summary.missingEvidence}</span>
-              <span className="summary-label">Missing Evidence</span>
-            </div>
-          </div>
-        </div>
+        <SummaryCards cards={summaryCards} />
 
         {/* Toolbar */}
         <div className="toolbar">
