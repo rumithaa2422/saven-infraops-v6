@@ -8,7 +8,8 @@ import {
   RecentActivity,
   KnowledgeHub,
   ReportsWidget,
-  SummaryCards
+  SummaryCards,
+  AnalyticsCharts
 } from '../components/dashboard';
 import { PermissionGate } from '../components/permissions';
 import { useAuth } from '../auth/AuthContext';
@@ -282,6 +283,9 @@ export function DashboardPage() {
         <section key={`summary-${refreshKey}`}>
           <SummaryCards />
         </section>
+
+        {/* Analytics Section */}
+        <AnalyticsCharts />
 
         {/* Quick Actions Section */}
         <section key={`quick-${refreshKey}`}>

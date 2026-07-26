@@ -17,6 +17,7 @@
     "react-dom": "latest",
     "react-quill": "^2.0.0",
     "react-router-dom": "latest",
+    "recharts": "^3.10.1",
     "saven-infraops-enterprise-v5": "file:..",
     "xlsx": "^0.18.5"
   },

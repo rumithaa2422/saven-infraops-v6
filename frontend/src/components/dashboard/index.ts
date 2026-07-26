@@ -10,6 +10,7 @@ export { KnowledgeHub } from './KnowledgeHub';
 export { ReportsWidget } from './ReportsWidget';
 export { SummaryCards, SummaryCardsSkeleton } from './SummaryCards';
 export { StatCard, StatCardSkeleton } from './StatCard';
+export { AnalyticsCharts } from './AnalyticsCharts';
 
 // Legacy components (kept for compatibility)
 export { HeaderWidget } from './HeaderWidget';
