@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
-import { Eye, Edit2, Trash2, RefreshCw, Folder } from 'lucide-react';
+import { Eye, Edit2, Trash2, RefreshCw, Folder, Plus } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -594,14 +594,26 @@ export function ProjectDashboardPage() {
           subtitle="Projects & Environments"
           icon={Folder}
           actions={
-            <button 
-              className="btn-secondary" 
-              onClick={handleRefresh}
-              disabled={refreshing}
-              title="Refresh"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
+            <>
+              <button 
+                className="btn-secondary" 
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+              {isSuperAdmin && (
+                <button 
+                  type="button" 
+                  className="px-4 py-2 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all flex items-center gap-2 text-sm shadow-lg shadow-purple-500/30"
+                  onClick={() => navigate('/projects-environments/create')}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Project
+                </button>
+              )}
+            </>
           }
         />
 
@@ -798,23 +810,14 @@ export function ProjectDashboardPage() {
             )}
 
             {isSuperAdmin && (
-              <>
-                <button type="button" className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all flex items-center gap-2" onClick={handleImportClick}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Import
-                </button>
-
-                <button type="button" className="px-5 py-2.5 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm" onClick={() => navigate('/projects-environments/create')}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Create Project
-                </button>
-              </>
+              <button type="button" className="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all flex items-center gap-2" onClick={handleImportClick}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Import
+              </button>
             )}
           </div>
         </div>
