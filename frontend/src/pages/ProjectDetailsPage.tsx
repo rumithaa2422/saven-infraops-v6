@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { Eye } from 'lucide-react';
+import { Eye, Folder, Plus, Edit2, Trash2, Users, User, Calendar, FileText } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
-  TableCell
+  TableCell,
+  PageHeader,
+  StatusBadge,
+  PriorityBadge,
+  ConfirmationDialog
 } from '../components/serviceRequests';
 
 type User = {
@@ -249,24 +253,16 @@ export function ProjectDetailsPage() {
     return (
       <div className="workspace">
         <div className="page-stack project-detail">
-          <div className="page-header">
-            <div className="page-header-left">
-              <button className="btn-back" onClick={handleBack}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back
-              </button>
-              <div className="page-header-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                  <polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-              </div>
-              <div>
-                <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
-                <div className="skeleton" style={{ width: '100px', height: '16px', marginTop: '4px' }}></div>
-              </div>
+          <PageHeader
+            title="Project Details"
+            icon={Folder}
+            showBackButton
+            onBackClick={handleBack}
+          />
+          <div className="content-section">
+            <div className="animate-pulse space-y-4">
+              <div className="h-32 bg-slate-100 rounded-xl"></div>
+              <div className="h-64 bg-slate-100 rounded-xl"></div>
             </div>
           </div>
         </div>
@@ -278,25 +274,11 @@ export function ProjectDetailsPage() {
     return (
       <div className="workspace">
         <div className="page-stack project-detail">
-          <div className="page-header">
-            <div className="page-header-left">
-              <button className="btn-back" onClick={handleBack}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back
-              </button>
-              <div className="page-header-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                  <polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-              </div>
-              <div>
-                <h1 className="page-header-title">Error</h1>
-              </div>
-            </div>
-          </div>
+          <PageHeader
+            title="Error"
+            showBackButton
+            onBackClick={handleBack}
+          />
           <div className="detail-error">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
@@ -317,41 +299,62 @@ export function ProjectDetailsPage() {
   return (
     <div className="workspace">
       <div className="page-stack project-detail">
-        {/* Page Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <button className="btn-back" onClick={handleBack}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Back
-            </button>
-            <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
+        {/* Header */}
+        <PageHeader
+          title="Project Details"
+          showBackButton
+          onBackClick={handleBack}
+        />
+
+        {/* Main Content */}
+        <div className="content-section">
+        
+        {/* Project Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1.5 bg-purple-100 text-purple-700 font-mono font-semibold rounded-lg">
+                    {project.projectCode}
+                  </span>
+                  <StatusBadge status={project.status} size="lg" />
+                  <PriorityBadge priority={project.priority} size="lg" />
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">{project.projectName}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-4 h-4" />
+                    <span>{project.ownerName || 'Unassigned'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4" />
+                    <span>Started {formatDate(project.startDate)}</span>
+                  </div>
+                  {project.department && (
+                    <div className="flex items-center gap-1.5">
+                      <Folder className="w-4 h-4" />
+                      <span>{project.department}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {(isSuperAdmin || isAdmin) && (
+                  <button 
+                    className="btn-secondary"
+                    onClick={() => navigate(`/projects-environments/${id}/edit`)}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Edit
+                  </button>
+                )}
+              </div>
             </div>
-            <div>
-              <h1 className="page-header-title">{project.projectName}</h1>
-              <p className="page-header-subtitle">{project.projectCode} • {project.department || 'Project'}</p>
-            </div>
-          </div>
-          <div className="page-header-actions">
-            <span className={`status-badge status-${getStatusColor(project.status)}`}>{project.status.replace(/_/g, ' ')}</span>
-            {(isSuperAdmin || isAdmin) && (
-              <button className="btn-secondary" onClick={() => navigate(`/projects-environments/${id}/edit`)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Edit
-              </button>
-            )}
           </div>
         </div>
 
-      <div className="detail-content-grid">
+        <div className="detail-content-grid">
         {/* Left Column */}
         <div className="detail-main">
           {/* Project Information Card */}
@@ -694,46 +697,20 @@ export function ProjectDetailsPage() {
             </div>
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Delete Project</h3>
-              <button type="button" className="modal-close" onClick={() => setShowDeleteConfirm(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
-            <div className="modal-body">
-              {deleteError && (
-                <div className="alert alert-error" style={{ marginBottom: '16px' }}>
-                  {deleteError}
-                </div>
-              )}
-              <div className="warning-box">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <p>Are you sure you want to delete this project?</p>
-                <p><strong>{project.projectName}</strong> ({project.projectCode})</p>
-                <p>This action cannot be undone.</p>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn-secondary" onClick={() => setShowDeleteConfirm(false)}>
-                Cancel
-              </button>
-              <button type="button" className="btn-danger" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Deleting...' : 'Delete Project'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${project.projectName}"? This action cannot be undone.`}
+        confirmText={deleting ? 'Deleting...' : 'Delete'}
+        variant="danger"
+        isLoading={deleting}
+      />
       </div>
     </div>
   );
