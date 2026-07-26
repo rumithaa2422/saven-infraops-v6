@@ -56,7 +56,7 @@ export function PageHeader({
         {showBackButton && onBackClick && (
           <button
             onClick={onBackClick}
-            className="btn-secondary mr-2"
+            className="btn-back mr-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
