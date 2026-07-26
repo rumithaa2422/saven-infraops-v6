@@ -59,9 +59,6 @@ export function UserAssetsPage() {
   const [warrantyExpiring, setWarrantyExpiring] = useState(0);
   const [underRepair, setUnderRepair] = useState(0);
 
-  const [search, setSearch] = useState('');
-  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
-
   // Sort config for table headers
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'purchaseDate',
@@ -156,22 +153,6 @@ export function UserAssetsPage() {
   function handleBack() {
     navigate('/access-management');
   }
-
-  function handleSearch(value: string) {
-    setSearch(value);
-    if (searchTimeout) clearTimeout(searchTimeout);
-    const timeout = setTimeout(() => {
-      // Search is instant since we filter locally
-    }, 300);
-    setSearchTimeout(timeout);
-  }
-
-  const filteredAssets = assignedAssets.filter(item =>
-    item.itemNo.toLowerCase().includes(search.toLowerCase()) ||
-    item.itemName.toLowerCase().includes(search.toLowerCase()) ||
-    (item.brand?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-    (item.model?.toLowerCase().includes(search.toLowerCase()) ?? false)
-  );
 
   // Summary cards data
   const summaryCards = useMemo(() => [
@@ -288,41 +269,11 @@ export function UserAssetsPage() {
         {/* Summary Cards */}
         <SummaryCards cards={summaryCards} />
 
-        {/* Toolbar */}
-        <div className="asset-toolbar">
-          <div className="toolbar-search">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-              <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Search assets..."
-              value={search}
-              onChange={e => handleSearch(e.target.value)}
-            />
-          </div>
-          <div className="toolbar-actions">
-            <button className="toolbar-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 4h18M3 8h18M3 12h18M3 16h18M3 20h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Columns
-            </button>
-            <button className="toolbar-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Export
-            </button>
-          </div>
-        </div>
-
         {/* Assets Table */}
         <div className="user-assets-table-container">
           {loadingAssets ? (
             <div className="user-assets-loading">Loading assets...</div>
-          ) : filteredAssets.length === 0 ? (
+          ) : assignedAssets.length === 0 ? (
             <div className="user-assets-empty">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
@@ -332,7 +283,7 @@ export function UserAssetsPage() {
               <p>This user has no assets assigned to them.</p>
             </div>
           ) : (
-            <TableContainer loading={false} empty={filteredAssets.length === 0} emptyTitle="No assets found" emptyDescription="This user has no assets assigned to them.">
+            <TableContainer loading={false} empty={assignedAssets.length === 0} emptyTitle="No assets found" emptyDescription="This user has no assets assigned to them.">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
@@ -350,7 +301,7 @@ export function UserAssetsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredAssets.map(item => (
+                  {assignedAssets.map(item => (
                     <TableRow key={item.id}>
                       <TableCell>
                         <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
