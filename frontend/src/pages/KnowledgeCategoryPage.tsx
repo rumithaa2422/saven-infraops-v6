@@ -3,7 +3,7 @@ import { api, knowledgeAttachmentApi } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Eye, Edit2, Trash2, BookOpen, RefreshCw, Plus } from 'lucide-react';
+import { Eye, Edit2, Trash2, BookOpen, RefreshCw, Plus, Folder, FileText, Clock } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -11,6 +11,7 @@ import {
   TableCell,
   PageHeader
 } from '../components/serviceRequests';
+import { SummaryCards } from '../components/common/SummaryCards';
 
 // Types
 interface KnowledgeCategory {
@@ -129,6 +130,31 @@ export function KnowledgeCategoryPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [totalArticles, setTotalArticles] = useState(0);
   const [recentArticles, setRecentArticles] = useState(0);
+
+  // Summary cards data for Knowledge Base
+  const summaryCards = useMemo(() => [
+    {
+      icon: Folder,
+      iconBgColor: 'bg-gradient-to-br from-indigo-100 to-indigo-50',
+      iconColor: 'text-indigo-600',
+      value: categories.length,
+      label: 'Categories'
+    },
+    {
+      icon: FileText,
+      iconBgColor: 'bg-gradient-to-br from-purple-100 to-purple-50',
+      iconColor: 'text-purple-600',
+      value: totalArticles,
+      label: 'Articles'
+    },
+    {
+      icon: Clock,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: recentArticles,
+      label: 'Recent'
+    }
+  ], [categories.length, totalArticles, recentArticles]);
 
   // Articles state
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
@@ -916,32 +942,7 @@ export function KnowledgeCategoryPage() {
       {viewMode === 'browse' && (
         <>
           {/* Summary Cards */}
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">📁</div>
-              <div className="stat-content">
-                <span className="stat-label">Categories</span>
-                <strong className="stat-value">{categories.length}</strong>
-                <small className="stat-hint">Total Categories</small>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">📚</div>
-              <div className="stat-content">
-                <span className="stat-label">Articles</span>
-                <strong className="stat-value">{totalArticles}</strong>
-                <small className="stat-hint">Total Articles</small>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">✨</div>
-              <div className="stat-content">
-                <span className="stat-label">Recent</span>
-                <strong className="stat-value">{recentArticles}</strong>
-                <small className="stat-hint">Added last 30 days</small>
-              </div>
-            </div>
-          </div>
+          <SummaryCards cards={summaryCards} />
 
           {/* View All Articles Button */}
           <div className="browse-header">
