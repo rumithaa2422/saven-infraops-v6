@@ -201,6 +201,7 @@ export function InventoryCategoryPage() {
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingSubId, setDeletingSubId] = useState<string | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Load category and items
@@ -859,6 +860,26 @@ export function InventoryCategoryPage() {
     }
   }
 
+  function openDeleteItemDialog(itemId: string) {
+    setDeletingItemId(itemId);
+    setDeleteDialogOpen(true);
+  }
+
+  async function handleDeleteItem() {
+    if (!deletingItemId) return;
+
+    try {
+      await api.delete(`/inventory-master/${deletingItemId}`);
+      await loadData();
+    } catch (err: any) {
+      console.error('Failed to delete inventory item:', err);
+    } finally {
+      setDeletingItemId(null);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText('');
+    }
+  }
+
   if (!canView) {
     return (
       <div className="page-loading flex items-center justify-center">
@@ -1396,16 +1417,30 @@ export function InventoryCategoryPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRowClick(item);
-                            }}
-                            className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                            title="View"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          {isSuperAdmin && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/inventory/master/${item.id}/edit`);
+                                }}
+                                className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                title="Edit"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteItemDialog(item.id);
+                                }}
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1434,11 +1469,12 @@ export function InventoryCategoryPage() {
         onClose={() => {
           setDeleteDialogOpen(false);
           setDeletingSubId(null);
+          setDeletingItemId(null);
           setDeleteConfirmText('');
         }}
-        onConfirm={handleDeleteSubcategory}
-        title="Delete Subcategory"
-        message="Are you sure you want to delete this subcategory? This action cannot be undone."
+        onConfirm={deletingItemId ? handleDeleteItem : handleDeleteSubcategory}
+        title={deletingItemId ? "Delete Inventory Item" : "Delete Subcategory"}
+        message={deletingItemId ? "Are you sure you want to delete this inventory item? This action cannot be undone." : "Are you sure you want to delete this subcategory? This action cannot be undone."}
         confirmText="Delete"
         variant="danger"
       />
