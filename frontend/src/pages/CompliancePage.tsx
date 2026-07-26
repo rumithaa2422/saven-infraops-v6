@@ -408,7 +408,7 @@ export function CompliancePage() {
             {(isSuperAdmin || isAdmin) && (
               <button 
                 type="button" 
-                className="toolbar-btn" 
+                className="toolbar-btn primary" 
                 onClick={() => setShowAddFramework(true)}
               >
                 <Plus size={14} />
