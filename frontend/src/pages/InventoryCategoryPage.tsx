@@ -936,44 +936,6 @@ export function InventoryCategoryPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="btn-secondary"
-                >
-                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-                {canExport && (
-                  <button
-                    onClick={handleExport}
-                    disabled={filteredItems.length === 0}
-                    className="btn-secondary"
-                  >
-                    <Download className="w-4 h-4" />
-                    Export
-                  </button>
-                )}
-                {isSuperAdmin && (
-                  <button
-                    onClick={handleImportClick}
-                    className="btn-secondary"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Import
-                  </button>
-                )}
-                {isSuperAdmin && (
-                  <button
-                    onClick={handleCreateInventory}
-                    className="btn-primary"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Item
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>
@@ -1171,6 +1133,47 @@ export function InventoryCategoryPage() {
                   onClick={handleClearFilters}
                 >
                   Clear All
+                </Button>
+              )}
+              <div className="h-6 w-px bg-slate-200 mx-1"></div>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={RefreshCw}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                Refresh
+              </Button>
+              {canExport && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Download}
+                  onClick={handleExport}
+                  disabled={filteredItems.length === 0}
+                >
+                  Export
+                </Button>
+              )}
+              {isSuperAdmin && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Upload}
+                  onClick={handleImportClick}
+                >
+                  Import
+                </Button>
+              )}
+              {isSuperAdmin && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={handleCreateInventory}
+                >
+                  Create Item
                 </Button>
               )}
             </div>
