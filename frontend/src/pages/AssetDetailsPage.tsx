@@ -2,6 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
+import { PageHeader } from '../components/serviceRequests/PageHeader';
+import {
+  ArrowLeft,
+  Package,
+  User,
+  MapPin,
+  Calendar,
+  Shield,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Edit2,
+  Trash2,
+  Download,
+  MoreVertical
+} from 'lucide-react';
 
 type InventoryItem = {
   id: string;
@@ -629,17 +646,8 @@ export function AssetDetailsPage() {
         <div className="page-stack asset-detail">
           <div className="page-header">
             <div className="page-header-left">
-              <button className="btn-back" onClick={handleBack}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back
-              </button>
               <div className="page-header-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-                </svg>
+                <Package className="w-5 h-5" />
               </div>
               <div>
                 <div className="skeleton" style={{ width: '150px', height: '24px' }}></div>
@@ -665,10 +673,7 @@ export function AssetDetailsPage() {
                 Back
               </button>
               <div className="page-header-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-                </svg>
+                <Package className="w-5 h-5" />
               </div>
               <div>
                 <h1 className="page-header-title">Error</h1>
@@ -692,367 +697,360 @@ export function AssetDetailsPage() {
 
   const warrantyStatus = getWarrantyStatus(item.warrantyExpiry);
 
+  // Status Badge component
+  const StatusBadge = ({ status }: { status: string }) => {
+    const statusConfig: Record<string, { bg: string; text: string }> = {
+      'AVAILABLE': { bg: 'bg-green-100', text: 'text-green-700' },
+      'ASSIGNED': { bg: 'bg-blue-100', text: 'text-blue-700' },
+      'UNDER_REPAIR': { bg: 'bg-amber-100', text: 'text-amber-700' },
+      'RETIRED': { bg: 'bg-slate-100', text: 'text-slate-600' },
+      'LOST': { bg: 'bg-red-100', text: 'text-red-700' },
+      'DAMAGED': { bg: 'bg-orange-100', text: 'text-orange-700' },
+    };
+    const config = statusConfig[status] || { bg: 'bg-slate-100', text: 'text-slate-600' };
+    return (
+      <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${config.bg} ${config.text}`}>
+        {status.replace(/_/g, ' ')}
+      </span>
+    );
+  };
+
   return (
     <div className="workspace">
       <div className="page-stack asset-detail">
         {/* Page Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <button className="btn-back" onClick={handleBack}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Back
-            </button>
-            <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="page-header-title">{item.itemName}</h1>
-              <p className="page-header-subtitle">{item.itemNo}</p>
+        <PageHeader
+          title="Asset Details"
+          showBackButton
+          onBackClick={handleBack}
+        />
+
+        {/* Asset Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1.5 bg-brand-50 text-brand-700 font-mono font-semibold rounded-lg">
+                    {item.itemNo}
+                  </span>
+                  <StatusBadge status={item.status} />
+                  <span className="px-3 py-1.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg">
+                    {item.category?.name || 'Uncategorized'}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">{item.itemName}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  {item.brand && (
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-4 h-4" />
+                      <span>{item.brand}</span>
+                    </div>
+                  )}
+                  {item.location && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4" />
+                      <span>{item.location}</span>
+                    </div>
+                  )}
+                  {item.purchaseDate && (
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4" />
+                      <span>Purchased {formatDate(item.purchaseDate)}</span>
+                    </div>
+                  )}
+                  {warrantyStatus.label !== 'No Warranty' && (
+                    <div className="flex items-center gap-1.5">
+                      {warrantyStatus.label.includes('Expired') ? (
+                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      )}
+                      <span className={warrantyStatus.class}>Warranty {warrantyStatus.label}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-          <div className="page-header-actions">
-            <span className={`status-badge status-${item.status.toLowerCase()}`}>
-              {item.status}
-            </span>
+
+          {/* Summary Info */}
+          <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Current User</p>
+                <p className="text-sm font-semibold text-slate-900">{assignment?.user?.name || 'Not Assigned'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Current Project</p>
+                <p className="text-sm font-semibold text-slate-900">{assignment?.project?.projectName || 'Not Assigned'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Quantity</p>
+                <p className="text-sm font-semibold text-slate-900">{item.currentQty}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Warranty Expiry</p>
+                <p className={`text-sm font-semibold ${warrantyStatus.class}`}>{formatDate(item.warrantyExpiry)}</p>
+              </div>
+            </div>
           </div>
         </div>
 
       {/* Main Content Grid */}
-      <div className="detail-content-grid">
-        {/* Left Column - Main Content */}
-        <div className="detail-main">
-          {/* Summary Cards */}
-          <div className="asset-summary-cards">
-            <div className="asset-summary-card">
-              <span className="asset-summary-label">Current Status</span>
-              <span className={`asset-summary-value status-text status-${item.status.toLowerCase()}`}>
-                {item.status}
-              </span>
+      <div className="mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Inventory Information */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900">Inventory Information</h3>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Inventory ID</label>
+                    <p className="mt-1 text-sm font-mono text-indigo-600">{item.itemNo}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Item Name</label>
+                    <p className="mt-1 text-sm font-medium text-slate-900">{item.itemName}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Category</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.category?.name || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Subcategory</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.subcategory?.name || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Brand</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.brand || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Model</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.model || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Vendor</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.vendor || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Invoice Number</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.invoiceNo || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Purchase Cost</label>
+                    <p className="mt-1 text-sm text-slate-700">{formatCurrency(item.purchaseCost)}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">GST</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.gst !== undefined && item.gst !== null ? `${item.gst}%` : '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Purchase Date</label>
+                    <p className="mt-1 text-sm text-slate-700">{formatDate(item.purchaseDate)}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Warranty</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.warrantyMonths ? `${item.warrantyMonths} months` : '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Warranty Expiry</label>
+                    <p className={`mt-1 text-sm ${warrantyStatus.class}`}>{formatDate(item.warrantyExpiry)}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Location</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.location || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Min. Stock</label>
+                    <p className="mt-1 text-sm text-slate-700">{item.minStock ?? '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Current Qty</label>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">{item.currentQty}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="asset-summary-card">
-              <span className="asset-summary-label">Current User</span>
-              <span className={`asset-summary-value ${assignment ? '' : 'not-assigned'}`}>
-                {assignment?.user?.name || 'Not Assigned'}
-              </span>
-            </div>
-            <div className="asset-summary-card">
-              <span className="asset-summary-label">Current Project</span>
-              <span className={`asset-summary-value ${assignment ? '' : 'not-assigned'}`}>
-                {assignment?.project?.projectName || 'Not Assigned'}
-              </span>
-            </div>
-            <div className="asset-summary-card">
-              <span className="asset-summary-label">Warranty</span>
-              <span className={`asset-summary-value ${warrantyStatus.class}`}>
-                {warrantyStatus.label}
-              </span>
-            </div>
-            <div className="asset-summary-card">
-              <span className="asset-summary-label">Location</span>
-              <span className="asset-summary-value">{item.location || '-'}</span>
-            </div>
-            <div className="asset-summary-card">
-              <span className="asset-summary-label">Purchase Date</span>
-              <span className="asset-summary-value">{formatDate(item.purchaseDate)}</span>
-            </div>
-          </div>
 
-          {/* Inventory Information */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Inventory Information</h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Inventory ID</label>
-                  <span className="detail-field-value mono">{item.itemNo}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Item Name</label>
-                  <span className="detail-field-value">{item.itemName}</span>
-                </div>
+            {/* Remarks */}
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900">Remarks</h3>
               </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Category</label>
-                  <span className="detail-field-value">{item.category?.name || '-'}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Subcategory</label>
-                  <span className="detail-field-value">{item.subcategory?.name || '-'}</span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Brand</label>
-                  <span className="detail-field-value">{item.brand || '-'}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Model</label>
-                  <span className="detail-field-value">{item.model || '-'}</span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Vendor</label>
-                  <span className="detail-field-value">{item.vendor || '-'}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Invoice Number</label>
-                  <span className="detail-field-value">{item.invoiceNo || '-'}</span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Purchase Cost</label>
-                  <span className="detail-field-value">{formatCurrency(item.purchaseCost)}</span>
-                </div>
-                <div className="detail-field">
-                  <label>GST</label>
-                  <span className="detail-field-value">
-                    {item.gst !== undefined && item.gst !== null ? `${item.gst}%` : '-'}
-                  </span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Purchase Date</label>
-                  <span className="detail-field-value">{formatDate(item.purchaseDate)}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Warranty</label>
-                  <span className="detail-field-value">
-                    {item.warrantyMonths ? `${item.warrantyMonths} months` : '-'}
-                  </span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Warranty Expiry</label>
-                  <span className={`detail-field-value ${warrantyStatus.class}`}>
-                    {formatDate(item.warrantyExpiry)}
-                    {warrantyStatus.label !== 'No Warranty' && (
-                      <span className={`warranty-label ${warrantyStatus.class}`}>
-                        {warrantyStatus.label}
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="detail-field">
-                  <label>Location</label>
-                  <span className="detail-field-value">{item.location || '-'}</span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Minimum Stock</label>
-                  <span className="detail-field-value">{item.minStock ?? '-'}</span>
-                </div>
-                <div className="detail-field">
-                  <label>Current Quantity</label>
-                  <span className="detail-field-value">{item.currentQty}</span>
-                </div>
-              </div>
-              <div className="detail-field-row">
-                <div className="detail-field">
-                  <label>Status</label>
-                  <span className={`detail-field-value status-badge status-${item.status.toLowerCase()}`}>
-                    {item.status}
-                  </span>
-                </div>
+              <div className="p-6">
+                <p className="text-sm text-slate-500">No remarks available.</p>
               </div>
             </div>
           </div>
-
-          {/* Remarks */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Remarks</h3>
-            </div>
-            <div className="detail-card-body">
-              <div className="detail-empty-state">
-                <p>No remarks available.</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Right Column - Sidebar */}
-        <div className="detail-sidebar">
+        <div className="space-y-6">
           {/* Current Assignment */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Current Assignment</h3>
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-lg font-semibold text-slate-900">Current Assignment</h3>
             </div>
-            <div className="detail-card-body">
+            <div className="p-6">
               {assignment ? (
-                <div className="assignment-details">
-                  <div className="detail-field-row">
-                    <div className="detail-field">
-                      <label>Assigned User</label>
-                      <span className="detail-field-value">{assignment.user?.name || '-'}</span>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
+                      {assignment.user?.name?.charAt(0).toUpperCase() || '?'}
                     </div>
-                    <div className="detail-field">
-                      <label>Project</label>
-                      <span className="detail-field-value">{assignment.project?.projectName || '-'}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">{assignment.user?.name || 'Unknown User'}</p>
+                      <p className="text-xs text-slate-500">{assignment.user?.email || ''}</p>
                     </div>
                   </div>
-                  <div className="detail-field-row">
-                    <div className="detail-field">
-                      <label>Assigned Date</label>
-                      <span className="detail-field-value">{formatDate(assignment.assignedDate)}</span>
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Project</label>
+                      <p className="mt-1 text-sm text-slate-700">{assignment.project?.projectName || '-'}</p>
                     </div>
-                    <div className="detail-field">
-                      <label>Status</label>
-                      <span className="detail-field-value">
-                        <span className={`status-badge status-${assignment.status.toLowerCase()}`}>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</label>
+                      <p className="mt-1">
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          assignment.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 
+                          assignment.status === 'RETURNED' ? 'bg-slate-100 text-slate-700' : 
+                          'bg-amber-100 text-amber-700'
+                        }`}>
                           {assignment.status}
                         </span>
-                      </span>
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Assigned Date</label>
+                      <p className="mt-1 text-sm text-slate-700">{formatDate(assignment.assignedDate)}</p>
                     </div>
                   </div>
                   {assignment.remarks && (
-                    <div className="detail-field">
-                      <label>Remarks</label>
-                      <span className="detail-field-value">{assignment.remarks}</span>
+                    <div className="pt-3 border-t border-slate-100">
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Remarks</label>
+                      <p className="mt-1 text-sm text-slate-700">{assignment.remarks}</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="detail-empty-state">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  <p>No active assignment.</p>
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                    <User className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm text-slate-500">No active assignment</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Assignment History */}
-          <div className="detail-card">
-            <div className="detail-card-header">
-              <h3>Assignment History</h3>
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-lg font-semibold text-slate-900">Assignment History</h3>
             </div>
-            <div className="detail-card-body">
-              <div className="detail-empty-state">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <p>No assignment history available.</p>
+            <div className="p-6">
+              <div className="text-center py-6">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                  <Clock className="w-6 h-6 text-slate-400" />
+                </div>
+                <p className="text-sm text-slate-500">No assignment history available</p>
               </div>
             </div>
           </div>
 
           {/* Lifecycle Actions - Only for Super Admin */}
           {isSuperAdmin && (
-            <div className="detail-card">
-              <div className="detail-card-header">
-                <h3>Lifecycle Actions</h3>
+            <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-lg font-semibold text-slate-900">Lifecycle Actions</h3>
               </div>
-              <div className="detail-card-body">
-                <div className="action-cards-grid">
-                  <div 
-                    className={`action-card ${canAssign ? 'action-card-clickable' : ''}`}
+              <div className="p-6">
+                <div className="space-y-3">
+                  <button
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      canAssign 
+                        ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' 
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    }`}
                     onClick={canAssign ? openAssignModal : undefined}
+                    disabled={!canAssign}
                   >
-                    <div className="action-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                        <path d="M12 8V16M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                    <span className="action-label">Assign</span>
-                    {canAssign ? (
-                      <span className="action-badge ready">Available</span>
-                    ) : (
-                      <span className="action-badge unavailable">Not Available</span>
-                    )}
-                  </div>
-                  <div 
-                    className={`action-card ${canTransfer ? 'action-card-clickable' : ''}`}
+                    <User className="w-5 h-5" />
+                    Assign to User
+                  </button>
+                  <button
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      canTransfer 
+                        ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' 
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    }`}
                     onClick={canTransfer ? openTransferModal : undefined}
+                    disabled={!canTransfer}
                   >
-                    <div className="action-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17 3L21 7L17 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M21 7H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        <path d="M7 13L3 17L7 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M3 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                    <span className="action-label">Transfer</span>
-                    {canTransfer ? (
-                      <span className="action-badge ready">Available</span>
-                    ) : (
-                      <span className="action-badge unavailable">Not Available</span>
-                    )}
-                  </div>
-                  <div 
-                    className={`action-card ${canReturn ? 'action-card-clickable' : ''}`}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17 3L21 7L17 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M21 7H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M7 13L3 17L7 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M3 17H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Transfer
+                  </button>
+                  <button
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      canReturn 
+                        ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' 
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    }`}
                     onClick={canReturn ? openReturnModal : undefined}
+                    disabled={!canReturn}
                   >
-                    <div className="action-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                    <span className="action-label">Return</span>
-                    {canReturn ? (
-                      <span className="action-badge ready">Available</span>
-                    ) : (
-                      <span className="action-badge unavailable">Not Available</span>
-                    )}
-                  </div>
-                  <div 
-                    className={`action-card ${canRepair ? 'action-card-clickable' : ''}`}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M16 17L21 12L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    Return
+                  </button>
+                  <button
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      canRepair 
+                        ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' 
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    }`}
                     onClick={canRepair ? openRepairModal : undefined}
+                    disabled={!canRepair}
                   >
-                    <div className="action-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6.006 6.006 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6.006 6.006 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <span className="action-label">Repair</span>
-                    {canRepair ? (
-                      <span className="action-badge ready">Available</span>
-                    ) : (
-                      <span className="action-badge unavailable">Not Available</span>
-                    )}
-                  </div>
-                  <div 
-                    className={`action-card ${canRetire ? 'action-card-clickable' : ''}`}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6.006 6.006 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6.006 6.006 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Send for Repair
+                  </button>
+                  <button
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      canRetire 
+                        ? 'bg-red-50 text-red-700 hover:bg-red-100' 
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    }`}
                     onClick={canRetire ? openRetireModal : undefined}
+                    disabled={!canRetire}
                   >
-                    <div className="action-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 4L20 20M4 4H12M4 4V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M20 20V12M20 20H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <span className="action-label">Retire</span>
-                    {canRetire ? (
-                      <span className="action-badge ready">Available</span>
-                    ) : (
-                      <span className="action-badge unavailable">Not Available</span>
-                    )}
-                  </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 4L20 20M4 4H12M4 4V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 20V12M20 20H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Retire Asset
+                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+    </div>
 
       {/* Transfer Modal */}
       {showTransferModal && (
