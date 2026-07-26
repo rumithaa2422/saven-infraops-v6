@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   QuickActions,
   MyWorkWidget,
@@ -10,10 +10,17 @@ import {
   SummaryCards
 } from '../components/dashboard';
 import { PermissionGate } from '../components/permissions';
+import { useAuth } from '../auth/AuthContext';
+import { Bell } from 'lucide-react';
 
 export function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const { user } = useAuth();
+  
+  // Mock notification count - UI placeholder
+  const notificationCount = 0;
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -23,12 +30,40 @@ export function DashboardPage() {
     }, 1000);
   }, []);
 
+  // Update time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  // Format time
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (user?.name) return user.name;
+    return user?.email?.split('@')[0] || 'User';
+  };
+
   return (
     <div className="workspace">
       <div className="page-stack dashboard">
-        {/* Header */}
+        {/* Dashboard Header */}
         <div className="page-header">
           <div className="page-header-left">
+            {/* Dashboard Icon */}
             <div className="page-header-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="7" height="7"/>
@@ -37,12 +72,54 @@ export function DashboardPage() {
                 <rect x="3" y="14" width="7" height="7"/>
               </svg>
             </div>
+            
+            {/* Title Section */}
             <div>
+              {/* Greeting */}
+              <p className="text-sm text-slate-500 mb-0.5">
+                {getGreeting()}, <span className="font-medium text-slate-700">{getUserDisplayName()}</span>
+              </p>
+              {/* Dashboard Title */}
               <h1 className="page-header-title">Dashboard</h1>
-              <p className="page-header-subtitle">Overview</p>
+              {/* Subtitle */}
+              <p className="page-header-subtitle">Monitor your organization's operations and stay informed with real-time insights</p>
             </div>
           </div>
+          
+          {/* Right Section - Actions */}
           <div className="page-header-actions">
+            {/* Notification Button */}
+            <button
+              className="relative p-2.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+              title="Notifications"
+            >
+              <Bell size={18} />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </span>
+              )}
+            </button>
+
+            {/* Current Date */}
+            <div className="hidden sm:flex flex-col items-end justify-center px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {currentTime.toLocaleDateString('en-US', { weekday: 'short' })}
+              </span>
+              <span className="text-sm font-semibold text-slate-700">
+                {currentTime.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
+
+            {/* Current Time */}
+            <div className="hidden md:flex flex-col items-end justify-center px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Time</span>
+              <span className="text-sm font-semibold text-slate-700 font-mono">
+                {formatTime(currentTime)}
+              </span>
+            </div>
+
+            {/* Refresh Button */}
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
