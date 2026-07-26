@@ -19,6 +19,8 @@ import {
   ConfirmationDialog,
   PageHeader
 } from '../components/serviceRequests';
+import { SummaryCards } from '../components/common/SummaryCards';
+import { Building2 as VendorIcon, CheckCircle, Clock, FileText } from 'lucide-react';
 
 type Vendor = {
   id: string;
@@ -648,6 +650,38 @@ export function VendorDirectoryPage() {
 
   const hasActiveFilters = categoryFilter || statusFilter || countryFilter || contractStatusFilter || dateFrom || dateTo || yearFilter;
 
+  // Summary cards data for Vendor Directory
+  const summaryCards = [
+    {
+      icon: VendorIcon,
+      iconBgColor: 'bg-gradient-to-br from-purple-100 to-purple-50',
+      iconColor: 'text-purple-600',
+      value: summary.totalVendors,
+      label: 'Total Vendors'
+    },
+    {
+      icon: CheckCircle,
+      iconBgColor: 'bg-gradient-to-br from-emerald-100 to-emerald-50',
+      iconColor: 'text-emerald-600',
+      value: summary.activeVendors,
+      label: 'Active Vendors'
+    },
+    {
+      icon: Clock,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: summary.expiringContracts,
+      label: 'Expiring Contracts'
+    },
+    {
+      icon: FileText,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: summary.pendingRenewals,
+      label: 'Pending Renewals'
+    }
+  ];
+
   return (
     <div className="workspace">
       <div className="page-stack vendor-directory">
@@ -682,68 +716,7 @@ export function VendorDirectoryPage() {
         {/* Main Content */}
         <div className="content-section">
         {/* Summary Cards */}
-        <div className="stats-grid">
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-purple-200 transition-all duration-300 group cursor-pointer">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2"/>
-                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-slate-900">{summary.totalVendors}</p>
-                <p className="text-sm font-medium text-slate-500">Total Vendors</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group cursor-pointer">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M22 4L12 14.01l-3-3" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-slate-900">{summary.activeVendors}</p>
-                <p className="text-sm font-medium text-slate-500">Active Vendors</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-amber-200 transition-all duration-300 group cursor-pointer">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-slate-900">{summary.expiringContracts}</p>
-                <p className="text-sm font-medium text-slate-500">Expiring Contracts</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/60 p-5 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 group cursor-pointer">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-slate-900">{summary.pendingRenewals}</p>
-                <p className="text-sm font-medium text-slate-500">Pending Renewals</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SummaryCards cards={summaryCards} />
 
         {(error || message) && (
           <div className={`px-4 py-3 rounded-xl flex items-center justify-between ${error ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
