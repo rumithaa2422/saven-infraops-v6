@@ -2963,8 +2963,8 @@ export function KnowledgeCategoryPage() {
         /* ===== MODERN ATTACHMENTS SECTION ===== */
 
         .kb-attachments-section {
-          margin-top: 24px;
-          padding: 24px;
+          margin-top: 32px;
+          padding: 28px;
           background: white;
           border: 1px solid #e2e8f0;
           border-radius: 16px;
@@ -3897,7 +3897,7 @@ export function KnowledgeCategoryPage() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 20px 32px;
+          padding: 24px 32px;
           background: #f8fafc;
           border-bottom: 1px solid #f1f5f9;
         }
@@ -3940,7 +3940,7 @@ export function KnowledgeCategoryPage() {
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
-          padding: 20px 32px;
+          padding: 24px 32px;
           border-bottom: 1px solid #f1f5f9;
         }
 
@@ -3957,7 +3957,7 @@ export function KnowledgeCategoryPage() {
 
         /* Article Content */
         .article-detail-content {
-          padding: 32px;
+          padding: 40px 32px;
         }
 
         .article-content-body {
@@ -4086,7 +4086,7 @@ export function KnowledgeCategoryPage() {
             flex-direction: column;
             align-items: flex-start;
             gap: 16px;
-            padding: 16px 20px;
+            padding: 20px 20px;
           }
 
           .meta-left {
@@ -4102,10 +4102,15 @@ export function KnowledgeCategoryPage() {
           }
 
           .article-detail-tags {
-            padding: 12px 20px;
+            padding: 20px 20px;
           }
 
           .article-detail-content {
+            padding: 28px 20px;
+          }
+
+          .kb-attachments-section {
+            margin-top: 24px;
             padding: 20px;
           }
 
