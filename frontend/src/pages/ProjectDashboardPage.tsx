@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import * as XLSX from 'xlsx';
-import { Eye, Edit2, Trash2, RefreshCw, Folder, Plus } from 'lucide-react';
+import { Eye, Edit2, Trash2, RefreshCw, Folder, Plus, CheckCircle, AlertCircle, Clock, Wrench } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -11,6 +11,7 @@ import {
   TableCell,
   PageHeader
 } from '../components/serviceRequests';
+import { SummaryCards } from '../components/common/SummaryCards';
 
 type Project = {
   id: string;
@@ -585,6 +586,45 @@ export function ProjectDashboardPage() {
 
   const hasActiveFilters = search || statusFilter || priorityFilter || departmentFilter || technologyFilter || managerFilter;
 
+  // Summary cards data for Project Dashboard
+  const summaryCards = [
+    {
+      icon: Folder,
+      iconBgColor: 'bg-gradient-to-br from-purple-100 to-purple-50',
+      iconColor: 'text-purple-600',
+      value: summary.totalProjects,
+      label: 'Total Projects'
+    },
+    {
+      icon: AlertCircle,
+      iconBgColor: 'bg-gradient-to-br from-green-100 to-green-50',
+      iconColor: 'text-green-600',
+      value: summary.activeProjects,
+      label: 'Active Projects'
+    },
+    {
+      icon: CheckCircle,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: summary.completedProjects,
+      label: 'Completed'
+    },
+    {
+      icon: Clock,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: summary.onHold,
+      label: 'On Hold'
+    },
+    {
+      icon: Wrench,
+      iconBgColor: 'bg-gradient-to-br from-red-100 to-red-50',
+      iconColor: 'text-red-600',
+      value: summary.delayed,
+      label: 'Delayed'
+    }
+  ];
+
   return (
     <div className="workspace">
       <div className="page-stack project-dashboard">
@@ -620,72 +660,7 @@ export function ProjectDashboardPage() {
         {/* Main Content */}
         <div className="content-section">
         {/* Summary Cards */}
-        <div className="stats-grid">
-          <div className="project-summary-card" onClick={() => { setStatusFilter(''); fetchProjects(); }}>
-            <div className="project-summary-icon total">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="project-summary-content">
-              <span className="project-summary-label">Total Projects</span>
-              <span className="project-summary-value">{loading ? '...' : summary.totalProjects}</span>
-            </div>
-          </div>
-
-          <div className="project-summary-card" onClick={() => { setStatusFilter('ACTIVE'); fetchProjects(); }}>
-            <div className="project-summary-icon active">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 12H2M5.45 5.11L2 12V18C2 18.5304 2.21071 19.0391 2.58579 19.4142C2.96086 19.7893 3.46957 20 4 20H20C20.5304 20 21.0391 19.7893 21.4142 19.4142C21.7893 19.0391 22 18.5304 22 18V12L18.55 5.11C18.3844 4.77678 18.1293 4.49617 17.8141 4.30017C17.4988 4.10416 17.1354 4.00001 16.765 4H7.24C6.86957 4.00001 6.50622 4.10416 6.19097 4.30017C5.87573 4.49617 5.62064 4.77678 5.45 5.11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="project-summary-content">
-              <span className="project-summary-label">Active Projects</span>
-              <span className="project-summary-value">{loading ? '...' : summary.activeProjects}</span>
-            </div>
-          </div>
-
-          <div className="project-summary-card" onClick={() => { setStatusFilter('COMPLETED'); fetchProjects(); }}>
-            <div className="project-summary-icon completed">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </div>
-            <div className="project-summary-content">
-              <span className="project-summary-label">Completed</span>
-              <span className="project-summary-value">{loading ? '...' : summary.completedProjects}</span>
-            </div>
-          </div>
-
-          <div className="project-summary-card" onClick={() => { setStatusFilter('ON_HOLD'); fetchProjects(); }}>
-            <div className="project-summary-icon onhold">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 15V9M18 10C18 13.866 14.4183 17 10 17C5.58172 17 2 13.866 2 10C2 6.13401 5.58172 3 10 3C14.4183 3 18 6.13401 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div className="project-summary-content">
-              <span className="project-summary-label">On Hold</span>
-              <span className="project-summary-value">{loading ? '...' : summary.onHold}</span>
-            </div>
-          </div>
-
-          <div className="project-summary-card" onClick={() => { setStatusFilter('DELAYED'); fetchProjects(); }}>
-            <div className="project-summary-icon delayed">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-                <path d="M12 7V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M10 3L12 5L14 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="project-summary-content">
-              <span className="project-summary-label">Delayed</span>
-              <span className="project-summary-value">{loading ? '...' : summary.delayed}</span>
-            </div>
-          </div>
-        </div>
+        <SummaryCards cards={summaryCards} />
 
         {/* Asset Summary Cards */}
         <div className="project-summary-cards">
