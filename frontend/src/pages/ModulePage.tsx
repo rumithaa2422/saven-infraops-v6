@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { useAuth } from '../auth/AuthContext';
-import { Eye, Edit2, Trash2, AlertTriangle, Wrench, Package, Users, Shield, FileText, HelpCircle } from 'lucide-react';
+import { Eye, Edit2, Trash2, AlertTriangle, Wrench, Package, Users, Shield, FileText, HelpCircle, LucideIcon } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
-  TableCell
+  TableCell,
+  PageHeader
 } from '../components/serviceRequests';
 
 type ModulePageProps = {
@@ -58,7 +59,7 @@ type ModuleConfig = {
   dateKey?: string;
   fields: Field[];
   columns: Field[];
-  icon?: React.ComponentType<{ size?: number }>;
+  icon?: LucideIcon;
   permissions: {
     view?: string;      // NEW: View/Drawer permission
     create?: string;   // Create button and modal
@@ -1643,134 +1644,130 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
         onDrop={handleDrop}
       >
         {/* Page Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <div className="page-header-icon">
-              {config.icon && <config.icon size={20} />}
-            </div>
-            <div>
-              <h1 className="page-header-title">{title}</h1>
-              <p className="page-header-subtitle">Management</p>
-            </div>
-          </div>
-          <div className="page-header-actions">
-          {moduleKey === 'users-teams' && (
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search by name, email, phone..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-          )}
-          {/* Document repository search and filters */}
-          {config.isDocumentRepository && (
-            <div className="doc-filters">
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Search documents..."
-                value={docSearchQuery}
-                onChange={(e) => {
-                  setDocSearchQuery(e.target.value);
-                  if (docDebounceRef.current) clearTimeout(docDebounceRef.current);
-                  docDebounceRef.current = setTimeout(() => loadComplianceDocuments(), 300);
-                }}
-              />
-              <select
-                className="filter-select"
-                value={docUploadedBy}
-                onChange={(e) => {
-                  setDocUploadedBy(e.target.value);
-                  loadComplianceDocuments();
-                }}
-              >
-                <option value="all">All Users</option>
-                {uploaders.map(u => (
-                  <option key={u.id} value={u.id}>{u.email}</option>
-                ))}
-              </select>
-              <select
-                className="filter-select"
-                value={docDateRange}
-                onChange={(e) => {
-                  setDocDateRange(e.target.value);
-                  loadComplianceDocuments();
-                }}
-              >
-                <option value="allTime">All Time</option>
-                <option value="today">Today</option>
-                <option value="last7days">Last 7 Days</option>
-                <option value="last30days">Last 30 Days</option>
-                <option value="thisYear">This Year</option>
-              </select>
-            </div>
-          )}
-          {/* Disable all buttons during any import operation */}
-          <button className="secondary" onClick={() => config.isDocumentRepository ? loadComplianceDocuments() : load(searchQuery)} disabled={loading || isImporting || isValidating || isExecuting}>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
-          {/* Import button - shown only for modules with import permission */}
-          {config.permissions.import && hasPermission(config.permissions.import) && (
+        <PageHeader
+          title={title}
+          subtitle="Management"
+          icon={config.icon}
+          actions={
             <>
-              {/* Disable import button during any import operation */}
-              <button 
-                className="secondary" 
-                onClick={handleImportClick}
-                disabled={isImporting || isValidating || isExecuting}
-              >
-                {isImporting || isValidating || isExecuting ? 'Processing...' : 'Import'}
+              {moduleKey === 'users-teams' && (
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Search by name, email, phone..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
+              )}
+              {/* Document repository search and filters */}
+              {config.isDocumentRepository && (
+                <div className="doc-filters">
+                  <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Search documents..."
+                    value={docSearchQuery}
+                    onChange={(e) => {
+                      setDocSearchQuery(e.target.value);
+                      if (docDebounceRef.current) clearTimeout(docDebounceRef.current);
+                      docDebounceRef.current = setTimeout(() => loadComplianceDocuments(), 300);
+                    }}
+                  />
+                  <select
+                    className="filter-select"
+                    value={docUploadedBy}
+                    onChange={(e) => {
+                      setDocUploadedBy(e.target.value);
+                      loadComplianceDocuments();
+                    }}
+                  >
+                    <option value="all">All Users</option>
+                    {uploaders.map(u => (
+                      <option key={u.id} value={u.id}>{u.email}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="filter-select"
+                    value={docDateRange}
+                    onChange={(e) => {
+                      setDocDateRange(e.target.value);
+                      loadComplianceDocuments();
+                    }}
+                  >
+                    <option value="allTime">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="last7days">Last 7 Days</option>
+                    <option value="last30days">Last 30 Days</option>
+                    <option value="thisYear">This Year</option>
+                  </select>
+                </div>
+              )}
+              {/* Disable all buttons during any import operation */}
+              <button className="secondary" onClick={() => config.isDocumentRepository ? loadComplianceDocuments() : load(searchQuery)} disabled={loading || isImporting || isValidating || isExecuting}>
+                {loading ? 'Refreshing...' : 'Refresh'}
               </button>
-              <input
-                ref={importInputRef}
-                type="file"
-                id={importInputId}
-                accept=".csv,.xlsx"
-                onChange={handleImportChange}
-                style={{ display: 'none' }}
-                disabled={isImporting || isValidating || isExecuting}
-              />
+              {/* Import button - shown only for modules with import permission */}
+              {config.permissions.import && hasPermission(config.permissions.import) && (
+                <>
+                  {/* Disable import button during any import operation */}
+                  <button 
+                    className="secondary" 
+                    onClick={handleImportClick}
+                    disabled={isImporting || isValidating || isExecuting}
+                  >
+                    {isImporting || isValidating || isExecuting ? 'Processing...' : 'Import'}
+                  </button>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    id={importInputId}
+                    accept=".csv,.xlsx"
+                    onChange={handleImportChange}
+                    style={{ display: 'none' }}
+                    disabled={isImporting || isValidating || isExecuting}
+                  />
+                </>
+              )}
+              {config.permissions.export && hasPermission(config.permissions.export) && !config.isCategoryManagement && (
+                <button className="secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
+                  {config.isDocumentRepository ? '📥 Export All' : 'Export CSV'}
+                </button>
+              )}
+              {/* Import button for document repository - accepts multiple PDFs */}
+              {config.isDocumentRepository && config.permissions.create && hasPermission(config.permissions.create) && (
+                <>
+                  <button 
+                    className="secondary" 
+                    onClick={handleDocImportClick}
+                    disabled={isImportingDocs || isUploadingPdf}
+                  >
+                    {isImportingDocs ? '⏳ Importing...' : '📥 Import'}
+                  </button>
+                  <input
+                    ref={docImportInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    onChange={handleDocImportChange}
+                    style={{ display: 'none' }}
+                    disabled={isImportingDocs || isUploadingPdf}
+                  />
+                </>
+              )}
+              {config.permissions.create && hasPermission(config.permissions.create) && !config.isCategoryManagement && (
+                <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
+                  {config.isDocumentRepository ? '📤 Upload' : 'Create'}
+                </button>
+              )}
+              {/* Category Management: Create Category button for inventory */}
+              {config.isCategoryManagement && isSuperAdmin && (
+                <button className="primary" onClick={() => openCategoryForm()}>
+                  + Create Category
+                </button>
+              )}
             </>
-          )}
-          {config.permissions.export && hasPermission(config.permissions.export) && !config.isCategoryManagement && (
-            <button className="secondary" onClick={config.isDocumentRepository ? exportAllDocuments : exportCsv} disabled={loading || isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
-              {config.isDocumentRepository ? '📥 Export All' : 'Export CSV'}
-            </button>
-          )}
-          {/* Import button for document repository - accepts multiple PDFs */}
-          {config.isDocumentRepository && config.permissions.create && hasPermission(config.permissions.create) && (
-            <>
-              <button 
-                className="secondary" 
-                onClick={handleDocImportClick}
-                disabled={isImportingDocs || isUploadingPdf}
-              >
-                {isImportingDocs ? '⏳ Importing...' : '📥 Import'}
-              </button>
-              <input
-                ref={docImportInputRef}
-                type="file"
-                accept="application/pdf"
-                multiple
-                onChange={handleDocImportChange}
-                style={{ display: 'none' }}
-                disabled={isImportingDocs || isUploadingPdf}
-              />
-            </>
-          )}
-          {config.permissions.create && hasPermission(config.permissions.create) && !config.isCategoryManagement && (
-            <button className="primary" onClick={() => setCreateOpen(true)} disabled={isImporting || isValidating || isExecuting || isUploadingPdf || isImportingDocs}>
-              {config.isDocumentRepository ? '📤 Upload' : 'Create'}
-            </button>
-          )}
-          {/* Category Management: Create Category button for inventory */}
-          {config.isCategoryManagement && isSuperAdmin && (
-            <button className="primary" onClick={() => openCategoryForm()}>
-              + Create Category
-            </button>
-          )}
-          </div>
-        </div>
+          }
+        />
 
       {/* Show selected file name */}
       {importFile && (
