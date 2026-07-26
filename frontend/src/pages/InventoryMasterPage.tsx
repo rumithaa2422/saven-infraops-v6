@@ -805,7 +805,7 @@ export function InventoryMasterPage() {
         
         {/* Inventory Item Header Card */}
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="px-6 py-5">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
@@ -835,25 +835,6 @@ export function InventoryMasterPage() {
                     <span>{isEditMode ? `Editing ${form.itemName || 'item'}` : 'Adding new inventory item'}</span>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={handleCancel}
-                  disabled={saving}
-                >
-                  Cancel
-                </Button>
-                {isSuperAdmin && (
-                  <Button
-                    variant="primary"
-                    icon={Save}
-                    onClick={handleSubmit}
-                    loading={saving}
-                  >
-                    {isEditMode ? 'Update Item' : 'Save Item'}
-                  </Button>
-                )}
               </div>
             </div>
           </div>
