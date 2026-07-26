@@ -1024,22 +1024,6 @@ export function KnowledgeCategoryPage() {
       {/* Articles View - Modern Design */}
       {viewMode === 'articles' && (
         <>
-          {/* Article Stats */}
-          <div className="kb-articles-stats">
-            <div className="kb-stat-card">
-              <div className="kb-stat-icon">📚</div>
-              <div className="kb-stat-content">
-                <span className="kb-stat-label">
-                  {selectedCategory ? selectedCategory.name : 'All Categories'}
-                </span>
-                <strong className="kb-stat-value">{articles.length}</strong>
-                <small className="kb-stat-hint">
-                  {selectedCategory ? 'In this category' : 'Total articles'}
-                </small>
-              </div>
-            </div>
-          </div>
-
           {/* Search and Filters */}
           <div className="kb-search-filter-bar">
             <div className="kb-search-box">
