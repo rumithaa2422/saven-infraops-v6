@@ -885,54 +885,9 @@ export function InventoryCategoryPage() {
       <div className="page-stack inventory-category">
         {/* Header */}
         <PageHeader
-          title={category?.name || 'Inventory'}
-          subtitle={category?.subcategories.length ? `${category.subcategories.length} subcategories` : undefined}
-          icon={Package}
-          iconColor="text-brand-600"
-          breadcrumbs={[
-            { label: 'Inventory', onClick: () => navigate('/inventory') },
-            ...(category?.name ? [{ label: category.name }] : [])
-          ]}
-          actions={
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-              {canExport && (
-                <button
-                  onClick={handleExport}
-                  disabled={filteredItems.length === 0}
-                  className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
-              )}
-              {isSuperAdmin && (
-                <button
-                  onClick={handleImportClick}
-                  className="px-4 py-2 rounded-xl bg-white/20 text-white font-semibold hover:bg-white/30 transition-all duration-200 flex items-center gap-2 text-sm"
-                >
-                  <Upload className="w-4 h-4" />
-                  Import
-                </button>
-              )}
-              {isSuperAdmin && (
-                <button
-                  onClick={handleCreateInventory}
-                  className="px-5 py-2 rounded-xl bg-white text-purple-600 font-bold hover:bg-white/90 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center gap-2 text-sm"
-                >
-                  <Plus className="w-5 h-5" />
-                  Create Item
-                </button>
-              )}
-            </div>
-          }
+          title="Category Details"
+          showBackButton
+          onBackClick={() => navigate('/inventory')}
         />
         <input
           ref={importInputRef}
@@ -942,8 +897,87 @@ export function InventoryCategoryPage() {
           className="hidden"
         />
 
-      {/* Main Content */}
-      <div className="content-section">
+        {/* Main Content */}
+        <div className="content-section">
+        
+        {/* Category Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1.5 bg-brand-50 text-brand-700 font-semibold rounded-lg flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    {category?.name || 'Category'}
+                  </span>
+                  <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                    category?.status === 'ACTIVE' 
+                      ? 'bg-emerald-50 text-emerald-700' 
+                      : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {category?.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                  </span>
+                  <span className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-semibold">
+                    {category?.subcategories?.length || 0} Subcategories
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">{category?.name}</h1>
+                {category?.description && (
+                  <p className="text-slate-600 mb-2">{category.description}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <FileCheck className="w-4 h-4" />
+                    <span>{stats.total} Total Items</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <PackageCheck className="w-4 h-4" />
+                    <span>{stats.available} Available</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="btn-secondary"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+                {canExport && (
+                  <button
+                    onClick={handleExport}
+                    disabled={filteredItems.length === 0}
+                    className="btn-secondary"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export
+                  </button>
+                )}
+                {isSuperAdmin && (
+                  <button
+                    onClick={handleImportClick}
+                    className="btn-secondary"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Import
+                  </button>
+                )}
+                {isSuperAdmin && (
+                  <button
+                    onClick={handleCreateInventory}
+                    className="btn-primary"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Item
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <InventorySummaryCard
