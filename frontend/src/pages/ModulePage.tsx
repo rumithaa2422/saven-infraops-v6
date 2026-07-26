@@ -9,7 +9,9 @@ import {
   SortHeader,
   TableRow,
   TableCell,
-  PageHeader
+  PageHeader,
+  ModalLayout,
+  Button
 } from '../components/serviceRequests';
 
 type ModulePageProps = {
@@ -2595,98 +2597,146 @@ export function ModulePage({ moduleKey, title }: ModulePageProps) {
       )}
 
       {/* Category Form Modal */}
-      {categoryFormOpen && (
-        <div className="modal-backdrop">
-          <div className="modal" style={{ maxWidth: '500px' }}>
-            <div className="page-title-row">
-              <h3>{editingCategory ? 'Edit Category' : 'Create Category'}</h3>
-              <button type="button" className="close" onClick={closeCategoryForm}>×</button>
-            </div>
-            <div className="form-group">
-              <label>Category Name *</label>
-              <input
-                type="text"
-                value={categoryForm.name}
-                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                placeholder="e.g., Hardware"
-                autoFocus
-              />
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                value={categoryForm.description}
-                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                placeholder="Optional description..."
-                rows={3}
-              />
-            </div>
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                value={categoryForm.status}
-                onChange={(e) => setCategoryForm({ ...categoryForm, status: e.target.value })}
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-            </div>
-            <div className="form-actions">
-              <button type="button" className="secondary" onClick={closeCategoryForm}>Cancel</button>
-              <button type="button" className="primary" onClick={saveCategory} disabled={savingCategory || !categoryForm.name.trim()}>
-                {savingCategory ? 'Saving...' : (editingCategory ? 'Update' : 'Create')}
-              </button>
-            </div>
+      <ModalLayout
+        isOpen={categoryFormOpen}
+        onClose={closeCategoryForm}
+        title={editingCategory ? 'Edit Category' : 'Create Category'}
+        subtitle="Add or update inventory category"
+        size="lg"
+        icon="📦"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={closeCategoryForm}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={saveCategory}
+              loading={savingCategory}
+              disabled={!categoryForm.name.trim()}
+            >
+              {editingCategory ? 'Update Category' : 'Create Category'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          {/* Category Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Category Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={categoryForm.name}
+              onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+              placeholder="e.g., Hardware"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 hover:border-slate-300"
+              autoFocus
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={categoryForm.description}
+              onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+              placeholder="Optional description..."
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm placeholder:text-slate-400 resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 hover:border-slate-300"
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Status
+            </label>
+            <select
+              value={categoryForm.status}
+              onChange={(e) => setCategoryForm({ ...categoryForm, status: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm appearance-none bg-white transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 hover:border-slate-300"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
           </div>
         </div>
-      )}
+      </ModalLayout>
 
       {/* Subcategory Form Modal */}
-      {subcategoryFormOpen && (
-        <div className="modal-backdrop">
-          <div className="modal" style={{ maxWidth: '500px' }}>
-            <div className="page-title-row">
-              <h3>{editingSubcategory ? 'Edit Subcategory' : 'Create Subcategory'}</h3>
-              <button type="button" className="close" onClick={closeSubcategoryForm}>×</button>
-            </div>
-            <div className="form-group">
-              <label>Subcategory Name *</label>
-              <input
-                type="text"
-                value={subcategoryForm.name}
-                onChange={(e) => setSubcategoryForm({ ...subcategoryForm, name: e.target.value })}
-                placeholder="e.g., Laptop"
-                autoFocus
-              />
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                value={subcategoryForm.description}
-                onChange={(e) => setSubcategoryForm({ ...subcategoryForm, description: e.target.value })}
-                placeholder="Optional description..."
-                rows={3}
-              />
-            </div>
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                value={subcategoryForm.status}
-                onChange={(e) => setSubcategoryForm({ ...subcategoryForm, status: e.target.value })}
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-              </select>
-            </div>
-            <div className="form-actions">
-              <button type="button" className="secondary" onClick={closeSubcategoryForm}>Cancel</button>
-              <button type="button" className="primary" onClick={saveSubcategory} disabled={savingSubcategory || !subcategoryForm.name.trim()}>
-                {savingSubcategory ? 'Saving...' : (editingSubcategory ? 'Update' : 'Create')}
-              </button>
-            </div>
+      <ModalLayout
+        isOpen={subcategoryFormOpen}
+        onClose={closeSubcategoryForm}
+        title={editingSubcategory ? 'Edit Subcategory' : 'Create Subcategory'}
+        subtitle="Add or update inventory subcategory"
+        size="lg"
+        icon="📂"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={closeSubcategoryForm}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={saveSubcategory}
+              loading={savingSubcategory}
+              disabled={!subcategoryForm.name.trim()}
+            >
+              {editingSubcategory ? 'Update Subcategory' : 'Create Subcategory'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          {/* Subcategory Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Subcategory Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={subcategoryForm.name}
+              onChange={(e) => setSubcategoryForm({ ...subcategoryForm, name: e.target.value })}
+              placeholder="e.g., Laptop"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm placeholder:text-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 hover:border-slate-300"
+              autoFocus
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={subcategoryForm.description}
+              onChange={(e) => setSubcategoryForm({ ...subcategoryForm, description: e.target.value })}
+              placeholder="Optional description..."
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm placeholder:text-slate-400 resize-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 hover:border-slate-300"
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Status
+            </label>
+            <select
+              value={subcategoryForm.status}
+              onChange={(e) => setSubcategoryForm({ ...subcategoryForm, status: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm appearance-none bg-white transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300 hover:border-slate-300"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
           </div>
         </div>
-      )}
+      </ModalLayout>
 
       {/* Category Delete Confirmation */}
       {categoryDeleteOpen && categoryDeleteItem && (
