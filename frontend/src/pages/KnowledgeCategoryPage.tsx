@@ -1609,186 +1609,212 @@ export function KnowledgeCategoryPage() {
       )}
 
       {/* Article Form Modal */}
-      {showArticleForm && (
-        <div className="modal-backdrop">
-          <div className="modal modal-large">
-            <div className="page-title-row">
-              <h3>{editingArticle ? 'Edit Article' : 'Create Article'}</h3>
-              <button type="button" className="close" onClick={closeArticleForm}>×</button>
-            </div>
+      <ModalLayout
+        isOpen={showArticleForm}
+        onClose={closeArticleForm}
+        title={editingArticle ? 'Edit Article' : 'Create Article'}
+        subtitle={editingArticle ? 'Update article details' : 'Add a new knowledge article'}
+        icon={editingArticle ? '📝' : '📄'}
+        size="xl"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={closeArticleForm}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={handleSaveArticle}
+              loading={savingArticle || uploadingAttachments}
+            >
+              {editingArticle ? 'Update Article' : 'Create Article'}
+            </Button>
+          </div>
+        }
+      >
+        {articleFormError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            {articleFormError}
+          </div>
+        )}
 
-            {articleFormError && (
-              <div className="form-error-banner">{articleFormError}</div>
-            )}
-
-            <div className="form-row-2">
-              <div className="form-group">
-                <label>Title *</label>
-                <input
-                  type="text"
-                  value={articleFormData.title}
-                  onChange={(e) => setArticleFormData({ ...articleFormData, title: e.target.value })}
-                  placeholder="Article title"
-                  maxLength={200}
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Category *</label>
-                <select
-                  value={articleFormData.categoryId}
-                  onChange={(e) => setArticleFormData({ ...articleFormData, categoryId: e.target.value })}
-                >
-                  <option value="">Select a category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Short Description *</label>
+        <div className="space-y-6">
+          {/* Title and Category Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Title <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
-                value={articleFormData.summary}
-                onChange={(e) => setArticleFormData({ ...articleFormData, summary: e.target.value })}
-                placeholder="Brief description of the article"
-                maxLength={500}
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
+                value={articleFormData.title}
+                onChange={(e) => setArticleFormData({ ...articleFormData, title: e.target.value })}
+                placeholder="Article title"
+                maxLength={200}
+                autoFocus
               />
             </div>
 
-            <div className="form-group">
-              <label>Content *</label>
-              <div className="quill-wrapper">
-                <ReactQuill
-                  theme="snow"
-                  value={articleFormData.body}
-                  onChange={(content) => setArticleFormData({ ...articleFormData, body: content })}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="Write your article content here..."
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none bg-white"
+                value={articleFormData.categoryId}
+                onChange={(e) => setArticleFormData({ ...articleFormData, categoryId: e.target.value })}
+              >
+                <option value="">Select a category</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
+          </div>
 
-            <div className="form-group">
-              <label>Tags</label>
-              <div className="tags-input-container">
-                <div className="tags-list">
-                  {articleFormData.tags.map((tag, index) => (
-                    <span key={index} className="tag">
-                      {tag}
-                      <button type="button" onClick={() => removeTag(tag)}>×</button>
-                    </span>
+          {/* Short Description */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Short Description <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none"
+              value={articleFormData.summary}
+              onChange={(e) => setArticleFormData({ ...articleFormData, summary: e.target.value })}
+              placeholder="Brief description of the article"
+              maxLength={500}
+            />
+          </div>
+
+          {/* Content */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Content <span className="text-red-500">*</span>
+            </label>
+            <div className="quill-wrapper rounded-xl border-2 border-slate-200 overflow-hidden">
+              <ReactQuill
+                theme="snow"
+                value={articleFormData.body}
+                onChange={(content) => setArticleFormData({ ...articleFormData, body: content })}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="Write your article content here..."
+                className="bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Tags
+            </label>
+            <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border-2 border-slate-200 focus-within:border-purple-400 focus-within:ring-4 focus-within:ring-purple-100 transition-all bg-white min-h-[50px]">
+              {articleFormData.tags.map((tag, index) => (
+                <span key={index} className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium">
+                  {tag}
+                  <button 
+                    type="button" 
+                    onClick={() => removeTag(tag)}
+                    className="w-4 h-4 rounded-full bg-indigo-200 hover:bg-indigo-300 flex items-center justify-center text-xs"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                placeholder={articleFormData.tags.length === 0 ? "Add a tag..." : ""}
+                className="flex-1 min-w-[120px] border-none outline-none bg-transparent text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Attachments
+            </label>
+            <div className="space-y-3">
+              {/* Drop Zone */}
+              <div 
+                className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                  isDraggingOver 
+                    ? 'border-purple-400 bg-purple-50' 
+                    : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('article-attachment-upload')?.click()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    document.getElementById('article-attachment-upload')?.click();
+                  }
+                }}
+              >
+                <input
+                  type="file"
+                  id="article-attachment-upload"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <svg className="w-10 h-10 text-slate-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-sm font-medium text-slate-600">
+                  Drag & drop files or <span className="text-purple-600">browse</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-1">Max 25 MB per file</p>
+              </div>
+
+              {/* Selected Files */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50">
+                      <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
+                        {getFileIconSvg(file.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-700 truncate">{file.name}</p>
+                        <p className="text-xs text-slate-400 flex items-center gap-2">
+                          <span 
+                            className="px-2 py-0.5 rounded text-xs font-medium"
+                            style={{ 
+                              backgroundColor: getFileTypeInfo(file.type).color + '20', 
+                              color: getFileTypeInfo(file.type).color 
+                            }}
+                          >
+                            {getFileTypeInfo(file.type).label}
+                          </span>
+                          {formatFileSize(file.size)}
+                        </p>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="w-8 h-8 rounded-lg hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                        onClick={() => removeSelectedFile(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   ))}
                 </div>
-                <div className="tag-input-row">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    placeholder="Add a tag..."
-                  />
-                  <button type="button" className="secondary" onClick={addTag}>Add</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Attachment Upload Section */}
-            <div className="form-group">
-              <label>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '6px' }}>
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Attachments
-              </label>
-              <div className="form-attachments">
-                {/* Drop Zone */}
-                <div 
-                  className={`form-dropzone ${isDraggingOver ? 'dragging' : ''}`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Upload attachments. Drag and drop files here or click to browse."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      document.getElementById('article-attachment-upload')?.click();
-                    }
-                  }}
-                >
-                  <input
-                    type="file"
-                    id="article-attachment-upload"
-                    multiple
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.png,.jpg,.jpeg"
-                    onChange={handleFileSelect}
-                    className="file-input"
-                    aria-hidden="true"
-                  />
-                  <div className="form-dropzone-content">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Drag & drop files or <span className="browse-link">browse</span></span>
-                    <span className="form-dropzone-limit">Max 25 MB per file</span>
-                  </div>
-                </div>
-
-                {/* Selected Files */}
-                {selectedFiles.length > 0 && (
-                  <div className="form-selected-files">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="form-selected-file">
-                        <div className="form-file-icon">
-                          {getFileIconSvg(file.type)}
-                        </div>
-                        <div className="form-file-info">
-                          <span className="form-file-name">{file.name}</span>
-                          <span className="form-file-meta">
-                            <span className="file-type-badge-small" style={{ backgroundColor: getFileTypeInfo(file.type).color + '20', color: getFileTypeInfo(file.type).color }}>
-                              {getFileTypeInfo(file.type).label}
-                            </span>
-                            <span className="file-size-small">{formatFileSize(file.size)}</span>
-                          </span>
-                        </div>
-                        <button 
-                          type="button" 
-                          className="form-remove-btn"
-                          onClick={() => removeSelectedFile(index)}
-                          aria-label={`Remove ${file.name}`}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="secondary" onClick={closeArticleForm}>
-                Cancel
-              </button>
-              <button 
-                type="button" 
-                className="primary" 
-                onClick={handleSaveArticle}
-                disabled={savingArticle || uploadingAttachments}
-              >
-                {savingArticle ? 'Saving...' : (uploadingAttachments ? 'Uploading...' : (editingArticle ? 'Update' : 'Save'))}
-              </button>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </ModalLayout>
 
       {/* Article Delete Confirmation Modal */}
       {showArticleDelete && deletingArticle && (
