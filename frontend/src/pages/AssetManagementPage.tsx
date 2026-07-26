@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { ModalLayout } from '../components/inventory/Modal';
 import { SummaryCards } from '../components/common/SummaryCards';
-import { Eye, Edit2, Trash2, Package, Users, ClipboardCheck, Wrench, ArrowRightLeft, AlertTriangle, LayoutGrid, User, FolderOpen } from 'lucide-react';
+import { Eye, Edit2, Trash2, Package, Users, ClipboardCheck, Wrench, ArrowRightLeft, AlertTriangle, LayoutGrid, User, FolderOpen, Search, SlidersHorizontal, Download, RefreshCw, X, ArrowUpDown } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -644,323 +644,372 @@ export function AssetManagementPage() {
 
       {/* By Inventory Tab Content */}
       {activeTab === 'inventory' && (
-        <div className="asset-content">
-          {/* Breadcrumb */}
-          {currentView !== 'categories' && (
-            <div className="asset-breadcrumb">
-              <button className="breadcrumb-item" onClick={handleBreadcrumb}>
-                Categories
-              </button>
-              {currentView === 'subcategories' && selectedCategory && (
-                <>
-                  <span className="breadcrumb-separator">/</span>
-                  <span className="breadcrumb-current">{currentCategoryName}</span>
-                </>
-              )}
-              {currentView === 'items' && (
-                <>
-                  <span className="breadcrumb-separator">/</span>
-                  <button className="breadcrumb-item" onClick={() => { setCurrentView('subcategories'); setSelectedSubcategory(null); }}>
-                    {currentCategoryName}
-                  </button>
-                  <span className="breadcrumb-separator">/</span>
-                  <span className="breadcrumb-current">{currentSubcategoryName}</span>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Toolbar */}
-          <div className="asset-toolbar">
-            <div className="asset-search">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <input
-                type="text"
-                placeholder={currentView === 'items' ? 'Search by ID, Name, Brand, Model...' : 'Search...'}
-                value={search}
-                onChange={(e) => handleSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="asset-toolbar-actions">
-              <button className="asset-toolbar-btn" onClick={() => setShowFilters(!showFilters)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Filter
-                {(filters.status || filters.location || filters.vendor) && <span className="filter-indicator"></span>}
-              </button>
-
-              <div className="asset-sort-dropdown">
-                <button className="asset-toolbar-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Sort
-                </button>
-                <div className="asset-sort-menu">
-                  <button onClick={() => handleSort('createdAt', 'desc')}>
-                    Newest {sortBy === 'createdAt' && sortOrder === 'desc' ? '✓' : ''}
-                  </button>
-                  <button onClick={() => handleSort('createdAt', 'asc')}>
-                    Oldest {sortBy === 'createdAt' && sortOrder === 'asc' ? '✓' : ''}
-                  </button>
-                  <button onClick={() => handleSort('warrantyExpiry', 'asc')}>
-                    Warranty {sortBy === 'warrantyExpiry' ? '✓' : ''}
-                  </button>
-                  <button onClick={() => handleSort('purchaseDate', 'desc')}>
-                    Purchase Date {sortBy === 'purchaseDate' ? '✓' : ''}
-                  </button>
-                  <button onClick={() => handleSort('itemName', 'asc')}>
-                    Name (A-Z) {sortBy === 'itemName' && sortOrder === 'asc' ? '✓' : ''}
-                  </button>
+        <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm">
+          {/* Toolbar - Modern Design */}
+          <div className="p-4 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row gap-3 items-center">
+              {/* Search */}
+              <div className="flex-1 w-full">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={currentView === 'items' ? 'Search by ID, Name, Brand, Model...' : 'Search...'}
+                    value={search}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full pl-11 pr-10 py-2.5 rounded-xl border-2 border-slate-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all outline-none text-sm"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => handleSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors flex items-center justify-center"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <button className="asset-toolbar-btn" onClick={handleRefresh}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Refresh
-              </button>
+              {/* Actions */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Filter Button */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm ${
+                    showFilters || filters.status || filters.location || filters.vendor
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Filter
+                  {(filters.status || filters.location || filters.vendor) && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/30 text-white text-xs rounded-md">
+                      {[filters.status, filters.location, filters.vendor].filter(Boolean).length}
+                    </span>
+                  )}
+                </button>
 
-              <button className="asset-toolbar-btn" onClick={handleExport} disabled={items.length === 0}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                Export
-              </button>
+                {/* Sort Dropdown */}
+                <div className="relative group">
+                  <button className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm">
+                    <ArrowUpDown className="w-4 h-4" />
+                    Sort
+                  </button>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                    <button onClick={() => handleSort('createdAt', 'desc')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'createdAt' && sortOrder === 'desc' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                      Newest
+                      {sortBy === 'createdAt' && sortOrder === 'desc' && <span className="text-indigo-600">✓</span>}
+                    </button>
+                    <button onClick={() => handleSort('createdAt', 'asc')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'createdAt' && sortOrder === 'asc' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                      Oldest
+                      {sortBy === 'createdAt' && sortOrder === 'asc' && <span className="text-indigo-600">✓</span>}
+                    </button>
+                    <button onClick={() => handleSort('warrantyExpiry', 'asc')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'warrantyExpiry' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                      Warranty
+                      {sortBy === 'warrantyExpiry' && <span className="text-indigo-600">✓</span>}
+                    </button>
+                    <button onClick={() => handleSort('purchaseDate', 'desc')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'purchaseDate' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                      Purchase Date
+                      {sortBy === 'purchaseDate' && <span className="text-indigo-600">✓</span>}
+                    </button>
+                    <button onClick={() => handleSort('itemName', 'asc')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'itemName' && sortOrder === 'asc' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                      Name (A-Z)
+                      {sortBy === 'itemName' && sortOrder === 'asc' && <span className="text-indigo-600">✓</span>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Refresh */}
+                <button
+                  onClick={handleRefresh}
+                  className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+
+                {/* Export */}
+                <button
+                  onClick={handleExport}
+                  disabled={items.length === 0}
+                  className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                </button>
+              </div>
             </div>
+
+            {/* Filters Panel */}
+            {showFilters && (
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-slate-600">Status:</label>
+                    <select
+                      value={filters.status}
+                      onChange={(e) => setFilters({...filters, status: e.target.value})}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    >
+                      <option value="">All Status</option>
+                      <option value="AVAILABLE">Available</option>
+                      <option value="ASSIGNED">Assigned</option>
+                      <option value="UNDER_REPAIR">Under Repair</option>
+                      <option value="RETIRED">Retired</option>
+                      <option value="LOST">Lost</option>
+                    </select>
+                  </div>
+
+                  {/* Location Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-slate-600">Location:</label>
+                    <input
+                      type="text"
+                      placeholder="Filter by location"
+                      value={filters.location}
+                      onChange={(e) => setFilters({...filters, location: e.target.value})}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    />
+                  </div>
+
+                  {/* Vendor Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-slate-600">Vendor:</label>
+                    <input
+                      type="text"
+                      placeholder="Filter by vendor"
+                      value={filters.vendor}
+                      onChange={(e) => setFilters({...filters, vendor: e.target.value})}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    />
+                  </div>
+
+                  {/* Clear Filters */}
+                  {(filters.status || filters.location || filters.vendor) && (
+                    <button
+                      onClick={() => setFilters({...filters, status: '', location: '', vendor: ''})}
+                      className="px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Filters Panel */}
-          {showFilters && (
-            <div className="asset-filters-panel">
-              <div className="asset-filter-group">
-                <label>Status</label>
-                <select 
-                  value={filters.status} 
-                  onChange={(e) => setFilters({...filters, status: e.target.value})}
-                >
-                  <option value="">All Status</option>
-                  <option value="AVAILABLE">Available</option>
-                  <option value="ASSIGNED">Assigned</option>
-                  <option value="UNDER_REPAIR">Under Repair</option>
-                  <option value="RETIRED">Retired</option>
-                  <option value="LOST">Lost</option>
-                </select>
-              </div>
-              <div className="asset-filter-group">
-                <label>Location</label>
-                <input 
-                  type="text" 
-                  placeholder="Filter by location"
-                  value={filters.location}
-                  onChange={(e) => setFilters({...filters, location: e.target.value})}
-                />
-              </div>
-              <div className="asset-filter-group">
-                <label>Vendor</label>
-                <input 
-                  type="text" 
-                  placeholder="Filter by vendor"
-                  value={filters.vendor}
-                  onChange={(e) => setFilters({...filters, vendor: e.target.value})}
-                />
-              </div>
-              <button className="asset-filter-apply" onClick={handleFilterApply}>
-                Apply Filters
-              </button>
-            </div>
-          )}
+            {/* Content Area */}
+            <div className="p-4">
+              {/* Breadcrumb */}
+              {currentView !== 'categories' && (
+                <div className="flex items-center gap-2 mb-4 text-sm">
+                  <button className="text-indigo-600 hover:text-indigo-700 font-medium" onClick={handleBreadcrumb}>
+                    Categories
+                  </button>
+                  {currentView === 'subcategories' && selectedCategory && (
+                    <>
+                      <span className="text-slate-400">/</span>
+                      <span className="text-slate-700 font-medium">{currentCategoryName}</span>
+                    </>
+                  )}
+                  {currentView === 'items' && (
+                    <>
+                      <span className="text-slate-400">/</span>
+                      <button className="text-indigo-600 hover:text-indigo-700 font-medium" onClick={() => { setCurrentView('subcategories'); setSelectedSubcategory(null); }}>
+                        {currentCategoryName}
+                      </button>
+                      <span className="text-slate-400">/</span>
+                      <span className="text-slate-700 font-medium">{currentSubcategoryName}</span>
+                    </>
+                  )}
+                </div>
+              )}
 
-          {/* Categories View */}
-          {currentView === 'categories' && (
-            <div className="asset-categories-grid">
-              {(loading || loadingAllItems) ? (
-                <div className="asset-loading">
-                  <div className="spinner"></div>
-                  <span>Loading categories...</span>
+              {/* Categories View */}
+              {currentView === 'categories' && (
+                <div className="asset-categories-grid">
+                  {(loading || loadingAllItems) ? (
+                    <div className="asset-loading">
+                      <div className="spinner"></div>
+                      <span>Loading categories...</span>
+                    </div>
+                  ) : categories.length === 0 ? (
+                    <div className="asset-empty">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <p>No categories found</p>
+                    </div>
+                  ) : (
+                    categories.map(category => (
+                      <div 
+                        key={category.id} 
+                        className="asset-category-card"
+                        onClick={() => handleCategoryClick(category.id)}
+                      >
+                        <div className="asset-category-icon">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                        <div className="asset-category-info">
+                          <h3>{category.name}</h3>
+                          <span>{category.inventoryCount} inventory</span>
+                        </div>
+                        <svg className="asset-category-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ) : categories.length === 0 ? (
-                <div className="asset-empty">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p>No categories found</p>
-                </div>
-              ) : (
-                categories.map(category => (
-                  <div 
-                    key={category.id} 
-                    className="asset-category-card"
-                    onClick={() => handleCategoryClick(category.id)}
-                  >
-                    <div className="asset-category-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              )}
+
+              {/* Subcategories View */}
+              {currentView === 'subcategories' && (
+                <div className="asset-subcategories-grid">
+                  {loading ? (
+                    <div className="asset-loading">
+                      <div className="spinner"></div>
+                      <span>Loading subcategories...</span>
+                    </div>
+                  ) : currentSubcategories.length === 0 ? (
+                    <div className="asset-empty">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
+                      <p>No subcategories found</p>
                     </div>
-                    <div className="asset-category-info">
-                      <h3>{category.name}</h3>
-                      <span>{category.inventoryCount} inventory</span>
-                    </div>
-                    <svg className="asset-category-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                ))
+                  ) : (
+                    currentSubcategories.map(sub => (
+                      <div 
+                        key={sub.id} 
+                        className="asset-subcategory-card"
+                        onClick={() => handleSubcategoryClick(sub.id)}
+                      >
+                        <div className="asset-subcategory-icon">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
+                            <path d="M9 9H15M9 13H15M9 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                        </div>
+                        <div className="asset-subcategory-info">
+                          <h3>{sub.name}</h3>
+                          <span>{sub.inventoryCount} inventory</span>
+                        </div>
+                        <svg className="asset-subcategory-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Subcategories View */}
-          {currentView === 'subcategories' && (
-            <div className="asset-subcategories-grid">
-              {loading ? (
-                <div className="asset-loading">
-                  <div className="spinner"></div>
-                  <span>Loading subcategories...</span>
-                </div>
-              ) : currentSubcategories.length === 0 ? (
-                <div className="asset-empty">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M3 9H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p>No subcategories found</p>
-                </div>
-              ) : (
-                currentSubcategories.map(sub => (
-                  <div 
-                    key={sub.id} 
-                    className="asset-subcategory-card"
-                    onClick={() => handleSubcategoryClick(sub.id)}
-                  >
-                    <div className="asset-subcategory-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
-                        <path d="M9 9H15M9 13H15M9 17H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              {/* Items Table View */}
+              {currentView === 'items' && (
+                <div className="asset-items-section">
+                  {loadingItems ? (
+                    <div className="asset-loading">
+                      <div className="spinner"></div>
+                      <span>Loading items...</span>
+                    </div>
+                  ) : items.length === 0 ? (
+                    <div className="asset-empty">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
+                      <p>{search || filters.status || filters.location || filters.vendor ? 'No matching items found' : 'No items in this subcategory'}</p>
                     </div>
-                    <div className="asset-subcategory-info">
-                      <h3>{sub.name}</h3>
-                      <span>{sub.inventoryCount} inventory</span>
-                    </div>
-                    <svg className="asset-subcategory-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                ))
+                  ) : (
+                    <TableContainer loading={false} empty={items.length === 0} emptyTitle="No items found" emptyDescription="Try adjusting your filters or add new inventory items">
+                      <table className="w-full">
+                        <thead className="bg-slate-50 border-b border-slate-100">
+                          <tr>
+                            <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Item Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Brand" sortKey="brand" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Model" sortKey="model" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Qty" sortKey="currentQty" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Warranty" sortKey="warrantyExpiry" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Location" sortKey="location" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Assigned User" sortKey="assignedTo" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSortByKey} />
+                            <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {items.map(item => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
+                                  {item.itemNo}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-medium text-slate-900">{item.itemName}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{item.brand || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{item.model || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-700">{item.currentQty}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${
+                                  item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                                  item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
+                                  item.status === 'UNDER_REPAIR' ? 'bg-amber-100 text-amber-700' :
+                                  item.status === 'RETIRED' ? 'bg-slate-100 text-slate-600' :
+                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {item.status.replace(/_/g, ' ')}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{formatDate(item.warrantyExpiry)}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{item.location || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{item.assignedTo?.name || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-end gap-2">
+                                  <button 
+                                    className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                                    onClick={() => navigate(`/access-management/${item.id}`)}
+                                    title="View"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </tbody>
+                      </table>
+                    </TableContainer>
+                  )}
+                </div>
               )}
             </div>
-          )}
-
-          {/* Items Table View */}
-          {currentView === 'items' && (
-            <div className="asset-items-section">
-              {loadingItems ? (
-                <div className="asset-loading">
-                  <div className="spinner"></div>
-                  <span>Loading items...</span>
-                </div>
-              ) : items.length === 0 ? (
-                <div className="asset-empty">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 7L12 3L4 7M20 7V17L12 21M20 7L12 11M12 21L4 17V7M12 21V11M4 7L12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p>{search || filters.status || filters.location || filters.vendor ? 'No matching items found' : 'No items in this subcategory'}</p>
-                </div>
-              ) : (
-                <TableContainer loading={false} empty={items.length === 0} emptyTitle="No items found" emptyDescription="Try adjusting your filters or add new inventory items">
-                  <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-100">
-                      <tr>
-                        <SortHeader label="Inventory ID" sortKey="itemNo" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Item Name" sortKey="itemName" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Brand" sortKey="brand" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Model" sortKey="model" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Qty" sortKey="currentQty" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Warranty" sortKey="warrantyExpiry" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Location" sortKey="location" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Assigned User" sortKey="assignedTo" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSortByKey} />
-                        <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {items.map(item => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
-                              {item.itemNo}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-medium text-slate-900">{item.itemName}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-slate-600">{item.brand || '-'}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-slate-600">{item.model || '-'}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-slate-700">{item.currentQty}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${
-                              item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
-                              item.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' :
-                              item.status === 'UNDER_REPAIR' ? 'bg-amber-100 text-amber-700' :
-                              item.status === 'RETIRED' ? 'bg-slate-100 text-slate-600' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
-                              {item.status.replace(/_/g, ' ')}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-slate-600">{formatDate(item.warrantyExpiry)}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-slate-600">{item.location || '-'}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-slate-600">{item.assignedTo?.name || '-'}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
-                          </TableCell>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-2">
-                              <button 
-                                className="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                                onClick={() => navigate(`/access-management/${item.id}`)}
-                                title="View"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </tbody>
-                  </table>
-                </TableContainer>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
       {/* By User Tab */}
       {activeTab === 'user' && (
@@ -1205,102 +1254,122 @@ function UserView() {
   }
 
   return (
-    <div className="asset-content">
-      {/* Toolbar */}
-      <div className="asset-toolbar">
-        <div className="asset-search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-            <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="asset-toolbar-actions">
-          <div className="asset-sort-dropdown">
-            <button className="asset-toolbar-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Sort
-            </button>
-            <div className="asset-sort-menu">
-              <button onClick={() => toggleSort('name')}>
-                Name {sortBy === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-              </button>
-              <button onClick={() => toggleSort('department')}>
-                Department {sortBy === 'department' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-              </button>
-              <button onClick={() => toggleSort('assets')}>
-                Assigned Assets {sortBy === 'assets' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-              </button>
+    <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm">
+      {/* Toolbar - Modern Design */}
+      <div className="p-4 border-b border-slate-100">
+        <div className="flex flex-col lg:flex-row gap-3 items-center">
+          {/* Search */}
+          <div className="flex-1 w-full">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-10 py-2.5 rounded-xl border-2 border-slate-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all outline-none text-sm"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
-          <button className="asset-toolbar-btn" onClick={loadUsers}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Refresh
-          </button>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Sort Dropdown */}
+            <div className="relative group">
+              <button className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm">
+                <ArrowUpDown className="w-4 h-4" />
+                Sort
+              </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button onClick={() => toggleSort('name')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'name' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                  Name
+                  {sortBy === 'name' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
+                <button onClick={() => toggleSort('department')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'department' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                  Department
+                  {sortBy === 'department' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
+                <button onClick={() => toggleSort('assets')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'assets' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                  Assigned Assets
+                  {sortBy === 'assets' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
+              </div>
+            </div>
+
+            {/* Refresh */}
+            <button
+              onClick={loadUsers}
+              className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Users Grid */}
-      {loading ? (
-        <div className="user-assets-grid-loading">
-          <div className="spinner"></div>
-          <span>Loading users...</span>
-        </div>
-      ) : filteredUsers.length === 0 ? (
-        <div className="user-assets-empty">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-          </svg>
-          <h3>No Users Found</h3>
-          <p>No users match your search criteria.</p>
-        </div>
-      ) : (
-        <div className="user-cards-grid">
-          {filteredUsers.map(user => (
-            <div 
-              key={user.id} 
-              className="user-card"
-              onClick={() => navigate(`/access-management/user/${user.id}`)}
-            >
-              <div className="user-card-header">
-                <div className="user-card-avatar">
-                  {user.name.charAt(0).toUpperCase()}
+      <div className="p-4">
+        {loading ? (
+          <div className="user-assets-grid-loading">
+            <div className="spinner"></div>
+            <span>Loading users...</span>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="user-assets-empty">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+            <h3>No Users Found</h3>
+            <p>No users match your search criteria.</p>
+          </div>
+        ) : (
+          <div className="user-cards-grid">
+            {filteredUsers.map(user => (
+              <div 
+                key={user.id} 
+                className="user-card"
+                onClick={() => navigate(`/access-management/user/${user.id}`)}
+              >
+                <div className="user-card-header">
+                  <div className="user-card-avatar">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="user-card-info">
+                    <h3 className="user-card-name">{user.name}</h3>
+                    <span className="user-card-department">{user.department || 'No Department'}</span>
+                  </div>
                 </div>
-                <div className="user-card-info">
-                  <h3 className="user-card-name">{user.name}</h3>
-                  <span className="user-card-department">{user.department || 'No Department'}</span>
+                <div className="user-card-meta">
+                  <span className="user-card-role">{user.role || 'Employee'}</span>
+                </div>
+                <div className="user-card-stats">
+                  <div className="user-card-stat">
+                    <span className="stat-value">{user.assignedAssets}</span>
+                    <span className="stat-label">Assets</span>
+                  </div>
+                  <div className="user-card-stat">
+                    <span className="stat-value">{user.projectCount}</span>
+                    <span className="stat-label">Projects</span>
+                  </div>
+                </div>
+                <div className="user-card-footer">
+                  <span className="user-card-email">{user.email}</span>
                 </div>
               </div>
-              <div className="user-card-meta">
-                <span className="user-card-role">{user.role || 'Employee'}</span>
-              </div>
-              <div className="user-card-stats">
-                <div className="user-card-stat">
-                  <span className="stat-value">{user.assignedAssets}</span>
-                  <span className="stat-label">Assets</span>
-                </div>
-                <div className="user-card-stat">
-                  <span className="stat-value">{user.projectCount}</span>
-                  <span className="stat-label">Projects</span>
-                </div>
-              </div>
-              <div className="user-card-footer">
-                <span className="user-card-email">{user.email}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1382,109 +1451,129 @@ function ProjectView() {
   }
 
   return (
-    <div className="asset-content">
-      {/* Toolbar */}
-      <div className="asset-toolbar">
-        <div className="asset-search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-            <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search projects..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="asset-toolbar-actions">
-          <div className="asset-sort-dropdown">
-            <button className="asset-toolbar-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6H21M6 12H18M9 18H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Sort
-            </button>
-            <div className="asset-sort-menu">
-              <button onClick={() => toggleSort('name')}>
-                Project Name {sortBy === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-              </button>
-              <button onClick={() => toggleSort('manager')}>
-                Manager {sortBy === 'manager' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-              </button>
-              <button onClick={() => toggleSort('assets')}>
-                Assigned Assets {sortBy === 'assets' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-              </button>
+    <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm">
+      {/* Toolbar - Modern Design */}
+      <div className="p-4 border-b border-slate-100">
+        <div className="flex flex-col lg:flex-row gap-3 items-center">
+          {/* Search */}
+          <div className="flex-1 w-full">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-11 pr-10 py-2.5 rounded-xl border-2 border-slate-200 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all outline-none text-sm"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
-          <button className="asset-toolbar-btn" onClick={loadProjects}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 4V9H4.58152M19.9381 11C19.446 7.05369 16.0796 4 12 4C8.64262 4 5.76829 6.06817 4.58152 9M4.58152 9H9M20 20V15H19.4185M19.4185 15C18.2317 17.9318 15.3574 20 12 20C7.92038 20 4.55399 16.9463 4.06189 13M19.4185 15H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Refresh
-          </button>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Sort Dropdown */}
+            <div className="relative group">
+              <button className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm">
+                <ArrowUpDown className="w-4 h-4" />
+                Sort
+              </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button onClick={() => toggleSort('name')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'name' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                  Project Name
+                  {sortBy === 'name' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
+                <button onClick={() => toggleSort('manager')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'manager' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                  Manager
+                  {sortBy === 'manager' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
+                <button onClick={() => toggleSort('assets')} className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors flex items-center justify-between ${sortBy === 'assets' ? 'text-indigo-600 font-medium' : 'text-slate-700'}`}>
+                  Assigned Assets
+                  {sortBy === 'assets' && <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                </button>
+              </div>
+            </div>
+
+            {/* Refresh */}
+            <button
+              onClick={loadProjects}
+              className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Projects Grid */}
-      {loading ? (
-        <div className="user-assets-grid-loading">
-          <div className="spinner"></div>
-          <span>Loading projects...</span>
-        </div>
-      ) : filteredProjects.length === 0 ? (
-        <div className="user-assets-empty">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
-            <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          <h3>No Projects Found</h3>
-          <p>No projects match your search criteria.</p>
-        </div>
-      ) : (
-        <div className="user-cards-grid">
-          {filteredProjects.map(project => (
-            <div 
-              key={project.id} 
-              className="user-card"
-              onClick={() => navigate(`/access-management/project/${project.id}`)}
-            >
-              <div className="user-card-header">
-                <div className="user-card-avatar project">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
+      <div className="p-4">
+        {loading ? (
+          <div className="user-assets-grid-loading">
+            <div className="spinner"></div>
+            <span>Loading projects...</span>
+          </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="user-assets-empty">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
+              <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <h3>No Projects Found</h3>
+            <p>No projects match your search criteria.</p>
+          </div>
+        ) : (
+          <div className="user-cards-grid">
+            {filteredProjects.map(project => (
+              <div 
+                key={project.id} 
+                className="user-card"
+                onClick={() => navigate(`/access-management/project/${project.id}`)}
+              >
+                <div className="user-card-header">
+                  <div className="user-card-avatar project">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <div className="user-card-info">
+                    <h3 className="user-card-name">{project.projectName}</h3>
+                    <span className="user-card-department">{project.projectCode}</span>
+                  </div>
                 </div>
-                <div className="user-card-info">
-                  <h3 className="user-card-name">{project.projectName}</h3>
-                  <span className="user-card-department">{project.projectCode}</span>
+                <div className="user-card-meta">
+                  <span className={`status-badge status-${project.status.toLowerCase()}`}>
+                    {project.status}
+                  </span>
+                </div>
+                <div className="user-card-stats">
+                  <div className="user-card-stat">
+                    <span className="stat-value">{project.assignedAssets}</span>
+                    <span className="stat-label">Assets</span>
+                  </div>
+                  <div className="user-card-stat">
+                    <span className="stat-value">{project.teamSize}</span>
+                    <span className="stat-label">Team</span>
+                  </div>
+                </div>
+                <div className="user-card-footer">
+                  {project.manager && (
+                    <span className="user-card-email">Manager: {project.manager.name}</span>
+                  )}
                 </div>
               </div>
-              <div className="user-card-meta">
-                <span className={`status-badge status-${project.status.toLowerCase()}`}>
-                  {project.status}
-                </span>
-              </div>
-              <div className="user-card-stats">
-                <div className="user-card-stat">
-                  <span className="stat-value">{project.assignedAssets}</span>
-                  <span className="stat-label">Assets</span>
-                </div>
-                <div className="user-card-stat">
-                  <span className="stat-value">{project.teamSize}</span>
-                  <span className="stat-label">Team</span>
-                </div>
-              </div>
-              <div className="user-card-footer">
-                {project.manager && (
-                  <span className="user-card-email">Manager: {project.manager.name}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
