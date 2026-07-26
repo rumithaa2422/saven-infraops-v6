@@ -645,8 +645,7 @@ export function ProjectDashboardPage() {
               </button>
               {isSuperAdmin && (
                 <button 
-                  type="button" 
-                  className="px-4 py-2 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all flex items-center gap-2 text-sm shadow-lg shadow-purple-500/30"
+                  className="btn-primary"
                   onClick={() => navigate('/projects-environments/create')}
                 >
                   <Plus className="w-4 h-4" />
