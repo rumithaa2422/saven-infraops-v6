@@ -246,15 +246,16 @@ export function AssetManagementPage() {
           const state = JSON.parse(savedState);
           
           // Restore navigation state
-          if (state.currentView) setCurrentView(state.currentView);
-          if (state.selectedCategory) setSelectedCategory(state.selectedCategory);
-          if (state.selectedSubcategory) setSelectedSubcategory(state.selectedSubcategory);
+          // Use !== undefined check to handle empty string values properly
+          if (state.currentView !== undefined) setCurrentView(state.currentView);
+          if (state.selectedCategory !== undefined) setSelectedCategory(state.selectedCategory);
+          if (state.selectedSubcategory !== undefined) setSelectedSubcategory(state.selectedSubcategory);
           if (state.search !== undefined) setSearch(state.search);
-          if (state.filters) setFilters(state.filters);
-          if (state.items) setItems(state.items);
-          if (state.categories) setCategories(state.categories);
-          if (state.allItems) setAllItems(state.allItems);
-          if (state.sortConfig) setSortConfig(state.sortConfig);
+          if (state.filters !== undefined) setFilters(state.filters);
+          if (state.items !== undefined) setItems(state.items);
+          if (state.categories !== undefined) setCategories(state.categories);
+          if (state.allItems !== undefined) setAllItems(state.allItems);
+          if (state.sortConfig !== undefined) setSortConfig(state.sortConfig);
           
           // Clear the saved state
           sessionStorage.removeItem('assetManagementState');
