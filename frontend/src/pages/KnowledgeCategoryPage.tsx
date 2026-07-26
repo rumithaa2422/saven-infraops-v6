@@ -3,13 +3,14 @@ import { api, knowledgeAttachmentApi } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Eye, Edit2, Trash2, BookOpen, RefreshCw, Plus, Folder, FileText, Clock } from 'lucide-react';
+import { Eye, Edit2, Trash2, BookOpen, RefreshCw, Plus, Folder, FileText, Clock, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
   TableCell,
-  PageHeader
+  PageHeader,
+  FilterChip
 } from '../components/serviceRequests';
 import { SummaryCards } from '../components/common/SummaryCards';
 
@@ -172,6 +173,11 @@ export function KnowledgeCategoryPage() {
     key: 'createdAt',
     direction: 'desc'
   });
+
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
 
   // Debounced search value (300ms delay)
   const debouncedSearch = useMemo(() => {
@@ -641,6 +647,17 @@ export function KnowledgeCategoryPage() {
     handleSort(key as SortField);
   };
 
+  // Reset all filters
+  const resetFilters = () => {
+    setAuthorFilter('');
+    setDateFilter('');
+    setSearch('');
+    setSearchInput('');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = authorFilter !== '' || dateFilter !== '' || search !== '';
+
   // Format date
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -1024,31 +1041,112 @@ export function KnowledgeCategoryPage() {
       {/* Articles View - Modern Design */}
       {viewMode === 'articles' && (
         <>
-          {/* Search and Filters */}
-          <div className="kb-search-filter-bar">
-            <div className="kb-search-box">
-              <span className="kb-search-icon">🔍</span>
-              <input
-                type="text"
-                className="kb-search-input"
-                placeholder="Search articles by title, author..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              {searchInput && (
-                <button 
-                  className="kb-search-clear"
-                  onClick={() => setSearchInput('')}
+          {/* Search and Filters - Modern Design */}
+          <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-3 items-center">
+              {/* Search */}
+              <div className="flex-1">
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400">🔍</span>
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search articles by title, author..."
+                    className="w-full pl-11 pr-10 py-2.5 rounded-xl border-2 border-slate-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all outline-none text-sm"
+                  />
+                  {searchInput && (
+                    <button
+                      onClick={() => setSearchInput('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors flex items-center justify-center"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Filter Toggle */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm ${
+                  showFilters
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {hasActiveFilters && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-white/30 text-white text-xs rounded-md">
+                    {[authorFilter, dateFilter].filter(Boolean).length + (search ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+
+              {/* Sort Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="px-4 py-2 rounded-lg font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2 text-sm"
                 >
-                  ×
+                  <ArrowUpDown className="w-4 h-4" />
+                  Sort
                 </button>
-              )}
+              </div>
             </div>
-            <div className="kb-filter-actions">
-              <span className="kb-results-count">
-                {articleLoading ? 'Searching...' : `${articles.length} article${articles.length !== 1 ? 's' : ''}`}
-              </span>
-            </div>
+
+            {/* Filter Panel */}
+            {showFilters && (
+              <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-medium text-slate-500">Author:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {['Admin', 'User'].map(option => (
+                      <FilterChip
+                        key={option}
+                        label={option}
+                        onClick={() => setAuthorFilter(authorFilter === option ? '' : option)}
+                        active={authorFilter === option}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-medium text-slate-500">Date:</span>
+                  <div className="flex flex-wrap gap-2">
+                    <FilterChip
+                      label="Last 7 days"
+                      onClick={() => setDateFilter(dateFilter === '7days' ? '' : '7days')}
+                      active={dateFilter === '7days'}
+                    />
+                    <FilterChip
+                      label="Last 30 days"
+                      onClick={() => setDateFilter(dateFilter === '30days' ? '' : '30days')}
+                      active={dateFilter === '30days'}
+                    />
+                    <FilterChip
+                      label="Last 90 days"
+                      onClick={() => setDateFilter(dateFilter === '90days' ? '' : '90days')}
+                      active={dateFilter === '90days'}
+                    />
+                  </div>
+                </div>
+
+                {hasActiveFilters && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={resetFilters}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-1"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Clear All Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Article Table */}
