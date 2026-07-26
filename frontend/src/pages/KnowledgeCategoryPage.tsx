@@ -179,6 +179,79 @@ export function KnowledgeCategoryPage() {
   const [authorFilter, setAuthorFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 
+  // Filtered and sorted articles
+  const filteredArticles = useMemo(() => {
+    let result = [...articles];
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(article =>
+        article.title.toLowerCase().includes(searchLower) ||
+        (article.summary && article.summary.toLowerCase().includes(searchLower)) ||
+        (article.authorName && article.authorName.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Apply author filter
+    if (authorFilter) {
+      result = result.filter(article =>
+        article.authorName && article.authorName.toLowerCase().includes(authorFilter.toLowerCase())
+      );
+    }
+
+    // Apply date filter
+    if (dateFilter) {
+      const now = new Date();
+      let cutoffDate: Date;
+      
+      switch (dateFilter) {
+        case '7days':
+          cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30days':
+          cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90days':
+          cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          cutoffDate = new Date(0);
+      }
+      
+      result = result.filter(article => new Date(article.createdAt) >= cutoffDate);
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortConfig.key) {
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'summary':
+          comparison = (a.summary || '').localeCompare(b.summary || '');
+          break;
+        case 'authorName':
+          comparison = (a.authorName || '').localeCompare(b.authorName || '');
+          break;
+        case 'createdAt':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'updatedAt':
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        default:
+          comparison = 0;
+      }
+      
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [articles, search, authorFilter, dateFilter, sortConfig]);
+
   // Debounced search value (300ms delay)
   const debouncedSearch = useMemo(() => {
     return searchInput;
@@ -1094,6 +1167,11 @@ export function KnowledgeCategoryPage() {
                   Sort
                 </button>
               </div>
+
+              {/* Results Count */}
+              <span className="text-sm text-slate-500 whitespace-nowrap">
+                {articleLoading ? 'Searching...' : `${filteredArticles.length} of ${articles.length} article${articles.length !== 1 ? 's' : ''}`}
+              </span>
             </div>
 
             {/* Filter Panel */}
@@ -1164,18 +1242,20 @@ export function KnowledgeCategoryPage() {
                 <button className="kb-btn-primary-sm" onClick={handleRefresh}>Retry</button>
               </div>
             </div>
-          ) : articles.length === 0 ? (
+          ) : filteredArticles.length === 0 ? (
             <div className="kb-empty-state">
               <div className="kb-empty-card">
                 <span className="kb-empty-icon">📄</span>
                 <h3>
-                  {search 
-                    ? 'No articles match your search' 
-                    : selectedCategory 
-                      ? `No articles found in ${selectedCategory.name}` 
-                      : 'No articles found'}
+                  {hasActiveFilters
+                    ? 'No articles match your filters' 
+                    : search 
+                      ? 'No articles match your search' 
+                      : selectedCategory 
+                        ? `No articles found in ${selectedCategory.name}` 
+                        : 'No articles found'}
                 </h3>
-                {canManageArticles && !search && (
+                {canManageArticles && !search && !hasActiveFilters && (
                   <button className="kb-btn-primary-sm" onClick={openCreateArticleModal}>
                     Create First Article
                   </button>
@@ -1183,7 +1263,7 @@ export function KnowledgeCategoryPage() {
               </div>
             </div>
           ) : (
-            <TableContainer loading={false} empty={articles.length === 0} emptyTitle="No articles" emptyDescription="This category has no articles yet">
+            <TableContainer loading={false} empty={filteredArticles.length === 0} emptyTitle="No articles" emptyDescription="This category has no articles yet">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
@@ -1200,7 +1280,7 @@ export function KnowledgeCategoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {articles.map((article) => (
+                  {filteredArticles.map((article) => (
                     <TableRow key={article.id} onClick={() => viewArticle(article)}>
                       <TableCell>
                         <span className="font-medium text-slate-900">{article.title}</span>
