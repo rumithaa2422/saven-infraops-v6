@@ -1960,37 +1960,6 @@ export function KnowledgeCategoryPage() {
       )}
 
       <style>{`
-        /* Page Header - Enterprise Style */
-        .page-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 24px;
-          padding: 24px;
-          background: white;
-          border-radius: 16px;
-          border: 1px solid #e2e8f0;
-        }
-
-        .page-header h1 {
-          font-size: 24px;
-          font-weight: 700;
-          margin: 0 0 4px 0;
-          color: #1e293b;
-        }
-
-        .page-header .subtitle {
-          color: #64748b;
-          font-size: 14px;
-          margin: 0;
-        }
-
-        .header-actions {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-        }
-
         .breadcrumb {
           margin-bottom: 16px;
         }
