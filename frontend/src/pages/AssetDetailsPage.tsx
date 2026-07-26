@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { PageHeader } from '../components/serviceRequests/PageHeader';
@@ -76,6 +76,7 @@ const NON_ASSIGNABLE_STATUSES = ['UNDER_REPAIR', 'RETIRED', 'LOST', 'DAMAGED'];
 export function AssetDetailsPage() {
   const { inventoryId } = useParams<{ inventoryId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const isSuperAdmin = user?.roles.includes('Super Admin') ?? false;
   const isAdmin = user?.roles.includes('Admin') ?? false;
@@ -304,19 +305,36 @@ export function AssetDetailsPage() {
   }
 
   function handleBack() {
-    // Get saved navigation state before clearing it
-    const savedState = sessionStorage.getItem('assetManagementState');
-    sessionStorage.removeItem('assetManagementState');
-    
-    // Navigate to access-management
-    if (savedState) {
-      // Navigate with state marker - the AssetManagementPage will restore it on mount
-      const state = JSON.parse(savedState);
-      navigate('/access-management', { 
-        state: { restoreAssetState: true }
-      });
+    // Check if we came from UserAssetsPage
+    if (location.state?.fromUserAssets) {
+      // Get saved user assets state
+      const savedState = sessionStorage.getItem('userAssetsState');
+      sessionStorage.removeItem('userAssetsState');
+      
+      // Navigate back to UserAssetsPage with state to restore
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        navigate(`/access-management/user/${state.userId}`, {
+          state: { restoreUserAssetsState: true }
+        });
+      } else {
+        // Fallback: navigate to access-management
+        navigate('/access-management');
+      }
     } else {
-      navigate('/access-management');
+      // Get saved navigation state before clearing it
+      const savedState = sessionStorage.getItem('assetManagementState');
+      sessionStorage.removeItem('assetManagementState');
+      
+      // Navigate to access-management
+      if (savedState) {
+        // Navigate with state marker - the AssetManagementPage will restore it on mount
+        navigate('/access-management', { 
+          state: { restoreAssetState: true }
+        });
+      } else {
+        navigate('/access-management');
+      }
     }
   }
 

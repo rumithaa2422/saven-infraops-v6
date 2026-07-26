@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { Package, FolderOpen, AlertTriangle, Wrench } from 'lucide-react';
@@ -44,6 +44,7 @@ type Project = {
 export function UserAssetsPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const [userData, setUserData] = useState<User | null>(null);
@@ -69,6 +70,25 @@ export function UserAssetsPage() {
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   }
+
+  // Restore navigation state from sessionStorage when returning from Asset Details
+  useEffect(() => {
+    // Check if we're returning from Asset Details page
+    if (location.state?.restoreUserAssetsState) {
+      const savedState = sessionStorage.getItem('userAssetsState');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          // Restore sort config
+          if (state.sortConfig) setSortConfig(state.sortConfig);
+          // Clear location state to prevent re-restoration
+          navigate(location.pathname, { replace: true });
+        } catch (e) {
+          console.error('Failed to restore user assets state:', e);
+        }
+      }
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (userId) {
@@ -149,7 +169,27 @@ export function UserAssetsPage() {
   }
 
   function handleBack() {
-    navigate('/access-management');
+    // Save current state before navigating
+    sessionStorage.setItem('userAssetsState', JSON.stringify({
+      sortConfig,
+      userId
+    }));
+    
+    navigate('/access-management', { 
+      state: { restoreUserState: true }
+    });
+  }
+
+  function handleRowClick(inventoryId: string) {
+    // Save current state before navigating to asset details
+    sessionStorage.setItem('userAssetsState', JSON.stringify({
+      sortConfig,
+      userId
+    }));
+    
+    navigate(`/access-management/${inventoryId}`, {
+      state: { fromUserAssets: true }
+    });
   }
 
   // Summary cards data
@@ -288,7 +328,7 @@ export function UserAssetsPage() {
                   <tr 
                     key={item.id} 
                     className="hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/access-management/${item.id}`)}
+                    onClick={() => handleRowClick(item.id)}
                   >
                     <td className="px-4 py-3.5">
                       <span className="font-mono text-sm text-brand-600 bg-brand-50 px-2 py-1 rounded-lg">
