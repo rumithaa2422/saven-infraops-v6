@@ -8,13 +8,14 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
-import { Eye, Edit2 } from 'lucide-react';
+import { Eye, Edit2, Building2 } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
   TableCell,
-  ConfirmationDialog
+  ConfirmationDialog,
+  PageHeader
 } from '../components/serviceRequests';
 
 type InternalOwner = {
@@ -240,95 +241,111 @@ export function VendorDetailsPage() {
     <div className="workspace">
       <div className="page-stack vendor-detail">
         {/* Header */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <button className="btn-back" onClick={handleBack}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Back
-            </button>
-            <div className="page-header-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="page-header-title">{vendor.vendorName}</h1>
-              <p className="page-header-subtitle">{vendor.category}</p>
+        <PageHeader
+          title="Vendor Details"
+          showBackButton
+          onBackClick={handleBack}
+        />
+
+        {/* Main Content */}
+        <div className="content-section">
+        
+        {/* Vendor Header Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="px-3 py-1.5 bg-purple-50 text-purple-700 font-mono font-semibold rounded-lg">
+                    {vendor.vendorCode}
+                  </span>
+                  <span className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${
+                    vendor.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' :
+                    vendor.status === 'INACTIVE' ? 'bg-slate-100 text-slate-600' :
+                    'bg-amber-50 text-amber-700'
+                  }`}>
+                    {vendor.status}
+                  </span>
+                  <span className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium">
+                    {vendor.category}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">{vendor.vendorName}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  {vendor.website && (
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                      <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">
+                        {vendor.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  )}
+                  {vendor.country && (
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" stroke="currentColor" strokeWidth="2"/>
+                        <circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                      <span>{vendor.country}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4" />
+                    <span>Added {formatDate(vendor.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+              {isAdmin && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button className="btn-secondary" onClick={() => navigate(`/vendors-licenses/${id}/edit`)}>
+                    <Edit2 className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button className="btn-danger" onClick={() => setShowDeleteConfirm(true)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-          <div className="page-header-actions">
-            <span className={`status-badge status-${vendor.status.toLowerCase()}`}>{vendor.status}</span>
-            {isAdmin && (
-              <>
-                <button className="btn-secondary" onClick={() => navigate(`/vendors-licenses/${id}/edit`)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  Edit
-                </button>
-                <button className="btn-danger" onClick={() => setShowDeleteConfirm(true)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 6H5H21" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  Delete
-                </button>
-              </>
-            )}
+
+          {/* Summary Actions */}
+          <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-500">Inventory Items:</span>
+                <span className="text-lg font-bold text-slate-900">{vendor.inventoryCount}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-500">Contract Status:</span>
+                <span className={`text-sm font-semibold ${
+                  vendor.contractStatus === 'ACTIVE' ? 'text-emerald-600' :
+                  vendor.contractStatus === 'EXPIRING' ? 'text-amber-600' :
+                  vendor.contractStatus === 'EXPIRED' ? 'text-red-600' :
+                  'text-slate-600'
+                }`}>
+                  {getContractStatusLabel(vendor.contractStatus)}
+                </span>
+              </div>
+              {vendor.contractExpiryDate && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-500">Contract Expires:</span>
+                  <span className="text-sm font-semibold text-slate-700">{formatDate(vendor.contractExpiryDate)}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Meta Info */}
-        <div className="detail-meta">
-          {vendor.website && (
-            <div className="detail-meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="currentColor"/>
-                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6ZM12 16C9.79 16 8 14.21 8 12C8 9.79 9.79 8 12 8C14.21 8 16 9.79 16 12C16 14.21 14.21 16 12 16Z" fill="currentColor"/>
-              </svg>
-              <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="detail-meta-value link">
-                {vendor.website.replace(/^https?:\/\//, '')}
-              </a>
-            </div>
-          )}
-          {vendor.country && (
-            <div className="detail-meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" stroke="currentColor" strokeWidth="2"/>
-                <circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              <span className="detail-meta-value">{vendor.country}</span>
-            </div>
-          )}
-          <div className="detail-meta-item">
-            <span className="detail-meta-value mono">{vendor.vendorCode}</span>
-          </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="detail-summary">
-          <div className="summary-card">
-            <span className="summary-label">Inventory Items</span>
-            <span className="summary-value">{vendor.inventoryCount}</span>
-          </div>
-          <div className="summary-card">
-            <span className="summary-label">Contract Status</span>
-            <span className={`summary-value status-${getContractStatusColor(vendor.contractStatus)}`}>
-              {getContractStatusLabel(vendor.contractStatus)}
-            </span>
-          </div>
-          {vendor.contractExpiryDate && (
-            <div className="summary-card">
-              <span className="summary-label">Contract Expires</span>
-              <span className="summary-value">{formatDate(vendor.contractExpiryDate)}</span>
-            </div>
-          )}
-        </div>
-
+        {/* Detail Content */}
         <div className="detail-content">
           {/* Main Content */}
           <div className="detail-main">
