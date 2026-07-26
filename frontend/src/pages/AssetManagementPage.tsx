@@ -4,12 +4,13 @@ import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { ModalLayout } from '../components/inventory/Modal';
 import { SummaryCards } from '../components/common/SummaryCards';
-import { Eye, Edit2, Trash2, Package, Users, ClipboardCheck, Wrench, ArrowRightLeft, AlertTriangle } from 'lucide-react';
+import { Eye, Edit2, Trash2, Package, Users, ClipboardCheck, Wrench, ArrowRightLeft, AlertTriangle, LayoutGrid, User, FolderOpen } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
   TableRow,
-  TableCell
+  TableCell,
+  TabNavigation
 } from '../components/serviceRequests';
 
 type Category = {
@@ -630,26 +631,16 @@ export function AssetManagementPage() {
         <SummaryCards cards={summaryCards} />
 
       {/* Tabs */}
-      <div className="asset-tabs">
-        <button 
-          className={`asset-tab ${activeTab === 'inventory' ? 'active' : ''}`}
-          onClick={() => setActiveTab('inventory')}
-        >
-          By Inventory
-        </button>
-        <button 
-          className={`asset-tab ${activeTab === 'user' ? 'active' : ''}`}
-          onClick={() => setActiveTab('user')}
-        >
-          By User
-        </button>
-        <button 
-          className={`asset-tab ${activeTab === 'project' ? 'active' : ''}`}
-          onClick={() => setActiveTab('project')}
-        >
-          By Project
-        </button>
-      </div>
+      <TabNavigation
+        tabs={[
+          { id: 'inventory', label: 'By Inventory', icon: LayoutGrid },
+          { id: 'user', label: 'By User', icon: User },
+          { id: 'project', label: 'By Project', icon: FolderOpen }
+        ]}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as 'inventory' | 'user' | 'project')}
+        className="mb-5"
+      />
 
       {/* By Inventory Tab Content */}
       {activeTab === 'inventory' && (
