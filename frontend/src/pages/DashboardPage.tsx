@@ -160,10 +160,6 @@ export function DashboardPage() {
               <p className="text-base font-bold text-white">
                 {getGreeting()}, {getUserDisplayName()}
               </p>
-              {/* Description */}
-              <p className="text-sm font-medium text-white/80 mt-0.5">
-                Monitor your organization's operations with real-time insights
-              </p>
             </div>
           </div>
           
@@ -263,22 +259,19 @@ export function DashboardPage() {
             </div>
 
             {/* Current Date Card */}
-            <div className="flex flex-col items-center justify-center px-4 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[100px]">
+            <div className="flex flex-col items-center justify-center h-14 px-4 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[110px]">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'short' })}
               </span>
-              <span className="text-lg font-bold text-slate-800 leading-tight">
-                {currentTime.toLocaleDateString('en-US', { day: 'numeric' })}
-              </span>
-              <span className="text-[10px] font-medium text-slate-500">
-                {currentTime.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              <span className="text-base font-bold text-slate-800 leading-tight">
+                {currentTime.toLocaleDateString('en-US', { day: 'numeric' })} {currentTime.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
               </span>
             </div>
 
             {/* Current Time Card */}
-            <div className="flex flex-col items-center justify-center px-4 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[100px]">
+            <div className="flex flex-col items-center justify-center h-14 px-4 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[110px]">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Time</span>
-              <span className="text-lg font-bold text-slate-800 font-mono leading-tight">
+              <span className="text-base font-bold text-slate-800 font-mono leading-tight">
                 {formatTime(currentTime)}
               </span>
             </div>
