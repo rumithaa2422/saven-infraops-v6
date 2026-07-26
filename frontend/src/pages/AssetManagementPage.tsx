@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../auth/AuthContext';
 import { ModalLayout } from '../components/inventory/Modal';
 import { SummaryCards } from '../components/common/SummaryCards';
-import { Eye, Edit2, Trash2, Package, Users, ClipboardCheck, Wrench, ArrowRightLeft, AlertTriangle, LayoutGrid, User, FolderOpen, Search, SlidersHorizontal, Download, RefreshCw, X, ArrowUpDown } from 'lucide-react';
+import { Edit2, Trash2, Package, Users, ClipboardCheck, Wrench, ArrowRightLeft, AlertTriangle, LayoutGrid, User, FolderOpen, Search, SlidersHorizontal, Download, RefreshCw, X, ArrowUpDown } from 'lucide-react';
 import {
   TableContainer,
   SortHeader,
@@ -986,14 +986,15 @@ export function AssetManagementPage() {
                               <SortHeader label="Location" sortKey="location" currentSort={sortConfig} onSort={handleSortByKey} />
                               <SortHeader label="Assigned User" sortKey="assignedTo" currentSort={sortConfig} onSort={handleSortByKey} />
                               <SortHeader label="Project" sortKey="projectName" currentSort={sortConfig} onSort={handleSortByKey} />
-                              <th className="px-4 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                Actions
-                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {items.map(item => (
-                              <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                              <tr 
+                                key={item.id} 
+                                className="hover:bg-slate-50 cursor-pointer transition-colors"
+                                onClick={() => navigate(`/access-management/${item.id}`)}
+                              >
                                 <td className="px-4 py-3.5">
                                   <span className="font-mono text-sm text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
                                     {item.itemNo}
@@ -1033,17 +1034,6 @@ export function AssetManagementPage() {
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <span className="text-sm text-slate-600">{item.projectName || '-'}</span>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <button 
-                                      className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                      onClick={() => navigate(`/access-management/${item.id}`)}
-                                      title="View"
-                                    >
-                                      <Eye className="w-4 h-4" />
-                                    </button>
-                                  </div>
                                 </td>
                               </tr>
                             ))}
