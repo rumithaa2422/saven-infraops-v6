@@ -61,9 +61,6 @@ export function ProjectAssetsPage() {
   const [warrantyExpiring, setWarrantyExpiring] = useState(0);
   const [underRepair, setUnderRepair] = useState(0);
 
-  const [search, setSearch] = useState('');
-  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
-
   // Sort config for table headers
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'assignedDate',
