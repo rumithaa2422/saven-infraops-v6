@@ -157,7 +157,7 @@ export function DashboardPage() {
             {/* Welcome Section */}
             <div className="flex flex-col">
               {/* Greeting */}
-              <p className="text-base font-bold text-white">
+              <p className="text-xl font-bold text-white">
                 {getGreeting()}, {getUserDisplayName()}
               </p>
             </div>
