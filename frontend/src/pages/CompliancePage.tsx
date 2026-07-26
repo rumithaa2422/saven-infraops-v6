@@ -309,7 +309,7 @@ export function CompliancePage() {
 
   return (
     <div className="workspace">
-      <div className="page-stack compliance">
+      <div className="page-stack compliance compliance-page">
         {/* Header */}
         <PageHeader
           title="Compliance"
