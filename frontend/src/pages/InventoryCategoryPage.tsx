@@ -40,7 +40,6 @@ import {
   SectionCard,
   InfoCard,
   InfoGrid,
-  InventorySummaryCard,
   EmptyStateCard,
   LoadingCard,
   TableContainer,
@@ -55,6 +54,7 @@ import {
   ConfirmationDialog,
   ActionButtons
 } from '../components/inventory';
+import { SummaryCards } from '../components/common/SummaryCards';
 
 /**
  * PART 4: Inventory Category Permission Enforcement
@@ -409,6 +409,45 @@ export function InventoryCategoryPage() {
       }).length
     };
   }, [filteredItems]);
+
+  // Summary cards data
+  const summaryCards = useMemo(() => [
+    {
+      icon: Package,
+      iconBgColor: 'bg-gradient-to-br from-blue-100 to-blue-50',
+      iconColor: 'text-blue-600',
+      value: stats.total,
+      label: 'Total Items'
+    },
+    {
+      icon: PackageCheck,
+      iconBgColor: 'bg-gradient-to-br from-emerald-100 to-emerald-50',
+      iconColor: 'text-emerald-600',
+      value: stats.available,
+      label: 'Available'
+    },
+    {
+      icon: PackageX,
+      iconBgColor: 'bg-gradient-to-br from-amber-100 to-amber-50',
+      iconColor: 'text-amber-600',
+      value: stats.lowStock,
+      label: 'Low Stock'
+    },
+    {
+      icon: Clock,
+      iconBgColor: 'bg-gradient-to-br from-purple-100 to-purple-50',
+      iconColor: 'text-purple-600',
+      value: stats.warrantyExpiring,
+      label: 'Warranty Due'
+    },
+    {
+      icon: AlertTriangle,
+      iconBgColor: 'bg-gradient-to-br from-red-100 to-red-50',
+      iconColor: 'text-red-600',
+      value: stats.expired,
+      label: 'Expired'
+    }
+  ], [stats]);
 
   // Get subcategory counts
   const subcategoryCounts = useMemo(() => {
@@ -962,38 +1001,7 @@ export function InventoryCategoryPage() {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <InventorySummaryCard
-            title="Total Items"
-            count={stats.total}
-            icon={Package}
-            color="blue"
-          />
-          <InventorySummaryCard
-            title="Available"
-            count={stats.available}
-            icon={PackageCheck}
-            color="emerald"
-          />
-          <InventorySummaryCard
-            title="Low Stock"
-            count={stats.lowStock}
-            icon={PackageX}
-            color="amber"
-          />
-          <InventorySummaryCard
-            title="Warranty Due"
-            count={stats.warrantyExpiring}
-            icon={Clock}
-            color="purple"
-          />
-          <InventorySummaryCard
-            title="Expired"
-            count={stats.expired}
-            icon={AlertTriangle}
-            color="red"
-          />
-        </div>
+        <SummaryCards cards={summaryCards} />
 
         {/* Subcategories Section */}
         <SectionCard
