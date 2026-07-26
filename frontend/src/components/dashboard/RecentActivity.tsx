@@ -226,29 +226,9 @@ export function RecentActivity() {
     );
   }
 
+  // Hide entire section if no activities are available after permission filtering
   if (filteredActivities.length === 0) {
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-100">
-              <Activity className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
-              <p className="text-sm text-slate-500">Latest updates across all modules</p>
-            </div>
-          </div>
-        </div>
-        <div className="text-center py-10">
-          <div className="w-16 h-16 rounded-2xl bg-slate-50 mx-auto mb-4 flex items-center justify-center">
-            <Clock className="w-8 h-8 text-slate-300" />
-          </div>
-          <p className="text-sm font-medium text-slate-700">No recent activity</p>
-          <p className="text-xs text-slate-400 mt-1">Activity will appear here as events occur</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

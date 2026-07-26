@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useAuth } from '../../auth/AuthContext';
 import { AlertTriangle, Clock, Key, Package, ShieldAlert, CheckCircle2, Bell } from 'lucide-react';
 
 interface AlertData {
@@ -19,6 +20,7 @@ interface AlertItem {
   path: string;
   severity: 'critical' | 'warning' | 'info';
   condition: (data: AlertData) => boolean;
+  permission?: string;
 }
 
 export function AlertWidget() {
@@ -26,6 +28,7 @@ export function AlertWidget() {
   const [alertData, setAlertData] = useState<AlertData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { hasPermission } = useAuth();
 
   const fetchAlerts = useCallback(async () => {
     setLoading(true);
@@ -51,7 +54,8 @@ export function AlertWidget() {
     fetchAlerts();
   }, [fetchAlerts]);
 
-  const alertItems: AlertItem[] = [
+  // Define all alert items with their required permissions
+  const alertItems: AlertItem[] = useMemo(() => [
     {
       id: 'critical-incidents',
       label: 'Critical Incidents',
@@ -59,7 +63,8 @@ export function AlertWidget() {
       icon: ShieldAlert,
       path: '/incidents?severity=SEV1',
       severity: 'critical',
-      condition: (d) => d.criticalIncidents > 0
+      condition: (d) => d.criticalIncidents > 0,
+      permission: 'incidents:view'
     },
     {
       id: 'sla-breaches',
@@ -68,7 +73,8 @@ export function AlertWidget() {
       icon: Clock,
       path: '/service-requests?filter=overdue',
       severity: 'critical',
-      condition: (d) => d.slaBreaches > 0
+      condition: (d) => d.slaBreaches > 0,
+      permission: 'tickets:view'
     },
     {
       id: 'expiring-licenses',
@@ -77,7 +83,8 @@ export function AlertWidget() {
       icon: Package,
       path: '/vendors-licenses?filter=expiring',
       severity: 'warning',
-      condition: (d) => d.expiringLicenses > 0
+      condition: (d) => d.expiringLicenses > 0,
+      permission: 'vendors:view'
     },
     {
       id: 'pending-access',
@@ -86,7 +93,8 @@ export function AlertWidget() {
       icon: Key,
       path: '/access-management?filter=pending',
       severity: 'info',
-      condition: (d) => d.pendingAccessRequests > 0
+      condition: (d) => d.pendingAccessRequests > 0,
+      permission: 'access:view'
     },
     {
       id: 'overdue-changes',
@@ -95,17 +103,35 @@ export function AlertWidget() {
       icon: AlertTriangle,
       path: '/changes?filter=overdue',
       severity: 'warning',
-      condition: (d) => d.overdueChanges > 0
+      condition: (d) => d.overdueChanges > 0,
+      permission: 'changes:view'
     }
-  ];
+  ], [alertData]);
 
-  const activeAlerts = alertItems.filter(item => item.condition(alertData || {
+  const emptyData: AlertData = {
     criticalIncidents: 0,
     slaBreaches: 0,
     expiringLicenses: 0,
     pendingAccessRequests: 0,
     overdueChanges: 0
-  }));
+  };
+
+  // Filter alerts: only show if user has permission AND condition is met
+  const activeAlerts = useMemo(() => {
+    return alertItems.filter(item => {
+      // Check if user has permission for this alert type
+      if (item.permission && !hasPermission(item.permission)) {
+        return false;
+      }
+      // Check if alert condition is met
+      return item.condition(alertData || emptyData);
+    });
+  }, [alertItems, alertData, hasPermission]);
+
+  // If no alerts are permitted/visible, return null (hide the entire section)
+  if (!loading && activeAlerts.length === 0) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -128,21 +154,21 @@ export function AlertWidget() {
     );
   }
 
-  if (error || activeAlerts.length === 0) {
+  if (error) {
     return (
-      <div className="bg-white rounded-2xl border border-emerald-200/60 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-red-200/60 p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-sm shadow-emerald-500/20">
-            <CheckCircle2 className="w-5 h-5 text-white" />
+          <div className="p-2 rounded-xl bg-red-100">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">All Clear!</h2>
-            <p className="text-sm text-slate-500">No urgent items require attention</p>
+            <h2 className="text-lg font-semibold text-slate-900">Important Alerts</h2>
+            <p className="text-sm text-slate-500">Unable to load alerts</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-xl">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-          <span className="text-sm font-medium text-emerald-700">Everything is running smoothly</span>
+        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+          <span className="text-sm font-medium text-red-700">{error}</span>
         </div>
       </div>
     );
