@@ -9,7 +9,8 @@ import {
   SortHeader,
   TableRow,
   TableCell,
-  PageHeader
+  PageHeader,
+  ConfirmationDialog
 } from '../components/serviceRequests';
 import { SummaryCards } from '../components/common/SummaryCards';
 
@@ -145,6 +146,11 @@ export function ProjectDashboardPage() {
     skipped: number;
     error?: string;
   } | null>(null);
+
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -359,6 +365,34 @@ export function ProjectDashboardPage() {
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
+  }
+
+  // Delete handlers
+  function openDeleteDialog(project: Project, event: React.MouseEvent) {
+    event.stopPropagation();
+    setDeletingProject(project);
+    setShowDeleteConfirm(true);
+  }
+
+  function closeDeleteDialog() {
+    setShowDeleteConfirm(false);
+    setDeletingProject(null);
+  }
+
+  async function handleDeleteProject() {
+    if (!deletingProject) return;
+    
+    setDeleting(true);
+    try {
+      await api.delete(`/projects-environments/${deletingProject.id}`);
+      setShowDeleteConfirm(false);
+      setDeletingProject(null);
+      fetchProjects();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete project');
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function validateImportData(data: any[]): Promise<void> {
@@ -915,6 +949,9 @@ export function ProjectDashboardPage() {
                     <SortHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} />
                     <SortHeader label="Start Date" sortKey="startDate" currentSort={sortConfig} onSort={handleSort} />
                     <SortHeader label="Assets" sortKey="assignedAssets" currentSort={sortConfig} onSort={handleSort} />
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -965,6 +1002,29 @@ export function ProjectDashboardPage() {
                         <span className="inline-flex items-center justify-center w-8 h-8 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg">
                           {project.assignedAssets || 0}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/projects-environments/${project.id}/edit`);
+                            }}
+                            className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={(e) => openDeleteDialog(project, e)}
+                              className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1158,6 +1218,18 @@ export function ProjectDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        onClose={closeDeleteDialog}
+        onConfirm={handleDeleteProject}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${deletingProject?.projectName}"? This action cannot be undone.`}
+        confirmText={deleting ? 'Deleting...' : 'Delete'}
+        variant="danger"
+        isLoading={deleting}
+      />
       </div>
     </div>
   );
