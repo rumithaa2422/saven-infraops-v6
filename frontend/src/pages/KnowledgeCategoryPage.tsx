@@ -895,6 +895,8 @@ export function KnowledgeCategoryPage() {
                 : 'All articles'
           }
           icon={BookOpen}
+          showBackButton={viewMode === 'articles' || viewMode === 'article-detail'}
+          onBackClick={viewMode === 'article-detail' ? backToArticles : backToBrowse}
           actions={
             <>
               <button 
@@ -920,23 +922,6 @@ export function KnowledgeCategoryPage() {
             </>
           }
         />
-
-      {/* Breadcrumb */}
-      {(viewMode === 'articles' || viewMode === 'article-detail') && (
-        <div className="breadcrumb">
-          <button className="breadcrumb-link" onClick={backToBrowse}>
-            ← Knowledge Base
-          </button>
-          {viewMode === 'article-detail' && (
-            <>
-              <span className="breadcrumb-separator">/</span>
-              <button className="breadcrumb-link" onClick={backToArticles}>
-                {selectedCategory?.name || 'All Articles'}
-              </button>
-            </>
-          )}
-        </div>
-      )}
 
       {/* Browse Categories View */}
       {viewMode === 'browse' && (
