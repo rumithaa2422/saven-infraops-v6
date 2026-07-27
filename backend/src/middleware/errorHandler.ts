@@ -30,11 +30,10 @@ async function logPermissionDenied(
         action: 'PERMISSION_DENIED',
         entityType: 'Permission',
         entityId: permission,
-        performedBy: userId || 'unknown',
-        performedByEmail: userEmail,
+        actorId: userId,
+        actorEmail: userEmail,
         ipAddress: undefined, // Will be available from request
-        userAgent: undefined,
-        details: {
+        newValue: {
           permission,
           endpoint,
           method,

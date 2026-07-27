@@ -15,12 +15,12 @@ It uses:
 ## Folder structure
 
 ```text
-saven-infraops-enterprise-v5
-├── frontend
-├── backend
-├── docs
-├── docker-compose.yml
-└── README.md
+saven-infraops-enterprise-v6
+├── frontend/          # React frontend application
+├── backend/           # Express backend API
+├── docs/              # Documentation files
+├── docker-compose.yml # Docker services (MySQL, Redis)
+└── docs/README.md     # Project documentation
 ```
 
 ## Windows run steps
