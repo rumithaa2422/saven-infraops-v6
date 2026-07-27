@@ -1,29 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
 import { 
   Bell, 
   CheckCircle, 
   FileText, 
   Clock,
-  User,
-  AlertCircle,
   Trash2,
   Filter
 } from 'lucide-react';
 import { Button } from '../components/serviceRequests';
-
-type Notification = {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  referenceModule?: string;
-  referenceId?: string;
-  actionUrl?: string;
-  createdAt: string;
-};
+import { notificationService, Notification } from '../services/notification.service';
 
 type FilterType = 'all' | 'unread' | 'read';
 
@@ -37,8 +23,8 @@ export function NotificationsPage() {
   async function loadNotifications() {
     try {
       setLoading(true);
-      const res = await api.get('/notifications');
-      setNotifications(res.data.notifications || []);
+      const fetchedNotifications = await notificationService.fetchNotifications();
+      setNotifications(fetchedNotifications);
     } catch (err) {
       console.error('Failed to load notifications:', err);
       setNotifications([]);
@@ -49,11 +35,34 @@ export function NotificationsPage() {
 
   useEffect(() => {
     loadNotifications();
+
+    // Subscribe to real-time notification updates
+    const unsubNotification = notificationService.onNotification((notification) => {
+      // Add new notification to the list
+      setNotifications(prev => {
+        // Check if notification already exists (from mark-as-read)
+        const exists = prev.some(n => n.id === notification.id);
+        if (exists) {
+          return prev;
+        }
+        return [notification, ...prev];
+      });
+    });
+
+    const unsubCount = notificationService.onUnreadCountChange(() => {
+      // Refresh the list when unread count changes significantly
+      loadNotifications();
+    });
+
+    return () => {
+      unsubNotification();
+      unsubCount();
+    };
   }, []);
 
   async function markAsRead(id: string) {
     try {
-      await api.post(`/notifications/${id}/read`);
+      await notificationService.markAsRead(id);
       setNotifications(notifications.map(n => 
         n.id === id ? { ...n, isRead: true } : n
       ));
@@ -65,7 +74,7 @@ export function NotificationsPage() {
   async function markAllAsRead() {
     setMarkingAllRead(true);
     try {
-      await api.post('/notifications/mark-all-read');
+      await notificationService.markAllAsRead();
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (err) {
       console.error('Failed to mark all as read:', err);
@@ -76,7 +85,7 @@ export function NotificationsPage() {
 
   async function deleteNotification(id: string) {
     try {
-      await api.delete(`/notifications/${id}`);
+      await notificationService.deleteNotification(id);
       setNotifications(notifications.filter(n => n.id !== id));
     } catch (err) {
       console.error('Failed to delete notification:', err);

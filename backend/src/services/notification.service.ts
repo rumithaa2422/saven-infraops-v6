@@ -16,11 +16,31 @@ export interface CreateNotificationInput {
   actionUrl?: string;
 }
 
+// Lazy import to avoid circular dependency
+let broadcastFunction: ((userId: string, notification: unknown) => void) | null = null;
+
+function getBroadcastFunction() {
+  if (!broadcastFunction) {
+    try {
+      // Dynamic import to avoid circular dependency
+      const notificationRoutes = require('../modules/notifications/notification.routes.js');
+      broadcastFunction = (userId: string, notification: unknown) => {
+        notificationRoutes.broadcastNotificationToUser(userId, notification as Parameters<typeof notificationRoutes.broadcastNotificationToUser>[1]);
+        notificationRoutes.broadcastUnreadCountToUser(userId, 1);
+      };
+    } catch {
+      // If import fails, notifications will still work but won't be real-time
+      console.warn('Real-time notification broadcasting unavailable');
+    }
+  }
+  return broadcastFunction;
+}
+
 /**
  * Create a notification for a single user
  */
 export async function createNotification(data: CreateNotificationInput) {
-  return prisma.notification.create({
+  const notification = await prisma.notification.create({
     data: {
       userId: data.userId,
       title: data.title,
@@ -30,6 +50,14 @@ export async function createNotification(data: CreateNotificationInput) {
       actionUrl: data.actionUrl
     }
   });
+
+  // Broadcast to connected clients
+  const broadcast = getBroadcastFunction();
+  if (broadcast) {
+    broadcast(data.userId, notification);
+  }
+
+  return notification;
 }
 
 /**
@@ -52,9 +80,29 @@ export async function createNotificationsForUsers(
     actionUrl
   }));
 
-  return prisma.notification.createMany({
+  const result = await prisma.notification.createMany({
     data: notifications
   });
+
+  // Broadcast to each user (one notification each)
+  const broadcast = getBroadcastFunction();
+  if (broadcast) {
+    for (const userId of userIds) {
+      const notification = {
+        id: '', // Will be assigned by DB
+        title,
+        message,
+        referenceModule,
+        referenceId,
+        actionUrl,
+        isRead: false,
+        createdAt: new Date()
+      };
+      broadcast(userId, notification);
+    }
+  }
+
+  return result;
 }
 
 /**

@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AssistantPanel } from '../components/AssistantPanel';
 import { CommandBar } from '../components/CommandBar';
+import { NotificationBell } from '../components/NotificationBell';
 import { useAuth } from '../auth/AuthContext';
 
 const AI_PANEL_COLLAPSED_WIDTH = 56;
@@ -31,9 +32,12 @@ export function AppShell() {
               <h1>Command Center</h1>
             </div>
           </div>
-          <div className="profile">
-            <span>{user?.name}</span>
-            <button onClick={logout}>Logout</button>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <div className="profile">
+              <span>{user?.name}</span>
+              <button onClick={logout}>Logout</button>
+            </div>
           </div>
         </header>
         <section className="workspace">
