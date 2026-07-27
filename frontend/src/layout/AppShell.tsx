@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AssistantPanel } from '../components/AssistantPanel';
 import { CommandBar } from '../components/CommandBar';
-import { NotificationBell } from '../components/NotificationBell';
 import { useAuth } from '../auth/AuthContext';
 
 const AI_PANEL_COLLAPSED_WIDTH = 56;
@@ -11,19 +10,16 @@ const AI_PANEL_EXPANDED_WIDTH = 360;
 
 export function AppShell() {
   const { user, logout } = useAuth();
-  const [assistantCollapsed, setAssistantCollapsed] = useState(true); // AI panel starts closed by default
+  const [assistantCollapsed, setAssistantCollapsed] = useState(true);
 
-  // Dynamic right offset for command bar based on AI panel state
   const rightOffset = assistantCollapsed ? AI_PANEL_COLLAPSED_WIDTH : AI_PANEL_EXPANDED_WIDTH;
 
   return (
     <div className="shell">
-      {/* Fixed Left Sidebar */}
       <aside className="sidebar">
         <Sidebar />
       </aside>
-      
-      {/* Main Content Area - Scrollable */}
+
       <main className="main" style={{ paddingTop: 64 }}>
         <header className="topbar" style={{ right: rightOffset }}>
           <div className="topbar-left">
@@ -32,12 +28,9 @@ export function AppShell() {
               <h1>Command Center</h1>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <NotificationBell />
-            <div className="profile">
-              <span>{user?.name}</span>
-              <button onClick={logout}>Logout</button>
-            </div>
+          <div className="profile">
+            <span>{user?.name}</span>
+            <button onClick={logout}>Logout</button>
           </div>
         </header>
         <section className="workspace">
@@ -45,8 +38,7 @@ export function AppShell() {
         </section>
         <CommandBar rightOffset={rightOffset} />
       </main>
-      
-      {/* Fixed Right Sidebar (AI Panel) */}
+
       {assistantCollapsed ? (
         <button className="assistant-rail" onClick={() => setAssistantCollapsed(false)} title="Open AI Assistant">
           AI
