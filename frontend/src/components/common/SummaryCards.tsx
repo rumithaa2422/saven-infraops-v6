@@ -24,7 +24,7 @@ export function SummaryCard({
   return (
     <div
       className={`
-        bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm
+        bg-white rounded-xl border border-slate-200/60 p-3 shadow-sm
         hover:shadow-lg transition-all duration-300 cursor-pointer group
         ${onClick ? 'hover:border-indigo-300' : ''}
       `}
@@ -32,15 +32,15 @@ export function SummaryCard({
     >
       <div className="flex items-center gap-3">
         <div className={`
-          w-12 h-12 rounded-xl flex items-center justify-center
+          w-9 h-9 rounded-lg flex items-center justify-center
           group-hover:scale-110 transition-transform
           ${iconBgColor}
         `}>
-          <Icon className={`w-6 h-6 ${iconColor}`} />
+          <Icon className={`w-4 h-4 ${iconColor}`} />
         </div>
         <div>
-          <p className={`text-2xl font-bold ${valueColor}`}>{value}</p>
-          <p className="text-sm font-medium text-slate-500">{label}</p>
+          <p className={`text-xl font-bold ${valueColor}`}>{value}</p>
+          <p className="text-xs font-medium text-slate-500">{label}</p>
         </div>
       </div>
     </div>
@@ -65,7 +65,7 @@ export interface SummaryCardsProps {
 
 export function SummaryCards({ cards, className = '' }: SummaryCardsProps) {
   return (
-    <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 ${className}`}>
+    <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 ${className}`}>
       {cards.map((card, index) => (
         <SummaryCard
           key={index}

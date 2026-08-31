@@ -89,7 +89,7 @@ export function Sidebar() {
               title={item.label}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             >
-              <Icon size={20} strokeWidth={1.75} className="nav-icon" />
+              <Icon size={17} strokeWidth={1.75} className="nav-icon" />
               <span>{item.label}</span>
             </NavLink>
           );

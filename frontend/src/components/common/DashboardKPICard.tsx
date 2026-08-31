@@ -128,8 +128,8 @@ export function DashboardKPICard({
       className={`
         group relative overflow-hidden
         bg-gradient-to-br ${colors.gradient}
-        rounded-2xl border border-slate-200/80 
-        p-5 shadow-sm
+        rounded-xl border border-slate-200/80 
+        p-4 shadow-sm
         hover:shadow-xl ${colors.glow}
         hover:-translate-y-1 transition-all duration-300 ease-out
         flex flex-col h-full min-w-[200px]
@@ -139,7 +139,7 @@ export function DashboardKPICard({
       onClick={onClick}
     >
       {/* Decorative top accent line */}
-      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient} opacity-80 rounded-t-2xl`} />
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient} opacity-80 rounded-t-xl`} />
       
       {/* Animated background circle decoration */}
       <div className={`
@@ -152,15 +152,15 @@ export function DashboardKPICard({
       {/* Content */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Top Row: Icon and Trend */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           {/* Icon Container - vibrant and eye-catching */}
           <div className={`
-            p-3 rounded-xl ${colors.bg} 
+            p-2 rounded-lg ${colors.bg} 
             group-hover:scale-110 group-hover:rotate-3
             transition-all duration-300 ease-out
             shadow-sm
           `}>
-            <Icon className={`w-5 h-5 ${colors.text}`} />
+            <Icon className={`w-4 h-4 ${colors.text}`} />
           </div>
           
           {/* Trend Indicator (optional) */}
@@ -181,7 +181,7 @@ export function DashboardKPICard({
         <div className="flex flex-col flex-1">
           {/* Large KPI Value - primary focus with gradient text */}
           <h3 className={`
-            text-3xl font-black ${colors.text} 
+            text-xl font-black ${colors.text} 
             tracking-tight leading-none
             group-hover:scale-105 transition-transform duration-200
           `}>
@@ -189,7 +189,7 @@ export function DashboardKPICard({
           </h3>
           
           {/* Title */}
-          <p className="text-sm font-bold text-slate-800 mt-3 leading-tight">{title}</p>
+          <p className="text-sm font-bold text-slate-800 mt-2 leading-tight">{title}</p>
           
           {/* Description (optional) */}
           {description && (
@@ -221,15 +221,15 @@ export function DashboardKPICard({
  */
 export function DashboardKPICardSkeleton() {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border border-slate-200/80 p-5 shadow-sm animate-pulse flex flex-col h-full">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200 rounded-t-2xl" />
-      <div className="flex items-center justify-between mb-4">
-        <div className="w-11 h-11 rounded-xl bg-slate-200" />
+    <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/80 p-4 shadow-sm animate-pulse flex flex-col h-full">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200 rounded-t-xl" />
+      <div className="flex items-center justify-between mb-3">
+        <div className="w-9 h-9 rounded-lg bg-slate-200" />
         <div className="w-16 h-6 rounded-full bg-slate-200" />
       </div>
       <div className="flex flex-col flex-1">
-        <div className="h-8 w-20 bg-slate-200 rounded-lg" />
-        <div className="h-4 w-28 bg-slate-200 rounded mt-4" />
+        <div className="h-6 w-20 bg-slate-200 rounded-lg" />
+        <div className="h-4 w-28 bg-slate-200 rounded mt-3" />
         <div className="h-3 w-36 bg-slate-100 rounded mt-2" />
       </div>
     </div>
@@ -261,7 +261,7 @@ export function DashboardKPIGrid({ children, className = '' }: DashboardKPIGridP
   };
 
   return (
-    <div className={`grid ${getGridClass()} gap-5 ${className}`}>
+    <div className={`grid ${getGridClass()} gap-3 ${className}`}>
       {children}
     </div>
   );

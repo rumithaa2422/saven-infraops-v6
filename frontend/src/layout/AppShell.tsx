@@ -20,7 +20,7 @@ export function AppShell() {
         <Sidebar />
       </aside>
 
-      <main className="main" style={{ paddingTop: 64 }}>
+      <main className="main" style={{ paddingTop: 52 }}>
         <header className="topbar" style={{ right: rightOffset }}>
           <div className="topbar-left">
             <div>
