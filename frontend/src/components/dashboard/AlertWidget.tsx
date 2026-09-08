@@ -135,19 +135,19 @@ export function AlertWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-xl bg-purple-100">
-            <Bell className="w-5 h-5 text-purple-600" />
+      <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="p-1.5 rounded-lg bg-purple-100">
+            <Bell className="w-4 h-4 text-purple-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Important Alerts</h2>
-            <p className="text-sm text-slate-500">Items requiring attention</p>
+            <h2 className="text-[15px] font-semibold text-slate-900">Important Alerts</h2>
+            <p className="text-xs text-slate-500">Items requiring attention</p>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-12 flex-1 bg-slate-100 rounded-xl animate-pulse" />
+            <div key={i} className="h-10 flex-1 bg-slate-100 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -156,18 +156,18 @@ export function AlertWidget() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-2xl border border-red-200/60 p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-xl bg-red-100">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
+      <div className="bg-white rounded-xl border border-red-200/60 p-4 shadow-sm">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="p-1.5 rounded-lg bg-red-100">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Important Alerts</h2>
-            <p className="text-sm text-slate-500">Unable to load alerts</p>
+            <h2 className="text-[15px] font-semibold text-slate-900">Important Alerts</h2>
+            <p className="text-xs text-slate-500">Unable to load alerts</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl">
-          <AlertTriangle className="w-5 h-5 text-red-600" />
+        <div className="flex items-center gap-2.5 p-3 bg-red-50 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-red-600" />
           <span className="text-sm font-medium text-red-700">{error}</span>
         </div>
       </div>
@@ -199,18 +199,18 @@ export function AlertWidget() {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm shadow-amber-500/20">
-          <Bell className="w-5 h-5 text-white" />
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm shadow-amber-500/20">
+          <Bell className="w-4 h-4 text-white" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Important Alerts</h2>
-          <p className="text-sm text-slate-500">{activeAlerts.length} item{activeAlerts.length > 1 ? 's' : ''} requiring attention</p>
+          <h2 className="text-[15px] font-semibold text-slate-900">Important Alerts</h2>
+          <p className="text-xs text-slate-500">{activeAlerts.length} item{activeAlerts.length > 1 ? 's' : ''} requiring attention</p>
         </div>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-2">
         {activeAlerts.map((alert) => {
           const Icon = alert.icon;
           const config = severityConfig[alert.severity];
@@ -219,19 +219,19 @@ export function AlertWidget() {
               key={alert.id}
               onClick={() => navigate(alert.path)}
               className={`
-                w-full flex items-center gap-4 p-4 rounded-xl border ${config.border}
-                ${config.bg} ${config.hover} transition-all duration-300
-                hover:shadow-md hover:-translate-y-0.5 group
+                w-full flex items-center gap-3 p-2.5 rounded-lg border ${config.border}
+                ${config.bg} ${config.hover} transition-all duration-200
+                hover:shadow-sm group
               `}
             >
-              <div className={`p-2.5 rounded-xl ${config.iconBg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-                <Icon className="w-4 h-4 text-white" />
+              <div className={`p-1.5 rounded-lg ${config.iconBg} shadow-sm group-hover:scale-105 transition-transform duration-200`}>
+                <Icon className="w-3.5 h-3.5 text-white" />
               </div>
               <div className="flex-1 text-left">
-                <span className={`text-lg font-bold ${config.text}`}>{alert.value}</span>
-                <span className="text-sm font-medium text-slate-700 ml-2">{alert.label}</span>
+                <span className={`text-base font-bold ${config.text}`}>{alert.value}</span>
+                <span className="text-[13px] font-medium text-slate-700 ml-2">{alert.label}</span>
               </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${config.bg} ${config.text}`}>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${config.bg} ${config.text}`}>
                 {alert.severity.toUpperCase()}
               </span>
             </button>

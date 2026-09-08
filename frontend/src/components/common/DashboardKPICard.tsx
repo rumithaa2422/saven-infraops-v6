@@ -48,50 +48,43 @@ const statusColors: Record<KPIStatus, {
   bg: string; 
   text: string; 
   badge: string;
-  gradient: string;
-  glow: string;
+  ring: string;
 }> = {
   default: {
     bg: 'bg-slate-100',
     text: 'text-slate-600',
-    badge: 'bg-slate-200 text-slate-700',
-    gradient: 'from-slate-50 to-slate-100',
-    glow: 'shadow-slate-200'
+    badge: 'bg-slate-100 text-slate-600',
+    ring: 'ring-slate-200'
   },
   blue: {
-    bg: 'bg-blue-100',
+    bg: 'bg-blue-50',
     text: 'text-blue-600',
-    badge: 'bg-blue-100 text-blue-700',
-    gradient: 'from-blue-50 to-indigo-50',
-    glow: 'shadow-blue-200/50'
+    badge: 'bg-blue-50 text-blue-600',
+    ring: 'ring-blue-100'
   },
   green: {
-    bg: 'bg-emerald-100',
+    bg: 'bg-emerald-50',
     text: 'text-emerald-600',
-    badge: 'bg-emerald-100 text-emerald-700',
-    gradient: 'from-emerald-50 to-teal-50',
-    glow: 'shadow-emerald-200/50'
+    badge: 'bg-emerald-50 text-emerald-600',
+    ring: 'ring-emerald-100'
   },
   orange: {
-    bg: 'bg-amber-100',
+    bg: 'bg-amber-50',
     text: 'text-amber-600',
-    badge: 'bg-amber-100 text-amber-700',
-    gradient: 'from-amber-50 to-orange-50',
-    glow: 'shadow-amber-200/50'
+    badge: 'bg-amber-50 text-amber-600',
+    ring: 'ring-amber-100'
   },
   red: {
-    bg: 'bg-red-100',
+    bg: 'bg-red-50',
     text: 'text-red-600',
-    badge: 'bg-red-100 text-red-700',
-    gradient: 'from-red-50 to-rose-50',
-    glow: 'shadow-red-200/50'
+    badge: 'bg-red-50 text-red-600',
+    ring: 'ring-red-100'
   },
   purple: {
-    bg: 'bg-purple-100',
+    bg: 'bg-purple-50',
     text: 'text-purple-600',
-    badge: 'bg-purple-100 text-purple-700',
-    gradient: 'from-purple-50 to-violet-50',
-    glow: 'shadow-purple-200/50'
+    badge: 'bg-purple-50 text-purple-600',
+    ring: 'ring-purple-100'
   }
 };
 
@@ -127,88 +120,74 @@ export function DashboardKPICard({
     <div
       className={`
         group relative overflow-hidden
-        bg-gradient-to-br ${colors.gradient}
+        bg-white
         rounded-xl border border-slate-200/80 
-        p-4 shadow-sm
-        hover:shadow-xl ${colors.glow}
-        hover:-translate-y-1 transition-all duration-300 ease-out
-        flex flex-col h-full min-w-[200px]
+        p-3.5 shadow-sm
+        hover:shadow-md
+        hover:-translate-y-0.5 transition-all duration-200 ease-out
+        flex flex-col
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
       `}
       onClick={onClick}
     >
-      {/* Decorative top accent line */}
-      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient} opacity-80 rounded-t-xl`} />
-      
-      {/* Animated background circle decoration */}
-      <div className={`
-        absolute -right-6 -top-6 w-24 h-24 
-        rounded-full ${colors.bg} opacity-50
-        group-hover:scale-150 group-hover:opacity-70
-        transition-all duration-500 ease-out
-      `} />
-      
+      {/* Status accent bar */}
+      <div className={`absolute top-0 left-0 h-0.5 w-full ${colors.ring} bg-gradient-to-r ${colors.bg} opacity-80`} />
+
       {/* Content */}
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="relative z-10 flex flex-col gap-2">
         {/* Top Row: Icon and Trend */}
-        <div className="flex items-center justify-between mb-3">
-          {/* Icon Container - vibrant and eye-catching */}
+        <div className="flex items-center justify-between">
+          {/* Icon Chip */}
           <div className={`
-            p-2 rounded-lg ${colors.bg} 
-            group-hover:scale-110 group-hover:rotate-3
-            transition-all duration-300 ease-out
-            shadow-sm
+            p-1.5 rounded-lg ${colors.bg} 
+            group-hover:scale-105 transition-transform duration-200
           `}>
             <Icon className={`w-4 h-4 ${colors.text}`} />
           </div>
-          
+
           {/* Trend Indicator (optional) */}
           {showTrend && (
             <div className={`
-              flex items-center gap-1 px-2.5 py-1 rounded-full 
-              text-xs font-bold ${colors.badge}
-              group-hover:scale-105 transition-transform duration-200
-              shadow-sm
+              flex items-center gap-1 px-2 py-0.5 rounded-full 
+              text-[11px] font-semibold ${colors.badge}
             `}>
               <TrendIcon />
               <span>{trend}</span>
             </div>
           )}
         </div>
-        
+
         {/* Value, Title, and Description */}
-        <div className="flex flex-col flex-1">
-          {/* Large KPI Value - primary focus with gradient text */}
+        <div className="flex flex-col">
+          {/* Compact KPI Value */}
           <h3 className={`
-            text-xl font-black ${colors.text} 
+            text-xl font-bold ${colors.text} 
             tracking-tight leading-none
-            group-hover:scale-105 transition-transform duration-200
           `}>
             {typeof value === 'number' ? value.toLocaleString() : value}
           </h3>
-          
+
           {/* Title */}
-          <p className="text-sm font-bold text-slate-800 mt-2 leading-tight">{title}</p>
-          
+          <p className="text-sm font-semibold text-slate-800 mt-1 leading-snug">{title}</p>
+
           {/* Description (optional) */}
           {description && (
-            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed line-clamp-2">{description}</p>
+            <p className="text-xs text-slate-500 mt-0.5 leading-snug line-clamp-1">{description}</p>
           )}
         </div>
-        
+
         {/* View details link (if clickable) */}
         {viewPath && onClick && (
           <div className={`
-            mt-4 pt-3 border-t border-slate-200/50
+            mt-auto pt-2.5 border-t border-slate-100
             flex items-center gap-1
             text-xs font-semibold ${colors.text}
             opacity-0 group-hover:opacity-100
-            transform translate-y-1 group-hover:translate-y-0
-            transition-all duration-200
+            transition-opacity duration-200
           `}>
             <span>View Details</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
           </div>
         )}
       </div>
@@ -221,16 +200,16 @@ export function DashboardKPICard({
  */
 export function DashboardKPICardSkeleton() {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/80 p-4 shadow-sm animate-pulse flex flex-col h-full">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200 rounded-t-xl" />
-      <div className="flex items-center justify-between mb-3">
-        <div className="w-9 h-9 rounded-lg bg-slate-200" />
-        <div className="w-16 h-6 rounded-full bg-slate-200" />
+    <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-sm animate-pulse flex flex-col">
+      <div className="absolute top-0 left-0 h-0.5 w-full bg-slate-200" />
+      <div className="flex items-center justify-between">
+        <div className="w-7 h-7 rounded-lg bg-slate-100" />
+        <div className="w-14 h-5 rounded-full bg-slate-100" />
       </div>
-      <div className="flex flex-col flex-1">
-        <div className="h-6 w-20 bg-slate-200 rounded-lg" />
-        <div className="h-4 w-28 bg-slate-200 rounded mt-3" />
-        <div className="h-3 w-36 bg-slate-100 rounded mt-2" />
+      <div className="flex flex-col mt-2">
+        <div className="h-6 w-16 bg-slate-100 rounded-lg" />
+        <div className="h-3.5 w-24 bg-slate-100 rounded mt-2" />
+        <div className="h-3 w-28 bg-slate-50 rounded mt-1" />
       </div>
     </div>
   );
@@ -261,7 +240,7 @@ export function DashboardKPIGrid({ children, className = '' }: DashboardKPIGridP
   };
 
   return (
-    <div className={`grid ${getGridClass()} gap-3 ${className}`}>
+    <div className={`grid ${getGridClass()} gap-2.5 ${className}`}>
       {children}
     </div>
   );

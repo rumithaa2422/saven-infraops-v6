@@ -51,31 +51,26 @@ export function DashboardPage() {
   return (
     <div className="workspace">
       <div className="page-stack dashboard">
-        <div className="page-header">
-          <div className="page-header-left">
-            <div className="page-header-icon">
+        {/* Compact greeting/overview bar */}
+        <div className="dashboard-overview">
+          <div className="dashboard-overview-main">
+            <div className="dashboard-overview-icon">
               <BarChart3 size={20} />
             </div>
-            <div className="flex flex-col">
-              <p className="text-xl font-bold text-white">
+            <div className="flex flex-col min-w-0">
+              <p className="dashboard-overview-greeting">
                 {getGreeting()}, {getUserDisplayName()}
+              </p>
+              <p className="dashboard-overview-subtitle">
+                Here's what's happening across your infrastructure today
               </p>
             </div>
           </div>
-          <div className="page-header-actions">
+          <div className="dashboard-overview-actions">
             <NotificationBell />
-            <div className="flex flex-col items-center justify-center h-14 px-4 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[110px]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                {currentTime.toLocaleDateString('en-US', { weekday: 'short' })}
-              </span>
-              <span className="text-base font-bold text-slate-800 leading-tight">
-                {currentTime.toLocaleDateString('en-US', { day: 'numeric' })} {currentTime.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-              </span>
-            </div>
-            <div className="flex flex-col items-center justify-center h-14 px-4 rounded-lg bg-white border border-slate-200 shadow-sm min-w-[110px]">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Time</span>
-              <span className="text-base font-bold text-slate-800 font-mono leading-tight">
-                {formatTime(currentTime)}
+            <div className="dashboard-overview-datetime">
+              <span className="dashboard-overview-date">
+                {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} · {formatTime(currentTime)}
               </span>
             </div>
           </div>
@@ -87,14 +82,14 @@ export function DashboardPage() {
 
         <AnalyticsCharts />
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <PermissionGate permission="dashboard:view_activity">
             <div key={`activity-${refreshKey}`}>
               <RecentActivity />
             </div>
           </PermissionGate>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             <PermissionGate permission="kb:view">
               <div key={`knowledge-${refreshKey}`}>
                 <KnowledgeHub />

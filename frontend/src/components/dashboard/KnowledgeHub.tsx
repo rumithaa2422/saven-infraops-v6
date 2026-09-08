@@ -81,19 +81,19 @@ export function KnowledgeHub() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 rounded-xl bg-purple-100">
-            <BookOpen className="w-5 h-5 text-purple-600" />
+      <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="p-1.5 rounded-lg bg-purple-100">
+            <BookOpen className="w-4 h-4 text-purple-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Knowledge Hub</h2>
-            <p className="text-sm text-slate-500">Recent articles and resources</p>
+            <h2 className="text-[15px] font-semibold text-slate-900">Knowledge Hub</h2>
+            <p className="text-xs text-slate-500">Recent articles and resources</p>
           </div>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-14 bg-slate-50 rounded-xl animate-pulse" />
+            <div key={i} className="h-10 bg-slate-50 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -101,92 +101,92 @@ export function KnowledgeHub() {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm shadow-emerald-500/20">
-            <BookOpen className="w-5 h-5 text-white" />
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm shadow-emerald-500/20">
+            <BookOpen className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Knowledge Hub</h2>
-            <p className="text-sm text-slate-500">Recent articles and resources</p>
+            <h2 className="text-[15px] font-semibold text-slate-900">Knowledge Hub</h2>
+            <p className="text-xs text-slate-500">Recent articles and resources</p>
           </div>
         </div>
         <button
           onClick={() => navigate('/knowledge-base')}
-          className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+          className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 font-medium transition-colors"
         >
           View All
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Summary Stats */}
       {analytics && (
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="flex flex-col items-center p-3 bg-slate-50 rounded-xl">
-            <div className="p-2 rounded-lg bg-white shadow-sm mb-2">
-              <FileText className="w-4 h-4 text-purple-600" />
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="flex flex-col items-center p-2.5 bg-slate-50 rounded-lg">
+            <div className="p-1.5 rounded-md bg-white shadow-sm mb-1.5">
+              <FileText className="w-3.5 h-3.5 text-purple-600" />
             </div>
-            <p className="text-xl font-bold text-slate-900">{analytics.totalArticles}</p>
-            <p className="text-xs text-slate-500 font-medium">Articles</p>
+            <p className="text-lg font-bold text-slate-900">{analytics.totalArticles}</p>
+            <p className="text-[11px] text-slate-500 font-medium">Articles</p>
           </div>
-          <div className="flex flex-col items-center p-3 bg-emerald-50 rounded-xl">
-            <div className="p-2 rounded-lg bg-white shadow-sm mb-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
+          <div className="flex flex-col items-center p-2.5 bg-emerald-50 rounded-lg">
+            <div className="p-1.5 rounded-md bg-white shadow-sm mb-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
             </div>
-            <p className="text-xl font-bold text-emerald-600">{analytics.publishedArticles}</p>
-            <p className="text-xs text-emerald-600 font-medium">Published</p>
+            <p className="text-lg font-bold text-emerald-600">{analytics.publishedArticles}</p>
+            <p className="text-[11px] text-emerald-600 font-medium">Published</p>
           </div>
-          <div className="flex flex-col items-center p-3 bg-slate-50 rounded-xl">
-            <div className="p-2 rounded-lg bg-white shadow-sm mb-2">
-              <Layers className="w-4 h-4 text-purple-600" />
+          <div className="flex flex-col items-center p-2.5 bg-slate-50 rounded-lg">
+            <div className="p-1.5 rounded-md bg-white shadow-sm mb-1.5">
+              <Layers className="w-3.5 h-3.5 text-purple-600" />
             </div>
-            <p className="text-xl font-bold text-slate-900">{analytics.categories}</p>
-            <p className="text-xs text-slate-500 font-medium">Categories</p>
+            <p className="text-lg font-bold text-slate-900">{analytics.categories}</p>
+            <p className="text-[11px] text-slate-500 font-medium">Categories</p>
           </div>
         </div>
       )}
 
       {/* Article List */}
       {articles.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {articles.map((article) => (
             <button
               key={article.id}
               onClick={() => navigate(`/knowledge-base?article=${article.id}`)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left group border border-transparent hover:border-slate-200"
+              className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 transition-colors text-left group border border-transparent hover:border-slate-200"
             >
-              <div className="p-2 rounded-lg bg-purple-50 group-hover:bg-purple-100 transition-colors">
-                <BookOpen className="w-4 h-4 text-purple-600" />
+              <div className="p-1.5 rounded-md bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                <BookOpen className="w-3.5 h-3.5 text-purple-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-purple-600 transition-colors">
+                <p className="text-[13px] font-semibold text-slate-900 truncate group-hover:text-purple-600 transition-colors">
                   {article.title}
                 </p>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                  <span className="px-1.5 py-0.5 bg-slate-100 rounded text-xs">{article.category || 'General'}</span>
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                  <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[11px]">{article.category || 'General'}</span>
                   <span>•</span>
                   <span>{formatDate(article.createdAt)}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-slate-400 group-hover:text-purple-500 transition-colors">
-                <Eye className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">{article.viewCount || 0}</span>
+                <Eye className="w-3 h-3" />
+                <span className="text-[11px] font-medium">{article.viewCount || 0}</span>
               </div>
             </button>
           ))}
         </div>
       ) : (
-        <div className="text-center py-8">
-          <div className="w-14 h-14 rounded-2xl bg-slate-50 mx-auto mb-3 flex items-center justify-center">
-            <BookOpen className="w-7 h-7 text-slate-300" />
+        <div className="text-center py-6">
+          <div className="w-10 h-10 rounded-lg bg-slate-50 mx-auto mb-2 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-slate-300" />
           </div>
           <p className="text-sm font-medium text-slate-700">No articles yet</p>
           <p className="text-xs text-slate-400 mt-1">Browse the knowledge base to get started</p>
           <button
             onClick={() => navigate('/knowledge-base')}
-            className="mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium"
+            className="mt-2 text-xs text-purple-600 hover:text-purple-700 font-medium"
           >
             Browse Knowledge Base
           </button>

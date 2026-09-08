@@ -171,24 +171,24 @@ export function RecentActivity() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-100">
-              <Activity className="w-5 h-5 text-purple-600" />
+      <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-purple-100">
+              <Activity className="w-4 h-4 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
-              <p className="text-sm text-slate-500">Latest updates across all modules</p>
+              <h2 className="text-[15px] font-semibold text-slate-900">Recent Activity</h2>
+              <p className="text-xs text-slate-500">Latest updates across all modules</p>
             </div>
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 animate-pulse" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-3/4 bg-slate-100 rounded animate-pulse" />
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 animate-pulse" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3.5 w-3/4 bg-slate-100 rounded animate-pulse" />
                 <div className="h-3 w-1/2 bg-slate-50 rounded animate-pulse" />
               </div>
             </div>
@@ -200,24 +200,24 @@ export function RecentActivity() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-2xl border border-red-200/60 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-100">
-              <Activity className="w-5 h-5 text-purple-600" />
+      <div className="bg-white rounded-xl border border-red-200/60 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-purple-100">
+              <Activity className="w-4 h-4 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
-              <p className="text-sm text-slate-500">Latest updates across all modules</p>
+              <h2 className="text-[15px] font-semibold text-slate-900">Recent Activity</h2>
+              <p className="text-xs text-slate-500">Latest updates across all modules</p>
             </div>
           </div>
         </div>
-        <div className="text-center py-8">
-          <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+        <div className="text-center py-6">
+          <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
           <p className="text-sm text-slate-500">{error}</p>
           <button
             onClick={fetchActivity}
-            className="mt-3 text-sm text-purple-600 hover:text-purple-700 font-medium"
+            className="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
           >
             Try again
           </button>
@@ -232,32 +232,32 @@ export function RecentActivity() {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm shadow-purple-500/20">
-            <Activity className="w-5 h-5 text-white" />
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm shadow-purple-500/20">
+            <Activity className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
-            <p className="text-sm text-slate-500">Latest updates across all modules</p>
+            <h2 className="text-[15px] font-semibold text-slate-900">Recent Activity</h2>
+            <p className="text-xs text-slate-500">Latest updates across all modules</p>
           </div>
         </div>
         <button 
           onClick={() => navigate('/')}
-          className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+          className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 font-medium transition-colors"
         >
           View all
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Timeline */}
       <div className="relative">
         {/* Vertical line */}
-        <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-200 via-purple-300 to-slate-200" />
+        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-200 via-purple-300 to-slate-200" />
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredActivities.map((activity, index) => {
             const Icon = typeIcons[activity.type] || Ticket;
             const colors = typeColors[activity.type] || { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' };
@@ -265,23 +265,23 @@ export function RecentActivity() {
               <button
                 key={`${activity.type}-${activity.id}-${index}`}
                 onClick={() => navigate(getActivityPath(activity.type))}
-                className="relative flex items-start gap-4 w-full text-left group"
+                className="relative flex items-start gap-3 w-full text-left group"
               >
                 {/* Timeline dot */}
-                <div className={`relative z-10 w-10 h-10 rounded-xl ${colors.bg} border-2 ${colors.border} flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all duration-300`}>
-                  <Icon className={`w-4 h-4 ${colors.text}`} />
+                <div className={`relative z-10 w-8 h-8 rounded-lg ${colors.bg} border-2 ${colors.border} flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-200`}>
+                  <Icon className={`w-3.5 h-3.5 ${colors.text}`} />
                 </div>
                 
                 {/* Content */}
-                <div className="flex-1 min-w-0 pt-1.5">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-sm font-semibold text-slate-900 group-hover:text-purple-600 transition-colors truncate">
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <span className="text-[13px] font-semibold text-slate-900 group-hover:text-purple-600 transition-colors truncate">
                       {activity.title || activity.reference}
                     </span>
                     {getStatusBadge(activity.status)}
                     {activity.severity && getStatusBadge(activity.severity)}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span className="uppercase font-medium">{activity.type}</span>
                     <span className="w-1 h-1 rounded-full bg-slate-300" />
                     <span>{activity.reference}</span>
@@ -294,8 +294,8 @@ export function RecentActivity() {
                 </div>
 
                 {/* Arrow indicator */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-2">
-                  <ArrowRight className="w-4 h-4 text-purple-500" />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity pt-1.5">
+                  <ArrowRight className="w-3.5 h-3.5 text-purple-500" />
                 </div>
               </button>
             );

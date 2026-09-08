@@ -185,11 +185,11 @@ export function AnalyticsCharts() {
   if (error) {
     return (
       <AnalyticsSection>
-        <div className="bg-white rounded-2xl border border-red-200 p-6 text-center">
+        <div className="bg-white rounded-xl border border-red-200 p-4 text-center">
           <p className="text-sm text-slate-500">{error}</p>
           <button 
             onClick={fetchAnalytics}
-            className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="mt-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
             Retry
           </button>

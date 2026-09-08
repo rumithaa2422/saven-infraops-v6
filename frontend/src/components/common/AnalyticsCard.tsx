@@ -87,8 +87,8 @@ export function AnalyticsCard({
     <div
       className={`
         group flex flex-col
-        bg-white rounded-2xl border ${colors.border}
-        shadow-sm hover:shadow-lg hover:border-slate-300 
+        bg-white rounded-xl border ${colors.border}
+        shadow-sm hover:shadow-md hover:border-slate-300 
         transition-all duration-200 overflow-hidden
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
@@ -96,33 +96,33 @@ export function AnalyticsCard({
       onClick={onClick}
     >
       {/* Card Header - Fixed height for consistency */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 flex-shrink-0">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-slate-100 flex-shrink-0">
         {/* Icon */}
-        <div className={`p-2.5 rounded-xl ${colors.bg} flex-shrink-0`}>
-          <Icon className={`w-5 h-5 ${colors.text}`} />
+        <div className={`p-1.5 rounded-lg ${colors.bg} flex-shrink-0`}>
+          <Icon className={`w-4 h-4 ${colors.text}`} />
         </div>
         
         {/* Title and Description */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-slate-800 truncate">{title}</h3>
+          <h3 className="text-[13px] font-semibold text-slate-800 truncate leading-snug">{title}</h3>
           {description && (
-            <p className="text-xs text-slate-500 mt-0.5 truncate">{description}</p>
+            <p className="text-[11px] text-slate-500 mt-0.5 truncate">{description}</p>
           )}
         </div>
       </div>
       
       {/* Content Area - Flexible height with minimum */}
-      <div className="flex-1 flex flex-col min-h-[280px]">
+      <div className="flex-1 flex flex-col min-h-[210px]">
         {children ? (
-          <div className="flex-1 p-4 flex flex-col">
+          <div className="flex-1 p-3 flex flex-col">
             {children}
           </div>
         ) : (
-          <div className={`flex-1 ${colors.bg} flex items-center justify-center p-6`}>
+          <div className={`flex-1 ${colors.bg} flex items-center justify-center p-4`}>
             {/* Placeholder content */}
             <div className="text-center">
-              <div className={`w-16 h-16 mx-auto rounded-2xl bg-white/80 flex items-center justify-center mb-3`}>
-                <Icon className={`w-8 h-8 ${colors.text} opacity-50`} />
+              <div className={`w-12 h-12 mx-auto rounded-xl bg-white/80 flex items-center justify-center mb-2`}>
+                <Icon className={`w-6 h-6 ${colors.text} opacity-50`} />
               </div>
               <p className={`text-sm font-medium ${colors.text} opacity-70`}>
                 Chart placeholder
@@ -143,18 +143,18 @@ export function AnalyticsCard({
  */
 export function AnalyticsCardSkeleton() {
   return (
-    <div className="flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-pulse">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 flex-shrink-0">
-        <div className="w-10 h-10 rounded-xl bg-slate-100" />
+    <div className="flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-pulse">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-slate-100 flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-slate-100" />
         <div className="flex-1">
-          <div className="h-4 w-32 bg-slate-100 rounded" />
-          <div className="h-3 w-48 bg-slate-50 rounded mt-2" />
+          <div className="h-3.5 w-28 bg-slate-100 rounded" />
+          <div className="h-3 w-40 bg-slate-50 rounded mt-1.5" />
         </div>
       </div>
-      <div className="flex-1 min-h-[280px] bg-slate-50 flex items-center justify-center">
+      <div className="flex-1 min-h-[210px] bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 mb-3" />
-          <div className="h-4 w-24 mx-auto bg-slate-100 rounded" />
+          <div className="w-12 h-12 mx-auto rounded-xl bg-slate-100 mb-2" />
+          <div className="h-3.5 w-20 mx-auto bg-slate-100 rounded" />
         </div>
       </div>
     </div>
@@ -173,7 +173,7 @@ export interface AnalyticsGridProps {
 export function AnalyticsGrid({ children, className = '' }: AnalyticsGridProps) {
   return (
     <div className={`
-      grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 
+      grid grid-cols-1 md:grid-cols-2 gap-3.5 lg:gap-4 
       auto-rows-fr
       ${className}
     `}>
@@ -194,12 +194,16 @@ export interface AnalyticsSectionProps {
 export function AnalyticsSection({ children, className = '' }: AnalyticsSectionProps) {
   return (
     <section className={`${className}`}>
-      {/* Section Header */}
-      <div className="mb-4 lg:mb-6">
-        <h2 className="text-lg lg:text-xl font-bold text-slate-800">Analytics</h2>
-        <p className="text-xs lg:text-sm text-slate-500 mt-1">
-          Visual insights into your organization's operational data.
-        </p>
+      {/* Section Header - compact */}
+      <div className="mb-2.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-slate-800 tracking-tight">Analytics</h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Visual insights into your organization's operational data.
+            </p>
+          </div>
+        </div>
       </div>
       
       {/* Content */}

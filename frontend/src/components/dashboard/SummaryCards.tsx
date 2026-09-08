@@ -244,9 +244,9 @@ export function SummaryCards() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-2xl border border-red-200/60 p-6 text-center">
+      <div className="bg-white rounded-xl border border-red-200/60 p-4 text-center">
         <p className="text-sm text-slate-500">{error}</p>
-        <button onClick={fetchSummary} className="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium">
+        <button onClick={fetchSummary} className="mt-1.5 text-sm text-purple-600 hover:text-purple-700 font-medium">
           Retry
         </button>
       </div>
