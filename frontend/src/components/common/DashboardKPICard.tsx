@@ -121,10 +121,12 @@ export function DashboardKPICard({
       className={`
         group relative overflow-hidden
         bg-white
-        rounded-xl border border-slate-200/80 
-        p-3.5 shadow-sm
-        hover:shadow-md
-        hover:-translate-y-0.5 transition-all duration-200 ease-out
+        rounded-xl border border-slate-200/80
+        p-3.5
+        shadow-[0_1px_2px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.04)]
+        hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_8px_20px_rgba(99,102,241,0.10)]
+        hover:-translate-y-0.5
+        transition-all duration-200 ease-out will-change-transform
         flex flex-col
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
@@ -141,7 +143,9 @@ export function DashboardKPICard({
           {/* Icon Chip */}
           <div className={`
             p-1.5 rounded-lg ${colors.bg} 
-            group-hover:scale-105 transition-transform duration-200
+            shadow-sm
+            group-hover:scale-105 group-hover:shadow
+            transition-all duration-200
           `}>
             <Icon className={`w-4 h-4 ${colors.text}`} />
           </div>

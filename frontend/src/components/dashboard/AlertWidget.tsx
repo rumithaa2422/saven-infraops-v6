@@ -135,7 +135,7 @@ export function AlertWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_8px_20px_rgba(99,102,241,0.09)] hover:-translate-y-0.5 transition-all duration-200">
         <div className="flex items-center gap-2.5 mb-3">
           <div className="p-1.5 rounded-lg bg-purple-100">
             <Bell className="w-4 h-4 text-purple-600" />
@@ -156,7 +156,7 @@ export function AlertWidget() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl border border-red-200/60 p-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-red-200/60 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_8px_20px_rgba(99,102,241,0.09)] hover:-translate-y-0.5 transition-all duration-200">
         <div className="flex items-center gap-2.5 mb-3">
           <div className="p-1.5 rounded-lg bg-red-100">
             <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -199,7 +199,7 @@ export function AlertWidget() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_8px_20px_rgba(99,102,241,0.09)] hover:-translate-y-0.5 transition-all duration-200">
       <div className="flex items-center gap-2.5 mb-3">
         <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm shadow-amber-500/20">
           <Bell className="w-4 h-4 text-white" />

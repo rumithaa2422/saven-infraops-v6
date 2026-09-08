@@ -8,7 +8,6 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,10 +27,6 @@ export function NotificationBell() {
       setUnreadCount(count);
     });
 
-    const unsubConnection = notificationService.onConnectionChange((connected) => {
-      setIsConnected(connected);
-    });
-
     // Load initial data
     loadInitialData();
 
@@ -47,7 +42,6 @@ export function NotificationBell() {
     return () => {
       unsubNotification();
       unsubCount();
-      unsubConnection();
       notificationService.disconnect();
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -133,12 +127,12 @@ export function NotificationBell() {
           </span>
         )}
         
-        {/* Connection Indicator */}
+        {/* Unread Indicator Dot - driven by real unread count (not connection state) */}
         <span
-          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-            isConnected ? 'bg-green-500' : 'bg-yellow-500'
+          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white transition-opacity ${
+            unreadCount > 0 ? 'bg-yellow-400 opacity-100' : 'opacity-0'
           }`}
-          title={isConnected ? 'Connected' : 'Reconnecting...'}
+          title={unreadCount > 0 ? 'Unread notifications' : 'No unread notifications'}
         />
       </button>
 

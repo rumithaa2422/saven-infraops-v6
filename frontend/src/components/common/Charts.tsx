@@ -87,11 +87,11 @@ interface LineChartProps {
 const tooltipStyle = {
   backgroundColor: 'white',
   border: '1px solid #e2e8f0',
-  borderRadius: '8px',
+  borderRadius: '10px',
   padding: '8px 12px',
   fontSize: '12px',
   color: '#334155',
-  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.08),0 8px 20px -6px rgb(0 0 0 / 0.1)',
 };
 
 // Empty state component - compact polished empty state

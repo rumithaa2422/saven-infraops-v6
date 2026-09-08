@@ -284,6 +284,7 @@ genericModuleRouter.get('/:module', requireAuth, async (req, res, next) => {
       email: true,
       phoneNumber: true,
       department: true,
+      employeeId: true,
       status: true,
       createdAt: true,
       updatedAt: true,

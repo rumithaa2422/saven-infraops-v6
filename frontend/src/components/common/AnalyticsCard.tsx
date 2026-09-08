@@ -88,7 +88,9 @@ export function AnalyticsCard({
       className={`
         group flex flex-col
         bg-white rounded-xl border ${colors.border}
-        shadow-sm hover:shadow-md hover:border-slate-300 
+        shadow-[0_1px_2px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.04)]
+        hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_8px_20px_rgba(99,102,241,0.09)]
+        hover:border-slate-300 hover:-translate-y-0.5 will-change-transform
         transition-all duration-200 overflow-hidden
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
@@ -98,7 +100,7 @@ export function AnalyticsCard({
       {/* Card Header - Fixed height for consistency */}
       <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-slate-100 flex-shrink-0">
         {/* Icon */}
-        <div className={`p-1.5 rounded-lg ${colors.bg} flex-shrink-0`}>
+        <div className={`p-1.5 rounded-lg ${colors.bg} shadow-sm group-hover:scale-105 group-hover:shadow transition-all duration-200 flex-shrink-0`}>
           <Icon className={`w-4 h-4 ${colors.text}`} />
         </div>
         

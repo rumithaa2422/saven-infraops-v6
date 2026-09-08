@@ -81,7 +81,7 @@ export function KnowledgeHub() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_8px_20px_rgba(99,102,241,0.09)] hover:-translate-y-0.5 transition-all duration-200">
         <div className="flex items-center gap-2.5 mb-4">
           <div className="p-1.5 rounded-lg bg-purple-100">
             <BookOpen className="w-4 h-4 text-purple-600" />
@@ -101,7 +101,7 @@ export function KnowledgeHub() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-sm">
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_2px_8px_rgba(15,23,42,0.04)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.06),0_8px_20px_rgba(99,102,241,0.09)] hover:-translate-y-0.5 transition-all duration-200">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm shadow-emerald-500/20">
